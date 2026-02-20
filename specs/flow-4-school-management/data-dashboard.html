@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Data Dashboard for School Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #ef4444; font-weight: 700; }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #ef4444;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; }
+    tr:hover td { background: #fafbfc; }
+
+    /* ── Code blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-goal { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Tier badges ── */
+    .tier { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+    .tier-1 { background: #dcfce7; color: #166534; }
+    .tier-2 { background: #fef9c3; color: #854d0e; }
+    .tier-3 { background: #fee2e2; color: #991b1b; }
+
+    /* ── Status tags ── */
+    .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-mvp { background: #dbeafe; color: #1e40af; }
+    .status-future { background: #f1f5f9; color: #64748b; }
+
+    /* ── TOC ── */
+    .toc {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 32px;
+    }
+    .toc h3 { margin-top: 0; font-size: 13px; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; }
+    .toc ol { margin: 10px 0 0 18px; }
+    .toc li { margin-bottom: 3px; }
+    .toc a { color: #3b82f6; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../../flowcharts/flow-4-school-management.html">Flow 4</a>
+  <span class="sep">/</span>
+  <span class="current">Data Dashboard Spec</span>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <div class="doc-header">
+    <h1>Data Dashboard for School Admin</h1>
+    <p class="subtitle">Product design specification &mdash; RTI progress monitoring using real learning interaction data</p>
+    <div class="meta">
+      <span>Flow 4 &mdash; School Management</span>
+      <span>Status: Planning</span>
+      <span>Target: End of March 2026</span>
+      <span>Last updated: 2026-02-19</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ TOC ════════════════ -->
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#goal">Feature Goal</a></li>
+      <li><a href="#roles">Role Permissions</a></li>
+      <li><a href="#dashboard">Dashboard Overview</a></li>
+      <li><a href="#individual">Individual Student Data</a></li>
+      <li><a href="#group">Group / Cohort Data</a></li>
+      <li><a href="#filters">Filter Specifications</a></li>
+      <li><a href="#architecture">Calculation Architecture</a></li>
+      <li><a href="#implementation">CTO Implementation Notes</a></li>
+    </ol>
+  </div>
+
+  <!-- ════════════════ 1. GOAL ════════════════ -->
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout callout-goal">
+    <strong>ESL teachers and school admins need to know how their students are doing &mdash; not once a semester, but continuously.</strong>
+  </div>
+
+  <p>Right now, schools rely on periodic standardized tests (WIDA / ELPAC) to measure English learner progress. The problem is these tests happen once or twice a year &mdash; teachers don&rsquo;t get timely, actionable data in between.</p>
+
+  <p>This dashboard gives them that missing layer. As students use the platform (vocabulary mirroring &amp; content mirroring), the system tracks what they understand, where they struggle, and whether they&rsquo;re improving. Teachers and admins can see this data at two levels:</p>
+
+  <ul>
+    <li><strong>Individual student</strong> &mdash; &ldquo;How is Maria doing? Is she getting better at accessing classroom language?&rdquo;</li>
+    <li><strong>Group / cohort</strong> &mdash; &ldquo;How are my 5th grade WIDA 2 students doing in Science overall? Which vocabulary is blocking them?&rdquo;</li>
+  </ul>
+
+  <p>The dashboard is customizable &mdash; users pick the filters (grade, subject, proficiency level, classroom) that matter to them, and see exactly the cohort they care about.</p>
+
+  <!-- ════════════════ 2. ROLES ════════════════ -->
+  <h2 id="roles"><span class="num">2</span> Role Permissions</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>School Admin</th>
+        <th>ESL Teacher</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dashboard Overview</td>
+        <td>All school data</td>
+        <td>Own classrooms only</td>
+      </tr>
+      <tr>
+        <td>Group / Cohort Data</td>
+        <td>All filters available</td>
+        <td>Own classrooms only</td>
+      </tr>
+      <tr>
+        <td>Individual Student Data</td>
+        <td>All students</td>
+        <td>Own students</td>
+      </tr>
+      <tr>
+        <td>Filter: Grade / Subject / Proficiency Level</td>
+        <td>All</td>
+        <td>Within own classrooms</td>
+      </tr>
+      <tr>
+        <td>Group Comparison (A vs B)</td>
+        <td colspan="2" style="text-align:center; color:#94a3b8;">Not in MVP <span class="status status-future">Future</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 3. DASHBOARD OVERVIEW ════════════════ -->
+  <h2 id="dashboard"><span class="num">3</span> Dashboard Overview</h2>
+
+  <p>The entry point for data. Shows a high-level summary before the user drills into group or individual views.</p>
+
+  <div class="card">
+    <h4>Summary Cards (top of page)</h4>
+    <table>
+      <thead><tr><th>Card</th><th>What it shows</th><th>Data source</th></tr></thead>
+      <tbody>
+        <tr><td>Tier Distribution</td><td>Tier 1 / 2 / 3 student counts + pie chart</td><td>Pre-computed tier classification</td></tr>
+        <tr><td>Language Access Rate</td><td>% independent / scaffold / high risk</td><td>Aggregated from individual Language Access %</td></tr>
+        <tr><td>Risk Alerts</td><td>New Tier 3 cases since last evaluation</td><td>Tier change history</td></tr>
+        <tr><td>Completion Overview</td><td>Average completion rate + on-time rate</td><td>Assignment completion records</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Navigation:</strong> From the dashboard overview, users can go to:<br>
+    &bull; <strong>Group view</strong> &mdash; click any summary card or use filters<br>
+    &bull; <strong>Individual view</strong> &mdash; search a student name, or click a student from Tier/risk lists
+  </div>
+
+  <!-- ════════════════ 4. INDIVIDUAL STUDENT DATA ════════════════ -->
+  <h2 id="individual"><span class="num">4</span> Individual Student Data</h2>
+
+  <div class="callout callout-warn">
+    <strong>Overall status rule:</strong><br>
+    &ge; 60% of key indicators improving &rarr; overall <strong>improving</strong><br>
+    &ge; 60% declining &rarr; overall <strong>declining</strong><br>
+    otherwise &rarr; <strong>stable</strong>
+  </div>
+
+  <!-- 4.1 -->
+  <h3>4.1 Language Access Level</h3>
+  <div class="callout-question">
+    <div class="q-text">How much does the student understand in the class?</div>
+    <div class="q-context">We need to know if the student can access classroom instruction without support.</div>
+  </div>
+  <p><strong>Metric:</strong> Classroom Language Access %</p>
+  <div class="formula">Classroom Language Access % =
+  (Number of words understood without support
+   &divide; Total number of words in the content)
+  &times; 100</div>
+  <p>Helps teachers understand the overall level of comprehension during instruction.</p>
+
+  <!-- 4.2 -->
+  <h3>4.2 Language Difficulty Profile</h3>
+  <div class="callout-question">
+    <div class="q-text">How often does language block understanding?</div>
+    <div class="q-context">We need to know how frequently comprehension breaks down, and whether the barrier is language or concept.</div>
+  </div>
+  <p><strong>Metric:</strong> Difficulty Rate (%)</p>
+  <div class="formula">Difficulty Rate (%) =
+  (Number of difficulty events &divide; Total number of words) &times; 100</div>
+  <p>This answers:</p>
+  <ul>
+    <li>Is the instructional material readable for this student?</li>
+    <li>Is the classroom language load too high?</li>
+    <li>Are learning barriers caused by language or by conceptual understanding?</li>
+  </ul>
+
+  <!-- 4.3 -->
+  <h3>4.3 Learning Behavior Pattern</h3>
+
+  <div class="callout-question">
+    <div class="q-text">Does the student consistently finish assigned practice?</div>
+    <div class="q-context">We need to know if the student is engaged and completing work on time.</div>
+  </div>
+  <p><strong>Metrics:</strong> Completion Rate &amp; On-time Completion Rate</p>
+  <div class="formula">Completion Rate =
+  Completed practice sessions &divide; Assigned practice sessions &times; 100
+
+On-time Completion Rate =
+  Practice sessions completed before due time &divide; Assigned practice sessions &times; 100</div>
+
+  <div class="callout-question">
+    <div class="q-text">How often does the student get stuck during mirroring?</div>
+    <div class="q-context">We need to know if the student struggles to process and reproduce language in real time.</div>
+  </div>
+  <p><strong>Metric:</strong> Mirroring Retry Intensity</p>
+  <div class="formula">Retry Intensity =
+  Total number of retries on mirroring items
+  &divide; Total number of mirroring items attempted</div>
+
+  <div class="callout-question">
+    <div class="q-text">How often does the student redo assignments to improve?</div>
+    <div class="q-context">We need to know if the student self-corrects or requires re-attempts to meet expectations.</div>
+  </div>
+  <p><strong>Metric:</strong> Re-attempt Rate</p>
+  <div class="formula">Re-attempt Rate =
+  Number of assignments with &ge;2 submissions
+  &divide; Number of assignments submitted &times; 100</div>
+
+  <!-- 4.4 -->
+  <h3>4.4 Progress Over Time</h3>
+  <div class="callout-question">
+    <div class="q-text">Is the student getting better, staying the same, or getting worse?</div>
+    <div class="q-context">We need to track trajectory &mdash; not just a snapshot, but the direction of change over time.</div>
+  </div>
+  <div class="callout callout-info">
+    Every <strong>5 completed learning sessions</strong> &rarr; generate a progress report
+  </div>
+  <ul>
+    <li><strong>Tag frequency trend</strong> (from Language Access %) &mdash; comprehension trajectory</li>
+    <li><strong>Scaffold completion trend</strong> (from Completion Rate) &mdash; growing independence</li>
+  </ul>
+  <p>Progress states: <strong>improving</strong> / <strong>stable</strong> / <strong>declining</strong></p>
+
+  <!-- 4.5 -->
+  <h3>4.5 Support Need Level (RTI Tier)</h3>
+  <div class="callout-question">
+    <div class="q-text">How much support does this student need right now?</div>
+    <div class="q-context">We classify students into RTI tiers so teachers and admins can allocate resources where they matter most.</div>
+  </div>
+  <p>Change rate calculation:</p>
+  <div class="formula">Change Rate =
+  (Current window average &minus; Previous window average)
+  &divide; Previous window average
+
+&ge; +10% change &rarr; meaningful increase
+&le; &minus;10% change &rarr; meaningful decrease
+between &minus;10% and +10% &rarr; stable</div>
+
+  <table>
+    <thead>
+      <tr><th>Tier</th><th>Label</th><th>Criteria</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tier tier-1">Tier 1</span></td>
+        <td>Independent</td>
+        <td>Language access &ge; 80% <strong>AND</strong> difficulty rate &le; 15% <strong>AND</strong> scaffold completion &ge; 80%</td>
+      </tr>
+      <tr>
+        <td><span class="tier tier-2">Tier 2</span></td>
+        <td>Needs Support</td>
+        <td>Language access 50%&ndash;79% <strong>OR</strong> difficulty rate 16%&ndash;35% <strong>OR</strong> scaffold completion 50%&ndash;79%</td>
+      </tr>
+      <tr>
+        <td><span class="tier tier-3">Tier 3</span></td>
+        <td>Intensive Support</td>
+        <td>Language access &lt; 50% <strong>OR</strong> difficulty rate &gt; 35% <strong>OR</strong> scaffold completion &lt; 50%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="formula">Tier Rule:
+  If any Tier 3 condition met &rarr; Tier 3
+  Else if any Tier 2 condition met &rarr; Tier 2
+  Else &rarr; Tier 1
+
+Evaluation: every 10 completed sessions OR every 30 days</div>
+
+  <!-- ════════════════ 5. GROUP DATA ════════════════ -->
+  <h2 id="group"><span class="num">5</span> Group / Cohort Data</h2>
+
+  <div class="callout callout-info">
+    Users can form custom cohorts using filters. Example: <em>&ldquo;I want 5th grader&rsquo;s WIDA 2 students&rsquo; data from Science teacher&rsquo;s class.&rdquo;</em>
+  </div>
+
+  <h3>5.1 Classroom Language Access Rate</h3>
+  <div class="callout-question">
+    <div class="q-text">How many students in this group can access instruction on their own?</div>
+    <div class="q-context">We need to see the distribution of language independence across a classroom or cohort at a glance.</div>
+  </div>
+  <ul>
+    <li>% students accessing instruction independently (Tier 1)</li>
+    <li>% needing scaffold (Tier 2)</li>
+    <li>% high risk (Tier 3)</li>
+  </ul>
+
+  <h3>5.2 Common Language Barriers</h3>
+  <div class="callout-question">
+    <div class="q-text">What specific language is blocking students the most?</div>
+    <div class="q-context">We need to surface the high-frequency vocabulary and patterns that cause the most difficulty events across the cohort.</div>
+  </div>
+  <ul>
+    <li>Top language barriers list &mdash; high-frequency vocabulary items causing difficulty events</li>
+  </ul>
+
+  <h3>5.3 Instruction Effectiveness Indicator</h3>
+  <div class="callout-question">
+    <div class="q-text">Is the instruction actually working for these students?</div>
+    <div class="q-context">We need to measure whether students can complete learning tasks and whether they rely heavily on support to do so.</div>
+  </div>
+  <ul>
+    <li>Content mirroring completion rate</li>
+    <li>Learning chain completion rate</li>
+    <li>Support usage density</li>
+    <li>Instruction accessibility score</li>
+  </ul>
+
+  <h3>5.4 Group Progress Over Time</h3>
+  <div class="callout-question">
+    <div class="q-text">Is this group improving, flat, or falling behind?</div>
+    <div class="q-context">We need to track cohort-level trends so admins can evaluate programs and allocate resources.</div>
+  </div>
+  <ul>
+    <li>Average access change</li>
+    <li>Support dependence change</li>
+    <li>Completion improvement</li>
+    <li>Growth curve visualization</li>
+  </ul>
+
+  <h3>5.5 Risk Distribution</h3>
+  <div class="callout-question">
+    <div class="q-text">How many students are at risk, and is the number growing?</div>
+    <div class="q-context">We need to flag students who need intensive support and detect emerging risk clusters before they escalate.</div>
+  </div>
+  <ul>
+    <li>Tier 1 / 2 / 3 student counts</li>
+    <li>High-risk cluster identification</li>
+    <li>New risk cases (students who moved to Tier 3)</li>
+  </ul>
+
+  <h3>5.6 Comparison Between Groups <span class="status status-future">Future</span></h3>
+  <p>Not in MVP. Future capability examples:</p>
+  <ul>
+    <li>Proficiency Level 2 vs Level 3</li>
+    <li>Science vs Social Studies</li>
+    <li>Classroom A vs B</li>
+    <li>Teacher A vs B</li>
+  </ul>
+
+  <!-- ════════════════ 6. FILTERS ════════════════ -->
+  <h2 id="filters"><span class="num">6</span> Filter Specifications</h2>
+
+  <table>
+    <thead>
+      <tr><th>Filter</th><th>Values</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Grade Level</td><td>K, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12</td><td>Multi-select</td></tr>
+      <tr><td>Subject / Content Area</td><td>Science, Social Studies, Math, ELA, etc.</td><td>Defined per school</td></tr>
+      <tr><td>Proficiency Level</td><td>WIDA: 1 (Entering) &ndash; 6 (Reaching)<br>ELPAC: 1 (Minimally Developed) &ndash; 4 (Well Developed)</td><td>Multi-select; framework depends on school/state</td></tr>
+      <tr><td>Teacher</td><td>List of ESL teachers in the school</td><td>School Admin only</td></tr>
+      <tr><td>Classroom</td><td>List of classrooms</td><td>ESL Teacher sees own classrooms only</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Customizable Dashboard:</strong> Users can combine filters to create their own view. Selected filters persist across sessions so the dashboard remembers their preferred cohort view.
+  </div>
+
+  <p><strong>Required student record fields</strong> (need to be added to user data model):</p>
+  <ul>
+    <li><code>gradeLevel</code> &mdash; student's grade level</li>
+    <li><code>proficiencyLevel</code> &mdash; student's English proficiency level (WIDA 1&ndash;6 or ELPAC 1&ndash;4)</li>
+    <li><code>proficiencyFramework</code> &mdash; which assessment framework the school uses (WIDA or ELPAC)</li>
+    <li><code>contentArea</code> &mdash; associated content/subject area(s)</li>
+  </ul>
+
+  <!-- ════════════════ 7. ARCHITECTURE ════════════════ -->
+  <h2 id="architecture"><span class="num">7</span> Calculation Architecture</h2>
+
+  <h3>Hybrid approach: Backend pre-compute + Frontend aggregate</h3>
+
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Responsibility</th><th>When</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Backend</strong></td>
+        <td>Compute per-student metrics: Language Access %, Difficulty Rate, Completion Rate, Retry Intensity, Re-attempt Rate</td>
+        <td>On each learning session end</td>
+      </tr>
+      <tr>
+        <td><strong>Backend</strong></td>
+        <td>Update Progress Trend (improving / stable / declining)</td>
+        <td>Every 5 completed sessions</td>
+      </tr>
+      <tr>
+        <td><strong>Backend</strong></td>
+        <td>Evaluate &amp; update RTI Tier classification</td>
+        <td>Every 10 sessions OR every 30 days</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend</strong></td>
+        <td>Fetch pre-computed metrics, apply filters, aggregate for group views (averages, distributions, charts)</td>
+        <td>When user opens dashboard / changes filters</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>Why not all frontend?</strong> A school with 200+ students, each with 50+ sessions and multiple events per session, would require pulling massive raw data to the browser. Pre-computing on the backend keeps the frontend fast &mdash; it only does filter + display on already-computed metrics.
+  </div>
+
+  <!-- ════════════════ 8. IMPLEMENTATION ════════════════ -->
+  <h2 id="implementation"><span class="num">8</span> CTO Implementation Notes</h2>
+
+  <h3>A. System Event Definitions</h3>
+  <table>
+    <thead><tr><th>Event</th><th>Definition</th></tr></thead>
+    <tbody>
+      <tr><td>Difficulty event</td><td>Any user action requesting comprehension support</td></tr>
+      <tr><td>Word support event</td><td>Translation / word meaning request</td></tr>
+      <tr><td>Mirroring retry</td><td>Repeated attempt on same mirroring line without success</td></tr>
+      <tr><td>Assignment submission</td><td>Final confirmed task completion</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B. Learning Session Definition</h3>
+  <p>A learning session = continuous interaction block ending when:</p>
+  <ul>
+    <li>Assignment submitted, OR</li>
+    <li>10 minutes inactivity, OR</li>
+    <li>User exit</li>
+  </ul>
+
+  <h3>C. Task Type Tagging</h3>
+  <p>Each task must include:</p>
+  <ul>
+    <li><code>scaffolded</code> = true / false</li>
+    <li><code>task_type</code> = vocabulary / scaffold / mirroring</li>
+  </ul>
+
+  <h3>D. Calculation Engine</h3>
+  <p>Batch processing schedule:</p>
+  <ul>
+    <li>Progress trend &rarr; every 5 sessions</li>
+    <li>Tier classification &rarr; every 10 sessions</li>
+    <li>Nightly recomputation allowed</li>
+  </ul>
+
+  <h3>E. Data Sufficiency Rule</h3>
+  <ul>
+    <li>&ge; 3 sessions required to compute trend</li>
+    <li>Otherwise status = <em>insufficient data</em></li>
+  </ul>
+
+  <h3>F. Tier Stability Rule</h3>
+  <p>Tier change applies only if new classification persists for <strong>2 consecutive evaluations</strong>.</p>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; Flow 4 &mdash; School Management &middot; February 2026</footer>
+</div>
+
+</body>
+</html>

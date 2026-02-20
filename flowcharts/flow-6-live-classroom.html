@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flow 1 — Authentication & Onboarding</title>
+  <title>Flow 6 — Live Classroom</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -70,8 +70,19 @@
     }
     .section-title .badge {
       font-size: 11px; font-weight: 700; color: #fff;
-      background: #6366f1; padding: 2px 8px; border-radius: 4px;
+      background: #0ea5e9; padding: 2px 8px; border-radius: 4px;
     }
+
+    /* ── Spec link ── */
+    .spec-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-left: auto; font-size: 12px; font-weight: 600;
+      color: #3b82f6; text-decoration: none; padding: 5px 14px;
+      border: 1px solid #bfdbfe; border-radius: 6px; background: #eff6ff;
+      transition: all .15s;
+    }
+    .spec-link:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .spec-link svg { width: 14px; height: 14px; }
 
     /* ── Diagram viewport ── */
     .diagram-viewport {
@@ -135,7 +146,7 @@
       <span class="nav-dot" style="background:#64748b;"><svg width="12" height="12" viewBox="0 0 20 20" fill="#fff"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg></span>
       <span class="nav-label">Legend</span>
     </a>
-    <a class="nav-item active" href="flow-1-authentication.html">
+    <a class="nav-item" href="flow-1-authentication.html">
       <span class="nav-dot" style="background:#6366f1;">1</span>
       <span class="nav-label">Authentication</span>
     </a>
@@ -155,7 +166,7 @@
       <span class="nav-dot" style="background:#8b5cf6;">5</span>
       <span class="nav-label">Platform Admin</span>
     </a>
-    <a class="nav-item" href="flow-6-live-classroom.html">
+    <a class="nav-item active" href="flow-6-live-classroom.html">
       <span class="nav-dot" style="background:#0ea5e9;">6</span>
       <span class="nav-label">Live Classroom</span>
     </a>
@@ -164,12 +175,18 @@
 
 <div class="main">
   <div class="page-header">
-    <h1>1. Authentication &amp; Onboarding</h1>
-    <p>Login page only has Google sign-in. New users complete a profile form to select their role.</p>
+    <h1>6. Live Classroom</h1>
+    <p>Content Teacher broadcasts live audio &rarr; Real-time transcription &rarr; ESL Students receive clickable transcript &rarr; Word-level language support &rarr; Difficulty events feed Data Dashboard.</p>
   </div>
 
-  <!-- ═══════════ FLOW A: First-time Sign-in ═══════════ -->
-  <h3 class="section-title"><span class="badge">A</span> First-time Sign-in</h3>
+  <!-- ═══════════ FLOW A: Live Session ═══════════ -->
+  <h3 class="section-title">
+    <span class="badge">A</span> Live Session &amp; Real-Time Transcription
+    <a class="spec-link" href="../specs/flow-6-live-classroom/live-transcription.html" title="Open product spec">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
+      Product Spec
+    </a>
+  </h3>
   <div class="flow-section">
     <div class="zoom-toolbar" data-for="flowA">
       <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
@@ -183,72 +200,54 @@
     <div class="diagram-viewport" id="flowA">
       <pre class="mermaid">
 flowchart TD
-    A([User opens DAHUA AI]):::start --> B["Login page:<br/>Welcome to DAHUA AI<br/><b>Sign in with Google</b>"]
-    B --> BW["WARNING — No alternative login<br/>No Register link / No email-password<br/>Google sign-in is the only option"]:::warn
-    BW --> C[User clicks 'Sign in with Google']
-    C --> D[Google account picker popup<br/><i>always shows account chooser</i>]
-    D --> E{Popup OK?}:::decision
+    START([Content Teacher opens Live Session]):::start --> ROLE{User role?}:::decision
 
-    E -->|Yes| F[Loading screen<br/>DAHUA logo spinner]
-    E -->|No| G["WARNING — Silent failure<br/>No error message shown to user"]:::warn
-    G --> G1["Popup blocked / closed /<br/>network error — nothing happens on screen"]
-    G1 --> G2[User can only retry<br/>the same button]
+    ROLE -->|CONTENT_TEACHER /<br/>ESL_SUBJECT_TEACHER| AUTH["Authorized to broadcast<br/>Live session controls visible"]
+    ROLE -->|ESL_TEACHER| VIEW["Can view student transcript activity<br/>but does not broadcast"]
+    ROLE -->|ESL_STUDENT| STUDENT_JOIN["Joins live session<br/>as transcript listener"]
+    ROLE -->|Other roles| NO_ACCESS([No live session access]):::endnode
 
-    F --> H{API OK?}:::decision
-    H -->|Yes| I[Redirected to 'Edit User' page]
-    H -->|No| J["BLOCKED — Stuck on loading forever<br/>No timeout / No error / No retry"]:::gate
-    J --> J1["Logo spinner loops indefinitely<br/>User must manually refresh the page"]
+    AUTH --> MIC["Enable Microphone<br/>Browser permission required"]
+    MIC --> MIC_CHECK{Microphone granted?}:::decision
+    MIC_CHECK -->|No| MIC_FAIL["Browser blocked microphone<br/>Must allow in browser settings"]:::warn
+    MIC_CHECK -->|Yes| STREAM["Audio stream active<br/>Sent to AssemblyAI via WebSocket"]
 
-    I --> IW["WARNING — No onboarding guidance<br/>Page title = 'Edit User'<br/>Breadcrumb = Dashboard > User > Edit User<br/>No welcome message or step indicator"]:::warn
-    IW --> K["Form fields:<br/>First Name* / Last Name*<br/>Email (disabled, empty)<br/>Phone / Role dropdown<br/>Organization (disabled) / School (disabled)"]
+    STREAM --> ASM["AssemblyAI processes audio<br/>Real-time speech-to-text"]:::ai
+    ASM --> ABLY["Transcription pushed to<br/>Ably pub/sub channel<br/>Channel: session-specific"]
+    ABLY --> STUDENTS["All subscribed students<br/>receive live transcript"]
 
-    K --> KW1["WARNING — Email field is blank<br/>Google email not auto-populated<br/>Field is disabled, user cannot type<br/>User cannot see their own email"]:::warn
-    KW1 --> KW2["WARNING — Default role = UNKNOWN<br/>No prompt telling user to change it<br/>UNKNOWN is selectable in dropdown"]:::warn
-    KW2 --> KW3["WARNING — Mobile: cannot scroll form<br/>On mobile devices, user cannot scroll down<br/>to reach Role dropdown or Save button<br/>Onboarding is blocked on phone"]:::warn
-    KW3 --> KW4["WARNING — Wrong button label<br/>Shows 'Save Changes' instead of 'Create Profile'<br/>First-time user creating profile sees edit wording"]:::warn
-    KW4 --> L{User action?}:::decision
+    STUDENT_JOIN --> SUB["Subscribe to Ably channel<br/>for current session"]
+    SUB --> STUDENTS
 
-    L -->|Save Changes| M{Form valid?}:::decision
-    L -->|Cancel| N["Cancel → /dashboard/projects"]
-    N --> NW["WARNING — No confirmation dialog<br/>Navigates away immediately<br/>Profile not saved, still UNKNOWN role"]:::warn
-    NW --> N2["Next visit → redirect loop<br/>Always sent back to Edit User page"]
+    STUDENTS --> DISPLAY["ClickableTranscript component<br/>renders transcript in real time"]
+    DISPLAY --> SESSION_END{Teacher ends session?}:::decision
+    SESSION_END -->|No| STREAM
+    SESSION_END -->|Yes| SAVE["Session transcript saved<br/>Available for review"]
+    SAVE --> DONE([Live session complete]):::endnode
 
-    M -->|Yes| O{Save API OK?}:::decision
-    M -->|No| P["VERIFIED — Inline validation<br/>Shows 'First name is required'<br/>'Last name is required'<br/>via Yup + react-hook-form"]:::done
-    P --> P1["Form does not submit<br/>User must fill required fields"]
-
-    O -->|Yes| Q["VERIFIED — Success snackbar<br/>'Update success!'"]:::done
-    O -->|No| R["VERIFIED — Error snackbar<br/>'Update Failed!' + error message"]:::done
-    R --> R1["User stays on Edit User page<br/>Can retry saving"]
-
-    Q --> S["Page reload → /dashboard/projects"]
-    S --> T{Which role<br/>was selected?}:::decision
-
-    T -->|TEACHER| T1["VERIFIED — Projects page + Content sidebar"]:::done
-    T1 --> T1E([Onboarding complete]):::endnode
-
-    T -->|STUDENT| T2["Projects page"]
-    T2 --> T2W["WARNING — Page mismatch<br/>Sidebar shows 'My Practice'<br/>but landing page is Projects<br/>Should redirect to Assignment List"]:::warn
-
-    T -->|PARENTS| T3["BLOCKED — No functionality at all<br/>Empty sidebar / No pages available"]:::gate
-    T3 --> T3W["Dead end: PARENTS role<br/>has no view implemented"]
-
-    T -->|UNKNOWN| T4["BLOCKED — Redirect loop<br/>Always sent back to Edit User page"]:::gate
-    T4 --> T4W["Dropdown should not include<br/>UNKNOWN as a selectable option"]
+    VIEW --> MONITOR["Monitor student difficulty events<br/>See which words students click"]
+    MONITOR --> DONE
 
     classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
     classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
     classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
     classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
     classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
       </pre>
     </div>
   </div>
 
-  <!-- ═══════════ FLOW B: Returning User ═══════════ -->
-  <h3 class="section-title"><span class="badge">B</span> Returning User</h3>
+  <!-- ═══════════ FLOW B: ClickableTranscript ═══════════ -->
+  <h3 class="section-title">
+    <span class="badge">B</span> ClickableTranscript &amp; Word-Level Support
+    <a class="spec-link" href="../specs/flow-6-live-classroom/clickable-transcript.html" title="Open product spec">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
+      Product Spec
+    </a>
+  </h3>
   <div class="flow-section">
     <div class="zoom-toolbar" data-for="flowB">
       <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
@@ -262,44 +261,37 @@ flowchart TD
     <div class="diagram-viewport" id="flowB">
       <pre class="mermaid">
 flowchart TD
-    A([User opens DAHUA AI]):::start --> B["Login page:<br/><b>Sign in with Google</b>"]
-    B --> C[User clicks 'Sign in with Google']
-    C --> D[Google picker popup<br/>select account]
-    D --> E[Loading screen]
-    E --> F{User role?}:::decision
+    START([Student sees live transcript]):::start
+    START --> RENDER["ClickableTranscript component<br/>Every word is a tappable element<br/>Transcript scrolls as teacher speaks"]
 
-    F -->|ADMIN| FA["Users, School, Content,<br/>Practice, Daily Boost"]
-    FA --> FAE([Full Dashboard]):::endnode
+    RENDER --> TAP["Student taps an unknown word"]
+    TAP --> LOOKUP["lookupWord GraphQL query<br/>Sends word + surrounding context"]:::ai
 
-    F -->|SCHOOL ROLES| FB["Dashboard, Classroom,<br/>Content, Practice"]
-    FB --> FBE([School Dashboard]):::endnode
+    LOOKUP --> POPUP["Support popup appears:<br/>Translation · Definition<br/>Pinyin · Example sentences"]
+    LOOKUP --> EVENT["Difficulty event recorded:<br/>word · timestamp · studentId<br/>sessionId · contextSentence"]
 
-    F -->|TEACHER| FC["Projects, Question Banks"]
-    FC --> FCE([Content only]):::endnode
-    FCE --> FCI["No Practice / Assignments<br/>unless Pilot Teacher"]:::info
+    POPUP --> DISMISS["Student reads support content<br/>Dismisses popup or taps next word"]
+    DISMISS --> CONT([Returns to transcript — repeat as needed]):::endnode
 
-    F -->|STUDENT| FD["My Practice<br/>Assignment List"]
-    FD --> FDE([Student view]):::endnode
-
-    F -->|UNKNOWN| FE["BLOCKED — Empty sidebar<br/>No features visible"]:::gate
-    FE --> FEW["Redirect loop: always<br/>sent back to Edit User page"]
-
-    F -->|PARENTS| FF["BLOCKED — Empty sidebar<br/>No features visible"]:::gate
-    FF --> FFW["Dead end: no dedicated<br/>parent view exists"]
+    EVENT --> PROFILE["Difficulty profile builds over time<br/>Tracks repeated lookups across sessions"]
+    PROFILE --> VOCAB["Personalized vocabulary lists<br/>generated from difficulty history"]
+    VOCAB --> DASH["Feeds into Data Dashboard<br/>(Flow 4, Section B)"]:::info
+    DASH --> DONE([Teachers see student difficulty data]):::endnode
 
     classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
     classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
     classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
     classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
     classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
       </pre>
     </div>
   </div>
 
-  <!-- ═══════════ FLOW C: Session Expiry ═══════════ -->
-  <h3 class="section-title"><span class="badge">C</span> Session Expiry</h3>
+  <!-- ═══════════ FLOW C: Difficulty Events → Data Pipeline ═══════════ -->
+  <h3 class="section-title"><span class="badge">C</span> Difficulty Events &rarr; Data Dashboard</h3>
   <div class="flow-section">
     <div class="zoom-toolbar" data-for="flowC">
       <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
@@ -313,17 +305,33 @@ flowchart TD
     <div class="diagram-viewport" id="flowC">
       <pre class="mermaid">
 flowchart TD
-    A([User is idle ~3 min]):::start --> B["Modal popup:<br/>'Your session is about to expire!'"]
-    B --> C["Only option: click 'Reload'"]
-    C --> W1["WARNING — Cannot dismiss<br/>No close button / No backdrop click"]:::warn
-    W1 --> D[Page refreshes, session resumes]
-    D --> E([Continue using app]):::endnode
+    START([Student interacts with transcript]):::start --> EVENTS["Difficulty events collected:<br/>Word clicks from ClickableTranscript<br/>+ Mirroring practice errors<br/>+ Content mirroring retries"]
+
+    EVENTS --> STORE["Events stored per student<br/>word · timestamp · source<br/>sessionId · contentArea"]
+
+    STORE --> AGGREGATE["Backend aggregation engine<br/>Processes events periodically"]:::ai
+
+    AGGREGATE --> IND_METRICS["Per-Student Metrics:<br/>Language Access Level %<br/>Difficulty Rate %<br/>Completion Rate<br/>Retry Intensity"]
+    AGGREGATE --> GROUP_METRICS["Group Metrics:<br/>Class-wide difficulty words<br/>Average access level by grade<br/>Distribution by proficiency tier"]
+
+    IND_METRICS --> DASH["Data Dashboard<br/>(Flow 4 — Section B)"]
+    GROUP_METRICS --> DASH
+
+    DASH --> SA{Viewer role?}:::decision
+    SA -->|School Admin| SA_VIEW["Full dashboard access<br/>All students, all classes<br/>Filter by grade · subject · WIDA/ELPAC"]
+    SA -->|ESL Teacher| ET_VIEW["Dashboard for assigned classes<br/>Individual + group data<br/>RTI tier recommendations"]
+
+    SA_VIEW --> ACTION["Informed decisions:<br/>Which students need Tier 2/3 support<br/>Which content areas are hardest<br/>Progress trends over time"]
+    ET_VIEW --> ACTION
+
+    ACTION --> DONE([Data-driven instruction]):::endnode
 
     classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
     classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
     classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
     classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
     classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
     classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
       </pre>
@@ -385,7 +393,6 @@ flowchart TD
     init() {
       this.svg = this.viewport.querySelector('svg');
       if (!this.svg) return;
-      // Remove mermaid's inline max-width so we control sizing
       this.svg.style.maxWidth = 'none';
       this.svg.removeAttribute('width');
       this.svgW = this.svg.getBoundingClientRect().width;
@@ -403,7 +410,6 @@ flowchart TD
     fitToView() {
       const vw = this.viewport.clientWidth;
       const vh = this.viewport.clientHeight;
-      // Re-measure SVG at scale 1
       this.svg.style.transform = 'scale(1)';
       this.svg.style.transformOrigin = '0 0';
       this.svgW = this.svg.scrollWidth;
@@ -426,9 +432,7 @@ flowchart TD
     }
 
     zoomTo(newScale, cx, cy) {
-      // cx, cy = zoom center point relative to viewport
       newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
-      // Adjust pan so the point under cursor stays in place
       const ratio = newScale / this.scale;
       this.panX = cx - (cx - this.panX) * ratio;
       this.panY = cy - (cy - this.panY) * ratio;
@@ -449,7 +453,6 @@ flowchart TD
     }
 
     _bindEvents() {
-      // Mouse wheel zoom
       this.viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = this.viewport.getBoundingClientRect();
@@ -459,7 +462,6 @@ flowchart TD
         this.zoomTo(this.scale * factor, cx, cy);
       }, { passive: false });
 
-      // Mouse drag to pan
       this.viewport.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         this.dragging = true;
@@ -475,7 +477,6 @@ flowchart TD
       });
       window.addEventListener('mouseup', () => { this.dragging = false; });
 
-      // Touch drag to pan + pinch zoom
       let lastTouchDist = 0;
       let lastTouchMid = { x: 0, y: 0 };
       this.viewport.addEventListener('touchstart', (e) => {
@@ -528,7 +529,6 @@ flowchart TD
     });
   }
 
-  // Mermaid renders async; poll until SVGs exist
   let attempts = 0;
   const waitForMermaid = setInterval(() => {
     attempts++;
@@ -541,7 +541,6 @@ flowchart TD
     }
   }, 200);
 
-  // Re-fit on window resize
   window.addEventListener('resize', () => {
     Object.values(diagrams).forEach((d) => d.fitToView());
   });
@@ -568,7 +567,6 @@ flowchart TD
     sidebar.classList.toggle('collapsed');
     const svgEl = document.querySelector('#sidebarToggle svg');
     svgEl.style.transform = sidebar.classList.contains('collapsed') ? 'rotate(180deg)' : '';
-    // Keep current zoom/pan — don't reset diagrams
   });
 </script>
 </body>

@@ -1,21 +1,54 @@
 # CLAUDE.md — Product Document
 
-This project contains product flow diagrams for the DAHUA AI platform. It visualizes the UX status of each feature module — marking implemented features, known issues, and flow gaps — for the development team's reference.
+**IMPORTANT: Read this file in full before making any changes to this project.**
+
+This project contains all product documentation for the DAHUA AI platform — flow diagrams, product specifications, and platform overview. The single entry point is `index.html` at the root.
 
 ## Project Structure
 
 ```
 Product-Document/
-├── CLAUDE.md                          ← This file
-├── platform-overview.html             ← Platform overview (role permission matrix, sidebar mapping)
-└── flowcharts/
-    ├── index.html                     ← Legend (node shapes & arrow reference)
-    ├── flow-1-authentication.html     ← Mermaid.js format ✓
-    ├── flow-2-content-creation.html   ← Mermaid.js format ✓
-    ├── flow-3-student-practice.html   ← Legacy swimlane (pending Mermaid conversion)
-    ├── flow-4-school-management.html  ← Legacy swimlane (pending Mermaid conversion)
-    └── flow-5-platform-admin.html     ← Legacy swimlane (pending Mermaid conversion)
+├── CLAUDE.md                          ← This file (read first!)
+├── index.html                         ← Documentation portal (single entry point)
+├── overview/
+│   └── platform-overview.html         ← Platform overview (roles, permissions, all 6 flows)
+├── flowcharts/
+│   ├── index.html                     ← Legend (node shapes & arrow reference)
+│   ├── flow-1-authentication.html     ← Mermaid.js format
+│   ├── flow-2-content-creation.html   ← Mermaid.js format
+│   ├── flow-3-student-practice.html   ← Legacy swimlane (pending Mermaid conversion)
+│   ├── flow-4-school-management.html  ← Mermaid.js format
+│   ├── flow-5-platform-admin.html     ← Legacy swimlane (pending Mermaid conversion)
+│   └── flow-6-live-classroom.html     ← Mermaid.js format
+└── specs/
+    ├── flow-1-authentication/         ← (empty — coming soon)
+    ├── flow-2-content-creation/       ← (empty — coming soon)
+    ├── flow-3-student-practice/       ← (empty — coming soon)
+    ├── flow-4-school-management/
+    │   ├── index.html                ← Spec index (landing page for all Flow 4 specs)
+    │   └── data-dashboard.html        ← Data Dashboard for School Admin spec
+    ├── flow-5-platform-admin/         ← (empty — coming soon)
+    └── flow-6-live-classroom/
+        ├── index.html                ← Spec index (landing page for all Flow 6 specs)
+        ├── live-transcription.html    ← Live Transcription spec
+        └── clickable-transcript.html  ← ClickableTranscript spec
 ```
+
+## Naming Convention
+
+- **Spec folders must match flowchart filenames** (e.g., `flow-4-school-management/` matches `flow-4-school-management.html`)
+- Spec files inside each folder are named by feature (e.g., `data-dashboard.html`)
+- All documentation is HTML (not markdown) so it renders in the browser with consistent styling
+
+## Navigation Rules
+
+- `index.html` (root) links to everything — overview, all flowcharts, and all spec index pages
+- Each flow card in the root portal has at most 2 links: **Flow Diagram** + **Product Specs** (pointing to the spec index page)
+- Each spec folder has an `index.html` landing page that lists all specs for that flow
+- Each flowchart section with a spec links to it via a `.spec-link` button in the section title
+- Each spec has a breadcrumb topbar: **Home / Flow N / Spec Name**
+- Spec index pages have a breadcrumb topbar: **Home / Flow N / Product Specs**
+- Flowchart pages have a shared sidebar with links to all flow pages
 
 ## Node Style Rules (classDef)
 
@@ -69,13 +102,7 @@ ADMIN → SCHOOL_ADMIN → SCHOOL_TEACHER → TEACHER → STUDENT → SCHOOL_STU
 - Roles with identical permissions can be merged (e.g., `SCHOOL_ADMIN / SCHOOL_TEACHER`)
 - Roles without access but relevant to the flow should end with `:::endnode`, not `:::gate`
 
-## Sidebar Specification
-
-### All pages share the same sidebar HTML structure
-
-Every page's sidebar must contain navigation links to all flow pages. The `active` class marks the current page.
-
-### Nav-dot Color Map
+## Nav-dot Color Map
 
 | Page | Color |
 |------|-------|
@@ -85,14 +112,9 @@ Every page's sidebar must contain navigation links to all flow pages. The `activ
 | 3 — Student Practice | `#f59e0b` (amber) |
 | 4 — School Management | `#ef4444` (red) |
 | 5 — Platform Admin | `#8b5cf6` (purple) |
-
-### Badge Color
+| 6 — Live Classroom | `#0ea5e9` (sky blue) |
 
 Each flow page's `.badge` background in section titles must match that page's nav-dot color.
-
-### Collapse Toggle
-
-Each page's `<script>` includes sidebar toggle logic — clicking toggles the `.collapsed` class and rotates the SVG chevron.
 
 ## Mermaid.js Technical Specification
 
@@ -167,36 +189,20 @@ flowchart TD
 </div>
 ```
 
-### DiagramPanZoom Initialization
+### Spec Link in Section Title
 
-Wait for Mermaid to finish rendering, then initialize:
+When a flow section has a corresponding product spec, add a `.spec-link` in the section title:
 
-```javascript
-const diagrams = {};
-function initDiagrams() {
-  ['flowA', 'flowB', ...].forEach((id) => {
-    const vp = document.getElementById(id);
-    if (!vp || !vp.querySelector('svg')) return;
-    const d = new DiagramPanZoom(id);
-    d.init();
-    diagrams[id] = d;
-  });
-}
-
-let attempts = 0;
-const waitForMermaid = setInterval(() => {
-  attempts++;
-  const allReady = ['flowA', 'flowB', ...].every(
-    (id) => document.getElementById(id)?.querySelector('svg')
-  );
-  if (allReady || attempts > 30) {
-    clearInterval(waitForMermaid);
-    initDiagrams();
-  }
-}, 200);
+```html
+<h3 class="section-title">
+  <span class="badge">B</span> Section Title
+  <a class="spec-link" href="../specs/flow-N-name/spec-name.html" title="Open product spec">
+    <svg>...</svg> Product Spec
+  </a>
+</h3>
 ```
 
-## Checklist: Adding / Modifying Flow Pages
+## Checklist: Adding / Modifying Pages
 
 ### Adding a new flow page:
 
@@ -206,27 +212,41 @@ const waitForMermaid = setInterval(() => {
 4. Copy all 9 classDef definitions into every Mermaid block
 5. Set `.badge` background to match the page's nav-dot color
 6. Update the flowId array in `DiagramPanZoom` initialization
-7. **Scan the codebase** from a UX perspective — only flag issues that actual users would encounter
+7. **Update `index.html`** (root portal) to include the new flow card
+8. **Scan the codebase** from a UX perspective — only flag issues that actual users would encounter
+
+### Adding a new spec:
+
+1. Create the spec HTML file inside `specs/flow-N-name/`
+2. Use the spec template style (topbar breadcrumb, container layout, consistent CSS)
+3. Add breadcrumb: **Home / Flow N / Spec Name**
+4. Add a `.spec-link` button in the corresponding flowchart section title
+5. **Add the spec to `specs/flow-N-name/index.html`** (spec index page) — if no index exists yet, create one using the spec index template (badge + card list)
+6. If this is the first spec for the flow, also **update root `index.html`** to replace the "coming soon" link with a "Product Specs" link pointing to `specs/flow-N-name/index.html`
 
 ### Modifying existing pages:
 
-- Adding a sidebar item → update sidebar HTML in **all 7 files**
-- Changing classDef colors → update all Mermaid files + Legend (`index.html`)
-- Changing nav-dot colors → update sidebar in all 7 files + that page's `.badge`
+- Adding a sidebar item → update sidebar HTML in **all flowchart files + legend**
+- Changing classDef colors → update all Mermaid files + Legend (`index.html` in flowcharts/)
+- Changing nav-dot colors → update sidebar in all flowchart files + that page's `.badge`
 
 ## Legacy Swimlane Conversion
 
-Flows 3, 4, and 5 are pending conversion to Mermaid format. When converting:
+Flows 3 and 5 are pending conversion to Mermaid format. When converting:
 
 1. Preserve the original flow logic, rewrite using Mermaid `flowchart TD` syntax
 2. Scan the corresponding codebase from a UX angle — mark issues (`:::warn` / `:::gate`) and verified features (`:::done`)
 3. Remove all legacy CSS lane color classes (e.g., `.color-admin`, `.color-system`)
-4. The Legend's Role Lane Colors section has already been removed — no action needed
 
 ## Footer Format
 
 ```html
 <footer>DAHUA AI &middot; Flow Diagrams &middot; February 2026</footer>
+```
+
+For specs:
+```html
+<footer>DAHUA AI &middot; Product Spec &middot; Flow N &mdash; Flow Name &middot; February 2026</footer>
 ```
 
 Update the month and year to match the actual update date.
