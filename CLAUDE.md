@@ -34,6 +34,71 @@ Product-Document/
         └── clickable-transcript.html  ← ClickableTranscript spec
 ```
 
+## Global CSS Conventions
+
+### CSS Reset & Font Stack
+
+Every HTML file must begin its `<style>` block with the same reset and use the same font stack:
+
+```css
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+  ...
+}
+```
+
+### Body Background & Line-height by Page Type
+
+| Page type | `background` | `line-height` |
+|-----------|-------------|---------------|
+| Root index, Flowchart pages | `#f1f5f9` | `1.5` |
+| Spec index pages | `#f8fafc` | `1.5` |
+| Spec doc pages | `#f8fafc` | `1.7` |
+| Platform overview | `#f8fafc` | `1.65` |
+
+### Container Max-width by Page Type
+
+| Page type | `max-width` |
+|-----------|-------------|
+| Root index (`index.html`) | `1080px` |
+| Platform overview | `1120px` |
+| Spec doc pages | `900px` |
+| Spec index pages | `720px` |
+| Flowchart pages | No container (sidebar + flex `main`) |
+
+### Shared Color Tokens
+
+No CSS custom properties — all colors are hard-coded hex. Reference palette:
+
+| Hex | Role |
+|-----|------|
+| `#0f172a` | Darkest text (h1, h2) |
+| `#334155` | Secondary headings (h3) |
+| `#475569` | Table body text |
+| `#64748b` | Muted / subtitle text |
+| `#94a3b8` | Placeholder, footer text |
+| `#cbd5e1` | Separators, breadcrumb `/` |
+| `#e2e8f0` | Borders (cards, tables, dividers) |
+| `#f1f5f9` | Hover backgrounds, meta pill backgrounds |
+| `#f8fafc` | Table header `th`, inner card backgrounds |
+| `#fff` | Card backgrounds |
+
+### Table Style Convention
+
+- **Spec doc pages**: use `tr:hover td { background: #fafbfc; }` (hover highlight)
+- **Platform overview**: uses `tr:nth-child(even) td { background: #fafbfc; }` (striped rows)
+
+### Responsive Breakpoints
+
+| Page type | Breakpoint |
+|-----------|-----------|
+| Flowchart pages, Platform overview | `@media (max-width: 768px)` |
+| Root index | `@media (max-width: 700px)` |
+| Spec index pages | `@media (max-width: 600px)` |
+| Spec doc pages | None (no responsive CSS yet) |
+
 ## Naming Convention
 
 - **Spec folders must match flowchart filenames** (e.g., `flow-4-school-management/` matches `flow-4-school-management.html`)
@@ -49,6 +114,98 @@ Product-Document/
 - Each spec has a breadcrumb topbar: **Home / Flow N / Spec Name**
 - Spec index pages have a breadcrumb topbar: **Home / Flow N / Product Specs**
 - Flowchart pages have a shared sidebar with links to all flow pages
+
+## Page Templates
+
+### Spec Doc Page Template
+
+```html
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — [Feature Name]</title>
+  <style>/* All CSS inline, no external stylesheet */</style>
+</head>
+<body>
+  <!-- Topbar breadcrumb -->
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <a href="../../flowcharts/flow-N-name.html">Flow N — Name</a>
+    <span class="sep">/</span>
+    <span class="current">Feature Name</span>  <!-- color = flow color -->
+  </div>
+
+  <div class="container">  <!-- max-width: 900px -->
+    <!-- Header -->
+    <div class="doc-header">
+      <h1>Feature Name</h1>
+      <p class="subtitle">One-line description</p>
+      <div class="meta">
+        <span>Flow N — Name</span>
+        <span>Status: Planning</span>
+        <span>Target: TBD</span>
+      </div>
+    </div>
+
+    <!-- Sections: h2 with numbered badge -->
+    <h2><span class="num">1</span> Section Title</h2>
+    <!-- .num badge background = flow color -->
+    <!-- Content: .callout-question, p, .card, table, .formula, .callout-info -->
+
+    <footer>...</footer>
+  </div>
+</body>
+```
+
+### Spec Index Page Template
+
+```html
+<body>
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <a href="../../flowcharts/flow-N-name.html">Flow N — Name</a>
+    <span class="sep">/</span>
+    <span class="current">Product Specs</span>  <!-- color = flow color -->
+  </div>
+
+  <div class="container">  <!-- max-width: 720px -->
+    <div class="page-header">
+      <div class="badge-row">
+        <span class="flow-badge">N</span>  <!-- background = flow color -->
+        <h1>Flow Name — Product Specs</h1>
+      </div>
+      <p class="subtitle">Description of what specs are in this flow.</p>
+    </div>
+
+    <div class="spec-list">
+      <a class="spec-card" href="feature-name.html">
+        <div class="spec-icon"><!-- SVG --></div>  <!-- bg/border = flow color tint -->
+        <div class="spec-info">
+          <h3>Feature Name</h3>
+          <p>One-line description.</p>
+          <div class="spec-meta"><span class="spec-tag">Planning</span></div>
+        </div>
+        <span class="spec-arrow">&rsaquo;</span>
+      </a>
+      <!-- Repeat for each spec -->
+    </div>
+
+    <footer>...</footer>
+  </div>
+</body>
+```
+
+### Flowchart Page Template
+
+Flowchart pages use a sidebar + main layout (no `max-width` container). Copy an existing Mermaid-format flow file (recommend flow-2) as template. Key structural elements:
+
+1. `<aside class="sidebar">` — shared nav with `.nav-item` links, one `.active`
+2. `<div class="main">` — contains `.page-header`, then repeating section blocks
+3. Each section: `<h3 class="section-title">` → `<div class="flow-section">` → zoom toolbar + `.diagram-viewport`
+4. `<script>` block: mermaid init → `DiagramPanZoom` class → `initDiagrams()` with flowId array
+5. DiagramPanZoom polls for Mermaid SVGs via `setInterval` (200ms, 30 attempts max)
 
 ## Node Style Rules (classDef)
 
@@ -115,6 +272,29 @@ ADMIN → SCHOOL_ADMIN → SCHOOL_TEACHER → TEACHER → STUDENT → SCHOOL_STU
 | 6 — Live Classroom | `#0ea5e9` (sky blue) |
 
 Each flow page's `.badge` background in section titles must match that page's nav-dot color.
+
+## Callout Box Reference
+
+Spec doc pages and the platform overview use these callout variants:
+
+| Class | Background | Left border | Text color | Purpose |
+|-------|-----------|-------------|------------|---------|
+| `.callout-info` | `#eff6ff` | `4px solid #3b82f6` | `#1e40af` | Supplementary info / navigation hints |
+| `.callout-warn` | `#fefce8` | `4px solid #eab308` | `#854d0e` | Warnings / caveats |
+| `.callout-tip` | `#ecfdf5` | `4px solid #10b981` | `#065f46` | Tips / best practices |
+| `.callout-goal` | `#f0fdf4` | `4px solid #22c55e` | `#166534` | Feature goal statements |
+
+**`.callout-question`** is a special variant for product design questions (spec docs only):
+
+```css
+.callout-question {
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border: 2px solid #facc15; border-radius: 10px;
+  padding: 18px 22px; margin: 20px 0 16px;
+}
+```
+
+Contains `.q-text` (17px bold, `#854d0e`) for the question and `.q-context` (12px, `#a16207`) for context.
 
 ## Mermaid.js Technical Specification
 
@@ -240,13 +420,25 @@ Flows 3 and 5 are pending conversion to Mermaid format. When converting:
 
 ## Footer Format
 
-```html
-<footer>DAHUA AI &middot; Flow Diagrams &middot; February 2026</footer>
-```
+All footers share the same CSS: `text-align:center; padding:24px 0; color:#94a3b8; font-size:12px; border-top:1px solid #e2e8f0;`
 
-For specs:
-```html
-<footer>DAHUA AI &middot; Product Spec &middot; Flow N &mdash; Flow Name &middot; February 2026</footer>
-```
+Footer `margin-top`: `20px` on flowchart pages, `40px` on all other pages.
+
+| Page type | Format |
+|-----------|--------|
+| Root index | `DAHUA AI · Product Documentation · [Month Year]` |
+| Platform overview | `DAHUA AI · Platform Overview · Generated [Month Year]` |
+| Flowchart pages | `DAHUA AI · Flow Diagrams · [Month Year]` |
+| Spec doc (singular) | `DAHUA AI · Product Spec · Flow N — Flow Name · [Month Year]` |
+| Spec index (plural) | `DAHUA AI · Product Specs · Flow N — Flow Name · [Month Year]` |
 
 Update the month and year to match the actual update date.
+
+## Known Inconsistencies (TODO)
+
+Issues to fix when touching these files:
+
+- **Flow 4 missing `.spec-link`**: `flow-4-school-management.html` has a Data Dashboard spec but no `.spec-link` button in the corresponding section title (flow-6 has it correctly)
+- **Spec doc pages have no responsive CSS**: `data-dashboard.html`, `live-transcription.html`, `clickable-transcript.html` are missing `@media` breakpoints
+- **DiagramPanZoom JS is copy-pasted**: The entire `DiagramPanZoom` class + init logic is duplicated in every flowchart file — consider extracting to a shared `.js` file if the flowchart count grows
+- **SVG icons are inline duplicates**: The same icon paths (doc icon, flow-diagram icon, sidebar toggle, zoom fit) are copy-pasted across files — no sprite sheet or shared include
