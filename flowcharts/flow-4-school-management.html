@@ -289,15 +289,141 @@ flowchart TD
   </div>
 
   <h3 class="section-title">
-    <span class="badge">B</span> Data for School Admin
-    <a class="spec-link" href="../specs/flow-4-school-management/data-dashboard.html" title="Open product spec">
+    <span class="badge">B</span> Dashboard Navigation &amp; Screen Flow
+    <a class="spec-link" href="../specs/flow-4-school-management/data-dashboard-ux.html" title="Open UX spec">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
-      Product Spec
+      UX Spec
     </a>
   </h3>
   <div class="flow-section">
-    <div class="diagram-viewport" id="flowC" style="height:400px; display:flex; align-items:center; justify-content:center;">
-      <p style="color:#94a3b8; font-size:14px; font-weight:600;">Flowchart coming soon &mdash; Data dashboard for School Admin</p>
+    <div class="zoom-toolbar" data-for="flowC">
+      <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+      <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+      <div class="zoom-level" data-label>100%</div>
+      <button class="zoom-btn" data-action="fit" title="Fit to view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+    </div>
+    <div class="diagram-viewport" id="flowC">
+      <pre class="mermaid">
+flowchart TD
+    LOGIN([User logs in]):::start
+    LOGIN --> ROLE{Check role}:::decision
+
+    ROLE -->|SCHOOL_ADMIN| SA_SCOPE["Scope: All school data<br/>All teachers · All classrooms"]
+    ROLE -->|ESL_TEACHER| ET_SCOPE["Scope: Own classrooms only<br/>Own students"]
+    ROLE -->|Other roles| NO_ACCESS([No dashboard access]):::endnode
+
+    SA_SCOPE --> OVERVIEW
+    ET_SCOPE --> OVERVIEW
+
+    OVERVIEW["SCREEN 1 — Dashboard Overview<br/>─────────────────────<br/>Filter Bar: Grade · Subject · WIDA · Classroom<br/>+ Teacher selector (admin only)<br/>─────────────────────<br/>Summary Cards:<br/>① Tier Distribution (pie)<br/>② Language Access Rate (%)<br/>③ Risk Alerts (new Tier 3 count)<br/>④ Completion Overview (avg %)<br/>─────────────────────<br/>Student Risk List (sortable table)"]
+
+    OVERVIEW --> NAV{User action?}:::decision
+
+    NAV -->|Click summary card| GROUP
+    NAV -->|Apply filters| GROUP
+    NAV -->|Search student name| INDIVIDUAL
+    NAV -->|Click student in risk list| INDIVIDUAL
+
+    GROUP["SCREEN 2 — Group / Cohort View<br/>─────────────────────<br/>Active filter pills (removable)<br/>Student count for current filters<br/>─────────────────────<br/>2.1 Access Rate Distribution (pie)<br/>2.2 Common Language Barriers (table)<br/>2.3 Instruction Effectiveness (cards)<br/>2.4 Group Progress Over Time (chart)<br/>2.5 Risk Distribution (stacked bar)"]
+
+    GROUP --> G_ACT{User action?}:::decision
+    G_ACT -->|Click student row| INDIVIDUAL
+    G_ACT -->|Change filters| GROUP
+    G_ACT -->|Back| OVERVIEW
+
+    INDIVIDUAL["SCREEN 3 — Individual Student View<br/>─────────────────────<br/>Header: Name · Grade · WIDA level<br/>Current Tier badge · Overall trend<br/>─────────────────────<br/>Tab 1: Language Access (gauge + trend)<br/>Tab 2: Difficulty Profile (rate + word list)<br/>Tab 3: Learning Behavior<br/>(completion · on-time · retry · re-attempt)<br/>Tab 4: Progress Over Time (multi-line chart)<br/>Tab 5: RTI Tier (current + history)"]
+
+    INDIVIDUAL --> I_ACT{User action?}:::decision
+    I_ACT -->|Switch tab| INDIVIDUAL
+    I_ACT -->|Back to group| GROUP
+    I_ACT -->|Back to overview| OVERVIEW
+
+    OVERVIEW --> EMPTY{Has data?}:::decision
+    EMPTY -->|No students yet| EMPTY_STATE["Empty State<br/>No data available<br/>Guide: 'Enroll students and<br/>assign practice to get started'"]:::info
+    EMPTY -->|Less than 3 sessions| INSUF["Insufficient Data State<br/>Grey placeholders on all metrics<br/>'Need ≥ 3 sessions for trends'"]:::info
+    EMPTY -->|Yes| OVERVIEW
+
+    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
+    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
+    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
+    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
+    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
+      </pre>
+    </div>
+  </div>
+
+  <h3 class="section-title">
+    <span class="badge">C</span> Data Metrics &amp; Calculation Logic
+    <a class="spec-link" href="../specs/flow-4-school-management/data-dashboard.html" title="Open data spec">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
+      Data Spec
+    </a>
+  </h3>
+  <div class="flow-section">
+    <div class="zoom-toolbar" data-for="flowD">
+      <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+      <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+      <div class="zoom-level" data-label>100%</div>
+      <button class="zoom-btn" data-action="fit" title="Fit to view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+    </div>
+    <div class="diagram-viewport" id="flowD">
+      <pre class="mermaid">
+flowchart TD
+    EVENTS([Raw Learning Events]):::start
+
+    EVENTS --> E1["Word Support Event<br/>Student clicks word in transcript<br/>→ difficulty event recorded"]
+    EVENTS --> E2["Mirroring Session<br/>Student practices mirroring<br/>→ retries tracked per item"]
+    EVENTS --> E3["Assignment Submission<br/>Student submits practice<br/>→ completion + timestamp"]
+
+    E1 --> SESS["Session Aggregator<br/>Groups events into learning sessions<br/>Session ends: submit / 10min idle / exit"]
+    E2 --> SESS
+    E3 --> SESS
+
+    SESS --> COMPUTE["Per-Student Metrics Computed<br/>(on each session end)"]
+
+    COMPUTE --> M1["Language Access %<br/>= words understood ÷ total words × 100"]
+    COMPUTE --> M2["Difficulty Rate %<br/>= difficulty events ÷ total words × 100"]
+    COMPUTE --> M3["Completion Rate %<br/>= completed ÷ assigned × 100"]
+    COMPUTE --> M4["On-time Completion %<br/>= on-time ÷ assigned × 100"]
+    COMPUTE --> M5["Retry Intensity<br/>= total retries ÷ items attempted"]
+    COMPUTE --> M6["Re-attempt Rate %<br/>= assignments with ≥2 subs ÷ total × 100"]
+
+    M1 --> TREND
+    M2 --> TREND
+    M3 --> TREND
+    M4 --> TREND
+    M5 --> TREND
+    M6 --> TREND
+
+    TREND["Progress Trend Engine<br/>Every 5 sessions → generate report<br/>Change Rate = (current − previous) ÷ previous<br/>≥ +10% → improving<br/>≤ −10% → declining<br/>otherwise → stable"]
+
+    TREND --> TIER["RTI Tier Classification<br/>Every 10 sessions OR 30 days<br/>───────────────<br/>Tier 1: access ≥80% AND difficulty ≤15%<br/>AND completion ≥80%<br/>Tier 2: access 50-79% OR difficulty 16-35%<br/>OR completion 50-79%<br/>Tier 3: access &lt;50% OR difficulty &gt;35%<br/>OR completion &lt;50%<br/>───────────────<br/>Stability: must persist 2 consecutive evals"]
+
+    TIER --> STORE["Pre-computed Metrics Store<br/>Per-student: all 6 metrics + trend + tier<br/>Updated on session end"]
+
+    STORE --> FE_INDIVIDUAL["Frontend: Individual View<br/>Fetch student metrics<br/>Render tabs with charts"]
+    STORE --> FE_GROUP["Frontend: Group View<br/>Fetch filtered student set<br/>Aggregate: averages, distributions<br/>Render pie · bar · line charts"]
+
+    TREND --> ALERT["Risk Alert Engine<br/>Detect Tier 2→3 transitions<br/>→ Surface in Dashboard Overview"]:::warn
+
+    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
+    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
+    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
+    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
+    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
+      </pre>
     </div>
   </div>
 
@@ -479,17 +605,21 @@ flowchart TD
 
   // ── Wait for Mermaid to render then init pan/zoom ──
   const diagrams = {};
+  const flowIds = ['flowB', 'flowC', 'flowD'];
   let attempts = 0;
   const waitForMermaid = setInterval(() => {
     attempts++;
-    const vp = document.getElementById('flowB');
-    if ((vp && vp.querySelector('svg')) || attempts > 30) {
+    const allReady = flowIds.every(id => document.getElementById(id)?.querySelector('svg'));
+    if (allReady || attempts > 30) {
       clearInterval(waitForMermaid);
-      if (vp && vp.querySelector('svg')) {
-        const d = new DiagramPanZoom('flowB');
-        d.init();
-        diagrams['flowB'] = d;
-      }
+      flowIds.forEach(id => {
+        const vp = document.getElementById(id);
+        if (vp && vp.querySelector('svg')) {
+          const d = new DiagramPanZoom(id);
+          d.init();
+          diagrams[id] = d;
+        }
+      });
     }
   }, 200);
 

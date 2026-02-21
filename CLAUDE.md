@@ -26,7 +26,8 @@ Product-Document/
     ├── flow-3-student-practice/       ← (empty — coming soon)
     ├── flow-4-school-management/
     │   ├── index.html                ← Spec index (landing page for all Flow 4 specs)
-    │   └── data-dashboard.html        ← Data Dashboard for School Admin spec
+    │   ├── data-dashboard.html        ← Data Dashboard for School Admin spec
+    │   └── data-dashboard-ux.html     ← Data Dashboard UX Specification (wireframes, navigation, edge states)
     ├── flow-5-platform-admin/         ← (empty — coming soon)
     └── flow-6-live-classroom/
         ├── index.html                ← Spec index (landing page for all Flow 6 specs)
@@ -438,7 +439,6 @@ Update the month and year to match the actual update date.
 
 Issues to fix when touching these files:
 
-- **Flow 4 missing `.spec-link`**: `flow-4-school-management.html` has a Data Dashboard spec but no `.spec-link` button in the corresponding section title (flow-6 has it correctly)
 - **Spec doc pages have no responsive CSS**: `data-dashboard.html`, `live-transcription.html`, `clickable-transcript.html` are missing `@media` breakpoints
 - **DiagramPanZoom JS is copy-pasted**: The entire `DiagramPanZoom` class + init logic is duplicated in every flowchart file — consider extracting to a shared `.js` file if the flowchart count grows
 - **SVG icons are inline duplicates**: The same icon paths (doc icon, flow-diagram icon, sidebar toggle, zoom fit) are copy-pasted across files — no sprite sheet or shared include

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Data Dashboard UX</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #ef4444; font-weight: 700; }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── TOC ── */
+    .toc {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 32px;
+    }
+    .toc h3 { margin-top: 0; font-size: 13px; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; }
+    .toc ol { margin: 10px 0 0 18px; }
+    .toc li { margin-bottom: 3px; }
+    .toc a { color: #3b82f6; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #ef4444;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; }
+    tr:hover td { background: #fafbfc; }
+
+    /* ── Code blocks ── */
+    .wireframe {
+      background: #0f172a; border-radius: 10px;
+      padding: 20px 24px; margin: 12px 0 20px;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace; font-size: 12px;
+      line-height: 1.6; color: #e2e8f0; white-space: pre; overflow-x: auto;
+    }
+    .wireframe .dim { color: #475569; }
+    .wireframe .hl { color: #fbbf24; }
+    .wireframe .g { color: #4ade80; }
+    .wireframe .r { color: #f87171; }
+    .wireframe .b { color: #60a5fa; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Screen label ── */
+    .screen-label {
+      display: inline-block; padding: 3px 12px; border-radius: 6px;
+      font-size: 12px; font-weight: 700; letter-spacing: .5px;
+      background: #0f172a; color: #fbbf24; margin-bottom: 12px;
+    }
+
+    /* ── Status tags ── */
+    .tier { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+    .tier-1 { background: #dcfce7; color: #166534; }
+    .tier-2 { background: #fef9c3; color: #854d0e; }
+    .tier-3 { background: #fee2e2; color: #991b1b; }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../../flowcharts/flow-4-school-management.html">Flow 4 — School Management</a>
+  <span class="sep">/</span>
+  <span class="current">Data Dashboard UX</span>
+</div>
+
+<!-- ── CONTENT ── -->
+<div class="container">
+
+  <div class="doc-header">
+    <h1>Data Dashboard &mdash; UX Specification</h1>
+    <p class="subtitle">Screen-by-screen specification for the RTI Data Dashboard. Designed for UI/UX designers to understand navigation, layout, and edge states.</p>
+    <div class="meta">
+      <span>Flow 4 &mdash; School Management</span>
+      <span>Status: Planning</span>
+      <span>Target: End of March 2026</span>
+      <span>Last updated: 2026-02-20</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#nav">Navigation Flow</a></li>
+      <li><a href="#roles">Role-Based Visibility</a></li>
+      <li><a href="#s1">Screen 1 &mdash; Dashboard Overview</a></li>
+      <li><a href="#s2">Screen 2 &mdash; Group / Cohort View</a></li>
+      <li><a href="#s3">Screen 3 &mdash; Individual Student View</a></li>
+      <li><a href="#filters">Filter Specification</a></li>
+      <li><a href="#states">Edge States &amp; Empty States</a></li>
+      <li><a href="#responsive">Responsive Considerations</a></li>
+    </ol>
+  </div>
+
+  <!-- ════════════ 1. NAVIGATION ════════════ -->
+  <h2 id="nav"><span class="num">1</span> Navigation Flow</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How does a user navigate between the three main views of the dashboard?</div>
+    <div class="q-context">The dashboard has 3 screens: Overview (landing), Group/Cohort View, and Individual Student View. Users must be able to move between them without dead ends.</div>
+  </div>
+
+  <div class="card">
+    <h4>Screen Transition Map</h4>
+    <table>
+      <thead><tr><th>From</th><th>Action</th><th>To</th></tr></thead>
+      <tbody>
+        <tr><td>Dashboard Overview</td><td>Click any Summary Card</td><td>Group View (pre-filtered by card type)</td></tr>
+        <tr><td>Dashboard Overview</td><td>Apply filters in Filter Bar</td><td>Group View (filtered)</td></tr>
+        <tr><td>Dashboard Overview</td><td>Search student name</td><td>Individual Student View</td></tr>
+        <tr><td>Dashboard Overview</td><td>Click student in Risk List</td><td>Individual Student View</td></tr>
+        <tr><td>Group View</td><td>Click student row</td><td>Individual Student View</td></tr>
+        <tr><td>Group View</td><td>Change filters</td><td>Group View (re-filtered)</td></tr>
+        <tr><td>Group View</td><td>Back button</td><td>Dashboard Overview</td></tr>
+        <tr><td>Individual View</td><td>Switch tab</td><td>Same screen, different tab</td></tr>
+        <tr><td>Individual View</td><td>Back button</td><td>Previous screen (Overview or Group)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>No dead ends:</strong> Every screen has a back path. The Individual View preserves the previous context &mdash; if the user came from Group View, &ldquo;Back&rdquo; returns to Group View with filters intact. If they came from Overview, &ldquo;Back&rdquo; returns to Overview.
+  </div>
+
+  <!-- ════════════ 2. ROLES ════════════ -->
+  <h2 id="roles"><span class="num">2</span> Role-Based Visibility</h2>
+
+  <table>
+    <thead>
+      <tr><th>UI Element</th><th>SCHOOL_ADMIN</th><th>ESL_TEACHER</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Dashboard tab in sidebar</td><td>Visible</td><td>Visible</td></tr>
+      <tr><td>Filter: Teacher selector</td><td>Visible (all teachers)</td><td><strong>Hidden</strong> (auto-scoped to self)</td></tr>
+      <tr><td>Filter: Classroom selector</td><td>All classrooms</td><td>Own classrooms only</td></tr>
+      <tr><td>Summary Card data scope</td><td>Entire school</td><td>Own classrooms only</td></tr>
+      <tr><td>Group View: student list</td><td>All filtered students</td><td>Own students only</td></tr>
+      <tr><td>Individual View</td><td>Any student in school</td><td>Own students only</td></tr>
+      <tr><td>Risk Alerts</td><td>School-wide</td><td>Own classrooms only</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════ 3. SCREEN 1 ════════════ -->
+  <h2 id="s1"><span class="num">3</span> Screen 1 &mdash; Dashboard Overview</h2>
+
+  <div class="callout-question">
+    <div class="q-text">What does the user see the moment they click &ldquo;Dashboard&rdquo;?</div>
+    <div class="q-context">This is the landing page. It must give a high-level snapshot and clear paths to drill down.</div>
+  </div>
+
+  <span class="screen-label">SCREEN 1 &mdash; DASHBOARD OVERVIEW</span>
+  <div class="wireframe"><span class="dim">┌──────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>  <span class="b">Filter Bar</span>                                                <span class="dim">│</span>
+<span class="dim">│</span>  [Grade <span class="dim">▾</span>] [Subject <span class="dim">▾</span>] [WIDA Level <span class="dim">▾</span>] [Classroom <span class="dim">▾</span>]       <span class="dim">│</span>
+<span class="dim">│</span>  [Teacher <span class="dim">▾</span>] <span class="r">← admin only</span>                                   <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">Summary Cards</span> (clickable → Group View)                     <span class="dim">│</span>
+<span class="dim">│</span>  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐<span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="g">Tier</span>       │ │ <span class="b">Language</span>  │ │ <span class="r">Risk</span>       │ │ Completion │<span class="dim">│</span>
+<span class="dim">│</span>  │ Distribut. │ │ Access %  │ │ Alerts     │ │ Overview   │<span class="dim">│</span>
+<span class="dim">│</span>  │            │ │           │ │ <span class="r">3 new T3</span>   │ │            │<span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="g">T1:45</span> <span class="hl">T2:30</span> │ │  <span class="b">68%</span> avg  │ │ since last │ │  <span class="b">72%</span> avg   │<span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="r">T3:12</span>      │ │           │ │ evaluation │ │ <span class="dim">58% on-time</span>│<span class="dim">│</span>
+<span class="dim">│</span>  └────────────┘ └────────────┘ └────────────┘ └────────────┘<span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">🔍 Search Student...</span>                                      <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="r">Risk List</span> (students at Tier 3 or declining)                <span class="dim">│</span>
+<span class="dim">│</span>  ┌──────────┬──────┬───────────┬─────────┬────────┐         <span class="dim">│</span>
+<span class="dim">│</span>  │ Name     │ Tier │ Trend     │ Subject │ Action │         <span class="dim">│</span>
+<span class="dim">│</span>  ├──────────┼──────┼───────────┼─────────┼────────┤         <span class="dim">│</span>
+<span class="dim">│</span>  │ Maria G. │ <span class="r">T3</span>   │ <span class="r">↓declining</span>│ Science │  <span class="b">→</span>    │         <span class="dim">│</span>
+<span class="dim">│</span>  │ James L. │ <span class="r">T3</span>   │ <span class="dim">→stable</span>   │ Math    │  <span class="b">→</span>    │         <span class="dim">│</span>
+<span class="dim">│</span>  │ Anna K.  │ <span class="hl">T2</span>   │ <span class="r">↓declining</span>│ Science │  <span class="b">→</span>    │         <span class="dim">│</span>
+<span class="dim">│</span>  └──────────┴──────┴───────────┴─────────┴────────┘         <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────────────────────────────┘</span></div>
+
+  <div class="card">
+    <h4>Summary Cards Detail</h4>
+    <table>
+      <thead><tr><th>Card</th><th>Content</th><th>Click Action</th></tr></thead>
+      <tbody>
+        <tr><td>Tier Distribution</td><td><span class="tier tier-1">T1</span><span class="tier tier-2">T2</span><span class="tier tier-3">T3</span> counts + mini pie chart</td><td>→ Group View, sorted by tier</td></tr>
+        <tr><td>Language Access Rate</td><td>School/classroom average % + trend arrow</td><td>→ Group View, access rate tab</td></tr>
+        <tr><td>Risk Alerts</td><td>Count of new Tier 3 since last evaluation</td><td>→ Group View, filtered to Tier 3</td></tr>
+        <tr><td>Completion Overview</td><td>Average completion % + on-time %</td><td>→ Group View, behavior tab</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════ 4. SCREEN 2 ════════════ -->
+  <h2 id="s2"><span class="num">4</span> Screen 2 &mdash; Group / Cohort View</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How does a teacher see cohort-level data and identify which students need help?</div>
+    <div class="q-context">Teachers think in cohorts: &ldquo;My 5th grade WIDA 2 students in Science.&rdquo; The Group View lets them form that cohort via filters and see aggregated metrics.</div>
+  </div>
+
+  <span class="screen-label">SCREEN 2 &mdash; GROUP / COHORT VIEW</span>
+  <div class="wireframe"><span class="dim">┌──────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>  <span class="b">← Back to Overview</span>                                       <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>  Active Filters: <span class="hl">Grade 5 ×</span>  <span class="hl">WIDA 2 ×</span>  <span class="hl">Science ×</span>            <span class="dim">│</span>
+<span class="dim">│</span>  Showing <span class="b">23 students</span>                                        <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">2.1 Access Rate Distribution</span>                               <span class="dim">│</span>
+<span class="dim">│</span>  ┌──────────────┐   <span class="g">Independent: 8 (35%)</span>                    <span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="g">██</span> 35%       │   <span class="hl">Scaffold:    9 (39%)</span>                    <span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="hl">████</span> 39%     │   <span class="r">High Risk:   6 (26%)</span>                    <span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="r">███</span> 26%      │                                            <span class="dim">│</span>
+<span class="dim">│</span>  └──────────────┘                                            <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">2.2 Common Language Barriers</span>                               <span class="dim">│</span>
+<span class="dim">│</span>  ┌───────────────────┬────────┬──────────┬─────────┐        <span class="dim">│</span>
+<span class="dim">│</span>  │ Word/Phrase        │ Events │ Students │ Subject │        <span class="dim">│</span>
+<span class="dim">│</span>  ├───────────────────┼────────┼──────────┼─────────┤        <span class="dim">│</span>
+<span class="dim">│</span>  │ photosynthesis     │   47   │  15/23   │ Science │        <span class="dim">│</span>
+<span class="dim">│</span>  │ hypothesis         │   38   │  12/23   │ Science │        <span class="dim">│</span>
+<span class="dim">│</span>  │ ecosystem          │   29   │  10/23   │ Science │        <span class="dim">│</span>
+<span class="dim">│</span>  └───────────────────┴────────┴──────────┴─────────┘        <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">2.5 Risk Distribution</span>                                     <span class="dim">│</span>
+<span class="dim">│</span>  T1 <span class="g">████████████████████</span>           8 students               <span class="dim">│</span>
+<span class="dim">│</span>  T2 <span class="hl">█████████████████████████</span>      9 students               <span class="dim">│</span>
+<span class="dim">│</span>  T3 <span class="r">███████████████</span>                6 students  <span class="b">→ click</span>      <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="dim">[Student list table: Name · Tier · Access% · Trend · →]</span>    <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────────────────────────────┘</span></div>
+
+  <div class="card">
+    <h4>Group View Sections</h4>
+    <table>
+      <thead><tr><th>Section</th><th>Visualization</th><th>Interaction</th></tr></thead>
+      <tbody>
+        <tr><td>2.1 Access Rate</td><td>Pie chart + legend</td><td>Click segment → filter to that tier</td></tr>
+        <tr><td>2.2 Language Barriers</td><td>Sortable table</td><td>Click word → see which students struggle</td></tr>
+        <tr><td>2.3 Effectiveness</td><td>4 metric cards</td><td>Display only (no drill-down)</td></tr>
+        <tr><td>2.4 Progress Over Time</td><td>Multi-line chart</td><td>Hover for tooltips, toggle lines</td></tr>
+        <tr><td>2.5 Risk Distribution</td><td>Stacked bar + list</td><td>Click tier bar → expand student list</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════ 5. SCREEN 3 ════════════ -->
+  <h2 id="s3"><span class="num">5</span> Screen 3 &mdash; Individual Student View</h2>
+
+  <div class="callout-question">
+    <div class="q-text">What does a teacher see when they drill into a single student&rsquo;s data?</div>
+    <div class="q-context">This is the most detailed view. The teacher needs to understand: how is this student doing, what specifically are they struggling with, and is it getting better or worse?</div>
+  </div>
+
+  <span class="screen-label">SCREEN 3 &mdash; INDIVIDUAL STUDENT VIEW</span>
+  <div class="wireframe"><span class="dim">┌──────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>  <span class="b">← Back</span>                                                    <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>  <span class="hl">Student Header</span>                                             <span class="dim">│</span>
+<span class="dim">│</span>  👤 Maria Garcia                                            <span class="dim">│</span>
+<span class="dim">│</span>  Grade 5  │  WIDA Level 2  │  Science class                  <span class="dim">│</span>
+<span class="dim">│</span>  <span class="r">● Tier 3 — Intensive Support</span>  │  Overall: <span class="r">↓ declining</span>       <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>  <span class="b">[Access]</span>  [Difficulty]  [Behavior]  [Progress]  [Tier]     <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">TAB 1: Language Access Level</span>                                <span class="dim">│</span>
+<span class="dim">│</span>  ┌──── Gauge ─────┐  ┌──── Trend (5-session windows) ────┐  <span class="dim">│</span>
+<span class="dim">│</span>  │                │  │                                   │  <span class="dim">│</span>
+<span class="dim">│</span>  │     <span class="r">42%</span>        │  │  W1    W2    W3    W4    W5      │  <span class="dim">│</span>
+<span class="dim">│</span>  │  <span class="r">█████</span><span class="dim">░░░░░░░</span>  │  │  55%   50%   48%   45%   <span class="r">42%</span>    │  <span class="dim">│</span>
+<span class="dim">│</span>  │                │  │   <span class="r">\     \     \     \     \</span>     │  <span class="dim">│</span>
+<span class="dim">│</span>  └────────────────┘  └───────────────────────────────────┘  <span class="dim">│</span>
+<span class="dim">│</span>  Interpretation: Student understands 42% of classroom       <span class="dim">│</span>
+<span class="dim">│</span>  language without support. <span class="r">Below Tier 1 threshold (80%).</span>     <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">TAB 2: Difficulty Profile</span>                                  <span class="dim">│</span>
+<span class="dim">│</span>  Difficulty Rate: <span class="r">38%</span>                                        <span class="dim">│</span>
+<span class="dim">│</span>  ┌──── Top Difficult Words ──────────────────────────────┐  <span class="dim">│</span>
+<span class="dim">│</span>  │  photosynthesis    ×12   │  hypothesis    ×8          │  <span class="dim">│</span>
+<span class="dim">│</span>  │  ecosystem         ×6    │  chlorophyll   ×5          │  <span class="dim">│</span>
+<span class="dim">│</span>  └────────────────────────────────────────────────────────┘  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">TAB 3: Learning Behavior</span>                                   <span class="dim">│</span>
+<span class="dim">│</span>  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐<span class="dim">│</span>
+<span class="dim">│</span>  │ Completion │ │ On-time    │ │ Retry      │ │ Re-attempt │<span class="dim">│</span>
+<span class="dim">│</span>  │ Rate       │ │ Completion │ │ Intensity  │ │ Rate       │<span class="dim">│</span>
+<span class="dim">│</span>  │   <span class="hl">65%</span>      │ │   <span class="r">48%</span>      │ │   <span class="r">2.3×</span>     │ │   <span class="hl">35%</span>      │<span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="dim">→stable</span>    │ │ <span class="r">↓declining</span> │ │ <span class="r">↑increasing</span>│ │ <span class="dim">→stable</span>    │<span class="dim">│</span>
+<span class="dim">│</span>  └────────────┘ └────────────┘ └────────────┘ └────────────┘<span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">TAB 4: Progress Over Time</span>                                  <span class="dim">│</span>
+<span class="dim">│</span>  ┌──── Multi-line Trend Chart ───────────────────────────┐  <span class="dim">│</span>
+<span class="dim">│</span>  │  <span class="b">── access%</span>   <span class="r">── difficulty%</span>   <span class="g">── completion%</span>          │  <span class="dim">│</span>
+<span class="dim">│</span>  │                                                       │  <span class="dim">│</span>
+<span class="dim">│</span>  │  Report generated every 5 completed sessions          │  <span class="dim">│</span>
+<span class="dim">│</span>  └────────────────────────────────────────────────────────┘  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">│</span>  <span class="hl">TAB 5: RTI Tier</span>                                            <span class="dim">│</span>
+<span class="dim">│</span>  ┌── Current ──────┐  ┌── Tier History ─────────────────┐  <span class="dim">│</span>
+<span class="dim">│</span>  │ <span class="r">TIER 3</span>          │  │  Feb 20: T2 → <span class="r">T3</span>  (confirmed)  │  <span class="dim">│</span>
+<span class="dim">│</span>  │ Intensive       │  │  Feb 05: T2 → T3  (pending)    │  <span class="dim">│</span>
+<span class="dim">│</span>  │ Support         │  │  Jan 15: T1 → <span class="hl">T2</span>               │  <span class="dim">│</span>
+<span class="dim">│</span>  │ Since: Feb 2026 │  │  Dec 01: <span class="g">T1</span> (initial)          │  <span class="dim">│</span>
+<span class="dim">│</span>  └─────────────────┘  └──────────────────────────────────┘  <span class="dim">│</span>
+<span class="dim">│</span>  <span class="dim">Tier change confirmed only after 2 consecutive evaluations</span> <span class="dim">│</span>
+<span class="dim">│</span>                                                            <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────────────────────────────┘</span></div>
+
+  <div class="card">
+    <h4>Tab Content Summary</h4>
+    <table>
+      <thead><tr><th>Tab</th><th>Primary Visual</th><th>Secondary Visual</th><th>Key Data</th></tr></thead>
+      <tbody>
+        <tr><td>Language Access</td><td>Gauge / progress ring</td><td>5-session trend line</td><td>Access % + trend direction</td></tr>
+        <tr><td>Difficulty Profile</td><td>Rate % display</td><td>Top difficult words table</td><td>Difficulty rate + word frequency list</td></tr>
+        <tr><td>Learning Behavior</td><td>4 metric cards in grid</td><td>Trend arrow on each card</td><td>Completion, on-time, retry, re-attempt</td></tr>
+        <tr><td>Progress Over Time</td><td>Multi-line chart</td><td>&mdash;</td><td>All metrics over 5-session windows</td></tr>
+        <tr><td>RTI Tier</td><td>Current tier badge</td><td>Tier change history timeline</td><td>Tier + criteria breakdown + history</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════ 6. FILTERS ════════════ -->
+  <h2 id="filters"><span class="num">6</span> Filter Specification</h2>
+
+  <table>
+    <thead><tr><th>Filter</th><th>Type</th><th>Values</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Grade Level</td><td>Multi-select dropdown</td><td>K, 1&ndash;12</td><td>Tags appear as removable pills</td></tr>
+      <tr><td>Subject / Content Area</td><td>Multi-select dropdown</td><td>Science, Social Studies, Math, ELA, etc.</td><td>Defined per school</td></tr>
+      <tr><td>Proficiency Level</td><td>Multi-select dropdown</td><td>WIDA 1&ndash;6 or ELPAC 1&ndash;4</td><td>Framework depends on school/state</td></tr>
+      <tr><td>Teacher</td><td>Single-select dropdown</td><td>List of ESL teachers</td><td><strong>Admin only</strong> &mdash; hidden for teachers</td></tr>
+      <tr><td>Classroom</td><td>Multi-select dropdown</td><td>List of classrooms</td><td>Teachers see own classrooms only</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Filter persistence:</strong> Selected filters persist across sessions (stored in localStorage or user preferences). When the user returns to the dashboard, their last filter configuration is restored.
+  </div>
+
+  <!-- ════════════ 7. EDGE STATES ════════════ -->
+  <h2 id="states"><span class="num">7</span> Edge States &amp; Empty States</h2>
+
+  <div class="callout-question">
+    <div class="q-text">What does the designer need to account for when there&rsquo;s no data, partial data, or error states?</div>
+    <div class="q-context">These states are often overlooked but are critical for a polished product. Every screen must handle them.</div>
+  </div>
+
+  <table>
+    <thead><tr><th>State</th><th>Condition</th><th>UI Treatment</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>First-time empty</strong></td>
+        <td>School just onboarded, no students enrolled yet</td>
+        <td>All Summary Cards show 0 / empty. Show illustration + message: &ldquo;Enroll students and assign practice to start seeing data.&rdquo; Link to Classroom Management.</td>
+      </tr>
+      <tr>
+        <td><strong>Insufficient data</strong></td>
+        <td>Student has &lt; 3 completed learning sessions</td>
+        <td>Grey placeholder on all metric values. Trend lines hidden. Message: &ldquo;Need at least 3 sessions to show trends.&rdquo; Show progress bar: &ldquo;2/3 sessions completed.&rdquo;</td>
+      </tr>
+      <tr>
+        <td><strong>No filter results</strong></td>
+        <td>Applied filters match 0 students</td>
+        <td>Empty state in Group View: &ldquo;No students match these filters.&rdquo; Show active filter pills + &ldquo;Clear all&rdquo; button.</td>
+      </tr>
+      <tr>
+        <td><strong>Tier change alert</strong></td>
+        <td>Student moves from Tier 2 → Tier 3 (confirmed after 2 evals)</td>
+        <td>Red badge dot on Risk Alerts card. Student appears in Risk List with &ldquo;NEW&rdquo; tag. Optional: browser notification if enabled.</td>
+      </tr>
+      <tr>
+        <td><strong>Pending tier change</strong></td>
+        <td>Student met Tier 3 criteria once, waiting for 2nd eval</td>
+        <td>Show &ldquo;Pending&rdquo; tag next to tier in Individual View. Tooltip: &ldquo;Will be confirmed if criteria persist in next evaluation.&rdquo;</td>
+      </tr>
+      <tr>
+        <td><strong>Loading state</strong></td>
+        <td>Data is being fetched</td>
+        <td>Skeleton placeholders (shimmer animation) on all cards and charts. Never show blank/empty during load.</td>
+      </tr>
+      <tr>
+        <td><strong>Error state</strong></td>
+        <td>API call fails</td>
+        <td>Inline error message per section (not full-page). &ldquo;Unable to load data. Try again.&rdquo; + retry button. Other sections still functional.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════ 8. RESPONSIVE ════════════ -->
+  <h2 id="responsive"><span class="num">8</span> Responsive Considerations</h2>
+
+  <table>
+    <thead><tr><th>Breakpoint</th><th>Layout Changes</th></tr></thead>
+    <tbody>
+      <tr><td>&gt; 1024px (desktop)</td><td>4 Summary Cards in row. Side-by-side gauge + trend in Individual View. Full filter bar visible.</td></tr>
+      <tr><td>768px &ndash; 1024px (tablet)</td><td>2 Summary Cards per row. Individual View tabs become scrollable horizontal strip. Filter bar collapses to &ldquo;Filters&rdquo; button with dropdown panel.</td></tr>
+      <tr><td>&lt; 768px (mobile)</td><td>1 Summary Card per row (stacked). Tabs become a dropdown selector. Charts reduce to simplified sparklines. Risk list becomes card-based layout.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>Chart library note:</strong> Whichever chart library is used (Recharts, Chart.js, etc.), all charts must support touch interactions (swipe to pan, pinch to zoom on trend lines) and show tooltips on tap for mobile.
+  </div>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; Flow 4 &mdash; School Management &middot; February 2026</footer>
+</div>
+
+</body>
+</html>
