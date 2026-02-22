@@ -326,13 +326,22 @@ flowchart TD
     NAV -->|Apply filters| GROUP
     NAV -->|Search student name| INDIVIDUAL
     NAV -->|Click student in risk list| INDIVIDUAL
+    NAV -->|Select saved cohort| COHORT_LOAD
+    NAV -->|Customize dashboard| CUSTOM
 
     GROUP["SCREEN 2 — Group / Cohort View<br/>─────────────────────<br/>Active filter pills (removable)<br/>Student count for current filters<br/>─────────────────────<br/>2.1 Access Rate Distribution (pie)<br/>2.2 Common Language Barriers (table)<br/>2.3 Instruction Effectiveness (cards)<br/>2.4 Group Progress Over Time (chart)<br/>2.5 Risk Distribution (stacked bar)"]
 
     GROUP --> G_ACT{User action?}:::decision
     G_ACT -->|Click student row| INDIVIDUAL
     G_ACT -->|Change filters| GROUP
+    G_ACT -->|Save as Cohort| COHORT_SAVE
     G_ACT -->|Back| OVERVIEW
+
+    COHORT_LOAD["Load Saved Cohort<br/>─────────────────────<br/>Restore filters + manual student list<br/>Apply cohort's preset override<br/>→ Jump to Group View"]
+    COHORT_LOAD --> GROUP
+
+    COHORT_SAVE["Save as Cohort<br/>─────────────────────<br/>Name the cohort<br/>Current filters auto-captured<br/>Optionally add/remove students<br/>Choose preset override (optional)<br/>Saved to user profile"]
+    COHORT_SAVE --> GROUP
 
     INDIVIDUAL["SCREEN 3 — Individual Student View<br/>─────────────────────<br/>Header: Name · Grade · WIDA level<br/>Current Tier badge · Overall trend<br/>─────────────────────<br/>Tab 1: Language Access (gauge + trend)<br/>Tab 2: Difficulty Profile (rate + word list)<br/>Tab 3: Learning Behavior<br/>(completion · on-time · retry · re-attempt)<br/>Tab 4: Progress Over Time (multi-line chart)<br/>Tab 5: RTI Tier (current + history)"]
 
@@ -340,6 +349,16 @@ flowchart TD
     I_ACT -->|Switch tab| INDIVIDUAL
     I_ACT -->|Back to group| GROUP
     I_ACT -->|Back to overview| OVERVIEW
+
+    CUSTOM["CUSTOMIZATION PANEL<br/>─────────────────────<br/>Step 1: Choose Preset<br/>Overview · At-Risk Focus<br/>Progress Tracker · Language Focus<br/>─────────────────────<br/>Step 2: Pin / Unpin Widgets<br/>Toggle individual cards on/off<br/>Drag to reorder (Phase 3)"]
+
+    CUSTOM --> C_ACT{User action?}:::decision
+    C_ACT -->|Select preset| APPLY["Apply Preset<br/>Layout updates instantly<br/>Config saved to user profile"]
+    C_ACT -->|Toggle widget| TOGGLE["Pin / Unpin Widget<br/>Auto-save on change<br/>Minimum 1 widget required"]
+    C_ACT -->|Cancel / Close| OVERVIEW
+
+    APPLY --> OVERVIEW
+    TOGGLE --> CUSTOM
 
     OVERVIEW --> EMPTY{Has data?}:::decision
     EMPTY -->|No students yet| EMPTY_STATE["Empty State<br/>No data available<br/>Guide: 'Enroll students and<br/>assign practice to get started'"]:::info
@@ -414,6 +433,63 @@ flowchart TD
     STORE --> FE_GROUP["Frontend: Group View<br/>Fetch filtered student set<br/>Aggregate: averages, distributions<br/>Render pie · bar · line charts"]
 
     TREND --> ALERT["Risk Alert Engine<br/>Detect Tier 2→3 transitions<br/>→ Surface in Dashboard Overview"]:::warn
+
+    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
+    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
+    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
+    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
+    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
+      </pre>
+    </div>
+  </div>
+
+  <h3 class="section-title">
+    <span class="badge">D</span> Data Dashboard &mdash; Teacher Usage Scenarios
+    <a class="spec-link" href="../specs/flow-4-school-management/data-dashboard-ux.html" title="Open UX spec">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
+      UX Spec
+    </a>
+  </h3>
+  <div class="flow-section">
+    <div class="zoom-toolbar" data-for="flowE">
+      <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+      <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+      <div class="zoom-level" data-label>100%</div>
+      <button class="zoom-btn" data-action="fit" title="Fit to view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+    </div>
+    <div class="diagram-viewport" id="flowE">
+      <pre class="mermaid">
+flowchart TD
+    TEACHER([ESL Teacher opens Dashboard]):::start
+
+    TEACHER --> GOAL{What does the<br/>teacher need?}:::decision
+
+    GOAL -->|Weekly check-in| S1
+    GOAL -->|Parent conference prep| S2
+    GOAL -->|Vocabulary analysis| S3
+    GOAL -->|New semester setup| S4
+    GOAL -->|Tier change review| S5
+
+    S1["Scenario 1: Weekly At-Risk Review<br/>─────────────────────<br/>Select At-Risk Focus preset<br/>→ Review Risk List (declining first)<br/>→ Click Tier 3 student<br/>→ Check Access + Difficulty tabs<br/>→ Note trends, plan intervention"]
+    S1 --> S1_OUT([Intervention plan<br/>for next week]):::done
+
+    S2["Scenario 2: Parent Conference Prep<br/>─────────────────────<br/>Search student by name<br/>→ Individual View: review all 5 tabs<br/>→ Note cohort comparison context<br/>→ Export Student Report as PDF<br/>→ Bring to conference"]
+    S2 --> S2_OUT([PDF ready for<br/>parent meeting]):::done
+
+    S3["Scenario 3: Cross-Class Vocab Analysis<br/>─────────────────────<br/>Click saved cohort (e.g. G5 W4 — Sci)<br/>→ Group View loads with 12 students<br/>→ Check Common Language Barriers table<br/>→ Identify shared difficult words<br/>→ Plan targeted vocabulary lesson"]
+    S3 --> S3_OUT([Next lesson focuses on<br/>shared barrier words]):::done
+
+    S4["Scenario 4: New Semester Setup<br/>─────────────────────<br/>Set filters: new semester students<br/>→ Review Group View<br/>→ Save as Cohort (name it)<br/>→ Assign preset override<br/>→ Cohort ready for ongoing monitoring"]
+    S4 --> S4_OUT([Cohort created and<br/>ready for semester]):::done
+
+    S5["Scenario 5: Tier Reclassification<br/>─────────────────────<br/>See Risk Alerts badge on Overview<br/>→ Click Risk Alerts card<br/>→ Review newly Tier 3 students<br/>→ Individual View: check tier history<br/>→ Confirm intervention is needed"]
+    S5 --> S5_OUT([Escalation decision<br/>documented]):::done
 
     classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
     classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
@@ -605,7 +681,7 @@ flowchart TD
 
   // ── Wait for Mermaid to render then init pan/zoom ──
   const diagrams = {};
-  const flowIds = ['flowB', 'flowC', 'flowD'];
+  const flowIds = ['flowB', 'flowC', 'flowD', 'flowE'];
   let attempts = 0;
   const waitForMermaid = setInterval(() => {
     attempts++;
