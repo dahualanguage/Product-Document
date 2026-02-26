@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Personal Word Bank</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #8b5cf6; font-weight: 700; }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #8b5cf6;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-question {
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      border: 2px solid #8b5cf6; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 17px; font-weight: 700; color: #5b21b6; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #7c3aed; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Code / Schema blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Flow diagram (ASCII) ── */
+    .flow-ascii {
+      background: #0f172a; color: #a5b4fc; border-radius: 10px;
+      padding: 20px 24px; margin: 16px 0;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 11px;
+      line-height: 1.7; white-space: pre; overflow-x: auto;
+    }
+    .flow-ascii .highlight { color: #c4b5fd; font-weight: 700; }
+    .flow-ascii .green { color: #6ee7b7; }
+    .flow-ascii .yellow { color: #fde68a; }
+    .flow-ascii .red { color: #fca5a5; }
+
+    /* ── Source cards ── */
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+    .source-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .source-card h4 {
+      font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .source-card .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+    }
+    .badge-live { background: #dbeafe; color: #1e40af; }
+    .badge-practice { background: #fef3c7; color: #92400e; }
+    .source-card p { font-size: 12px; color: #64748b; margin: 0; }
+
+    /* ── State cards ── */
+    .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+    .state-card {
+      background: #fff; border-radius: 10px; padding: 20px;
+    }
+    .state-todo { border: 2px solid #f59e0b; }
+    .state-mastery { border: 2px solid #10b981; }
+    .state-card h4 { font-size: 16px; font-weight: 800; margin: 0 0 8px; }
+    .state-card h4.todo-title { color: #92400e; }
+    .state-card h4.mastery-title { color: #065f46; }
+    .state-card p { font-size: 13px; color: #475569; margin: 0 0 6px; }
+
+    footer {
+      text-align: center; padding: 24px 0; color: #94a3b8;
+      font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px;
+    }
+
+    @media (max-width: 600px) {
+      .topbar { padding: 12px 16px; }
+      .container { padding: 24px 16px 60px; }
+      .source-grid, .state-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="index.html">ESL Student — Specs</a>
+  <span class="sep">/</span>
+  <span class="current">Personal Word Bank</span>
+</div>
+
+<!-- ── CONTENT ── -->
+<div class="container">
+
+  <div class="doc-header">
+    <h1>Personal Word Bank</h1>
+    <p class="subtitle">A student-owned vocabulary collection that aggregates words from live classroom interactions and practice errors, with built-in Mirroring practice for mastery.</p>
+    <div class="meta">
+      <span>ESL Student — 3.2</span>
+      <span>Status: Planning</span>
+      <span>Updated: Feb 2026</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout-question">
+    <div class="q-text">ESL students encounter unfamiliar words across multiple touchpoints &mdash; live classes, Mirroring practice, QA Discussion &mdash; but have no centralized place to collect, review, and reinforce them.</div>
+    <div class="q-context">The Personal Word Bank gives every student a single, persistent vocabulary space that grows from their real learning experiences, with a clear path from "unknown" to "mastered".</div>
+  </div>
+
+  <p>The Personal Word Bank is a <strong>per-student vocabulary collection</strong> that:</p>
+  <ol>
+    <li><strong>Aggregates words</strong> from four sources: Live Classroom word clicks, practice errors, Mirroring word tags, and teacher-assigned vocabulary.</li>
+    <li><strong>Organizes words</strong> into two states: <strong>To Do</strong> (needs practice) and <strong>Mastery</strong> (learned).</li>
+    <li><strong>Provides 4 practice types</strong> &mdash; Spelling, Pronunciation, Mirroring (self-created content), and Multiple Choice &mdash; students can practice their word bank anytime.</li>
+    <li><strong>Tracks mastery</strong> using a multi-modal threshold: 5 successful attempts per word, covering at least 3 different practice types.</li>
+  </ol>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">2</span> Word Sources</h2>
+
+  <p>Words enter the Personal Word Bank from four channels:</p>
+
+  <div class="source-grid">
+    <div class="source-card">
+      <h4><span class="badge badge-live">LIVE</span> Live Classroom</h4>
+      <p>During live class, the subject teacher's speech is transcribed in real-time. Students tap unfamiliar words in the transcript &mdash; the system provides context-based definitions. When a student taps, the word is <strong>automatically saved</strong> to their Personal Word Bank as "To Do".</p>
+    </div>
+    <div class="source-card">
+      <h4><span class="badge badge-practice">PRACTICE</span> Practice Errors</h4>
+      <p>When students complete teacher-assigned practices (Mirroring or QA Discussion) and make errors &mdash; mispronounced words, unknown vocabulary in AI feedback &mdash; those words can be <strong>saved to the Word Bank</strong> via a "Save to Word Bank" action.</p>
+    </div>
+  </div>
+  <div class="source-grid">
+    <div class="source-card">
+      <h4><span class="badge" style="background:#fce7f3; color:#be185d;">MIRRORING</span> Mirroring Word Tag</h4>
+      <p>During any <strong>Mirroring practice</strong> (teacher-assigned or Word Bank self-created), students can <strong>tag words they don't know</strong> directly in the practice text. Tagged words are saved to the Word Bank as "To Do" with the Mirroring sentence as context.</p>
+    </div>
+    <div class="source-card">
+      <h4><span class="badge" style="background:#f3e8ff; color:#7c3aed;">TEACHER</span> Teacher Added</h4>
+      <p>Teachers can <strong>manually add words</strong> to a student's Word Bank &mdash; individually or in bulk to an entire class. This allows teachers to proactively assign target vocabulary (e.g., this week's unit words) that students should practice, even before they encounter them in class.</p>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Connection to Live Classroom (Flow 6):</strong> The Live Classroom source directly integrates with the clickable transcript feature. Each word click that shows a definition also saves the word to the Personal Word Bank. The same context sentence is shared for learning reference.
+  </div>
+
+  <h3>Word Entry Information</h3>
+  <p>Each word saved to the Personal Word Bank includes:</p>
+
+  <table>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Word</td>
+      <td>The English word or phrase</td>
+    </tr>
+    <tr>
+      <td>Translation</td>
+      <td>Translation in the student's native language</td>
+    </tr>
+    <tr>
+      <td>Context sentence</td>
+      <td>The original sentence where the word appeared</td>
+    </tr>
+    <tr>
+      <td>Source</td>
+      <td>Where the word came from: <strong>Live Classroom</strong>, <strong>Practice Error</strong>, <strong>Mirroring Tag</strong>, or <strong>Teacher Added</strong></td>
+    </tr>
+    <tr>
+      <td>State</td>
+      <td><strong>To Do</strong> (needs practice) or <strong>Mastery</strong> (learned)</td>
+    </tr>
+    <tr>
+      <td>Practice progress</td>
+      <td>Number of successful attempts completed (out of 5), and which practice types have been done</td>
+    </tr>
+  </table>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">3</span> Word Bank Structure</h2>
+
+  <p>The Word Bank is divided into two distinct groups:</p>
+
+  <div class="state-grid">
+    <div class="state-card state-todo">
+      <h4 class="todo-title">To Do</h4>
+      <p><strong>Words that need practice.</strong> All new words start here. Each word shows its progress (e.g., 3/5 attempts) <strong>and which practice types have been completed</strong> (icon badges). Words stay in To Do until the student completes 5 successful attempts covering at least 3 different types.</p>
+      <p style="font-size: 12px; color: #92400e; margin: 0;">Sorted by: most recently added first</p>
+    </div>
+    <div class="state-card state-mastery">
+      <h4 class="mastery-title">Mastery</h4>
+      <p><strong>Words the student has learned.</strong> A word moves here after 5 successful attempts across at least 3 different practice types. Mastery words remain accessible for review but are no longer included in default practice sessions.</p>
+      <p style="font-size: 12px; color: #065f46; margin: 0;">Sorted by: most recently mastered first</p>
+    </div>
+  </div>
+
+  <h3>Mastery Threshold: Why 5 Times Across 3+ Types?</h3>
+
+  <p>SLA research suggests learners need <strong>6&ndash;8 meaningful encounters</strong> to acquire a word (Nation 2001, Webb 2007, Horst/Cobb/Meara 1998). We chose <strong>5 attempts</strong> rather than 6&ndash;8 because each attempt engages a <strong>different modality</strong>, making each encounter significantly richer than simple repetition:</p>
+
+  <table>
+    <tr>
+      <th>Practice Type</th>
+      <th>Modality Engaged</th>
+    </tr>
+    <tr>
+      <td>Spelling</td>
+      <td><strong>Written recall</strong> &mdash; actively retrieve the word's form from memory</td>
+    </tr>
+    <tr>
+      <td>Pronunciation</td>
+      <td><strong>Spoken production</strong> &mdash; say the word and receive pronunciation feedback</td>
+    </tr>
+    <tr>
+      <td>Mirroring (self-created content)</td>
+      <td><strong>Contextual comprehension + oral production</strong> &mdash; encounter the word in generated sentences and practice speaking</td>
+    </tr>
+    <tr>
+      <td>Multiple Choice</td>
+      <td><strong>Recognition + meaning recall</strong> &mdash; identify correct meaning/usage among distractors</td>
+    </tr>
+  </table>
+
+  <p>Requiring <strong>at least 3 different types</strong> ensures the student has engaged the word through multiple cognitive pathways (written, spoken, contextual, recognition), which research shows produces stronger and more durable vocabulary knowledge than repeating the same task.</p>
+
+  <div class="callout callout-tip">
+    <strong>Design note:</strong> Both the total count (5) and minimum type diversity (3) are configurable at the system level. If future data shows a different optimal combination, it can be adjusted.
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">4</span> Practice Mode</h2>
+
+  <p>Students access practice via a <strong>"Practice" button in the top-right corner</strong> of the Word Bank page. The system offers <strong>4 practice types</strong>, each engaging a different learning modality.</p>
+
+  <div class="callout callout-info">
+    <strong>Builds on existing Vocabulary Practice:</strong> The platform already has a Vocabulary Practice system with card-based UI, animated card stack, recording controls, star ratings, and graded pronunciation feedback (GradedSentence). Word Bank practice reuses these UI patterns and components.
+  </div>
+
+  <!-- ── Word Selection ── -->
+  <h3>Word Selection (Before Practice Starts)</h3>
+  <div class="card">
+    <p>After choosing a practice type, students see a <strong>word selection screen</strong> before the session begins:</p>
+    <ol>
+      <li>All <strong>To Do</strong> words are listed with checkboxes (all checked by default)</li>
+      <li>Each word shows: word, translation, and current progress (X/5 + type badges)</li>
+      <li>Student can <strong>uncheck words they want to skip</strong> this session</li>
+      <li>Tap <strong>"Start"</strong> to begin with the selected words</li>
+    </ol>
+    <p>This gives students control over their practice &mdash; for example, focusing on a specific set of words before a test, or skipping words they recently practiced.</p>
+  </div>
+
+  <!-- ── 4 Practice Types ── -->
+  <h3>4a. Spelling</h3>
+  <div class="card">
+    <p><strong>Modality:</strong> Written recall</p>
+    <ol>
+      <li>Card shows: <strong>context sentence</strong> (target word replaced by <code>_____</code>) + translation/definition</li>
+      <li>Student <strong>types the correct English word</strong></li>
+      <li>If <strong>correct</strong> &rarr; success sound effect + green animation &rarr; counts as 1 attempt</li>
+      <li>If <strong>incorrect</strong> &rarr; error sound effect + correct spelling shown briefly (red highlight) &rarr; does <strong>not</strong> count</li>
+    </ol>
+  </div>
+
+  <h3>4b. Pronunciation</h3>
+  <div class="card">
+    <p><strong>Modality:</strong> Spoken production</p>
+    <ol>
+      <li>Card shows the word + plays <strong>TTS audio</strong> (Azure, student's preferred speed)</li>
+      <li>Student taps <strong>Record</strong> and speaks the word aloud</li>
+      <li>System shows <strong>color-coded pronunciation feedback</strong> (GradedSentence: <span style="color:#16a34a;">green</span>/<span style="color:#f59e0b;">orange</span>/<span style="color:#ef4444;">red</span>) + <strong>star rating</strong></li>
+      <li>Student can <strong>Redo</strong> or <strong>Continue</strong> &rarr; completing a recording counts as 1 attempt</li>
+    </ol>
+  </div>
+
+  <h3>4c. Content Mirroring (Self-Created Content)</h3>
+  <div class="card">
+    <p><strong>Modality:</strong> Contextual comprehension + oral production</p>
+    <ol>
+      <li>Student taps <strong>"Start Practice"</strong> and selects <strong>Content Mirroring</strong></li>
+      <li>Word selection screen &mdash; student unchecks words to skip, then confirms</li>
+      <li><strong>"Creating Content"</strong> loading screen &mdash; system generates a short passage that naturally incorporates the selected vocabulary words</li>
+      <li><strong>"Your article is ready &mdash; personalized to your level and word bank"</strong> preview screen appears:
+        <ul>
+          <li>Shows the generated article with target words highlighted</li>
+          <li>Each sentence includes an L1 translation alongside the English text</li>
+          <li>Student can <strong>Accept</strong> or <strong>Reject</strong> the article</li>
+          <li>If <strong>Reject</strong> &rarr; system generates a new article with the same words</li>
+          <li>If <strong>Accept</strong> &rarr; tap <strong>"Let's start"</strong> to begin Mirroring practice</li>
+        </ul>
+      </li>
+      <li>Student does <strong>Mirroring practice</strong> with the accepted article &mdash; listen to each sentence, then repeat aloud</li>
+      <li>System evaluates pronunciation with color-coded feedback + star rating</li>
+      <li>Each vocabulary word that appears in the generated content and is successfully mirrored counts as <strong>1 Mirroring attempt</strong> for that word</li>
+    </ol>
+    <div class="callout callout-tip" style="margin-top: 12px;">
+      <strong>Key benefit:</strong> Students encounter their vocabulary words <strong>in natural context</strong>, not in isolation. The generated sentences reinforce both the word's meaning and its usage patterns. This is the richest practice type because it combines reading comprehension, listening, and speaking.
+    </div>
+  </div>
+
+  <h3>4d. Multiple Choice</h3>
+  <div class="card">
+    <p><strong>Modality:</strong> Recognition + meaning recall</p>
+    <ol>
+      <li>System generates <strong>MC questions</strong> from the student's To Do words (AI-generated distractors)</li>
+      <li>Question types may include: English &rarr; Translation, Translation &rarr; English, Context sentence &rarr; correct word, Audio &rarr; correct word</li>
+      <li>Student selects an answer</li>
+      <li>If <strong>correct</strong> &rarr; success sound effect &rarr; counts as 1 attempt</li>
+      <li>If <strong>incorrect</strong> &rarr; error sound effect + correct answer highlighted &rarr; does <strong>not</strong> count</li>
+    </ol>
+  </div>
+
+  <!-- ── Wireframe ── -->
+  <div class="flow-ascii">
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  <span class="highlight">PERSONAL WORD BANK</span>                                      [ Start Practice ]  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  <span class="highlight">All (20)</span>    <span class="green">Mastered (8)</span>    <span class="yellow">Learning (10)</span>    New (2)                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Word / Phrase  │ Type  │ Pronunciation │ Source          │ Mastery │  Act  │
+│  ───────────────┼───────┼───────────────┼─────────────────┼─────────┼─────  │
+│  grateful       │ Adj   │ /ˈɡreɪt.fəl/ │ <span class="green">Live Classroom</span>  │ <span class="green">4/5</span>     │ ✎ 🗑  │
+│  abundant       │ Adj   │ /əˈbʌn.dənt/ │ <span class="yellow">Teacher Added</span>   │ <span class="yellow">2/5</span>     │ ✎ 🗑  │
+│  contribute     │ Verb  │ /kənˈtrɪb.juːt│ <span class="green">Mirroring Tag</span>   │ <span class="yellow">1/5</span>     │ ✎ 🗑  │
+│  courage        │ Noun  │ /ˈkʌr.ɪdʒ/   │ <span class="red">Practice Error</span>  │ <span class="red">0/5</span>     │ ✎ 🗑  │
+│  ...            │ ...   │ ...           │ ...             │ ...     │ ...   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+<span class="highlight">Student User Flow — Content Mirroring</span>
+
+<span class="yellow">1. Word Bank</span>       <span class="yellow">2. Select Type</span>      <span class="yellow">3. Pick Words</span>       <span class="yellow">4. Generating</span>       <span class="yellow">5. Preview</span>          <span class="yellow">6. Practice</span>
+┌──────────┐      ┌──────────┐       ┌──────────┐       ┌──────────┐       ┌──────────┐       ┌──────────┐
+│ Word list│      │ Reading  │       │ ☑ word 1 │       │          │       │ Article  │       │ Listen   │
+│ + Start  │ ──&gt;  │ Custom   │  ──&gt;  │ ☑ word 2 │  ──&gt;  │ Creating │  ──&gt;  │ is ready │  ──&gt;  │ + Repeat │
+│ Practice │      │<span class="green"> Content </span>│       │ ☐ skip   │       │ Content..│       │<span class="green"> Accept</span>/<span class="red">Rej</span>│       │ Feedback │
+│          │      │ Personal │       │ [Start]  │       │          │       │[Let start]│       │ Score    │
+└──────────┘      └──────────┘       └──────────┘       └──────────┘       └──────────┘       └──────────┘</div>
+
+  <!-- ── Practice Rules ── -->
+  <h3>Practice Rules</h3>
+  <table>
+    <tr>
+      <th>Rule</th>
+      <th>Detail</th>
+    </tr>
+    <tr>
+      <td>Mastery threshold</td>
+      <td><strong>5 successful attempts</strong> per word, covering <strong>at least 3 different practice types</strong></td>
+    </tr>
+    <tr>
+      <td>What counts as "successful"</td>
+      <td>Spelling correct, pronunciation recorded, Mirroring completed, or MC answered correctly. No minimum pronunciation score required.</td>
+    </tr>
+    <tr>
+      <td>Incorrect attempt</td>
+      <td>Correct answer is revealed. Does <strong>not</strong> count as a successful attempt.</td>
+    </tr>
+    <tr>
+      <td>Type diversity</td>
+      <td>Student must use <strong>at least 3 of 4 practice types</strong> for a word to reach Mastery. The remaining 2 attempts can be any type.</td>
+    </tr>
+    <tr>
+      <td>Progress display</td>
+      <td>Each word card shows: attempt count (X/5) <strong>and</strong> icon badges for completed practice types (✎ 🔊 🎤 ✓). Students can immediately see what types they still need.</td>
+    </tr>
+    <tr>
+      <td>Practice type selection</td>
+      <td>Student <strong>chooses which type</strong> to practice each session. System highlights types they haven't tried yet for incomplete words.</td>
+    </tr>
+    <tr>
+      <td>Mastery transition</td>
+      <td>Immediate &mdash; word moves to Mastery as soon as 5th attempt completes (with 3+ types satisfied)</td>
+    </tr>
+    <tr>
+      <td>Re-practice mastered words</td>
+      <td>Students can manually move a Mastery word back to To Do if they want to review</td>
+    </tr>
+  </table>
+
+  <!-- ── Reused Components ── -->
+  <h3>Reused Components from Vocabulary Practice</h3>
+  <p>The following existing components from the Vocabulary Practice system are reused:</p>
+  <table>
+    <tr>
+      <th>Component</th>
+      <th>Used In</th>
+    </tr>
+    <tr>
+      <td><strong>Card Stack</strong></td>
+      <td>Spelling, Pronunciation, Multiple Choice &mdash; animated card transitions</td>
+    </tr>
+    <tr>
+      <td><strong>Recording Controls</strong></td>
+      <td>Pronunciation, Mirroring &mdash; Record / Redo / Continue buttons</td>
+    </tr>
+    <tr>
+      <td><strong>Star Rating</strong></td>
+      <td>Pronunciation, Mirroring &mdash; gradient-fill pronunciation quality stars</td>
+    </tr>
+    <tr>
+      <td><strong>GradedSentence</strong></td>
+      <td>Pronunciation, Mirroring &mdash; per-syllable color-coded feedback</td>
+    </tr>
+    <tr>
+      <td><strong>MC Question UI</strong></td>
+      <td>Multiple Choice &mdash; question stem, 4 options, correct/incorrect feedback</td>
+    </tr>
+    <tr>
+      <td><strong>Mirroring Content Display</strong></td>
+      <td>Mirroring &mdash; sentence display, TTS playback, recording flow</td>
+    </tr>
+    <tr>
+      <td><strong>Start Page / Completion Dialog</strong></td>
+      <td>All types &mdash; pre-practice summary and end-of-session results</td>
+    </tr>
+  </table>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">5</span> Attempt Tracking</h2>
+
+  <p>Every Personal Word Bank practice session is recorded as an <strong>attempt record</strong>, visible to both the student and their teachers.</p>
+
+  <h3>What gets recorded per session</h3>
+  <ul>
+    <li>Which words the student practiced and <strong>which practice type</strong> was used</li>
+    <li>Result per word (correct / incorrect)</li>
+    <li>Pronunciation scores (for Pronunciation and Mirroring types)</li>
+    <li>How many successful attempts each word had before and after the session</li>
+    <li>How many distinct practice types each word has completed (towards the 3-type requirement)</li>
+    <li>Whether any word reached mastery (5 attempts + 3 types) in this session</li>
+    <li>Session summary: total words practiced, accuracy rate, new mastery count</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Teacher visibility:</strong> Attempt records appear in the teacher's dashboard alongside regular practice records. Teachers can see which students are actively reviewing their Word Bank and how their vocabulary is growing. Word Bank practice sessions are distinguished from teacher-assigned practice attempts.
+  </div>
+
+  <h3>Relationship with existing attempt system</h3>
+  <p>The platform already supports <strong>versioned attempt tracking</strong> for teacher-assigned practices (Mirroring and QA Discussion). Each practice attempt creates a separate history record with scores, conversations, and AI summaries.</p>
+  <p>Personal Word Bank practice sessions should integrate with the same attempt tracking system where possible, so that:</p>
+  <ul>
+    <li>Teachers see a <strong>unified view</strong> of all student practice activity (assigned + self-initiated)</li>
+    <li>Self-initiated Word Bank sessions are clearly labeled as such</li>
+    <li>The existing Data Dashboard can display Word Bank progress without building a separate reporting pipeline</li>
+  </ul>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">6</span> Integration Points</h2>
+
+  <h3>6a. Live Classroom &rarr; Word Bank</h3>
+  <div class="card">
+    <ol>
+      <li>Subject teacher speaks &rarr; speech is transcribed in real-time</li>
+      <li>Student taps a word in the live transcript</li>
+      <li>Popup shows translation/definition based on context</li>
+      <li><strong>Simultaneously:</strong> the word is auto-saved to Personal Word Bank as "To Do" (source: Live Classroom)</li>
+      <li>No duplicate &mdash; if the word already exists in the bank, the context sentence is updated with the newer occurrence</li>
+    </ol>
+  </div>
+
+  <h3>6b. Practice Errors &rarr; Word Bank</h3>
+  <div class="card">
+    <ol>
+      <li>Student completes a Mirroring or QA practice assigned by teacher</li>
+      <li>For <strong>Mirroring</strong>: words with low pronunciation scores are highlighted</li>
+      <li>For <strong>QA Discussion</strong>: when AI provides a correction sentence (Mirroring mode in QA), the key vocabulary is identified</li>
+      <li>Student sees a <strong>"Save to Word Bank"</strong> button next to flagged words</li>
+      <li>Tapping saves the word to the Word Bank (source: Practice Error) with the practice context sentence</li>
+    </ol>
+  </div>
+
+  <h3>6c. Mirroring Practice &rarr; Word Bank (Word Tagging)</h3>
+  <div class="card">
+    <ol>
+      <li>Student is doing <strong>any Mirroring practice</strong> (teacher-assigned or Word Bank self-created content)</li>
+      <li>The practice text displays on screen &mdash; student can <strong>tap/click any word</strong> they don't know</li>
+      <li>Tapped word is highlighted and a <strong>"Save to Word Bank"</strong> tooltip appears</li>
+      <li>Confirming saves the word to the bank (source: Mirroring Tag) with the Mirroring sentence as context</li>
+      <li>Student continues the Mirroring practice without interruption</li>
+    </ol>
+    <div class="callout callout-tip" style="margin-top: 12px;">
+      <strong>Why this matters:</strong> Mirroring practice surfaces words students struggle with in real spoken context. Letting them tag unknown words <strong>during practice</strong> captures the learning moment when the word is most salient.
+    </div>
+  </div>
+
+  <h3>6d. Word Bank &rarr; Data Dashboard</h3>
+  <div class="card">
+    <ul>
+      <li>Total words in To Do / Mastery per student</li>
+      <li>Mastery rate over time (words mastered per week)</li>
+      <li>Practice frequency (Word Bank sessions per week)</li>
+      <li>Word sources breakdown (% from Live Classroom vs Practice Errors)</li>
+    </ul>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">7</span> UI Components</h2>
+
+  <h3>7a. Word Bank Page (Student View)</h3>
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Filter tabs</td>
+      <td>Four tabs: <strong>All</strong>, <strong>Mastered</strong>, <strong>Learning</strong>, <strong>New</strong> &mdash; each with a count badge</td>
+    </tr>
+    <tr>
+      <td>Start Practice button</td>
+      <td>Top-right corner, primary color. Opens practice type selector. Only enabled when To Do has at least 1 word</td>
+    </tr>
+    <tr>
+      <td>Word list table</td>
+      <td>Columns: <strong>Word / Phrase</strong>, <strong>Type</strong> (part of speech: Noun, Verb, Adj, etc.), <strong>Pronunciation</strong>, <strong>Source</strong> (badge showing origin), <strong>Mastery</strong> (X/5 progress), <strong>Actions</strong> (edit, delete)</td>
+    </tr>
+    <tr>
+      <td>Search bar</td>
+      <td>Filter words by text search</td>
+    </tr>
+    <tr>
+      <td>Sort options</td>
+      <td>By date added, by progress (attempts), alphabetical</td>
+    </tr>
+    <tr>
+      <td>Delete button</td>
+      <td>Each row has a visible <strong>delete button</strong> (trash icon) to remove the word from the bank</td>
+    </tr>
+  </table>
+
+  <h3>7b. Practice Type Selection</h3>
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Type selector</td>
+      <td>4 large buttons: ✎ Spell, 🔊 Say, 🎤 Mirror, ✓ MC. Student picks one to start a session.</td>
+    </tr>
+    <tr>
+      <td>Type hint</td>
+      <td>System highlights types the student hasn't tried yet for their To Do words (e.g., "3 words still need Pronunciation")</td>
+    </tr>
+  </table>
+
+  <h3>7c. Word Card (To Do list)</h3>
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Progress count</td>
+      <td><strong>X/5</strong> showing total successful attempts</td>
+    </tr>
+    <tr>
+      <td>Practice type badges</td>
+      <td>4 small icons (✎ 🔊 🎤 ✓) per word. <strong>Filled</strong> = completed that type, <strong>empty</strong> = not yet done. Students can instantly see which types they still need.</td>
+    </tr>
+    <tr>
+      <td>Type count indicator</td>
+      <td>Shows how many distinct types completed (e.g., "2/3 types") so student knows if they need more diversity</td>
+    </tr>
+  </table>
+
+  <h3>7d. General Practice UI</h3>
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Sound effects</td>
+      <td>Success sound on correct answer; error sound on incorrect answer (all practice types)</td>
+    </tr>
+    <tr>
+      <td>Progress indicator</td>
+      <td>Dot progress bar showing X/5 per word + practice type badges</td>
+    </tr>
+    <tr>
+      <td>Mastery celebration</td>
+      <td>When 5th attempt completes (with 3+ types): confetti animation + "Mastered!" badge</td>
+    </tr>
+    <tr>
+      <td>Completion dialog</td>
+      <td>End screen: words practiced, accuracy, new mastery count, practice types covered</td>
+    </tr>
+  </table>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">8</span> Navigation &amp; Access</h2>
+
+  <h3>8a. Student Access</h3>
+  <div class="card">
+    <p>Add a new sidebar section <strong>"Personal Learning"</strong> with the Word Bank entry:</p>
+    <div class="formula">Dashboard           (existing)
+Courses             (existing)
+Projects            (existing)
+CFA                 (existing)
+Practice List       (existing)
+Assignment          (existing)
+──────────────────
+PERSONAL LEARNING   (NEW section header)
+└── Word Bank       (NEW &mdash; icon: bookmark/book)</div>
+    <p>Students who can access their own Word Bank:</p>
+    <ul>
+      <li><strong>SCHOOL_STUDENT</strong> &mdash; full access (view, practice, delete words)</li>
+    </ul>
+  </div>
+
+  <h3 id="teacher-word-bank">8b. Teacher &amp; Admin Access</h3>
+
+  <div class="card">
+    <p>Teachers and admins access the Word Bank system through a dedicated <strong>"Student's Word Bank"</strong> page in the sidebar. This provides an overview dashboard and per-student detail views.</p>
+
+    <p>Applicable roles:</p>
+    <ul>
+      <li><strong>SCHOOL_ADMIN</strong> &mdash; full access to all students' Word Banks across the school</li>
+      <li><strong>SCHOOL_TEACHER</strong> &mdash; full access to their classroom students' Word Banks</li>
+    </ul>
+  </div>
+
+  <!-- ── Teacher Dashboard ── -->
+  <h3>8c. Teacher Word Bank Dashboard</h3>
+  <div class="card">
+    <p>The teacher's landing page for Word Bank management. Shows aggregate data and a student list.</p>
+
+    <h4>Dashboard Stats (top row)</h4>
+    <table>
+      <tr>
+        <th>Stat</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td><strong>Important Students</strong></td>
+        <td>Count of students who need attention (low mastery % or stalled progress)</td>
+      </tr>
+      <tr>
+        <td><strong>Total Words</strong></td>
+        <td>Total words across all students' Word Banks</td>
+      </tr>
+      <tr>
+        <td><strong>Practice Engagement</strong></td>
+        <td>Count of Word Bank practice sessions this week</td>
+      </tr>
+      <tr>
+        <td><strong>Assignments</strong></td>
+        <td>Count of teacher-assigned word sets this week</td>
+      </tr>
+    </table>
+
+    <h4>Top 5 Targeted Words of the Week</h4>
+    <p>A ranked list of the <strong>5 most-clicked / most-struggled words</strong> across all students. Helps teachers identify common vocabulary gaps.</p>
+
+    <h4>Student List Table</h4>
+    <table>
+      <tr>
+        <th>Column</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>First Name / Last Name</td>
+        <td>Student identity</td>
+      </tr>
+      <tr>
+        <td>Email</td>
+        <td>Student email</td>
+      </tr>
+      <tr>
+        <td>Word Count</td>
+        <td>Total words in the student's Word Bank</td>
+      </tr>
+      <tr>
+        <td>Mastery %</td>
+        <td>Percentage of words that have reached Mastery (color-coded: <span style="color:#16a34a;">green</span> &ge; 70%, <span style="color:#f59e0b;">amber</span> 40&ndash;69%, <span style="color:#ef4444;">red</span> &lt; 40%)</td>
+      </tr>
+      <tr>
+        <td>Removed Words</td>
+        <td>Count of words the student has deleted (flags potential disengagement)</td>
+      </tr>
+      <tr>
+        <td>Actions</td>
+        <td>Click row to open individual student view; three-dot menu for quick actions</td>
+      </tr>
+    </table>
+
+    <p>Top-level action button: <strong>"Assign words to student's word bank"</strong> (blue button, top-right).</p>
+  </div>
+
+  <div class="flow-ascii">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  <span class="highlight">STUDENT'S WORD BANK</span>                  [ Assign words to student's word bank ]  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Important Students    Total Words    Practice Engagement    Assignments    │
+│  <span class="red">30</span>                    <span class="highlight">1,020</span>          <span class="green">120</span>                    <span class="yellow">80</span>              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  <span class="yellow">Top 5 Targeted Words of the Week</span>                                          │
+│  1. adequate    2. environment    3. contribute    4. significant    5. ...  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  First Name │ Last Name │  Email     │ Word Count │ Mastery % │ Removed    │
+│  ───────────┼───────────┼────────────┼────────────┼───────────┼──────────  │
+│  Emily      │ Park      │ e@mail.c   │  45        │ <span class="green">72%</span>       │ 2          │
+│  James      │ Chen      │ j@mail.c   │  38        │ <span class="yellow">51%</span>       │ 0          │
+│  Sofia      │ Kim       │ s@mail.c   │  52        │ <span class="red">28%</span>       │ 8          │
+│  ...        │ ...       │ ...        │  ...       │ ...       │ ...        │
+└──────────────────────────────────────────────────────────────────────────────┘</div>
+
+  <!-- ── Teacher Assign Flow ── -->
+  <h3>8d. Teacher Assign Flow (Add Words in Bulk)</h3>
+  <div class="card">
+    <p>Multi-step flow for teachers to assign vocabulary to students' Word Banks. Can be started from the dashboard or from an individual student's view.</p>
+
+    <h4>Step 1 &mdash; Choose Word Source</h4>
+    <p>Teacher selects where to pull words from:</p>
+    <table>
+      <tr>
+        <th>Source</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td><strong>From Projects</strong></td>
+        <td>Browse existing project content and select vocabulary words from articles/passages</td>
+      </tr>
+      <tr>
+        <td><strong>From Practice List</strong></td>
+        <td>Pull words from an existing Mirroring or QA practice's content</td>
+      </tr>
+      <tr>
+        <td><strong>From Assignments</strong></td>
+        <td>Extract vocabulary from a previously created assignment</td>
+      </tr>
+      <tr>
+        <td><strong>Add Manually</strong></td>
+        <td>Type words/phrases directly into a text input field, one at a time</td>
+      </tr>
+    </table>
+
+    <h4>Step 2 &mdash; Select / Enter Words</h4>
+    <ul>
+      <li><strong>From content source:</strong> system displays extracted words with checkboxes. Teacher selects the words to include.</li>
+      <li><strong>Manual entry:</strong> Teacher types a <strong>Word / Phrase</strong> into a text field. System auto-fills pronunciation. Teacher can click <strong>"Add"</strong> to append each word to the list. Repeat for multiple words.</li>
+      <li>Both modes can be combined &mdash; pull some words from a project and add others manually.</li>
+    </ul>
+
+    <h4>Step 3 &mdash; Review and Confirm</h4>
+    <p>A review table shows all selected words with auto-detected <strong>Part of Speech</strong> tags (Noun, Verb, Adjective, etc.). Teacher can:</p>
+    <ul>
+      <li>Edit part of speech if auto-detection is wrong</li>
+      <li>Remove words from the list before confirming</li>
+      <li>See total word count that will be assigned</li>
+    </ul>
+
+    <h4>Step 4 &mdash; Select Classes and Students</h4>
+    <p><strong>"Active Classes and Students"</strong> screen:</p>
+    <ul>
+      <li>Teacher selects target <strong>class(es)</strong> from a dropdown</li>
+      <li>Student list appears with checkboxes &mdash; select all or pick individual students</li>
+      <li>Shows count: "<em>N words will be added to each selected student's Word Bank</em>"</li>
+      <li>Click <strong>"Assign Students"</strong> to execute</li>
+    </ul>
+
+    <h4>Step 5 &mdash; Confirmation</h4>
+    <p>Success screen: <strong>"These words are now in the student's Word Bank."</strong></p>
+    <ul>
+      <li><strong>"Back to student's word bank"</strong> &mdash; return to dashboard</li>
+      <li><strong>"Assign more words"</strong> &mdash; restart the flow</li>
+    </ul>
+  </div>
+
+  <div class="flow-ascii">
+<span class="highlight">Teacher Assign Flow</span>
+
+<span class="yellow">Step 1</span>                <span class="yellow">Step 2</span>                <span class="yellow">Step 3</span>                 <span class="yellow">Step 4</span>                <span class="yellow">Step 5</span>
+Choose Source          Select Words           Review &amp; Confirm        Select Students        Done!
+┌──────────┐          ┌──────────┐          ┌───────────────┐       ┌──────────────┐      ┌──────────────┐
+│ Projects │──&gt;       │ ☑ word 1 │          │ Word  │ POS   │       │ ☑ Class A    │      │ <span class="green">✓ Words are</span>  │
+│ Practice │──&gt;       │ ☑ word 2 │   ──&gt;    │ run   │ Verb  │  ──&gt;  │   ☑ Emily    │ ──&gt;  │ <span class="green">  now in the</span> │
+│ Assign.. │──&gt;       │ ☐ word 3 │          │ happy │ Adj   │       │   ☑ James    │      │ <span class="green">  Word Bank</span>  │
+│ Manual   │──&gt;       │ + Add... │          │ goal  │ Noun  │       │   ☐ Sofia    │      │              │
+└──────────┘          └──────────┘          └───────────────┘       └──────────────┘      └──────────────┘</div>
+
+  <!-- ── Individual Student View ── -->
+  <h3>8e. Individual Student Word Bank (Teacher View)</h3>
+  <div class="card">
+    <p>Clicking a student row in the dashboard opens their <strong>individual Word Bank detail view</strong>.</p>
+
+    <h4>Header</h4>
+    <p>Breadcrumb: <code>Student's Word Bank &gt; [Student Name]'s Personal Word Bank</code></p>
+    <p>Filter tabs: <strong>All</strong> (with count), <strong>Mastered</strong> (with count), <strong>Learning</strong> (with count)</p>
+
+    <h4>Word List Table</h4>
+    <table>
+      <tr>
+        <th>Column</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Word / Phrase</td>
+        <td>The English word or phrase</td>
+      </tr>
+      <tr>
+        <td>Type</td>
+        <td>Part of speech (Noun, Verb, Adjective, etc.)</td>
+      </tr>
+      <tr>
+        <td>Pronunciation</td>
+        <td>Phonetic pronunciation</td>
+      </tr>
+      <tr>
+        <td>Source</td>
+        <td>Badge: Live Classroom, Practice Error, Mirroring Tag, or Teacher Added</td>
+      </tr>
+      <tr>
+        <td>Mastery</td>
+        <td>Progress indicator (X/5) with practice type badges</td>
+      </tr>
+      <tr>
+        <td>Actions</td>
+        <td>Edit (pencil icon) and Delete (trash icon)</td>
+      </tr>
+    </table>
+
+    <h4>Teacher Actions</h4>
+    <table>
+      <tr>
+        <th>Action</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td><strong>Add words</strong></td>
+        <td>"Add to student's word bank" button &mdash; opens the assign flow (Step 2 onward) pre-scoped to this student</td>
+      </tr>
+      <tr>
+        <td><strong>Edit word</strong></td>
+        <td>Modify word details, part of speech, or translation</td>
+      </tr>
+      <tr>
+        <td><strong>Remove word</strong></td>
+        <td>Delete a word from the student's bank</td>
+      </tr>
+      <tr>
+        <td><strong>Move between groups</strong></td>
+        <td>Move a word from Learning to Mastered (or vice versa) if teacher deems appropriate</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Use case:</strong> Before a unit on "weather vocabulary", the teacher can bulk-assign 10 target words to an entire class via the assign flow. Students then practice these words alongside their organically collected words. After the unit, the teacher opens each student's individual view to check mastery status and intervene where needed.
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <h2><span class="num">9</span> Rules Summary</h2>
+
+  <div class="card" style="border-left: 4px solid #8b5cf6;">
+    <h3 style="margin-top: 0; color: #5b21b6;">Game Rules &mdash; displayed in-app to students</h3>
+    <ol>
+      <li>Words you tap in Live Classroom are <strong>automatically saved</strong> to your Word Bank.</li>
+      <li>Words you get wrong in practice can be <strong>manually saved</strong> to your Word Bank.</li>
+      <li>Your teacher can also <strong>add words</strong> for you to practice.</li>
+      <li>All new words start in <strong>"To Do"</strong>.</li>
+      <li>There are <strong>4 ways to practice</strong>: ✎ Spell it, 🔊 Say it, 🎤 Mirror it (in sentences), ✓ Multiple Choice.</li>
+      <li>Each correct practice = <strong>1 successful attempt</strong>. Wrong answers don't count &mdash; but you'll see the correct answer!</li>
+      <li>To master a word, you need <strong>5 successful attempts</strong> using <strong>at least 3 different practice types</strong>.</li>
+      <li>Check the <strong>badges on each word</strong> (✎ 🔊 🎤 ✓) to see which types you've done and what you still need.</li>
+      <li>After mastering a word, it moves to <strong>"Mastery"</strong>.</li>
+      <li>Your practice records are saved &mdash; your teacher can see your progress!</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Open question:</strong> Should we implement <strong>spaced repetition</strong> (requiring attempts to be spread across multiple days) or keep it simple (5 attempts regardless of timing)? The current spec uses the simpler model for MVP. Spaced repetition could be added as a v2 enhancement.
+  </div>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; ESL Student (3.2) &mdash; Personal Word Bank &middot; February 2026</footer>
+</div>
+
+</body>
+</html>
