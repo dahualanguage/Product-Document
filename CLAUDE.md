@@ -10,6 +10,8 @@ This project contains all product documentation for the DAHUA AI platform — fl
 Product-Document/
 ├── CLAUDE.md                          ← This file (read first!)
 ├── index.html                         ← Documentation portal (single entry point)
+├── shared/
+│   └── diagrams-flow6.js             ← Shared Mermaid diagrams for Flow 6 (single source of truth)
 ├── overview/
 │   └── platform-overview.html         ← Platform overview (roles, permissions, all 6 flows)
 ├── flowcharts/
@@ -410,6 +412,31 @@ When a flow section has a corresponding product spec, add a `.spec-link` in the 
 - Adding a sidebar item → update sidebar HTML in **all flowchart files + legend**
 - Changing classDef colors → update all Mermaid files + Legend (`index.html` in flowcharts/)
 - Changing nav-dot colors → update sidebar in all flowchart files + that page's `.badge`
+
+## Shared Diagram JS Pattern
+
+When the same Mermaid diagrams appear in both the Flow Diagrams page and the Spec page, extract them into a shared JS file under `shared/`:
+
+```
+shared/diagrams-flow6.js   →  window.FLOW6 = { teacherFlow: `...`, studentFlow: `...` }
+```
+
+### How it works
+
+1. **Shared JS file** (`shared/diagrams-flowN.js`): Defines `window.FLOWN = { diagramKey: '...' }` with raw Mermaid text
+2. **Spec page** imports the shared JS and uses **lazy rendering** inside `<details class="flow-collapse">`:
+   - `<pre class="mermaid-lazy" data-key="teacherFlow">` (not `.mermaid`)
+   - On `<details>` toggle open → inject text from `window.FLOWN[key]` → call `mermaid.run({ nodes: [pre] })` → init `DiagramPanZoom`
+   - Mermaid is initialized with `startOnLoad: false`
+3. **Flow Diagrams page** (future) can also import the shared JS instead of inline Mermaid
+
+### Naming convention
+
+| Flow | File | Global |
+|------|------|--------|
+| Flow 6 — Live Classroom | `shared/diagrams-flow6.js` | `window.FLOW6` |
+
+When adding shared diagrams for other flows, follow the same pattern: `shared/diagrams-flowN.js` → `window.FLOWN`.
 
 ## Legacy Swimlane Conversion
 
