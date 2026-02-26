@@ -4,56 +4,66 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flow 6 — Live Classroom</title>
+  <script src="../shared/diagrams-flow6.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #1e293b; background: #f1f5f9; line-height: 1.5; font-size: 14px;
-      display: flex; min-height: 100vh;
     }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 200;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #0ea5e9; font-weight: 700; font-size: 13px; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
 
     /* ── Sidebar ── */
     .sidebar {
-      width: 260px; min-width: 260px; background: #fff;
+      width: 240px; flex-shrink: 0; background: #fff;
       border-right: 1px solid #e2e8f0;
-      display: flex; flex-direction: column;
-      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
-      transition: width .25s, min-width .25s; overflow: hidden;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0; z-index: 100;
     }
-    .sidebar.collapsed { width: 48px; min-width: 48px; }
-    .sidebar-brand {
-      padding: 20px 16px 12px; border-bottom: 1px solid #e2e8f0;
-      display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden;
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
     }
-    .sidebar-brand h2 { font-size: 15px; font-weight: 800; color: #0f172a; transition: opacity .2s; }
-    .sidebar.collapsed .sidebar-brand h2 { opacity: 0; pointer-events: none; }
-    .sidebar-toggle {
-      width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0;
-      background: #f8fafc; cursor: pointer; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0; color: #64748b;
-    }
-    .sidebar-toggle:hover { background: #e2e8f0; }
-    .sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px; padding: 10px 16px;
-      color: #475569; font-size: 13px; font-weight: 600; text-decoration: none;
+    .sidebar-home {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
       border-left: 3px solid transparent; transition: all .15s;
-      white-space: nowrap; overflow: hidden;
     }
-    .nav-item:hover { background: #f8fafc; color: #1e293b; }
-    .nav-item.active { background: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; }
-    .nav-dot {
-      width: 24px; height: 24px; border-radius: 6px; display: flex;
-      align-items: center; justify-content: center;
-      color: #fff; font-weight: 800; font-size: 11px; flex-shrink: 0;
+    .sidebar-home:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar ol a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent; transition: all .15s;
     }
-    .nav-label { transition: opacity .2s; }
-    .sidebar.collapsed .nav-label { opacity: 0; }
+    .sidebar ol a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar ol a.active { color: #0ea5e9; border-left-color: #0ea5e9; font-weight: 700; background: #f0f9ff; }
+    .sidebar .section-label {
+      font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: .5px;
+      padding: 16px 20px 4px; text-transform: uppercase;
+    }
 
     /* ── Main ── */
-    .main { flex: 1; margin-left: 260px; padding: 32px 40px; transition: margin-left .25s; }
-    .sidebar.collapsed ~ .main { margin-left: 48px; }
+    .main { flex: 1; min-width: 0; padding: 32px 40px; }
     .page-header { margin-bottom: 28px; }
     .page-header h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
     .page-header p { color: #64748b; font-size: 14px; }
@@ -124,71 +134,62 @@
     footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 20px; }
 
     @media (max-width: 768px) {
-      .sidebar { width: 48px; min-width: 48px; }
-      .sidebar .nav-label { opacity: 0; }
-      .sidebar .sidebar-brand h2 { opacity: 0; }
-      .main { margin-left: 48px; padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .page-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; position: static; height: auto;
+        border-right: none; border-bottom: 1px solid #e2e8f0;
+        padding: 16px 0;
+      }
+      .main { padding: 16px; }
       .diagram-viewport { height: 450px; }
     }
   </style>
 </head>
 <body>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-brand">
-    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-    </button>
-    <h2>Flow Diagrams</h2>
-  </div>
-  <nav class="sidebar-nav">
-    <a class="nav-item" href="index.html">
-      <span class="nav-dot" style="background:#64748b;"><svg width="12" height="12" viewBox="0 0 20 20" fill="#fff"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg></span>
-      <span class="nav-label">Legend</span>
-    </a>
-    <a class="nav-item" href="flow-1-authentication.html">
-      <span class="nav-dot" style="background:#6366f1;">1</span>
-      <span class="nav-label">Authentication</span>
-    </a>
-    <a class="nav-item" href="flow-2-content-creation.html">
-      <span class="nav-dot" style="background:#10b981;">2</span>
-      <span class="nav-label">Content Creation</span>
-    </a>
-    <a class="nav-item" href="flow-3-student-practice.html">
-      <span class="nav-dot" style="background:#f59e0b;">3</span>
-      <span class="nav-label">Student Practice</span>
-    </a>
-    <a class="nav-item" href="flow-4-school-management.html">
-      <span class="nav-dot" style="background:#ef4444;">4</span>
-      <span class="nav-label">School Management</span>
-    </a>
-    <a class="nav-item" href="flow-5-platform-admin.html">
-      <span class="nav-dot" style="background:#8b5cf6;">5</span>
-      <span class="nav-label">Platform Admin</span>
-    </a>
-    <a class="nav-item active" href="flow-6-live-classroom.html">
-      <span class="nav-dot" style="background:#0ea5e9;">6</span>
-      <span class="nav-label">Live Classroom</span>
-    </a>
-  </nav>
+<div class="topbar">
+  <a href="../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../index.html">Flow Diagrams</a>
+  <span class="sep">/</span>
+  <span class="current">3.5 Live Classroom</span>
+</div>
+
+<div class="page-layout">
+
+<aside class="sidebar">
+  <ol>
+    <li><a href="index.html">Legend</a></li>
+    <li class="section-label">General</li>
+    <li><a href="flow-1-authentication.html">1.1 Authentication</a></li>
+    <li><a href="flow-5-platform-admin.html">1.2 Platform Admin</a></li>
+    <li><a href="flow-4-school-management.html">1.3 School Management</a></li>
+    <li class="section-label">Modules</li>
+    <li><a href="flow-2-content-creation.html">2.1 Content Creation</a></li>
+    <li><a href="flow-3-student-practice.html">2.2 Student Practice</a></li>
+    <li class="section-label">ESL Modules</li>
+    <li><a href="flow-7-esl-teacher.html">3.3 ESL Teacher</a></li>
+    <li><a href="flow-6-live-classroom.html" class="active">3.5 Live Classroom</a></li>
+  </ol>
 </aside>
 
 <div class="main">
   <div class="page-header">
-    <h1>6. Live Classroom</h1>
+    <h1>3.5 Live Classroom</h1>
     <p>Content Teacher broadcasts live audio &rarr; Real-time transcription &rarr; ESL Students receive clickable transcript &rarr; Word-level language support &rarr; Difficulty events feed Data Dashboard.</p>
   </div>
 
-  <!-- ═══════════ FLOW A: Live Session ═══════════ -->
+  <!-- ═══════════ FLOW A: Project Teacher Flow ═══════════ -->
   <h3 class="section-title">
-    <span class="badge">A</span> Live Session &amp; Real-Time Transcription
+    <span class="badge">A</span> Project Teacher Flow
     <a class="spec-link" href="../specs/flow-6-live-classroom/live-transcription.html" title="Open product spec">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
       Product Spec
     </a>
   </h3>
   <div class="flow-section">
-    <div class="zoom-toolbar" data-for="flowA">
+    <div class="zoom-toolbar" data-for="teacherFlow">
       <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
       <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
       <div class="zoom-level" data-label>100%</div>
@@ -197,59 +198,21 @@
       </button>
       <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
     </div>
-    <div class="diagram-viewport" id="flowA">
-      <pre class="mermaid">
-flowchart TD
-    START([Content Teacher opens Live Session]):::start --> ROLE{User role?}:::decision
-
-    ROLE -->|CONTENT_TEACHER /<br/>ESL_SUBJECT_TEACHER| AUTH["Authorized to broadcast<br/>Live session controls visible"]
-    ROLE -->|ESL_TEACHER| VIEW["Can view student transcript activity<br/>but does not broadcast"]
-    ROLE -->|ESL_STUDENT| STUDENT_JOIN["Joins live session<br/>as transcript listener"]
-    ROLE -->|Other roles| NO_ACCESS([No live session access]):::endnode
-
-    AUTH --> MIC["Enable Microphone<br/>Browser permission required"]
-    MIC --> MIC_CHECK{Microphone granted?}:::decision
-    MIC_CHECK -->|No| MIC_FAIL["Browser blocked microphone<br/>Must allow in browser settings"]:::warn
-    MIC_CHECK -->|Yes| STREAM["Audio stream active<br/>Sent to AssemblyAI via WebSocket"]
-
-    STREAM --> ASM["AssemblyAI processes audio<br/>Real-time speech-to-text"]:::ai
-    ASM --> ABLY["Transcription pushed to<br/>Ably pub/sub channel<br/>Channel: session-specific"]
-    ABLY --> STUDENTS["All subscribed students<br/>receive live transcript"]
-
-    STUDENT_JOIN --> SUB["Subscribe to Ably channel<br/>for current session"]
-    SUB --> STUDENTS
-
-    STUDENTS --> DISPLAY["ClickableTranscript component<br/>renders transcript in real time"]
-    DISPLAY --> SESSION_END{Teacher ends session?}:::decision
-    SESSION_END -->|No| STREAM
-    SESSION_END -->|Yes| SAVE["Session transcript saved<br/>Available for review"]
-    SAVE --> DONE([Live session complete]):::endnode
-
-    VIEW --> MONITOR["Monitor student difficulty events<br/>See which words students click"]
-    MONITOR --> DONE
-
-    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
-    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
-    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
-    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
-    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
-    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
-    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
-    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
-      </pre>
+    <div class="diagram-viewport" id="teacherFlow">
+      <pre class="mermaid" data-key="teacherFlow"></pre>
     </div>
   </div>
 
-  <!-- ═══════════ FLOW B: ClickableTranscript ═══════════ -->
+  <!-- ═══════════ FLOW B: Student Flow ═══════════ -->
   <h3 class="section-title">
-    <span class="badge">B</span> ClickableTranscript &amp; Word-Level Support
+    <span class="badge">B</span> Student Flow
     <a class="spec-link" href="../specs/flow-6-live-classroom/clickable-transcript.html" title="Open product spec">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
       Product Spec
     </a>
   </h3>
   <div class="flow-section">
-    <div class="zoom-toolbar" data-for="flowB">
+    <div class="zoom-toolbar" data-for="studentFlow">
       <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
       <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
       <div class="zoom-level" data-label>100%</div>
@@ -258,35 +221,8 @@ flowchart TD
       </button>
       <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
     </div>
-    <div class="diagram-viewport" id="flowB">
-      <pre class="mermaid">
-flowchart TD
-    START([Student sees live transcript]):::start
-    START --> RENDER["ClickableTranscript component<br/>Every word is a tappable element<br/>Transcript scrolls as teacher speaks"]
-
-    RENDER --> TAP["Student taps an unknown word"]
-    TAP --> LOOKUP["lookupWord GraphQL query<br/>Sends word + surrounding context"]:::ai
-
-    LOOKUP --> POPUP["Support popup appears:<br/>Translation · Definition<br/>Pinyin · Example sentences"]
-    LOOKUP --> EVENT["Difficulty event recorded:<br/>word · timestamp · studentId<br/>sessionId · contextSentence"]
-
-    POPUP --> DISMISS["Student reads support content<br/>Dismisses popup or taps next word"]
-    DISMISS --> CONT([Returns to transcript — repeat as needed]):::endnode
-
-    EVENT --> PROFILE["Difficulty profile builds over time<br/>Tracks repeated lookups across sessions"]
-    PROFILE --> VOCAB["Personalized vocabulary lists<br/>generated from difficulty history"]
-    VOCAB --> DASH["Feeds into Data Dashboard<br/>(Flow 4, Section B)"]:::info
-    DASH --> DONE([Teachers see student difficulty data]):::endnode
-
-    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
-    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
-    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
-    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
-    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
-    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
-    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
-    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
-      </pre>
+    <div class="diagram-viewport" id="studentFlow">
+      <pre class="mermaid" data-key="studentFlow"></pre>
     </div>
   </div>
 
@@ -340,8 +276,15 @@ flowchart TD
 
   <footer>DAHUA AI &middot; Flow Diagrams &middot; February 2026</footer>
 </div>
+</div><!-- /page-layout -->
 
 <script>
+  // ── Inject shared diagram content ──
+  document.querySelectorAll('pre.mermaid[data-key]').forEach(pre => {
+    const key = pre.dataset.key;
+    if (window.FLOW6 && window.FLOW6[key]) pre.textContent = window.FLOW6[key];
+  });
+
   // ── Mermaid init ──
   mermaid.initialize({
     startOnLoad: true,
@@ -520,7 +463,7 @@ flowchart TD
   const diagrams = {};
 
   function initDiagrams() {
-    ['flowA', 'flowB', 'flowC'].forEach((id) => {
+    ['teacherFlow', 'studentFlow', 'flowC'].forEach((id) => {
       const vp = document.getElementById(id);
       if (!vp || !vp.querySelector('svg')) return;
       const d = new DiagramPanZoom(id);
@@ -532,7 +475,7 @@ flowchart TD
   let attempts = 0;
   const waitForMermaid = setInterval(() => {
     attempts++;
-    const allReady = ['flowA', 'flowB', 'flowC'].every(
+    const allReady = ['teacherFlow', 'studentFlow', 'flowC'].every(
       (id) => document.getElementById(id)?.querySelector('svg')
     );
     if (allReady || attempts > 30) {
@@ -561,13 +504,6 @@ flowchart TD
     else if (action === 'reset') d.resetZoom();
   });
 
-  // ── Sidebar toggle ──
-  const sidebar = document.getElementById('sidebar');
-  document.getElementById('sidebarToggle').addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    const svgEl = document.querySelector('#sidebarToggle svg');
-    svgEl.style.transform = sidebar.classList.contains('collapsed') ? 'rotate(180deg)' : '';
-  });
 </script>
 </body>
 </html>

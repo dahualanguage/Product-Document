@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Live Classroom</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #0ea5e9; font-weight: 700; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #0ea5e9; border-left-color: #0ea5e9; font-weight: 700; background: #f0f9ff; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Responsive: collapse sidebar ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; position: static; height: auto;
+        border-right: none; border-bottom: 1px solid #e2e8f0;
+        padding: 16px 0;
+      }
+      .main-content { padding: 24px 20px 60px; }
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #0ea5e9;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 16px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 15px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #e0f2fe; }
+
+    /* ── Figma Button ── */
+    .figma-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 8px;
+      background: #1e1e1e; color: #fff;
+      text-decoration: none; font-size: 13px; font-weight: 600;
+      transition: background .15s;
+    }
+    .figma-btn:hover { background: #333; }
+
+    /* ── UI Screen Gallery ── */
+    .screen-gallery { display: flex; gap: 24px; margin: 16px 0 24px; flex-wrap: wrap; }
+    .screen-card {
+      flex: 1; min-width: 280px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .screen-card img { width: 100%; display: block; border-bottom: 1px solid #e2e8f0; }
+    .screen-label {
+      padding: 10px 16px; font-size: 12px; font-weight: 700; color: #475569;
+      background: #f8fafc; display: flex; align-items: center; gap: 8px;
+    }
+    .screen-label .state-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .screen-caption { padding: 8px 16px 14px; font-size: 12px; color: #64748b; line-height: 1.5; }
+
+    /* ── Code blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Wireframes ── */
+    .wireframe {
+      background: #0f172a; border-radius: 10px;
+      padding: 20px 24px; margin: 12px 0 20px;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace; font-size: 12px;
+      line-height: 1.6; color: #e2e8f0; white-space: pre; overflow-x: auto;
+    }
+    .wireframe .dim { color: #475569; }
+    .wireframe .hl { color: #fbbf24; }
+    .wireframe .g { color: #4ade80; }
+    .wireframe .r { color: #f87171; }
+    .wireframe .b { color: #60a5fa; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-goal { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Screen label ── */
+    .screen-label {
+      display: inline-block; padding: 3px 12px; border-radius: 6px;
+      font-size: 12px; font-weight: 700; letter-spacing: .5px;
+      background: #0f172a; color: #fbbf24; margin-bottom: 12px;
+    }
+
+    /* ── Status tags ── */
+    .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-mvp { background: #dbeafe; color: #1e40af; }
+    .status-future { background: #f1f5f9; color: #64748b; }
+
+    /* ── Collapsible flow diagram ── */
+    .flow-collapse { margin: 16px 0 20px; }
+    .flow-collapse summary {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+      cursor: pointer; font-size: 13px; font-weight: 600; color: #0369a1;
+      list-style: none; transition: all .15s; user-select: none;
+    }
+    .flow-collapse summary::-webkit-details-marker { display: none; }
+    .flow-collapse summary:hover { background: #e0f2fe; border-color: #7dd3fc; }
+    .flow-collapse summary .arrow { width: 16px; height: 16px; transition: transform .2s; flex-shrink: 0; }
+    .flow-collapse[open] summary .arrow { transform: rotate(90deg); }
+    .flow-collapse[open] summary { border-radius: 8px 8px 0 0; border-bottom-color: #e2e8f0; }
+
+    /* ── Flow section (pan/zoom diagram) ── */
+    .flow-section {
+      background: #fff; border: 1px solid #e2e8f0; border-top: none;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+      position: relative;
+    }
+    .diagram-viewport {
+      width: 100%; height: 480px; overflow: hidden;
+      border-radius: 12px; position: relative;
+      cursor: grab; background: #fafbfc;
+    }
+    .diagram-viewport:active { cursor: grabbing; }
+    .diagram-viewport .mermaid,
+    .diagram-viewport .mermaid-lazy {
+      transform-origin: 0 0;
+      position: absolute; top: 0; left: 0;
+    }
+    .diagram-viewport .mermaid-lazy {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; color: #94a3b8; font-size: 13px;
+    }
+
+    /* ── Zoom toolbar ── */
+    .zoom-toolbar {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      display: flex; flex-direction: column; gap: 0;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08); overflow: hidden;
+    }
+    .zoom-btn {
+      width: 36px; height: 36px; border: none; border-bottom: 1px solid #f1f5f9;
+      background: #fff; color: #475569; font-size: 18px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .12s; line-height: 1;
+    }
+    .zoom-btn:last-child { border-bottom: none; }
+    .zoom-btn:hover { background: #f1f5f9; color: #1e293b; }
+    .zoom-btn:active { background: #e2e8f0; }
+    .zoom-btn svg { width: 16px; height: 16px; }
+    .zoom-btn.text-btn { font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+    .zoom-level {
+      width: 36px; height: 28px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #94a3b8; user-select: none;
+      border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+    }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../../flowcharts/flow-6-live-classroom.html">3.5 Live Classroom</a>
+  <span class="sep">/</span>
+  <span class="current">Live Classroom</span>
+</div>
+
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#goal" class="active">1. Feature Goal</a></li>
+      <li><a href="#roles">2. User Roles &amp; Permissions</a></li>
+      <li>
+        <a href="#teacher">3. Project Teacher</a>
+        <ol>
+          <li><a href="#teacher-flow">3.1 User Flow</a></li>
+          <li><a href="#teacher-ux">3.2 UX Logic &amp; Edge States</a></li>
+          <li><a href="#teacher-ui">3.3 UI Screen Specs</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#student">4. Student</a>
+        <ol>
+          <li><a href="#student-flow">4.1 User Flow</a></li>
+          <li><a href="#student-ux">4.2 UX Logic &amp; Edge States</a></li>
+          <li><a href="#student-ui">4.3 UI Screen Specs</a></li>
+        </ol>
+      </li>
+      <li><a href="#data">5. Data &amp; Schema</a></li>
+      <li><a href="#questions">6. Open Questions</a></li>
+      <li><a href="#impl">7. Implementation Notes</a></li>
+    </ol>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+  <div class="doc-header">
+    <h1>Live Classroom</h1>
+    <p class="subtitle">Real-time transcription with word-level language support for ESL students during content-area instruction.</p>
+    <div class="meta">
+      <span>3.5 Live Classroom</span>
+      <span>Status: Planning</span>
+      <span>Target: TBD</span>
+      <span>Last updated: 2026-02-23</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ 1. FEATURE GOAL ════════════════ -->
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How can ESL students follow along in a content class taught in English when the instructional language is above their proficiency level?</div>
+    <div class="q-context">Content teachers (science, math, social studies) teach in English. ESL students in mixed-level classrooms need real-time language support to access the content being taught &mdash; without interrupting the lesson or the teacher's flow.</div>
+  </div>
+
+  <div class="callout callout-goal">
+    <strong>Goal:</strong> During a live content class, capture the teacher's speech in real time, convert it to text, and deliver it to students as an interactive transcript where they can tap any word for instant language support.
+  </div>
+
+  <p>The Live Classroom combines three capabilities into one seamless experience:</p>
+  <ol>
+    <li><strong>Live Transcription</strong> &mdash; Teacher's speech is converted to text in real time and pushed to all connected students</li>
+    <li><strong>ClickableTranscript</strong> &mdash; Every word in the transcript is tappable; students get instant translation, definition, and examples</li>
+    <li><strong>Difficulty Tracking</strong> &mdash; Each word tap is recorded as a difficulty event, building a per-student language profile that feeds into the Data Dashboard</li>
+  </ol>
+
+  <!-- ════════════════ 2. USER ROLES ════════════════ -->
+  <h2 id="roles"><span class="num">2</span> User Roles &amp; Permissions</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>Project Teacher</th>
+        <th>ESL Teacher</th>
+        <th>ESL Student</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Start / end live session</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>Broadcast audio (microphone)</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>Receive live transcript</td>
+        <td>&mdash;</td>
+        <td>View only</td>
+        <td>Yes (interactive)</td>
+      </tr>
+      <tr>
+        <td>Tap words for language support</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td>Monitor student difficulty events</td>
+        <td>&mdash;</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>View session transcript after class</td>
+        <td>Yes</td>
+        <td>Yes</td>
+        <td>Yes (own data only)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 3. PROJECT TEACHER ════════════════ -->
+  <h2 id="teacher"><span class="num">3</span> Project Teacher</h2>
+
+  <!-- 3.1 -->
+  <h3 id="teacher-flow">3.1 User Flow</h3>
+
+  <details class="flow-collapse" data-diagram="teacherFlow">
+    <summary>
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      View Flow Diagram — Project Teacher
+    </summary>
+    <div class="flow-section">
+      <div class="zoom-toolbar" data-for="teacherFlow">
+        <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+        <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+        <div class="zoom-level" data-label>100%</div>
+        <button class="zoom-btn" data-action="fit" title="Fit to view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+        <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+      </div>
+      <div class="diagram-viewport" id="teacherFlow">
+        <pre class="mermaid-lazy" data-key="teacherFlow"></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3.2 -->
+  <h3 id="teacher-ux">3.2 UX Logic &amp; Edge States</h3>
+
+  <h4>3.2.1 Teacher Pre-class Settings</h4>
+  <p>Before starting a live session the teacher must complete a microphone voice test. The following scenarios describe each state the test can reach.</p>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Screen</th><th>Text</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Microphone Unconnected (no device)</strong></td>
+        <td>No microphone hardware detected</td>
+        <td>&ldquo;Microphone unconnected &mdash; Please allow Microphone access in your browser, or check that your device is connected.&rdquo;</td>
+        <td>Voice test cannot proceed. Block session start.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Permission Denied (Browser settings)</strong></td>
+        <td>Browser mic permission dialog was dismissed or rejected</td>
+        <td>&ldquo;Microphone permission is required. Please enable it in your browser settings.&rdquo;</td>
+        <td>The system cannot detect any audio input. The teacher must enable microphone permission in their browser settings before proceeding.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Connected &mdash; Ready to Test</strong></td>
+        <td>Microphone Connected</td>
+        <td>&ldquo;Speak to test&rdquo; &mdash; <em>&ldquo;Test 1, 2, 3&rdquo;</em></td>
+        <td>Display test phrase prompt. Await teacher voice input.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Connected &mdash; Voice Test Active</strong></td>
+        <td>Teacher is speaking; transcribed words enlarge in the transcription box</td>
+        <td>Each correctly transcribed word becomes enlarged in the transcription box.</td>
+        <td>Confirms: (a) audio is being recorded, (b) speech-to-text is functioning, (c) the transcription pipeline is working end-to-end.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Voice Test Passed &mdash; Ready to Start</strong></td>
+        <td>Test phrase successfully transcribed</td>
+        <td>Test phrase remains visible as confirmation.</td>
+        <td>The &ldquo;Start Class&rdquo; button appears. Teacher can begin the live session.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Voice Test Failed &mdash; Low Volume</strong></td>
+        <td>Microphone input volume too low to transcribe accurately</td>
+        <td>&ldquo;Volume too low &mdash; please move closer to the microphone or increase input volume.&rdquo;</td>
+        <td>Prompt the teacher to adjust microphone position or volume level before retrying.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Voice Test Failed &mdash; Mismatch</strong></td>
+        <td>Transcribed output is significantly different from the expected test phrase</td>
+        <td>&ldquo;Voice test did not match. Please try again in a quieter environment.&rdquo;</td>
+        <td>The microphone is recording and text is appearing, but the words do not match the expected phrase. Prompt the teacher to retry or check mic input source.</td>
+      </tr>
+      <tr>
+        <td><strong>8. STT Service Unavailable</strong></td>
+        <td>Microphone is working but Speech-to-Text service is down or unreachable</td>
+        <td>&ldquo;Transcription service is currently unavailable. Please try again later.&rdquo;</td>
+        <td>Falls back to Scenario 1 behaviour &mdash; voice test cannot proceed, block session start. Retry button available.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>3.2.2 Class End Logic</h4>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Role</th><th>Event</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2"><strong>1. Teacher clicks &ldquo;End Class&rdquo;</strong></td><td>Teacher</td><td>clicks &ldquo;End Class&rdquo;</td><td>Send status to student&rsquo;s system</td></tr>
+      <tr><td>Student</td><td>receives signal</td><td>Show Class End Summary Modal</td></tr>
+      <tr><td rowspan="3"><strong>2. Teacher clicks &ldquo;Pause&rdquo; (NOT end)</strong></td><td>Teacher</td><td>click &ldquo;Pause&rdquo;</td><td>Stop transcript</td></tr>
+      <tr><td></td><td>clicks &ldquo;Resume&rdquo;</td><td>Keep recording transcript</td></tr>
+      <tr><td>Student</td><td>N/A</td><td></td></tr>
+      <tr><td rowspan="4"><strong>3. Teacher clicks &ldquo;Pause&rdquo; and forgets to resume</strong></td><td>Teacher</td><td>Forget to resume for over 3 mins</td><td>First reminder: Popup &ldquo;Class is still paused&rdquo;</td></tr>
+      <tr><td></td><td>Forget to resume for over 5 mins</td><td>Auto Saved &mdash; endClass</td></tr>
+      <tr><td></td><td>Closes browser while paused</td><td>Triggers Scenario 4 logic</td></tr>
+      <tr><td>Student</td><td>over 5 mins</td><td>System show Summary Modal</td></tr>
+      <tr><td rowspan="2"><strong>4. Teacher closes browser / disconnects</strong></td><td>Teacher</td><td>returns within 5 mins</td><td>Popup: Resume Previous Class?</td></tr>
+      <tr><td></td><td>over 5 min not returns</td><td>Auto Saved &mdash; endClass</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3.3 -->
+  <h3 id="teacher-ui">3.3 UI Screen Specifications</h3>
+
+  <a href="https://www.figma.com/design/JnEp9YvbDbveRHr8o39gJT/Dahua-Design?node-id=604-6440&t=N1R2ZTq1OZcYVj6m-1" target="_blank" class="figma-btn">
+    <svg width="16" height="16" viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 28.5A9.5 9.5 0 1 1 28.5 19 9.5 9.5 0 0 1 19 28.5z" fill="#1abcfe"/>
+      <path d="M9.5 57A9.5 9.5 0 0 1 9.5 38H19v9.5A9.5 9.5 0 0 1 9.5 57z" fill="#0acf83"/>
+      <path d="M19 0v19h9.5a9.5 9.5 0 0 0 0-19z" fill="#ff7262"/>
+      <path d="M9.5 0A9.5 9.5 0 0 0 9.5 19H19V0z" fill="#f24e1e"/>
+      <path d="M19 19H9.5a9.5 9.5 0 0 0 0 19H19z" fill="#a259ff"/>
+    </svg>
+    Open in Figma
+  </a>
+
+  <!-- ════════════════ 4. STUDENT ════════════════ -->
+  <h2 id="student"><span class="num">4</span> Student</h2>
+
+  <!-- 4.1 -->
+  <h3 id="student-flow">4.1 User Flow</h3>
+
+  <details class="flow-collapse" data-diagram="studentFlow">
+    <summary>
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      View Flow Diagram — Student
+    </summary>
+    <div class="flow-section">
+      <div class="zoom-toolbar" data-for="studentFlow">
+        <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+        <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+        <div class="zoom-level" data-label>100%</div>
+        <button class="zoom-btn" data-action="fit" title="Fit to view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+        <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+      </div>
+      <div class="diagram-viewport" id="studentFlow">
+        <pre class="mermaid-lazy" data-key="studentFlow"></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- 4.2 -->
+  <h3 id="student-ux">4.2 UX Logic &amp; Edge States</h3>
+
+  <table>
+    <thead><tr><th>State</th><th>Condition</th><th>UI Treatment</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Waiting for session</strong></td>
+        <td>Student opens Live Classroom but teacher hasn't started yet</td>
+        <td>Centered message: &ldquo;Waiting for your teacher to start the live session&hellip;&rdquo; with subtle pulse animation.</td>
+      </tr>
+      <tr>
+        <td><strong>Late join</strong></td>
+        <td>Student joins after session already started</td>
+        <td>Load transcript history from session start. Show catchup indicator: &ldquo;Catching up&hellip;&rdquo; then auto-scroll to live position.</td>
+      </tr>
+      <tr>
+        <td><strong>Reconnecting</strong></td>
+        <td>Student's internet drops briefly</td>
+        <td>Banner: &ldquo;Reconnecting&hellip;&rdquo; On reconnect, fetch missed transcript chunks from channel history and append seamlessly. Student sees no gap.</td>
+      </tr>
+      <tr>
+        <td><strong>Word lookup failed</strong></td>
+        <td>lookupWord query fails (network / server)</td>
+        <td>Popup shows: &ldquo;Couldn't load word info. Tap to retry.&rdquo; The tap is still recorded as a difficulty event regardless.</td>
+      </tr>
+      <tr>
+        <td><strong>Session ended</strong></td>
+        <td>Teacher ends the live session</td>
+        <td>Banner: &ldquo;Live session has ended.&rdquo; Transcript remains readable (frozen). Link: &ldquo;View session summary.&rdquo;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4.3 -->
+  <h3 id="student-ui">4.3 UI Screen Specifications</h3>
+
+  <div class="callout callout-info">
+    <strong>Pending design:</strong> Wireframes will be added from Figma designs.
+  </div>
+
+  <table>
+    <thead><tr><th>Screen</th><th>Description</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Live Transcript View</td><td>Interactive scrolling transcript with tappable words and language support popup</td><td>Pending</td></tr>
+      <tr><td>Word Support Popup</td><td>Translation, definition, example sentence overlay</td><td>Pending</td></tr>
+      <tr><td>Session Summary View</td><td>Post-session recap with own difficulty words and stats</td><td>Pending</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 5. DATA & SCHEMA ════════════════ -->
+  <h2 id="data"><span class="num">5</span> Data &amp; Schema</h2>
+
+  <!-- 5.1 -->
+  <h3>5.1 Audio Pipeline</h3>
+
+  <table>
+    <thead><tr><th>Component</th><th>Technology</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Audio Capture</td><td>Browser MediaRecorder API</td><td>Capture teacher's microphone audio</td></tr>
+      <tr><td>Speech-to-Text</td><td>Speech-to-text service (WebSocket streaming)</td><td>Real-time transcription with word-level timestamps</td></tr>
+      <tr><td>Real-time Delivery</td><td>Pub/sub messaging service</td><td>Push transcript chunks to all subscribed students</td></tr>
+      <tr><td>Word Lookup</td><td>lookupWord GraphQL query</td><td>Translation, definition, and example for tapped words</td></tr>
+      <tr><td>Frontend Render</td><td>ClickableTranscript component</td><td>Display interactive transcript with tappable words</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 5.2 -->
+  <h3>5.2 Difficulty Event Schema</h3>
+
+  <div class="formula">DifficultyEvent {
+  word: String            // The word the student tapped
+  studentId: String       // Who tapped it
+  sessionId: String       // Which live session
+  timestamp: ISO8601      // When it happened
+  contextSentence: String // Surrounding sentence for context
+  contentArea: String     // Subject being taught (science, math, etc.)
+  source: "LIVE_TRANSCRIPT"  // Distinguishes from practice events
+}</div>
+
+  <div class="callout callout-info">
+    <strong>Data pipeline:</strong> These events are the primary input for the Language Difficulty Profile and Language Access Level metrics in the Data Dashboard (1.3 School Management). When a student repeatedly taps the same word or category of words, the system identifies it as a persistent difficulty area.
+  </div>
+
+  <!-- 5.3 -->
+  <h3>5.3 Session Record Schema</h3>
+
+  <div class="formula">LiveSession {
+  sessionId: String       // Unique session identifier
+  teacherId: String       // Content Teacher who broadcast
+  classroomId: String     // Associated classroom
+  contentArea: String     // Subject (science, math, etc.)
+  gradeLevel: String      // Grade level of the class
+  startTime: ISO8601      // Session start
+  endTime: ISO8601        // Session end
+  transcript: [           // Full transcript with timestamps
+    { text: String, startMs: Number, endMs: Number }
+  ]
+  connectedStudents: [String]  // Student IDs who joined
+  difficultyEvents: [DifficultyEvent]  // All word taps
+}</div>
+
+  <!-- ════════════════ 6. OPEN QUESTIONS ════════════════ -->
+  <h2 id="questions"><span class="num">6</span> Open Questions</h2>
+
+  <div class="callout-question">
+    <div class="q-text">Should students be able to review their own difficulty history after a session?</div>
+    <div class="q-context">Currently, post-session data goes only to the teacher dashboard. Showing students their own tapped words could encourage self-study, but it might also cause anxiety for struggling students.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">How should the system handle multiple simultaneous live sessions?</div>
+    <div class="q-context">If a school has several content classes at once, ESL Teachers may need to monitor more than one session. Should the monitoring view support multi-session tabs?</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">Should the transcript support sentence-level bookmarking?</div>
+    <div class="q-context">Beyond tapping individual words, students might want to mark entire sentences they didn't understand for later review. This would add a second interaction layer to the transcript.</div>
+  </div>
+
+  <!-- ════════════════ 7. IMPLEMENTATION NOTES ════════════════ -->
+  <h2 id="impl"><span class="num">7</span> Implementation Notes</h2>
+
+  <div class="card">
+    <h4>A. Real-time Channel Architecture</h4>
+    <table>
+      <thead><tr><th>Channel</th><th>Publisher</th><th>Subscribers</th><th>Payload</th></tr></thead>
+      <tbody>
+        <tr><td><code>session:{sessionId}:transcript</code></td><td>Server (from speech-to-text)</td><td>All students + ESL Teacher</td><td>Transcript chunks with timestamps</td></tr>
+        <tr><td><code>session:{sessionId}:events</code></td><td>Student clients</td><td>ESL Teacher monitor</td><td>Difficulty events (word taps)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4>B. Performance Targets</h4>
+    <table>
+      <thead><tr><th>Metric</th><th>Target</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Speech-to-text latency</td><td>&lt; 2 seconds</td><td>From teacher speaking to text appearing on student screen</td></tr>
+        <tr><td>Word lookup latency</td><td>&lt; 500ms</td><td>From tap to popup display</td></tr>
+        <tr><td>Reconnect time</td><td>&lt; 5 seconds</td><td>Auto-reconnect without user action</td></tr>
+        <tr><td>Max concurrent students</td><td>50 per session</td><td>Pub/sub channel limit; review if larger classes needed</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4>C. Session End Behavior</h4>
+    <ul>
+      <li>Persist full transcript + all difficulty events to database</li>
+      <li>Compute per-student difficulty summary (top words, event count)</li>
+      <li>Push session data to Data Dashboard pipeline for metric recalculation</li>
+      <li>Generate session summary available to all participants</li>
+    </ul>
+  </div>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; 3.5 Live Classroom &middot; February 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<!-- ── Shared diagram definitions ── -->
+<script src="../../shared/diagrams-flow6.js"></script>
+
+<!-- ── Mermaid ── -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  // ── Mermaid init (startOnLoad: false — we render lazily) ──
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e40af',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#94a3b8',
+      secondaryColor: '#fef9c3',
+      tertiaryColor: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '13px',
+      nodeBorder: '#93c5fd',
+      mainBkg: '#dbeafe',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#e2e8f0',
+      edgeLabelBackground: '#ffffff',
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 16,
+      nodeSpacing: 40,
+      rankSpacing: 50,
+      useMaxWidth: false,
+    },
+  });
+
+  // ── Pan & Zoom ──
+  class DiagramPanZoom {
+    constructor(viewportId) {
+      this.viewport = document.getElementById(viewportId);
+      this.scale = 1;
+      this.panX = 0;
+      this.panY = 0;
+      this.minScale = 0.15;
+      this.maxScale = 3;
+      this.dragging = false;
+      this.startX = 0;
+      this.startY = 0;
+      this.svg = null;
+      this.svgW = 0;
+      this.svgH = 0;
+      this.label = this.viewport.closest('.flow-section').querySelector('[data-label]');
+      this._bindEvents();
+    }
+
+    init() {
+      this.svg = this.viewport.querySelector('svg');
+      if (!this.svg) return;
+      this.svg.style.maxWidth = 'none';
+      this.svg.removeAttribute('width');
+      this.svgW = this.svg.getBoundingClientRect().width;
+      this.svgH = this.svg.getBoundingClientRect().height;
+      this.fitToView();
+    }
+
+    apply() {
+      if (!this.svg) return;
+      this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.scale})`;
+      this.svg.style.transformOrigin = '0 0';
+      if (this.label) this.label.textContent = Math.round(this.scale * 100) + '%';
+    }
+
+    fitToView() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.svg.style.transform = 'scale(1)';
+      this.svg.style.transformOrigin = '0 0';
+      this.svgW = this.svg.scrollWidth;
+      this.svgH = this.svg.scrollHeight;
+      this.scale = Math.min(vw / this.svgW, vh / this.svgH) * 0.92;
+      this.scale = Math.max(this.minScale, Math.min(this.maxScale, this.scale));
+      this.panX = (vw - this.svgW * this.scale) / 2;
+      this.panY = Math.max((vh - this.svgH * this.scale) / 2, 10);
+      this.apply();
+    }
+
+    resetZoom() {
+      const vw = this.viewport.clientWidth;
+      this.scale = 1;
+      this.panX = Math.max((vw - this.svgW) / 2, 0);
+      this.panY = 10;
+      this.apply();
+    }
+
+    zoomTo(newScale, cx, cy) {
+      newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
+      const ratio = newScale / this.scale;
+      this.panX = cx - (cx - this.panX) * ratio;
+      this.panY = cy - (cy - this.panY) * ratio;
+      this.scale = newScale;
+      this.apply();
+    }
+
+    zoomIn() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.zoomTo(this.scale * 1.25, vw / 2, vh / 2);
+    }
+
+    zoomOut() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.zoomTo(this.scale / 1.25, vw / 2, vh / 2);
+    }
+
+    _bindEvents() {
+      this.viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = this.viewport.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.12 : 0.88;
+        this.zoomTo(this.scale * factor, cx, cy);
+      }, { passive: false });
+
+      this.viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        this.dragging = true;
+        this.startX = e.clientX - this.panX;
+        this.startY = e.clientY - this.panY;
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!this.dragging) return;
+        this.panX = e.clientX - this.startX;
+        this.panY = e.clientY - this.startY;
+        this.apply();
+      });
+      window.addEventListener('mouseup', () => { this.dragging = false; });
+
+      let lastTouchDist = 0;
+      let lastTouchMid = { x: 0, y: 0 };
+      this.viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          this.dragging = true;
+          this.startX = e.touches[0].clientX - this.panX;
+          this.startY = e.touches[0].clientY - this.panY;
+        } else if (e.touches.length === 2) {
+          this.dragging = false;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+          const rect = this.viewport.getBoundingClientRect();
+          lastTouchMid = {
+            x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
+            y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top,
+          };
+        }
+        e.preventDefault();
+      }, { passive: false });
+      this.viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && this.dragging) {
+          this.panX = e.touches[0].clientX - this.startX;
+          this.panY = e.touches[0].clientY - this.startY;
+          this.apply();
+        } else if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const factor = dist / lastTouchDist;
+          lastTouchDist = dist;
+          this.zoomTo(this.scale * factor, lastTouchMid.x, lastTouchMid.y);
+        }
+        e.preventDefault();
+      }, { passive: false });
+      this.viewport.addEventListener('touchend', () => { this.dragging = false; });
+    }
+  }
+
+  // ── Lazy rendering: render Mermaid only when <details> opens ──
+  const diagrams = {};
+
+  document.querySelectorAll('.flow-collapse').forEach((details) => {
+    details.addEventListener('toggle', async function handler() {
+      if (!details.open) return;
+
+      const key = details.dataset.diagram;
+      const pre = details.querySelector('.mermaid-lazy');
+      if (!pre || !key || !window.FLOW6 || !window.FLOW6[key]) return;
+
+      // Inject diagram text from shared JS and render
+      pre.textContent = window.FLOW6[key];
+      pre.classList.remove('mermaid-lazy');
+      pre.classList.add('mermaid');
+
+      await mermaid.run({ nodes: [pre] });
+
+      // Wait a frame for SVG to be in DOM, then init pan/zoom
+      requestAnimationFrame(() => {
+        const viewportId = details.querySelector('.diagram-viewport')?.id;
+        if (viewportId && !diagrams[viewportId]) {
+          const d = new DiagramPanZoom(viewportId);
+          d.init();
+          diagrams[viewportId] = d;
+        }
+      });
+
+      // Only render once — remove handler
+      details.removeEventListener('toggle', handler);
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    Object.values(diagrams).forEach((d) => d.fitToView());
+  });
+
+  // ── Toolbar button handlers ──
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.zoom-btn');
+    if (!btn) return;
+    const toolbar = btn.closest('.zoom-toolbar');
+    const id = toolbar?.dataset.for;
+    const d = diagrams[id];
+    if (!d) return;
+    const action = btn.dataset.action;
+    if (action === 'in') d.zoomIn();
+    else if (action === 'out') d.zoomOut();
+    else if (action === 'fit') d.fitToView();
+    else if (action === 'reset') d.resetZoom();
+  });
+</script>
+
+<!-- ── Scroll-spy: highlight active sidebar link ── -->
+<script>
+(function(){
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const ids = Array.from(links).map(a => a.getAttribute('href').slice(1));
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  function onScroll() {
+    let current = ids[0];
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= 80) current = ids[i];
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
