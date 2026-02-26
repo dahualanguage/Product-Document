@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — ESL Teacher</title>
+  <script src="../../shared/diagrams-flow6.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #ec4899; font-weight: 700; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #ec4899; border-left-color: #ec4899; font-weight: 700; background: #fdf2f8; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
+      .main-content { padding: 24px 20px 60px; }
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #ec4899;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 16px; font-weight: 700; color: #334155; margin: 28px 0 10px; }
+    h4 { font-size: 14px; font-weight: 700; color: #475569; margin: 18px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; color: #0f172a; }
+
+    /* ── Two-col cards ── */
+    .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 860px) { .card-row { grid-template-columns: 1fr; } }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fdf2f8; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info  { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn  { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-goal  { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text { font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5; }
+    .callout-question .q-context { font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500; }
+
+    /* ── Status tags ── */
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tag-mvp    { background: #dbeafe; color: #1e40af; }
+    .tag-future { background: #f1f5f9; color: #64748b; }
+    .tag-ai     { background: #ecfdf5; color: #065f46; }
+
+    /* ── Section label pill ── */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fdf2f8; border: 1px solid #fbcfe8;
+      color: #9d174d; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+      letter-spacing: .3px; text-transform: uppercase;
+    }
+    .section-label.blue { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+
+    /* ── IA Diagram ── */
+    .ia-diagram {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 28px 32px 24px; margin: 16px 0 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ia-root-row { text-align: center; margin-bottom: 20px; }
+    .ia-root-node {
+      display: inline-block; padding: 9px 28px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 14px; font-weight: 700;
+    }
+    .ia-connector-row {
+      display: flex; justify-content: center; gap: 0; margin-bottom: 0;
+      position: relative; height: 32px;
+    }
+    .ia-connector-row::before {
+      content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 16px;
+      background: #cbd5e1;
+    }
+    .ia-connector-row::after {
+      content: ''; position: absolute; top: 16px; left: calc(25% + 16px); right: calc(25% + 16px);
+      height: 1px; background: #cbd5e1;
+    }
+    .ia-branches { display: flex; gap: 24px; }
+    .ia-branch {
+      flex: 1; border-radius: 10px; overflow: hidden; border: 1px solid;
+      position: relative;
+    }
+    .ia-branch::before {
+      content: ''; position: absolute; top: -16px; left: 50%;
+      width: 1px; height: 16px; background: #cbd5e1;
+    }
+    .ia-branch-a { border-color: #bfdbfe; }
+    .ia-branch-b { border-color: #fbcfe8; }
+    .ia-branch-header {
+      padding: 10px 16px; font-size: 12px; font-weight: 700; line-height: 1.4;
+    }
+    .ia-branch-a .ia-branch-header { background: #eff6ff; color: #1e40af; }
+    .ia-branch-b .ia-branch-header { background: #fdf2f8; color: #9d174d; }
+    .ia-branch-tag {
+      display: block; font-size: 10px; font-weight: 600;
+      letter-spacing: .3px; text-transform: uppercase; opacity: .7; margin-bottom: 2px;
+    }
+    .ia-branch-items { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .ia-item {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .ia-item-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 3px; }
+    .ia-item-sub { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .ia-item-gap { border-color: #fde68a; background: #fefce8; }
+    .ia-item-gap .ia-item-sub { color: #92400e; font-weight: 600; }
+    .ia-gap-badge {
+      display: inline-block; background: #fef9c3; border: 1px solid #fde047;
+      color: #854d0e; font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 3px; margin-left: 4px;
+    }
+
+    /* ── Formula / code ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+
+    /* ── Wireframe system ── */
+    .wf-tabs { display: flex; gap: 2px; flex-wrap: wrap; margin: 20px 0 0; }
+    .wf-tab {
+      padding: 7px 16px; border: 1px solid #e2e8f0; border-bottom: none;
+      border-radius: 6px 6px 0 0; background: #f1f5f9;
+      font-size: 12px; font-weight: 600; color: #64748b;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .wf-tab:hover { background: #f8fafc; color: #334155; }
+    .wf-tab.active { background: #fff; color: #0f172a; position: relative; z-index: 1; }
+    .wf-screen { display: none; }
+    .wf-screen.active { display: block; }
+    .wf-frame {
+      border: 1px solid #e2e8f0; border-radius: 0 8px 8px 8px;
+      overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); background: #fff;
+    }
+    /* Chrome */
+    .wf-chrome {
+      background: #0f172a; padding: 9px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wf-chrome-logo { color: #fff; font-size: 12px; font-weight: 800; }
+    .wf-chrome-mode {
+      background: rgba(236,72,153,.2); color: #f9a8d4;
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: .3px; margin-left: 10px;
+    }
+    .wf-chrome-right { display: flex; align-items: center; gap: 8px; }
+    .wf-chrome-user { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; }
+    .wf-chrome-avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #ec4899; color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    /* Body layout */
+    .wf-body { display: flex; min-height: 480px; }
+    /* Nav sidebar */
+    .wf-nav {
+      width: 148px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #f1f5f9; padding: 12px 0;
+    }
+    .wf-nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 14px; font-size: 12px; color: #64748b; font-weight: 500;
+      border-left: 2px solid transparent;
+    }
+    .wf-nav-item.wf-active {
+      color: #ec4899; background: #fdf2f8; font-weight: 700; border-left-color: #ec4899;
+    }
+    .wf-nav-hr { border: none; border-top: 1px solid #f1f5f9; margin: 8px 0; }
+    /* Main area */
+    .wf-main { flex: 1; background: #f8fafc; padding: 20px 24px; min-width: 0; overflow-y: auto; }
+    .wf-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+    }
+    .wf-title { font-size: 16px; font-weight: 800; color: #0f172a; }
+    .wf-btn {
+      font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 6px; cursor: default;
+    }
+    .wf-btn-primary { background: #ec4899; color: #fff; }
+    .wf-btn-outline { background: #fff; border: 1px solid #e2e8f0; color: #334155; }
+    .wf-btn-ghost { background: transparent; color: #94a3b8; }
+    .wf-btn-sm { font-size: 10px; padding: 3px 8px; }
+    .wf-section-hd {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+      margin: 0 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    /* Group cards */
+    .wf-group-row { display: flex; gap: 10px; margin-bottom: 18px; }
+    .wf-group-card {
+      flex: 1; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;
+    }
+    .wf-group-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 4px; margin-bottom: 6px;
+    }
+    .wf-group-badge.beginner { background: #f0fdf4; color: #166534; }
+    .wf-group-badge.intermediate { background: #eff6ff; color: #1e40af; }
+    .wf-group-badge.advanced { background: #fdf2f8; color: #9d174d; }
+    .wf-group-name { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .wf-group-count { font-size: 11px; color: #64748b; }
+    .wf-group-last { font-size: 10px; color: #cbd5e1; margin-top: 6px; }
+    /* List rows */
+    .wf-list { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+    .wf-list-row {
+      display: flex; align-items: center; padding: 10px 14px;
+      border-bottom: 1px solid #f8fafc; gap: 10px;
+    }
+    .wf-list-row:last-child { border-bottom: none; }
+    .wf-list-row-main { flex: 1; min-width: 0; }
+    .wf-list-row-title { font-size: 12px; font-weight: 600; color: #0f172a; }
+    .wf-list-row-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .wf-list-row-meta { font-size: 11px; color: #cbd5e1; flex-shrink: 0; }
+    .wf-list-chevron { color: #cbd5e1; font-size: 14px; flex-shrink: 0; }
+    .wf-subject-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    /* Action banners */
+    .wf-action {
+      background: #fefce8; border: 1px solid #fde047; border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 8px;
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 12px; color: #854d0e;
+    }
+    .wf-action-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .wf-action-text { flex: 1; line-height: 1.4; }
+    /* Student table */
+    .wf-group-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+    .wf-group-tab {
+      font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; cursor: default;
+    }
+    .wf-group-tab.wf-active { background: #ec4899; color: #fff; }
+    .wf-group-tab:not(.wf-active) { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+    .wf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .wf-table th {
+      padding: 8px 12px; text-align: left; background: #f8fafc;
+      font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .wf-table td { padding: 9px 12px; border-bottom: 1px solid #f8fafc; color: #334155; }
+    .wf-table tr:last-child td { border-bottom: none; }
+    .wf-table tbody tr:hover td { background: #fdf2f8; }
+    .wf-level-pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+    .wf-level-b { background: #f0fdf4; color: #166534; }
+    .wf-level-i { background: #eff6ff; color: #1e40af; }
+    .wf-level-a { background: #fdf2f8; color: #9d174d; }
+    /* Insights split */
+    .wf-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .wf-pane { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+    .wf-pane-title {
+      font-size: 11px; font-weight: 700; color: #fff;
+      padding: 4px 10px; border-radius: 4px; display: inline-block; margin-bottom: 10px;
+    }
+    .wf-pane-title.blue { background: #3b82f6; }
+    .wf-pane-title.pink { background: #ec4899; }
+    .wf-summary-block {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .wf-summary-line { height: 7px; background: #e2e8f0; border-radius: 4px; margin-bottom: 6px; }
+    .wf-summary-line:last-child { margin-bottom: 0; }
+    .wf-keyword-cloud { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .wf-keyword { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 12px; }
+    .wf-keyword.high { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+    .wf-saverate-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11px; }
+    .wf-saverate-word { min-width: 100px; color: #334155; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wf-saverate-bar-bg { flex: 1; background: #f1f5f9; border-radius: 3px; height: 7px; overflow: hidden; }
+    .wf-saverate-bar { height: 100%; background: #ec4899; border-radius: 3px; }
+    .wf-saverate-pct { color: #94a3b8; min-width: 28px; text-align: right; font-size: 10px; }
+    /* Session selector */
+    .wf-session-selector { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .wf-selector-pill {
+      display: flex; align-items: center; gap: 4px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 5px 10px; font-size: 12px; font-weight: 600; color: #334155;
+    }
+    .wf-selector-pill .arr { color: #94a3b8; font-size: 10px; }
+    /* Step indicator */
+    .wf-steps { display: flex; margin-bottom: 20px; }
+    .wf-step {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; padding: 7px 14px;
+      background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8;
+      border-left: none;
+    }
+    .wf-step:first-child { border-radius: 6px 0 0 6px; border-left: 1px solid #e2e8f0; }
+    .wf-step:last-child { border-radius: 0 6px 6px 0; }
+    .wf-step.done { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .wf-step.current { background: #fff; color: #0f172a; border-color: #ec4899; z-index: 1; position: relative; }
+    .wf-step-num {
+      width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff;
+      background: #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .wf-step.done .wf-step-num { background: #22c55e; }
+    .wf-step.current .wf-step-num { background: #ec4899; }
+    /* Word chips */
+    .wf-word-chips {
+      display: flex; gap: 6px; flex-wrap: wrap; padding: 12px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 14px;
+    }
+    .wf-word-chip {
+      display: flex; align-items: center; gap: 4px;
+      background: #fdf2f8; border: 1px solid #fbcfe8; color: #9d174d;
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+    }
+    .wf-word-chip-x { color: #f9a8d4; }
+    .wf-word-chip-add { background: #f8fafc; border: 1px dashed #cbd5e1; color: #94a3b8; }
+    /* Assignment type */
+    .wf-type-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+    .wf-type-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+    .wf-type-card.selected { border-color: #ec4899; background: #fdf2f8; }
+    .wf-type-label { font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .wf-type-card.selected .wf-type-label { color: #ec4899; }
+    .wf-type-desc { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+    /* Assign target */
+    .wf-target-row {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .wf-radio-opt { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #334155; }
+    .wf-radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #e2e8f0; flex-shrink: 0; background: #fff; }
+    .wf-radio-dot.on { border-color: #ec4899; background: radial-gradient(circle at center, #ec4899 35%, #fff 35%); }
+    .wf-select-box {
+      display: flex; align-items: center; gap: 6px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 5px 10px; font-size: 12px; font-weight: 600; color: #334155;
+    }
+    /* Annotations */
+    .wf-annotations { margin-top: 16px; }
+    .wf-ann-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .wf-ann-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #475569; }
+    .wf-ann-num {
+      min-width: 20px; height: 20px; border-radius: 50%;
+      background: #ec4899; color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+    }
+    .wf-ann-text { line-height: 1.5; }
+    .wf-ann-text strong { display: block; font-weight: 700; color: #0f172a; font-size: 11px; }
+    /* Insight Inbox */
+    .wf-inbox-preview {
+      background: #fff; border: 1px solid #fbcfe8; border-radius: 8px;
+      overflow: hidden; margin-bottom: 18px;
+    }
+    .wf-inbox-preview-hd {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; background: #fdf2f8; border-bottom: 1px solid #fbcfe8;
+    }
+    .wf-inbox-unread-badge {
+      font-size: 10px; font-weight: 700; color: #9d174d;
+      background: #fbcfe8; padding: 2px 7px; border-radius: 3px;
+    }
+    .wf-inbox-list {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
+    }
+    .wf-inbox-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; border-bottom: 1px solid #f8fafc; background: #fff;
+    }
+    .wf-inbox-row:last-child { border-bottom: none; }
+    .wf-inbox-row-unread { background: #fdf2f8; }
+    .wf-inbox-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: transparent; border: 1.5px solid #e2e8f0;
+    }
+    .wf-inbox-dot-on { background: #ec4899; border-color: #ec4899; }
+    .wf-inbox-row-main { flex: 1; min-width: 0; }
+    .wf-inbox-row-title { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .wf-inbox-row-title-read { font-weight: 500; color: #475569; }
+    .wf-inbox-row-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .wf-inbox-wordcount {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+      background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+    .wf-inbox-wordcount-new { background: #fdf2f8; color: #9d174d; border-color: #fbcfe8; }
+
+    /* ── Student detail ── */
+    .wf-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .wf-profile-field { display: flex; flex-direction: column; gap: 2px; }
+    .wf-profile-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; }
+    .wf-profile-value { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wf-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .wf-stat-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;
+      text-align: center;
+    }
+    .wf-stat-number { font-size: 22px; font-weight: 800; color: #0f172a; }
+    .wf-stat-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+    .wf-progress-placeholder {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 20px; margin-bottom: 18px; text-align: center;
+    }
+    .wf-progress-bars { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 80px; margin-bottom: 10px; }
+    .wf-progress-bar { width: 24px; border-radius: 4px 4px 0 0; }
+    .wf-wb-word-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .wf-wb-word-row:last-child { border-bottom: none; }
+    .wf-wb-word { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1; min-width: 0; }
+    .wf-wb-subject-tag {
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .wf-wb-tap { font-size: 10px; color: #94a3b8; flex-shrink: 0; min-width: 44px; text-align: right; }
+    /* ── Assignment list ── */
+    .wf-assign-row {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .wf-assign-row:last-child { border-bottom: none; }
+    .wf-assign-type-icon {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .wf-assign-type-vocab { background: #fdf2f8; border: 1px solid #fbcfe8; }
+    .wf-assign-type-qa { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .wf-assign-info { flex: 1; min-width: 0; }
+    .wf-assign-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wf-assign-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .wf-assign-status {
+      font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+    }
+    .wf-assign-status-published { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .wf-assign-status-draft { background: #fefce8; color: #854d0e; border: 1px solid #fde68a; }
+    .wf-assign-status-closed { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .wf-completion-bar-bg { width: 80px; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .wf-completion-bar { height: 100%; border-radius: 3px; background: #22c55e; }
+    .wf-completion-pct { font-size: 10px; color: #94a3b8; min-width: 28px; flex-shrink: 0; }
+
+    @media (max-width: 860px) {
+      .wf-split { grid-template-columns: 1fr; }
+      .wf-type-row { grid-template-columns: 1fr; }
+      .wf-group-row { flex-direction: column; }
+      .wf-steps { flex-wrap: wrap; }
+      .wf-profile-grid { grid-template-columns: 1fr; }
+      .wf-stat-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Diagram viewport (Section 10) ── */
+    .zoom-toolbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; background: #f8fafc;
+      border: 1px solid #e2e8f0; border-bottom: none; border-radius: 8px 8px 0 0;
+    }
+    .zoom-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 6px;
+      background: #fff; border: 1px solid #e2e8f0;
+      font-size: 14px; font-weight: 700; cursor: pointer; color: #475569;
+      font-family: inherit; transition: all .15s;
+    }
+    .zoom-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+    .zoom-btn.text-btn { width: auto; padding: 0 8px; font-size: 11px; }
+    .zoom-level { font-size: 12px; font-weight: 600; color: #475569; min-width: 36px; text-align: center; }
+    .diagram-viewport {
+      position: relative; width: 100%; height: 560px;
+      overflow: hidden; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;
+      cursor: grab; margin-bottom: 20px;
+    }
+    .diagram-viewport:active { cursor: grabbing; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../../index.html#esl-modules">ESL Modules</a>
+  <span class="sep">/</span>
+  <span class="current">ESL Teacher</span>
+</div>
+
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#goal" class="active">1. Feature Goal</a></li>
+      <li><a href="#roles">2. User Roles &amp; Permissions</a></li>
+      <li>
+        <a href="#student-info">3. Student Info</a>
+        <ol>
+          <li><a href="#info-profile">3.1 Profile Fields</a></li>
+          <li><a href="#info-esl-group">3.2 ESL Group</a></li>
+          <li><a href="#info-gradebook">3.3 Grade Book &amp; Progress</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#insights">4. Student Learning Insights</a>
+        <ol>
+          <li><a href="#insights-ai">4.1 A — AI Content Analysis</a></li>
+          <li><a href="#insights-behavior">4.2 B — Student Behavior</a></li>
+          <li><a href="#insights-combined">4.3 Combining A + B</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#assignments">5. Assignments</a>
+        <ol>
+          <li><a href="#assign-vocab">5.1 Vocabs / Phrase</a></li>
+          <li><a href="#assign-subject">5.2 Subject Content</a></li>
+        </ol>
+      </li>
+      <li><a href="#data">6. Data &amp; Schema</a></li>
+      <li><a href="#questions">7. Open Questions</a></li>
+      <li><a href="#impl">8. Implementation Notes</a></li>
+      <li><a href="#wireframe">9. Dashboard Wireframe</a></li>
+    </ol>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+  <div class="doc-header">
+    <h1>ESL Teacher</h1>
+    <p class="subtitle">Student profile management, AI-powered learning insights, and targeted assignment creation for ESL program teachers.</p>
+    <div class="meta">
+      <span>ESL Module 3.3</span>
+      <span>Status: Planning</span>
+      <span>Target: TBD</span>
+      <span>Last updated: February 2026</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ 1. FEATURE GOAL ════════════════ -->
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How does an ESL teacher know which students need help, with what vocabulary, and in which subject area — across multiple content classes?</div>
+    <div class="q-context">ESL teachers support students across several content-area classes (science, math, social studies). Without a unified view of each student's language profile and real-time class behavior, identifying gaps and creating targeted support is time-consuming and reactive.</div>
+  </div>
+
+  <div class="callout callout-goal">
+    <strong>Goal:</strong> Give ESL teachers a unified workspace to view each student's language profile, review AI-analyzed class content and student behavior data, and create targeted vocabulary and comprehension assignments — all driven by what students actually struggled with.
+  </div>
+
+  <p>The ESL Teacher interface combines three capabilities:</p>
+  <ol>
+    <li><strong>Student Info</strong> — Per-student language profile including grade, native language, English level, ESL group, and practice progress</li>
+    <li><strong>Student Learning Insights</strong> — AI-organized content from live sessions cross-referenced with each student's word-tap behavior and word bank</li>
+    <li><strong>Assignments</strong> — Targeted exercises created from insight data: vocabulary mirroring, multiple choice, and subject-content QA</li>
+  </ol>
+
+  <!-- ════════════════ 2. USER ROLES ════════════════ -->
+  <h2 id="roles"><span class="num">2</span> User Roles &amp; Permissions</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>ESL Teacher</th>
+        <th>School Admin</th>
+        <th>Content Teacher</th>
+        <th>Student</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>View student profiles</td>
+        <td>Yes — own students</td>
+        <td>Read-only</td>
+        <td>&mdash;</td>
+        <td>Own only</td>
+      </tr>
+      <tr>
+        <td>Edit ESL Group assignment</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>View Student Learning Insights</td>
+        <td>Yes</td>
+        <td>Read-only</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>View student word bank</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+        <td>Own only</td>
+      </tr>
+      <tr>
+        <td>Create assignments</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>View student progress chart</td>
+        <td>Yes</td>
+        <td>Read-only</td>
+        <td>&mdash;</td>
+        <td>Own only</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 3. STUDENT INFO ════════════════ -->
+  <h2 id="student-info"><span class="num">3</span> Student Info</h2>
+
+  <p>The Student Info panel provides each ESL student's core language profile. The ESL teacher uses this view to understand a student's background and track their progress over time.</p>
+
+  <!-- 3.1 -->
+  <h3 id="info-profile">3.1 Profile Fields</h3>
+
+  <table>
+    <thead><tr><th>Field</th><th>Description</th><th>Editable by ESL Teacher</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Name</strong></td><td>Student's full name</td><td>No (system data)</td></tr>
+      <tr><td><strong>Native Language</strong></td><td>Student's first language (e.g. Mandarin, Spanish, Arabic)</td><td>No (set at enrollment)</td></tr>
+      <tr><td><strong>Grade System</strong></td><td>School grade level (e.g. Grade 5, Year 8)</td><td>No (system data)</td></tr>
+      <tr><td><strong>English Level</strong></td><td>ESL proficiency level (e.g. Beginner / Intermediate / Advanced); displayed alongside grade</td><td>Yes</td></tr>
+      <tr><td><strong>Study Subjects</strong></td><td>Content-area classes the student is enrolled in (e.g. Science, Math, Social Studies)</td><td>No (system data)</td></tr>
+      <tr><td><strong>Grade</strong></td><td>Current academic grade / performance band</td><td>No (system data)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3.2 -->
+  <h3 id="info-esl-group">3.2 ESL Group</h3>
+
+  <p>ESL Group is the ESL teacher's primary organizational tool. Each student is assigned to one ESL group, which determines which teacher monitors them and which assignments they receive.</p>
+
+  <div class="card-row">
+    <div class="card">
+      <h4>Group Assignment</h4>
+      <ul>
+        <li>ESL teacher manually assigns students to groups (e.g. Group A, Group B, or by proficiency tier)</li>
+        <li>A student belongs to exactly one ESL group at a time</li>
+        <li>Groups can be renamed and restructured by the ESL teacher</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Group Use Cases</h4>
+      <ul>
+        <li>Assign the same vocabulary exercise to all students in a group</li>
+        <li>Filter Learning Insights by group</li>
+        <li>Compare progress across groups in the teacher dashboard</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <div class="callout callout-warn">
+    <strong>Open question:</strong> Is ESL Group assigned by the ESL teacher or auto-suggested by the system based on English Level? See Section 7.
+  </div>
+
+  <!-- 3.3 -->
+  <h3 id="info-gradebook">3.3 Grade Book &amp; Progress</h3>
+
+  <p>The Grade Book tracks a student's performance on ESL assignments. From there, the teacher can view the full Student Progress Chart.</p>
+
+  <table>
+    <thead><tr><th>Component</th><th>What it shows</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Grade Book</strong></td>
+        <td>Assignment scores, completion rate, and submission history per student</td>
+        <td>Separate from school system grade; ESL-specific</td>
+      </tr>
+      <tr>
+        <td><strong>Practice Results</strong></td>
+        <td>Per-exercise accuracy broken down by vocabulary, phrase, and QA type</td>
+        <td>Feeds into the Progress Chart</td>
+      </tr>
+      <tr>
+        <td><strong>Student Progress Chart</strong></td>
+        <td>Time-series view of a student's ESL performance across assignments and sessions</td>
+        <td>Helps identify improvement trends or stagnation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 4. STUDENT LEARNING INSIGHTS ════════════════ -->
+  <h2 id="insights"><span class="num">4</span> Student Learning Insights</h2>
+
+  <p>Student Learning Insights aggregates data from live classroom sessions into two complementary categories. Category A is auto-generated by the system; Category B is generated from active student interaction during the session.</p>
+
+  <div class="callout callout-info">
+    <strong>Data source:</strong> All insights are derived from Live Classroom sessions (Flow 6). Data is produced after each session ends or after students confirm saves in the Class End Summary.
+  </div>
+
+  <!-- IA Diagram -->
+  <div class="ia-diagram">
+    <div class="ia-root-row">
+      <span class="ia-root-node">Student Learning Insights</span>
+    </div>
+    <div class="ia-connector-row"></div>
+    <div class="ia-branches">
+
+      <!-- Category A -->
+      <div class="ia-branch ia-branch-a">
+        <div class="ia-branch-header">
+          <span class="ia-branch-tag">Category A</span>
+          Subject + AI Analyze Content
+        </div>
+        <div class="ia-branch-items">
+          <div class="ia-item">
+            <div class="ia-item-title">Class Transcript</div>
+            <div class="ia-item-sub">Source: Subject Teacher's live class<br>Timing: After class ends<br>Processing: AI organizes content into structured summary</div>
+          </div>
+          <div class="ia-item">
+            <div class="ia-item-title">Keywords Mentioned</div>
+            <div class="ia-item-sub">Source: Extracted from transcript<br>Timing: After class ends<br>Filter: Academic vocabulary · Subject-specific terms · High-frequency words</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category B -->
+      <div class="ia-branch ia-branch-b">
+        <div class="ia-branch-header">
+          <span class="ia-branch-tag">Category B</span>
+          Student Behavior
+        </div>
+        <div class="ia-branch-items">
+          <div class="ia-item">
+            <div class="ia-item-title">Words Saved by Students</div>
+            <div class="ia-item-sub">Source: Tap during class (auto-saved) → finalized at Class End Summary or on browser close<br>Default: all tapped words saved unless student unchecks</div>
+          </div>
+          <div class="ia-item">
+            <div class="ia-item-title">Word Bank Contents</div>
+            <div class="ia-item-sub">Source: Student's permanent vocabulary<br>Timing: Accumulates after each class confirmation<br>Scope: Cumulative across all classes and subjects</div>
+          </div>
+          <div class="ia-item ia-item-gap">
+            <div class="ia-item-title">Save Rate per Word</div>
+            <div class="ia-item-sub">Source: Aggregated student behavior<br>Timing: After Class End Summary<br>★ Cross-referenced with Category A → see 4.3</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 4.1 -->
+  <h3 id="insights-ai">4.1 Category A — Subject + AI Analyze Content</h3>
+
+  <div class="section-label blue">Auto-generated &middot; No student interaction required</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data Point</th>
+        <th>Source</th>
+        <th>Export Timing</th>
+        <th>Processing</th>
+        <th>Pain Point Solved</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Class Transcript</strong></td>
+        <td>Subject Teacher's live class</td>
+        <td>After class ends</td>
+        <td>AI organizes content into a structured, readable summary grouped by topic and lesson segment</td>
+        <td>ESL Teacher can quickly understand Subject content without attending the class</td>
+      </tr>
+      <tr>
+        <td><strong>Keywords Mentioned</strong></td>
+        <td>Extracted from Class Transcript</td>
+        <td>After class ends</td>
+        <td>
+          Filter criteria:<br>
+          &bull; Academic vocabulary<br>
+          &bull; Subject-specific terms<br>
+          &bull; High-frequency important words
+        </td>
+        <td>Know the core vocabulary of each class session</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4.2 -->
+  <h3 id="insights-behavior">4.2 Category B — Student Behavior</h3>
+
+  <div class="section-label">Generated from active student interaction during class</div>
+
+  <div class="callout callout-info">
+    <strong>Save mechanism:</strong> When a student taps a word during class, it is immediately auto-saved to a temporary session list visible in the sidebar. At class end, a <em>Class Complete</em> modal displays all tapped words — students can <strong>uncheck</strong> words they don't want to keep. If the student closes the browser without reviewing the modal, <strong>all tapped words are saved automatically</strong>. The final Word Bank entry = tapped words minus any manually unchecked.
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data Point</th>
+        <th>Source</th>
+        <th>Export Timing</th>
+        <th>Processing</th>
+        <th>Pain Point Solved</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Words Saved by Students</strong></td>
+        <td>
+          Words tapped during class (auto-saved to session list) and not unchecked at Class End Summary.<br>
+          Default behavior: all tapped words are saved unless student explicitly removes them.
+        </td>
+        <td>
+          After Class End Summary confirmation, or immediately on browser close (auto-save all tapped words)
+        </td>
+        <td>Individual view or class aggregate</td>
+        <td>See which words each student found difficult enough to tap — the broadest signal of vocabulary difficulty per session</td>
+      </tr>
+      <tr>
+        <td><strong>Word Bank Contents</strong></td>
+        <td>Student's permanent vocabulary — cumulative collection of all saved words across sessions</td>
+        <td>Accumulates after each class (triggered by Class End Summary or auto-save)</td>
+        <td>Long-term accumulation across classes and subjects; identify which subject produces the most difficult words</td>
+        <td>Identify which subjects need ESL support; track long-term vocabulary growth</td>
+      </tr>
+      <tr>
+        <td><strong>Save Rate per Word</strong></td>
+        <td>Aggregated student behavior — percentage of students in the class who saved a given word (tapped and not removed)</td>
+        <td>After all students' Class End Summary events are processed for the session</td>
+        <td>Determines which words most students found difficult vs. which were encountered but discarded</td>
+        <td>Identify which words the class as a whole struggled with — class-level difficulty signal</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4.3 -->
+  <h3 id="insights-combined">4.3 Combining A + B — Derived Insights</h3>
+
+  <p>Neither category is sufficient on its own. Cross-referencing Category A (what was taught) with Category B (how students responded) surfaces actionable insights that inform what to do next.</p>
+
+  <div class="callout callout-warn">
+    <strong>Scope note:</strong> All derived insights in this section are <strong>post-MVP</strong> — they represent a more advanced analytics layer built on top of the base A/B data. These are documented here as a design direction for future iterations.
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Insight</th>
+        <th>Category A Signal<br><span style="font-weight:400;color:#64748b;">Keywords Mentioned</span></th>
+        <th>Category B Signal<br><span style="font-weight:400;color:#64748b;">Save Rate per Word</span></th>
+        <th>Interpretation</th>
+        <th>Scope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Learning Gap</strong></td>
+        <td>✓ Appeared in class</td>
+        <td>Low — most students ignored it</td>
+        <td>Word was taught but students didn't engage with it — they may not have recognized it as difficult, or the lesson moved too fast</td>
+        <td><span class="tag tag-future">Future</span></td>
+      </tr>
+      <tr>
+        <td><strong>Confirmed Difficult</strong></td>
+        <td>✓ Appeared in class</td>
+        <td>High — most students saved it</td>
+        <td>Word was taught and students recognized it as challenging — high motivation to learn</td>
+        <td><span class="tag tag-future">Future</span></td>
+      </tr>
+      <tr>
+        <td><strong>Hidden Difficulty</strong></td>
+        <td>✗ Not flagged by AI</td>
+        <td>High — many students saved it</td>
+        <td>AI didn't extract the word as a keyword, but students found it difficult — may be a common word with a subject-specific meaning outside the AI's filter criteria</td>
+        <td><span class="tag tag-future">Future</span></td>
+      </tr>
+      <tr>
+        <td><strong>Well Covered</strong></td>
+        <td>✓ Appeared in class</td>
+        <td>Low save rate, high tap rate</td>
+        <td>Students looked the word up but didn't save it — suggests they felt confident after seeing the definition</td>
+        <td><span class="tag tag-future">Future</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 5. ASSIGNMENTS ════════════════ -->
+  <h2 id="assignments"><span class="num">5</span> Assignments</h2>
+
+  <p>The ESL teacher creates assignments directly from the insights data. The flow is: select material (high-priority words or content topics from Section 4) → choose assignment type → assign to a student or ESL group.</p>
+
+  <div class="callout callout-goal">
+    <strong>Design principle:</strong> Assignments should require minimal manual input from the teacher. The system pre-populates word lists and content from insights; the teacher's job is to review, adjust, and publish.
+  </div>
+
+  <div class="zoom-toolbar" data-for="postSessionFlow">
+    <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+    <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+    <div class="zoom-level" data-label>100%</div>
+    <button class="zoom-btn text-btn" data-action="fit" title="Fit to view">Fit</button>
+    <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+  </div>
+  <div class="diagram-viewport" id="postSessionFlow">
+    <pre class="mermaid" data-key="postSessionFlow"></pre>
+  </div>
+
+  <!-- 5.1 -->
+  <h3 id="assign-vocab">5.1 Vocabs / Phrase</h3>
+
+  <p>Vocabulary assignments are built from words in the student's word bank or from the session's high-save-rate keyword list.</p>
+
+  <div class="card-row">
+    <div class="card">
+      <h4>Vocabs Mirroring <span class="tag tag-mvp">MVP</span></h4>
+      <p>Students see a word and must reproduce it — either by typing, selecting the correct spelling, or matching it to its translation.</p>
+      <ul>
+        <li>Targets word recognition and recall</li>
+        <li>Works well for early-stage vocabulary acquisition</li>
+        <li>Teacher selects the word list from insight data</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Vocabs Multiple Choice <span class="tag tag-mvp">MVP</span></h4>
+      <p>Students choose the correct definition, translation, or usage of a word from multiple options.</p>
+      <ul>
+        <li>Targets vocabulary comprehension and meaning discrimination</li>
+        <li>Distractors can be auto-generated from similar words in the student's word bank</li>
+        <li>Supports both word-level and phrase-level questions</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 5.2 -->
+  <h3 id="assign-subject">5.2 Subject Content</h3>
+
+  <p>Subject Content assignments are built from the AI-organized class content summary. They test whether students understood the concepts taught in the content class — not just the vocabulary in isolation.</p>
+
+  <div class="card">
+    <h4>QA (Question &amp; Answer) <span class="tag tag-mvp">MVP</span></h4>
+    <p>The teacher (or AI) generates comprehension questions based on the class content summary. Students answer in short form.</p>
+    <ul>
+      <li>AI can draft questions from the session transcript; teacher reviews and edits before publishing</li>
+      <li>Questions are tied to specific content areas (e.g. &ldquo;Science — Cell Structure&rdquo;)</li>
+      <li>Helps the ESL teacher assess whether the student grasped subject concepts, not just vocabulary</li>
+      <li>Teacher can review student responses and add feedback</li>
+    </ul>
+  </div>
+
+  <table>
+    <thead><tr><th>Assignment Type</th><th>Material Source</th><th>Target Skill</th><th>AI-assisted</th></tr></thead>
+    <tbody>
+      <tr><td>Vocabs Mirroring</td><td>Word bank / high-save-rate words</td><td>Word recognition &amp; recall</td><td>Word list pre-population</td></tr>
+      <tr><td>Vocabs Multiple Choice</td><td>Word bank / high-save-rate words</td><td>Vocabulary comprehension</td><td>Distractor generation</td></tr>
+      <tr><td>QA</td><td>AI content summary from session transcript</td><td>Subject comprehension</td><td>Question drafting</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 6. DATA & SCHEMA ════════════════ -->
+  <h2 id="data"><span class="num">6</span> Data &amp; Schema</h2>
+
+  <h3>6.1 Student Profile</h3>
+
+  <div class="formula">ESLStudentProfile {
+  studentId: String
+  name: String
+  nativeLanguage: String          // e.g. "Mandarin", "Spanish"
+  gradeLevel: String              // e.g. "Grade 5"
+  englishLevel: Enum              // BEGINNER | INTERMEDIATE | ADVANCED
+  studySubjects: [String]         // e.g. ["Science", "Math"]
+  eslGroupId: String              // FK → ESLGroup
+}</div>
+
+  <h3>6.2 ESL Group</h3>
+
+  <div class="formula">ESLGroup {
+  groupId: String
+  name: String                    // Teacher-defined label (e.g. "Group A")
+  teacherId: String               // ESL Teacher who owns this group
+  studentIds: [String]            // Members
+}</div>
+
+  <h3>6.3 Word Bank Entry</h3>
+
+  <div class="formula">WordBankEntry {
+  entryId: String
+  studentId: String
+  word: String
+  savedAt: ISO8601
+  sourceSessionId: String         // Which live session the word came from
+  contentArea: String             // Subject context (e.g. "Science")
+  tapCount: Number                // How many times student tapped this word across sessions
+}</div>
+
+  <h3>6.4 Assignment</h3>
+
+  <div class="formula">Assignment {
+  assignmentId: String
+  teacherId: String               // ESL Teacher who created it
+  assignedTo: { type: "STUDENT" | "GROUP", id: String }
+  type: Enum                      // VOCAB_MIRRORING | VOCAB_MCQ | SUBJECT_QA
+  contentArea: String
+  sourceSessionId: String         // Session insights this was derived from
+  wordList: [String]              // For vocab assignments
+  questions: [{ q: String, answer: String }]  // For QA assignments
+  createdAt: ISO8601
+  dueAt: ISO8601
+  status: Enum                    // DRAFT | PUBLISHED | CLOSED
+}</div>
+
+  <!-- ════════════════ 7. OPEN QUESTIONS ════════════════ -->
+  <h2 id="questions"><span class="num">7</span> Open Questions</h2>
+
+  <div class="callout-question">
+    <div class="q-text">Is ESL Group assigned manually by the teacher, or does the system auto-suggest groupings based on English Level and behavior data?</div>
+    <div class="q-context">Auto-grouping could save setup time, but teachers may want full control over group composition. A hybrid approach (AI suggests, teacher confirms) may be best.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">How does the teacher know which students attended a specific live session?</div>
+    <div class="q-context">The Learning Insights view needs to filter by session attendance. If a student wasn't in a session, their insights for that session should be clearly marked as absent/no data rather than empty.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">Can the ESL teacher join a live session to observe — and should they see a different view than students?</div>
+    <div class="q-context">The current Live Classroom spec gives ESL Teachers "view only" transcript access. But should they also see real-time student difficulty events during the class (not just after)? This would require a real-time monitoring panel.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">What is the assignment review flow — does the teacher see student responses inline, or in a separate grading view?</div>
+    <div class="q-context">For QA assignments especially, the teacher needs a way to review and comment on student responses. This could be a simple list view or a more complex grading tool.</div>
+  </div>
+
+  <!-- ════════════════ 8. IMPLEMENTATION NOTES ════════════════ -->
+  <h2 id="impl"><span class="num">8</span> Implementation Notes</h2>
+
+  <div class="card">
+    <h4>A. AI Content Analysis Pipeline</h4>
+    <p>After a live session ends, the system triggers an async AI job:</p>
+    <ol>
+      <li>Pull session transcript from <code>LiveSession.transcript</code></li>
+      <li>Send to AI (OpenAI / similar) with subject context for structured summarization</li>
+      <li>Extract keyword list with frequency counts and sentence context</li>
+      <li>Cross-reference keywords with student <code>DifficultyEvent</code> records from the same session</li>
+      <li>Store output as <code>SessionInsight</code> record, linked to <code>sessionId</code></li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h4>B. Save Rate Calculation</h4>
+    <div class="formula">Save Rate (word, session) =
+  (students who saved word) / (students who tapped word) × 100%</div>
+    <p>Computed per session at session-end. Recomputed when late saves arrive (up to 24h post-session).</p>
+  </div>
+
+  <div class="card">
+    <h4>C. Assignment Generation</h4>
+    <ul>
+      <li><strong>Vocab assignments:</strong> Teacher selects words from insight panel → system generates exercise scaffold → teacher previews and publishes</li>
+      <li><strong>QA assignments:</strong> AI drafts 3–5 questions from session content summary → teacher edits and publishes</li>
+      <li>All assignments are linked to the source session for traceability</li>
+    </ul>
+  </div>
+
+  <!-- ════════════════ 9. DASHBOARD WIREFRAME ════════════════ -->
+  <h2 id="wireframe"><span class="num">9</span> Dashboard Wireframe</h2>
+
+  <p>Low-fidelity wireframes covering the four primary views of the ESL Teacher interface. All screens share the same app shell (topbar + sidebar navigation).</p>
+
+  <div class="wf-tabs">
+    <button class="wf-tab active" onclick="showWfScreen('wf-home',this)">A — Dashboard</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-students',this)">B — Students</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-insights',this)">C — Session Insights</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-assign',this)">D — Create Assignment</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-inbox',this)">E — Insight Inbox</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-student-detail',this)">F — Student Detail</button>
+    <button class="wf-tab" onclick="showWfScreen('wf-assignments',this)">G — Assignment List</button>
+  </div>
+
+  <!-- ── SCREEN A: Dashboard Home ── -->
+  <div class="wf-screen active" id="wf-home">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <span style="color:#475569;font-size:13px;">🔔</span>
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item wf-active"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item"><span>👥</span> Students</div>
+          <div class="wf-nav-item"><span>💡</span> Insights</div>
+          <div class="wf-nav-item"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div>
+              <div class="wf-title">Dashboard</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Welcome back, Ms. Chen</div>
+            </div>
+          </div>
+
+          <!-- Insight Inbox preview -->
+          <div class="wf-inbox-preview">
+            <div class="wf-inbox-preview-hd">
+              <span style="font-size:11px;font-weight:700;color:#9d174d;">🔔 Insight Inbox</span>
+              <span class="wf-inbox-unread-badge">2 new</span>
+              <span style="flex:1;"></span>
+              <span style="font-size:11px;color:#ec4899;font-weight:600;cursor:default;">View all →</span>
+            </div>
+            <div class="wf-inbox-row wf-inbox-row-unread" style="padding:9px 14px;">
+              <div class="wf-inbox-dot wf-inbox-dot-on"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title">Science · Cell Biology</div>
+                <div class="wf-inbox-row-meta">Feb 25 · 09:00–10:30 · Mr. Chen · 32 words</div>
+              </div>
+              <span class="wf-btn wf-btn-primary wf-btn-sm">View →</span>
+            </div>
+            <div class="wf-inbox-row wf-inbox-row-unread" style="padding:9px 14px;border-bottom:none;">
+              <div class="wf-inbox-dot wf-inbox-dot-on"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title">Math · Fractions</div>
+                <div class="wf-inbox-row-meta">Feb 24 · 11:00–12:00 · Ms. Lin · 18 words</div>
+              </div>
+              <span class="wf-btn wf-btn-primary wf-btn-sm">View →</span>
+            </div>
+          </div><!-- /wf-inbox-preview -->
+
+          <div class="wf-section-hd">My Groups <span class="wf-btn wf-btn-outline wf-btn-sm">+ New Group</span></div>
+          <div class="wf-group-row">
+            <div class="wf-group-card">
+              <div class="wf-group-badge beginner">Beginner</div>
+              <div class="wf-group-name">Group A</div>
+              <div class="wf-group-count">8 students</div>
+              <div class="wf-group-last">Last active: Yesterday</div>
+            </div>
+            <div class="wf-group-card">
+              <div class="wf-group-badge intermediate">Intermediate</div>
+              <div class="wf-group-name">Group B</div>
+              <div class="wf-group-count">6 students</div>
+              <div class="wf-group-last">Last active: Yesterday</div>
+            </div>
+            <div class="wf-group-card">
+              <div class="wf-group-badge advanced">Advanced</div>
+              <div class="wf-group-name">Group C</div>
+              <div class="wf-group-count">5 students</div>
+              <div class="wf-group-last">Last active: 3 days ago</div>
+            </div>
+          </div>
+
+          <div class="wf-section-hd" style="margin-top:18px;">Recent Sessions</div>
+          <div class="wf-list">
+            <div class="wf-list-row">
+              <div class="wf-subject-dot" style="background:#10b981;"></div>
+              <div class="wf-list-row-main">
+                <div class="wf-list-row-title">Science &middot; Cell Biology</div>
+                <div class="wf-list-row-sub">14 students &middot; 32 keywords &middot; 8 high-save-rate words</div>
+              </div>
+              <div class="wf-list-row-meta">Yesterday</div>
+              <div class="wf-list-chevron">›</div>
+            </div>
+            <div class="wf-list-row">
+              <div class="wf-subject-dot" style="background:#6366f1;"></div>
+              <div class="wf-list-row-main">
+                <div class="wf-list-row-title">Math &middot; Fractions</div>
+                <div class="wf-list-row-sub">11 students &middot; 21 keywords &middot; 5 high-save-rate words</div>
+              </div>
+              <div class="wf-list-row-meta">2 days ago</div>
+              <div class="wf-list-chevron">›</div>
+            </div>
+            <div class="wf-list-row">
+              <div class="wf-subject-dot" style="background:#f59e0b;"></div>
+              <div class="wf-list-row-main">
+                <div class="wf-list-row-title">Social Studies &middot; The Water Cycle</div>
+                <div class="wf-list-row-sub">13 students &middot; 18 keywords &middot; 3 high-save-rate words</div>
+              </div>
+              <div class="wf-list-row-meta">4 days ago</div>
+              <div class="wf-list-chevron">›</div>
+            </div>
+          </div>
+
+          <div class="wf-section-hd" style="margin-top:18px;">
+            Pending Actions
+            <span style="background:#fef9c3;border:1px solid #fde047;color:#854d0e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;">2</span>
+          </div>
+          <div class="wf-action">
+            <span class="wf-action-icon">⚠</span>
+            <div class="wf-action-text">
+              <strong>3 students in Group A haven't received assignments from yesterday's Science session</strong>
+              <span style="display:inline-block;background:#fde047;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-top:4px;cursor:default;">Create Assignment Now →</span>
+            </div>
+          </div>
+          <div class="wf-action">
+            <span class="wf-action-icon">💡</span>
+            <div class="wf-action-text">
+              <strong>6 students have added 10+ new words to their Word Bank this week</strong>
+              <span style="color:#a16207;font-size:11px;display:block;margin-top:2px;">Review their word banks to identify assignment opportunities.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>My Groups</strong> Each card is clickable — opens the Student Roster filtered to that group.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Recent Sessions</strong> Sorted by date. Clicking a row opens Session Insights for that session (Screen C).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Pending Actions</strong> System-generated suggestions. Each action is dismissed once acted on.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>ESL Teacher Mode</strong> Badge in the topbar indicates the user's active role context. Relevant if the user can switch roles (e.g. ESL Teacher + Content Teacher).</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-home -->
+
+  <!-- ── SCREEN B: Students ── -->
+  <div class="wf-screen" id="wf-students">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item wf-active"><span>👥</span> Students</div>
+          <div class="wf-nav-item"><span>💡</span> Insights</div>
+          <div class="wf-nav-item"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div class="wf-title">Students</div>
+            <div style="display:flex;gap:8px;">
+              <span class="wf-btn wf-btn-outline">🔍 Search</span>
+              <span class="wf-btn wf-btn-primary">+ Add Student</span>
+            </div>
+          </div>
+          <div class="wf-group-tabs">
+            <span class="wf-group-tab wf-active">All (19)</span>
+            <span class="wf-group-tab">Group A (8)</span>
+            <span class="wf-group-tab">Group B (6)</span>
+            <span class="wf-group-tab">Group C (5)</span>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+            <table class="wf-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Group</th>
+                  <th>English Level</th>
+                  <th>Word Bank</th>
+                  <th>Last Session</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight:600;color:#0f172a;">张小明</td>
+                  <td>Group A</td>
+                  <td><span class="wf-level-pill wf-level-b">Beginner</span></td>
+                  <td>87 words</td>
+                  <td>Yesterday</td>
+                  <td style="color:#cbd5e1;text-align:center;">›</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;color:#0f172a;">李美华</td>
+                  <td>Group A</td>
+                  <td><span class="wf-level-pill wf-level-b">Beginner</span></td>
+                  <td>54 words</td>
+                  <td>3 days ago</td>
+                  <td style="color:#cbd5e1;text-align:center;">›</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;color:#0f172a;">Wang Li</td>
+                  <td>Group B</td>
+                  <td><span class="wf-level-pill wf-level-i">Intermediate</span></td>
+                  <td>124 words</td>
+                  <td>Yesterday</td>
+                  <td style="color:#cbd5e1;text-align:center;">›</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;color:#0f172a;">Raj Kumar</td>
+                  <td>Group B</td>
+                  <td><span class="wf-level-pill wf-level-i">Intermediate</span></td>
+                  <td>98 words</td>
+                  <td>2 days ago</td>
+                  <td style="color:#cbd5e1;text-align:center;">›</td>
+                </tr>
+                <tr>
+                  <td style="font-weight:600;color:#0f172a;">Sofia M.</td>
+                  <td>Group C</td>
+                  <td><span class="wf-level-pill wf-level-a">Advanced</span></td>
+                  <td>201 words</td>
+                  <td>Yesterday</td>
+                  <td style="color:#cbd5e1;text-align:center;">›</td>
+                </tr>
+                <tr>
+                  <td colspan="6" style="text-align:center;color:#cbd5e1;font-style:italic;font-size:11px;padding:10px;">14 more students&hellip;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Group filter tabs</strong> Filter the table by ESL group. Row counts update when filtered.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Word Bank column</strong> Total saved words across all sessions. Clicking the count opens the student's full word bank view.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Row click (›)</strong> Opens the student profile: info panel, ESL group, grade book, and progress chart (see Section 3).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Add Student</strong> Assigns an existing school student to this ESL teacher's cohort. Does not create a new account.</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-students -->
+
+  <!-- ── SCREEN C: Session Insights ── -->
+  <div class="wf-screen" id="wf-insights">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item"><span>👥</span> Students</div>
+          <div class="wf-nav-item wf-active"><span>💡</span> Insights</div>
+          <div class="wf-nav-item"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div class="wf-title">Session Insights</div>
+            <span class="wf-btn wf-btn-primary" style="padding:8px 16px;font-size:12px;border-radius:8px;cursor:default;">Create Assignment →</span>
+          </div>
+          <div class="wf-session-selector">
+            <span class="wf-selector-pill">Science <span class="arr">▾</span></span>
+            <span style="color:#cbd5e1;font-size:12px;">/</span>
+            <span class="wf-selector-pill">Cell Biology <span class="arr">▾</span></span>
+            <span style="color:#cbd5e1;font-size:12px;">/</span>
+            <span class="wf-selector-pill">Yesterday <span class="arr">▾</span></span>
+            <span style="color:#cbd5e1;font-size:12px;">&middot;</span>
+            <span class="wf-selector-pill">All Groups <span class="arr">▾</span></span>
+          </div>
+          <div class="wf-split">
+            <!-- Category A -->
+            <div class="wf-pane">
+              <span class="wf-pane-title blue">A &mdash; AI Content Analysis</span>
+              <div class="wf-section-hd">Class Summary</div>
+              <div class="wf-summary-block">
+                <div class="wf-summary-line"></div>
+                <div class="wf-summary-line" style="width:90%;"></div>
+                <div class="wf-summary-line" style="width:85%;"></div>
+                <div class="wf-summary-line" style="width:70%;"></div>
+                <div class="wf-summary-line" style="width:55%;"></div>
+              </div>
+              <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">AI-generated summary from session transcript</div>
+              <div class="wf-section-hd">Keywords Mentioned <span style="font-weight:400;text-transform:none;letter-spacing:0;">(32)</span></div>
+              <div class="wf-keyword-cloud">
+                <span class="wf-keyword high">photosynthesis</span>
+                <span class="wf-keyword high">chlorophyll</span>
+                <span class="wf-keyword">organelle</span>
+                <span class="wf-keyword">membrane</span>
+                <span class="wf-keyword">cellular</span>
+                <span class="wf-keyword">respiration</span>
+                <span class="wf-keyword">nucleus</span>
+                <span class="wf-keyword">mitochondria</span>
+                <span style="font-size:11px;color:#94a3b8;align-self:center;">+24 more</span>
+              </div>
+              <div style="font-size:10px;color:#94a3b8;">
+                <span style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:1px 6px;border-radius:3px;font-weight:700;">High save rate</span>
+                &nbsp;= tapped by &gt;50% of students
+              </div>
+            </div>
+            <!-- Category B -->
+            <div class="wf-pane" style="display:flex;flex-direction:column;">
+              <span class="wf-pane-title pink">B &mdash; Student Behavior</span>
+              <div class="wf-section-hd">Words Saved This Session <span style="font-weight:400;text-transform:none;letter-spacing:0;">(14 students)</span></div>
+              <div class="wf-saverate-item">
+                <span class="wf-saverate-word">photosynthesis</span>
+                <div class="wf-saverate-bar-bg"><div class="wf-saverate-bar" style="width:71%;"></div></div>
+                <span class="wf-saverate-pct">71%</span>
+              </div>
+              <div class="wf-saverate-item">
+                <span class="wf-saverate-word">chlorophyll</span>
+                <div class="wf-saverate-bar-bg"><div class="wf-saverate-bar" style="width:57%;"></div></div>
+                <span class="wf-saverate-pct">57%</span>
+              </div>
+              <div class="wf-saverate-item">
+                <span class="wf-saverate-word">organelle</span>
+                <div class="wf-saverate-bar-bg"><div class="wf-saverate-bar" style="width:43%;"></div></div>
+                <span class="wf-saverate-pct">43%</span>
+              </div>
+              <div class="wf-saverate-item">
+                <span class="wf-saverate-word">membrane</span>
+                <div class="wf-saverate-bar-bg"><div class="wf-saverate-bar" style="width:43%;"></div></div>
+                <span class="wf-saverate-pct">43%</span>
+              </div>
+              <div class="wf-saverate-item">
+                <span class="wf-saverate-word">respiration</span>
+                <div class="wf-saverate-bar-bg"><div class="wf-saverate-bar" style="width:29%;"></div></div>
+                <span class="wf-saverate-pct">29%</span>
+              </div>
+              <div style="font-size:10px;color:#94a3b8;margin:4px 0 14px;">Save rate = students who saved &divide; students who tapped</div>
+              <div style="margin-top:auto;padding-top:12px;border-top:1px solid #f1f5f9;">
+                <div style="display:flex;justify-content:flex-end;">
+                  <span class="wf-btn wf-btn-primary" style="padding:8px 16px;font-size:12px;border-radius:8px;cursor:default;">Create Assignment from Insights →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Session selector</strong> Cascading dropdowns: Subject → Topic → Date. Changing subject resets the topic and date dropdowns.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>High save rate keywords</strong> Shown in green. Clickable to see which individual students saved that word.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Save rate bars</strong> Each bar = % of students who tapped AND kept the word (did not uncheck at class end).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Create Assignment</strong> Pre-loads the high-save-rate words as the default word list, opening Screen D with Step 1 already complete.</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-insights -->
+
+  <!-- ── SCREEN D: Create Assignment ── -->
+  <div class="wf-screen" id="wf-assign">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item"><span>👥</span> Students</div>
+          <div class="wf-nav-item"><span>💡</span> Insights</div>
+          <div class="wf-nav-item wf-active"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div>
+              <div class="wf-title">New Assignment</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Source: Science &middot; Cell Biology &middot; Yesterday</div>
+            </div>
+            <span class="wf-btn wf-btn-ghost">✕ Cancel</span>
+          </div>
+          <!-- Step indicator -->
+          <div class="wf-steps">
+            <div class="wf-step done"><div class="wf-step-num">✓</div> 1&nbsp;&nbsp;Source</div>
+            <div class="wf-step current"><div class="wf-step-num">2</div> 2&nbsp;&nbsp;Type</div>
+            <div class="wf-step"><div class="wf-step-num">3</div> 3&nbsp;&nbsp;Target</div>
+            <div class="wf-step"><div class="wf-step-num">4</div> 4&nbsp;&nbsp;Preview</div>
+          </div>
+          <!-- Selected words -->
+          <div class="wf-section-hd">Selected Words <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;font-size:10px;">from high-save-rate list</span></div>
+          <div class="wf-word-chips">
+            <span class="wf-word-chip">photosynthesis <span class="wf-word-chip-x">×</span></span>
+            <span class="wf-word-chip">chlorophyll <span class="wf-word-chip-x">×</span></span>
+            <span class="wf-word-chip">organelle <span class="wf-word-chip-x">×</span></span>
+            <span class="wf-word-chip">membrane <span class="wf-word-chip-x">×</span></span>
+            <span class="wf-word-chip wf-word-chip-add">+ Add word</span>
+          </div>
+          <!-- Assignment type -->
+          <div class="wf-section-hd">Assignment Type</div>
+          <div class="wf-type-row">
+            <div class="wf-type-card selected">
+              <div class="wf-type-label">◉ Vocabs Mirroring</div>
+              <div class="wf-type-desc">Students see a word and must reproduce it — typing, spelling, or translation matching.</div>
+            </div>
+            <div class="wf-type-card">
+              <div class="wf-type-label">○ Vocabs Multiple Choice</div>
+              <div class="wf-type-desc">Students choose the correct definition or usage from multiple options.</div>
+            </div>
+            <div class="wf-type-card">
+              <div class="wf-type-label">○ Subject QA</div>
+              <div class="wf-type-desc">AI drafts comprehension questions from the session content summary for teacher review.</div>
+            </div>
+          </div>
+          <!-- Assign to -->
+          <div class="wf-section-hd">Assign To</div>
+          <div class="wf-target-row">
+            <div class="wf-radio-opt">
+              <div class="wf-radio-dot on"></div>
+              ESL Group:
+              <span class="wf-select-box">Group A — Beginner <span style="color:#94a3b8;font-size:10px;margin-left:4px;">▾</span></span>
+              <span style="font-size:11px;color:#94a3b8;">(8 students)</span>
+            </div>
+            <div class="wf-radio-opt" style="color:#94a3b8;">
+              <div class="wf-radio-dot"></div>
+              Individual student
+            </div>
+          </div>
+          <!-- Action row -->
+          <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:4px;">
+            <span class="wf-btn wf-btn-outline">← Back</span>
+            <span class="wf-btn wf-btn-primary">Next: Target →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Step 1 (Source)</strong> Already completed — teacher arrived here from Screen C by clicking "Create Assignment from Insights".</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Word chips</strong> Pre-populated from high-save-rate words. Teacher can remove any chip or add more from the student's word bank.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Subject QA type</strong> Selecting this replaces the word chip list with AI-drafted questions (teacher edits before publishing).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Step 4 (Preview)</strong> Shows the assignment exactly as students will see it, with a Publish button to send it to the assigned group or individual.</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-assign -->
+
+  <!-- ── SCREEN E: Insight Inbox ── -->
+  <div class="wf-screen" id="wf-inbox">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <span style="color:#475569;font-size:13px;">🔔</span>
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item"><span>👥</span> Students</div>
+          <div class="wf-nav-item wf-active"><span>💡</span> Insights</div>
+          <div class="wf-nav-item"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div>
+              <div class="wf-title">Insight Inbox</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">New AI analysis ready after each subject class</div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#ec4899;background:#fdf2f8;border:1px solid #fbcfe8;padding:3px 10px;border-radius:4px;">2 unread</span>
+          </div>
+
+          <div class="wf-inbox-list">
+            <!-- Unread -->
+            <div class="wf-inbox-row wf-inbox-row-unread">
+              <div class="wf-inbox-dot wf-inbox-dot-on"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title">Science · Cell Biology</div>
+                <div class="wf-inbox-row-meta">Feb 25, 2026 · 09:00–10:30 · Mr. Chen</div>
+              </div>
+              <span class="wf-inbox-wordcount wf-inbox-wordcount-new">32 words</span>
+              <span class="wf-btn wf-btn-primary wf-btn-sm">View →</span>
+            </div>
+            <div class="wf-inbox-row wf-inbox-row-unread">
+              <div class="wf-inbox-dot wf-inbox-dot-on"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title">Math · Fractions</div>
+                <div class="wf-inbox-row-meta">Feb 24, 2026 · 11:00–12:00 · Ms. Lin</div>
+              </div>
+              <span class="wf-inbox-wordcount wf-inbox-wordcount-new">18 words</span>
+              <span class="wf-btn wf-btn-primary wf-btn-sm">View →</span>
+            </div>
+            <!-- Read -->
+            <div class="wf-inbox-row">
+              <div class="wf-inbox-dot"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title wf-inbox-row-title-read">History · The Great Wall</div>
+                <div class="wf-inbox-row-meta">Feb 23, 2026 · 14:00–15:30 · Mr. Wang</div>
+              </div>
+              <span class="wf-inbox-wordcount">8 words</span>
+              <span class="wf-btn wf-btn-outline wf-btn-sm">View</span>
+            </div>
+            <div class="wf-inbox-row">
+              <div class="wf-inbox-dot"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title wf-inbox-row-title-read">Science · Ecosystems</div>
+                <div class="wf-inbox-row-meta">Feb 21, 2026 · 09:00–10:30 · Mr. Chen</div>
+              </div>
+              <span class="wf-inbox-wordcount">24 words</span>
+              <span class="wf-btn wf-btn-outline wf-btn-sm">View</span>
+            </div>
+            <div class="wf-inbox-row">
+              <div class="wf-inbox-dot"></div>
+              <div class="wf-inbox-row-main">
+                <div class="wf-inbox-row-title wf-inbox-row-title-read">Social Studies · Water Cycle</div>
+                <div class="wf-inbox-row-meta">Feb 20, 2026 · 13:00–14:30 · Ms. Lin</div>
+              </div>
+              <span class="wf-inbox-wordcount">11 words</span>
+              <span class="wf-btn wf-btn-outline wf-btn-sm">View</span>
+            </div>
+          </div><!-- /wf-inbox-list -->
+
+        </div><!-- /wf-main -->
+      </div><!-- /wf-body -->
+    </div><!-- /wf-frame -->
+
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Unread state</strong> Pink background + filled dot. Row resets to white once opened. Title weight shifts from bold (unread) to regular (read).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Word count</strong> Number of high-save-rate words from Category B — the signal that determines whether an assignment is worth creating.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>View button</strong> Opens Screen C pre-loaded with this session's Category A + B data. Marks the row as read.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Dashboard preview</strong> Screen A shows a collapsed version of this inbox (latest 2 unread only) at the top. "View all →" opens this full inbox.</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-inbox -->
+
+  <!-- ── SCREEN F: Student Detail ── -->
+  <div class="wf-screen" id="wf-student-detail">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item wf-active"><span>👥</span> Students</div>
+          <div class="wf-nav-item"><span>💡</span> Insights</div>
+          <div class="wf-nav-item"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="wf-btn wf-btn-ghost" style="font-size:16px;padding:2px 8px;">←</span>
+              <div>
+                <div class="wf-title">张小明</div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Group A &middot; Beginner</div>
+              </div>
+              <span class="wf-level-pill wf-level-b" style="margin-left:4px;">Beginner</span>
+            </div>
+            <span class="wf-btn wf-btn-outline">Edit Profile</span>
+          </div>
+
+          <!-- Stats row -->
+          <div class="wf-stat-row">
+            <div class="wf-stat-card">
+              <div class="wf-stat-number">87</div>
+              <div class="wf-stat-label">Words in Bank</div>
+            </div>
+            <div class="wf-stat-card">
+              <div class="wf-stat-number">12</div>
+              <div class="wf-stat-label">Assignments Done</div>
+            </div>
+            <div class="wf-stat-card">
+              <div class="wf-stat-number" style="color:#22c55e;">78%</div>
+              <div class="wf-stat-label">Avg Score</div>
+            </div>
+          </div>
+
+          <div class="wf-split">
+            <!-- Left: Profile Info -->
+            <div class="wf-pane">
+              <span class="wf-pane-title pink">Student Profile</span>
+              <div class="wf-profile-grid">
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">Full Name</span>
+                  <span class="wf-profile-value">张小明 (Zhang Xiaoming)</span>
+                </div>
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">Native Language</span>
+                  <span class="wf-profile-value">Mandarin</span>
+                </div>
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">Grade Level</span>
+                  <span class="wf-profile-value">Grade 5</span>
+                </div>
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">English Level</span>
+                  <span class="wf-profile-value"><span class="wf-level-pill wf-level-b">Beginner</span></span>
+                </div>
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">ESL Group</span>
+                  <span class="wf-profile-value">Group A</span>
+                </div>
+                <div class="wf-profile-field">
+                  <span class="wf-profile-label">Study Subjects</span>
+                  <span class="wf-profile-value">Science, Math, Social Studies</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Progress Chart -->
+            <div class="wf-pane">
+              <span class="wf-pane-title blue">Progress Chart</span>
+              <div class="wf-progress-bars">
+                <div class="wf-progress-bar" style="height:35%;background:#fbcfe8;"></div>
+                <div class="wf-progress-bar" style="height:42%;background:#f9a8d4;"></div>
+                <div class="wf-progress-bar" style="height:50%;background:#f472b6;"></div>
+                <div class="wf-progress-bar" style="height:48%;background:#ec4899;"></div>
+                <div class="wf-progress-bar" style="height:58%;background:#ec4899;"></div>
+                <div class="wf-progress-bar" style="height:65%;background:#db2777;"></div>
+                <div class="wf-progress-bar" style="height:62%;background:#db2777;"></div>
+                <div class="wf-progress-bar" style="height:72%;background:#be185d;"></div>
+                <div class="wf-progress-bar" style="height:78%;background:#be185d;"></div>
+                <div class="wf-progress-bar" style="height:82%;background:#9d174d;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;">
+                <span>Jan</span>
+                <span style="font-weight:600;color:#9d174d;">Trend: Improving ↑</span>
+                <span>Feb</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Word Bank preview -->
+          <div class="wf-section-hd" style="margin-top:4px;">
+            Word Bank
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;font-size:10px;">87 words</span>
+            <span style="flex:1;"></span>
+            <span style="font-size:11px;color:#ec4899;font-weight:600;cursor:default;">View all →</span>
+          </div>
+          <div class="wf-list" style="margin-bottom:18px;">
+            <div class="wf-wb-word-row">
+              <span class="wf-wb-word">photosynthesis</span>
+              <span class="wf-wb-subject-tag" style="background:#ecfdf5;color:#065f46;">Science</span>
+              <span class="wf-wb-tap">×3 taps</span>
+            </div>
+            <div class="wf-wb-word-row">
+              <span class="wf-wb-word">chlorophyll</span>
+              <span class="wf-wb-subject-tag" style="background:#ecfdf5;color:#065f46;">Science</span>
+              <span class="wf-wb-tap">×2 taps</span>
+            </div>
+            <div class="wf-wb-word-row">
+              <span class="wf-wb-word">denominator</span>
+              <span class="wf-wb-subject-tag" style="background:#eff6ff;color:#1e40af;">Math</span>
+              <span class="wf-wb-tap">×4 taps</span>
+            </div>
+            <div class="wf-wb-word-row">
+              <span class="wf-wb-word">evaporation</span>
+              <span class="wf-wb-subject-tag" style="background:#fefce8;color:#854d0e;">Social Studies</span>
+              <span class="wf-wb-tap">×1 tap</span>
+            </div>
+            <div class="wf-wb-word-row">
+              <span class="wf-wb-word">membrane</span>
+              <span class="wf-wb-subject-tag" style="background:#ecfdf5;color:#065f46;">Science</span>
+              <span class="wf-wb-tap">×2 taps</span>
+            </div>
+            <div class="wf-wb-word-row" style="justify-content:center;">
+              <span style="font-size:11px;color:#cbd5e1;font-style:italic;">82 more words&hellip;</span>
+            </div>
+          </div>
+
+          <!-- Recent Assignments -->
+          <div class="wf-section-hd">
+            Recent Assignments
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;font-size:10px;">12 completed</span>
+          </div>
+          <div class="wf-list">
+            <div class="wf-wb-word-row" style="gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#0f172a;">Vocab Mirroring — Cell Biology</div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:1px;">Feb 25 &middot; 8 words</div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#22c55e;">85%</span>
+            </div>
+            <div class="wf-wb-word-row" style="gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#0f172a;">Vocab MCQ — Fractions</div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:1px;">Feb 24 &middot; 6 words</div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#f59e0b;">70%</span>
+            </div>
+            <div class="wf-wb-word-row" style="gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#0f172a;">Subject QA — Ecosystems</div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:1px;">Feb 21 &middot; 4 questions</div>
+              </div>
+              <span style="font-size:13px;font-weight:700;color:#22c55e;">80%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Back button (←)</strong> Returns to Screen B — Students list, preserving the previously active group filter tab.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Stats cards</strong> Quick snapshot of student engagement. "Words in Bank" links to full Word Bank. "Assignments Done" links to the grade book.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Progress Chart</strong> Time-series bar chart showing assignment scores over time. Color gradient darkens as scores improve. Trend indicator shows direction.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Word Bank preview</strong> Shows the 5 most recently saved words with subject context and tap count. "View all →" opens a full sortable/filterable word bank modal.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">5</div><div class="wf-ann-text"><strong>Edit Profile</strong> Opens an edit modal for teacher-editable fields only: English Level and ESL Group assignment. Other fields are system data (read-only).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">6</div><div class="wf-ann-text"><strong>Subject tags</strong> Color-coded by content area. Same colors used across the platform (green=Science, blue=Math, amber=Social Studies).</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-student-detail -->
+
+  <!-- ── SCREEN G: Assignment List ── -->
+  <div class="wf-screen" id="wf-assignments">
+    <div class="wf-frame">
+      <div class="wf-chrome">
+        <div style="display:flex;align-items:center;">
+          <span class="wf-chrome-logo">DAHUA AI</span>
+          <span class="wf-chrome-mode">ESL Teacher</span>
+        </div>
+        <div class="wf-chrome-right">
+          <div class="wf-chrome-user">
+            <div class="wf-chrome-avatar">MC</div>
+            <span>Ms. Chen</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-body">
+        <nav class="wf-nav">
+          <div class="wf-nav-item"><span>⊞</span> Dashboard</div>
+          <div class="wf-nav-item"><span>👥</span> Students</div>
+          <div class="wf-nav-item"><span>💡</span> Insights</div>
+          <div class="wf-nav-item wf-active"><span>📝</span> Assignments</div>
+          <hr class="wf-nav-hr">
+          <div class="wf-nav-item"><span>⚙</span> Settings</div>
+        </nav>
+        <div class="wf-main">
+          <div class="wf-toolbar">
+            <div class="wf-title">Assignments</div>
+            <span class="wf-btn wf-btn-primary" style="padding:8px 16px;font-size:12px;border-radius:8px;cursor:default;">+ New Assignment</span>
+          </div>
+
+          <!-- Status filter tabs -->
+          <div class="wf-group-tabs">
+            <span class="wf-group-tab wf-active">All (8)</span>
+            <span class="wf-group-tab">Published (5)</span>
+            <span class="wf-group-tab">Draft (1)</span>
+            <span class="wf-group-tab">Closed (2)</span>
+          </div>
+
+          <!-- Assignment list -->
+          <div class="wf-list">
+            <!-- Draft -->
+            <div class="wf-assign-row">
+              <div class="wf-assign-type-icon wf-assign-type-qa">📝</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Subject QA — Cell Biology</div>
+                <div class="wf-assign-meta">Group A &middot; 4 questions &middot; Created today</div>
+              </div>
+              <span class="wf-assign-status wf-assign-status-draft">Draft</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Published, in progress -->
+            <div class="wf-assign-row">
+              <div class="wf-assign-type-icon wf-assign-type-vocab">Aa</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Vocab Mirroring — Cell Biology</div>
+                <div class="wf-assign-meta">Group A &middot; 8 words &middot; Due Feb 28</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:62%;"></div></div>
+                <span class="wf-completion-pct">5/8</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-published">Published</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Published -->
+            <div class="wf-assign-row">
+              <div class="wf-assign-type-icon wf-assign-type-vocab">Aa</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Vocab MCQ — Fractions</div>
+                <div class="wf-assign-meta">Group B &middot; 6 words &middot; Due Feb 27</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:33%;"></div></div>
+                <span class="wf-completion-pct">2/6</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-published">Published</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Published -->
+            <div class="wf-assign-row">
+              <div class="wf-assign-type-icon wf-assign-type-vocab">Aa</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Vocab Mirroring — Water Cycle</div>
+                <div class="wf-assign-meta">All Groups &middot; 5 words &middot; Due Feb 26</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:84%;"></div></div>
+                <span class="wf-completion-pct">16/19</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-published">Published</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Published -->
+            <div class="wf-assign-row">
+              <div class="wf-assign-type-icon wf-assign-type-qa">📝</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Subject QA — Ecosystems</div>
+                <div class="wf-assign-meta">Group A &middot; 5 questions &middot; Due Feb 25</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:100%;background:#22c55e;"></div></div>
+                <span class="wf-completion-pct">8/8</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-published">Published</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Closed -->
+            <div class="wf-assign-row" style="opacity:.6;">
+              <div class="wf-assign-type-icon wf-assign-type-vocab">Aa</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Vocab MCQ — The Great Wall</div>
+                <div class="wf-assign-meta">Group C &middot; 4 words &middot; Closed Feb 20</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:100%;background:#94a3b8;"></div></div>
+                <span class="wf-completion-pct">5/5</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-closed">Closed</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+            <!-- Closed -->
+            <div class="wf-assign-row" style="opacity:.6;">
+              <div class="wf-assign-type-icon wf-assign-type-qa">📝</div>
+              <div class="wf-assign-info">
+                <div class="wf-assign-title">Subject QA — Gravity</div>
+                <div class="wf-assign-meta">Group A &middot; 3 questions &middot; Closed Feb 18</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="wf-completion-bar-bg"><div class="wf-completion-bar" style="width:100%;background:#94a3b8;"></div></div>
+                <span class="wf-completion-pct">8/8</span>
+              </div>
+              <span class="wf-assign-status wf-assign-status-closed">Closed</span>
+              <span style="color:#cbd5e1;font-size:14px;">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-annotations">
+      <div class="wf-ann-grid">
+        <div class="wf-ann-item"><div class="wf-ann-num">1</div><div class="wf-ann-text"><strong>Status tabs</strong> Filter by assignment lifecycle. Counts update dynamically. "All" shows every assignment sorted by creation date (newest first).</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">2</div><div class="wf-ann-text"><strong>Completion bar</strong> Visual progress: green fill = students who submitted / total assigned. Fraction shown as "5/8". Draft assignments have no bar.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">3</div><div class="wf-ann-text"><strong>Type icons</strong> "Aa" (pink) = Vocab Mirroring or MCQ. "📝" (blue) = Subject QA. The detail view shows which specific vocab type it is.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">4</div><div class="wf-ann-text"><strong>Row click (›)</strong> Opens the assignment detail: word list or question list, per-student response table, and score distribution. Teacher can add feedback from here.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">5</div><div class="wf-ann-text"><strong>+ New Assignment</strong> Opens Screen D (Create Assignment wizard). If navigated from Insights, Step 1 is pre-filled; if from here, teacher selects the source session manually.</div></div>
+        <div class="wf-ann-item"><div class="wf-ann-num">6</div><div class="wf-ann-text"><strong>Closed assignments</strong> Dimmed to 60% opacity. Closed = past due date or manually closed by teacher. Students can no longer submit. Scores are final.</div></div>
+      </div>
+    </div>
+  </div><!-- /wf-assignments -->
+
+  <footer>DAHUA AI &middot; Product Spec &middot; ESL Module 3.3 — ESL Teacher &middot; February 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<!-- ── Scroll-spy ── -->
+<script>
+(function(){
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const ids = Array.from(links).map(a => a.getAttribute('href').slice(1));
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  function onScroll() {
+    let current = ids[0];
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= 80) current = ids[i];
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+function showWfScreen(id, btn) {
+  document.querySelectorAll('.wf-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Inject shared diagram text ──
+document.querySelectorAll('pre.mermaid[data-key]').forEach(pre => {
+  const key = pre.dataset.key;
+  if (window.FLOW6 && window.FLOW6[key]) pre.textContent = window.FLOW6[key];
+});
+
+// ── Mermaid + DiagramPanZoom ──
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dbeafe',
+    primaryTextColor: '#1e40af',
+    primaryBorderColor: '#93c5fd',
+    lineColor: '#94a3b8',
+    secondaryColor: '#fef9c3',
+    tertiaryColor: '#f8fafc',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '13px',
+    nodeBorder: '#93c5fd',
+    mainBkg: '#dbeafe',
+    clusterBkg: '#f8fafc',
+    clusterBorder: '#e2e8f0',
+    edgeLabelBackground: '#ffffff',
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    padding: 16,
+    nodeSpacing: 40,
+    rankSpacing: 50,
+    useMaxWidth: false,
+  },
+});
+
+class DiagramPanZoom {
+  constructor(vpId) {
+    this.vp = document.getElementById(vpId);
+    this.svg = null;
+    this.scale = 1; this.tx = 0; this.ty = 0;
+    this.drag = false; this.lx = 0; this.ly = 0;
+    this.toolbar = document.querySelector(`.zoom-toolbar[data-for="${vpId}"]`);
+    this._poll();
+    this._bindToolbar();
+  }
+  _poll() {
+    let n = 0;
+    const t = setInterval(() => {
+      this.svg = this.vp.querySelector('svg');
+      if (this.svg || ++n > 30) { clearInterval(t); if (this.svg) this._init(); }
+    }, 200);
+  }
+  _init() {
+    const s = this.svg;
+    s.style.transformOrigin = '0 0';
+    s.style.cursor = 'grab';
+    s.style.display = 'block';
+    this.vp.addEventListener('wheel', e => {
+      e.preventDefault();
+      this._zoom(e.deltaY < 0 ? 1.1 : 0.9, e.clientX, e.clientY);
+    }, { passive: false });
+    s.addEventListener('mousedown', e => {
+      this.drag = true; this.lx = e.clientX; this.ly = e.clientY;
+      s.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', e => {
+      if (!this.drag) return;
+      this.tx += e.clientX - this.lx; this.ty += e.clientY - this.ly;
+      this.lx = e.clientX; this.ly = e.clientY;
+      this._apply();
+    });
+    window.addEventListener('mouseup', () => {
+      this.drag = false; if (this.svg) this.svg.style.cursor = 'grab';
+    });
+    requestAnimationFrame(() => this.fit());
+    window.addEventListener('resize', () => this.fit());
+  }
+  _zoom(d, cx, cy) {
+    const r = this.vp.getBoundingClientRect();
+    const ox = (cx - r.left - this.tx) / this.scale;
+    const oy = (cy - r.top - this.ty) / this.scale;
+    this.scale = Math.min(4, Math.max(0.15, this.scale * d));
+    this.tx = cx - r.left - ox * this.scale;
+    this.ty = cy - r.top - oy * this.scale;
+    this._apply();
+  }
+  fit() {
+    if (!this.svg) return;
+    const vb = this.svg.viewBox && this.svg.viewBox.baseVal;
+    const sw = (vb && vb.width) || (this.svg.getBoundingClientRect().width / this.scale);
+    const sh = (vb && vb.height) || (this.svg.getBoundingClientRect().height / this.scale);
+    const vw = this.vp.clientWidth, vh = this.vp.clientHeight;
+    this.scale = Math.min(vw / sw, vh / sh) * 0.9;
+    this.tx = (vw - sw * this.scale) / 2;
+    this.ty = (vh - sh * this.scale) / 2;
+    this._apply();
+  }
+  reset() { this.scale = 1; this.tx = 0; this.ty = 0; this._apply(); }
+  _apply() {
+    if (this.svg) this.svg.style.transform = `translate(${this.tx}px,${this.ty}px) scale(${this.scale})`;
+    const lbl = this.toolbar && this.toolbar.querySelector('[data-label]');
+    if (lbl) lbl.textContent = Math.round(this.scale * 100) + '%';
+  }
+  _bindToolbar() {
+    if (!this.toolbar) return;
+    this.toolbar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const r = this.vp.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const actions = { in: () => this._zoom(1.2, cx, cy), out: () => this._zoom(0.8, cx, cy), fit: () => this.fit(), reset: () => this.reset() };
+      if (actions[btn.dataset.action]) actions[btn.dataset.action]();
+    });
+  }
+}
+
+new DiagramPanZoom('postSessionFlow');
+</script>
+
+</body>
+</html>
