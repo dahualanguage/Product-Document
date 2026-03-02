@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Build with AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #8b5cf6; font-weight: 700; }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #8b5cf6;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+
+    /* ── Code / Schema blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Flow diagram (ASCII) ── */
+    .flow-ascii {
+      background: #0f172a; color: #a5b4fc; border-radius: 10px;
+      padding: 20px 24px; margin: 16px 0;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 11px;
+      line-height: 1.7; white-space: pre; overflow-x: auto;
+    }
+    .flow-ascii .highlight { color: #c4b5fd; font-weight: 700; }
+    .flow-ascii .green { color: #6ee7b7; }
+    .flow-ascii .yellow { color: #fde68a; }
+    .flow-ascii .red { color: #fca5a5; }
+
+    /* ── Conversation step cards ── */
+    .conv-step {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 12px;
+      padding: 0; margin-bottom: 20px; overflow: hidden;
+    }
+    .conv-step-header {
+      background: #f8fafc; padding: 12px 20px; border-bottom: 1px solid #e2e8f0;
+      font-weight: 700; font-size: 13px; color: #334155;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .conv-step-header .step-id {
+      font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .conv-step-body { padding: 16px 20px; }
+    .conv-step-body .ai-msg {
+      background: #f1f5f9; border-radius: 12px; padding: 12px 16px;
+      margin-bottom: 12px; font-size: 13px; color: #334155;
+      border-left: 3px solid #8b5cf6;
+    }
+    .conv-step-body .ai-msg::before {
+      content: "AI says:"; display: block;
+      font-size: 10px; font-weight: 700; color: #8b5cf6; margin-bottom: 4px;
+    }
+    .conv-step-body .user-options {
+      display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0;
+    }
+    .conv-step-body .option-btn {
+      background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd;
+      padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    }
+    .conv-step-body .free-input {
+      background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px;
+      padding: 10px 14px; margin: 10px 0; font-size: 12px; color: #92400e;
+    }
+    .conv-step-body .free-input::before {
+      content: "Free Input:"; display: block;
+      font-size: 10px; font-weight: 700; color: #b45309; margin-bottom: 4px;
+    }
+    .conv-step-body .system-action {
+      background: #ecfdf5; border-radius: 8px; padding: 10px 14px;
+      margin: 10px 0; font-size: 12px; color: #065f46;
+    }
+    .conv-step-body .system-action::before {
+      content: "System:"; display: block;
+      font-size: 10px; font-weight: 700; color: #059669; margin-bottom: 4px;
+    }
+    .conv-step-body .routes {
+      margin: 10px 0 0; font-size: 12px; color: #64748b;
+    }
+    .conv-step-body .routes strong { color: #334155; }
+
+    /* ── Phase banner ── */
+    .phase-banner {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff; border-radius: 10px; padding: 16px 24px; margin: 32px 0 20px;
+    }
+    .phase-banner h3 { color: #fff; margin: 0 0 4px; font-size: 16px; }
+    .phase-banner p { color: #e9d5ff; margin: 0; font-size: 13px; }
+
+    footer {
+      text-align: center; color: #94a3b8; font-size: 11px;
+      padding: 40px 0 20px; border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <span class="current">Build with AI</span>
+</div>
+
+<div class="container">
+
+  <!-- ── Header ── -->
+  <div class="doc-header">
+    <h1>Build with AI</h1>
+    <div class="subtitle">Conversational AI assistant that guides teachers through content creation, question generation, practice setup, and assignment distribution — all in one flow.</div>
+    <div class="meta">
+      <span>Status: Proposal</span>
+      <span>Version: 0.1</span>
+      <span>Last Updated: 2026-02-28</span>
+      <span>Roles: TEACHER / SCHOOL_TEACHER / SCHOOL_ADMIN</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  PART A — PRODUCT POSITIONING (Section 1-4)           -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <!-- ── Section 1 ── -->
+  <h2><span class="num">1</span> Problem Statement</h2>
+
+  <h3>1a. Teachers find the platform hard to use</h3>
+  <p>To create a complete lesson that students can practice, a teacher currently needs to navigate <strong>5 separate pages</strong> and understand <strong>5 platform-specific concepts</strong>:</p>
+
+  <div class="flow-ascii"><span class="highlight">Current flow (5 pages, 5 concepts):</span>
+
+  <span class="yellow">Projects</span>  ──&gt;  <span class="yellow">Question Banks</span>  ──&gt;  <span class="yellow">Practice List</span>  ──&gt;  <span class="yellow">Assignments</span>  ──&gt;  <span class="yellow">Assign to Class</span>
+  (create      (generate        (create Mirroring   (create from      (select class
+   article)     questions)        or QA practice)     practice)         &amp; students)
+
+  <span class="red">Problem: Teacher must understand every concept and navigate between pages.</span>
+  <span class="red">         "I keep jumping back and forth and don't know where to go next."</span></div>
+
+  <p>K-12 teachers want <strong>flexibility</strong> — they want to customize content, choose question types, set difficulty levels. But the current UI makes them pay for that flexibility by requiring them to learn the platform's internal architecture.</p>
+
+  <h3>1b. Onboarding friction is being removed</h3>
+  <p>Previously, teachers had to manage student onboarding (invite codes, student self-registration). This is being replaced by a <strong>form-based approach</strong> where schools provide student emails and names, and the platform boards them directly.</p>
+  <p>Result: when a teacher first opens the platform, <strong>their classes and students are already set up</strong>. No onboarding friction.</p>
+
+  <h3>1c. What this means</h3>
+  <div class="callout callout-info">
+    <strong>The remaining friction is entirely in content creation and distribution.</strong><br>
+    If we can flatten the 5-page workflow into a single guided conversation, we solve the primary usability problem for K-12 teachers.
+  </div>
+
+  <!-- ── Section 2 ── -->
+  <h2><span class="num">2</span> Feature Goal</h2>
+
+  <h3>2a. One-sentence definition</h3>
+  <p><strong>Build with AI</strong> lets a teacher go from "I have a lesson topic" to "my students can start practicing" in a single conversational interface — without needing to understand Projects, Question Banks, Practices, or Assignments as separate concepts.</p>
+
+  <h3>2b. What the teacher experiences</h3>
+  <div class="flow-ascii"><span class="highlight">Build with AI flow (1 page, 0 concepts to learn):</span>
+
+  Teacher: <span class="green">"I have an article about the Moon Festival, B1 level,
+            make 5 MC questions and a mirroring practice,
+            assign to Class A"</span>
+
+  AI: <span class="yellow">"Got it! Here's what I'll do:
+       1. Use your article about the Moon Festival
+       2. Adjust to B1 level
+       3. Generate 5 multiple choice questions
+       4. Create a Mirroring practice
+       5. Assign to Class A (18 students)
+
+       Should I start?"</span>  [Yes, go ahead]  [Let me adjust]
+
+  <span class="green">Result: Teacher completes in one conversation what used to take 5 pages.</span></div>
+
+  <h3>2c. Success metrics</h3>
+  <table>
+    <tr><th>Metric</th><th>Current</th><th>Target</th></tr>
+    <tr><td>Time for a new teacher to create first complete practice</td><td>~30 min (learning platform + navigating pages)</td><td>&lt; 10 min (guided by AI)</td></tr>
+    <tr><td>Number of pages visited to create a lesson</td><td>5 pages</td><td>1 page</td></tr>
+    <tr><td>Teacher drop-off during content creation</td><td>High (lost between pages)</td><td>Low (AI keeps them on track)</td></tr>
+    <tr><td>Platform concepts teacher needs to learn</td><td>5 (Project, QB, Practice, Assignment, Class)</td><td>0 (AI handles routing)</td></tr>
+  </table>
+
+  <!-- ── Section 3 ── -->
+  <h2><span class="num">3</span> Navigation &amp; Entry Points</h2>
+
+  <h3>3a. Sidebar placement</h3>
+  <p>Build with AI is a <strong>primary workflow</strong>, not a helper tool. It should be the <strong>first item</strong> in the sidebar navigation — above Dashboard.</p>
+
+  <div class="flow-ascii"><span class="highlight">Sidebar (SCHOOL_TEACHER / SCHOOL_ADMIN):</span>
+
+  ┌────────────────────┐
+  │  <span class="green">BUILD WITH AI</span>    │  &lt;── First item, most prominent
+  │────────────────────│
+  │  Dashboard         │
+  │  Classroom         │
+  │────────────────────│
+  │  Projects          │
+  │  Question Banks    │
+  │────────────────────│
+  │  Practice List     │
+  │  Assignments       │
+  └────────────────────┘
+
+<span class="highlight">Sidebar (TEACHER):</span>
+
+  ┌────────────────────┐
+  │  <span class="green">BUILD WITH AI</span>    │
+  │────────────────────│
+  │  Projects          │
+  │  Question Banks    │
+  │────────────────────│
+  │  Practice List     │
+  │  Assignments       │
+  └────────────────────┘</div>
+
+  <h3>3b. First-time login experience</h3>
+  <p>When a teacher logs in for the first time (classes and students already set up), they see:</p>
+
+  <div class="flow-ascii"><span class="highlight">First-time Welcome Screen:</span>
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   Welcome, Ms. Chen!                                        │
+  │                                                             │
+  │   Your classroom is ready.                                  │
+  │   <span class="green">3 classes  |  45 students enrolled</span>                       │
+  │                                                             │
+  │   ┌───────────────────────────────────────────────────────┐ │
+  │   │                                                       │ │
+  │   │   <span class="yellow">Let's build your first lesson</span>                      │ │
+  │   │                                                       │ │
+  │   │   I'll help you create content, questions,            │ │
+  │   │   and practice materials — step by step.              │ │
+  │   │                                                       │ │
+  │   │                  [ Get Started ]                       │ │
+  │   │                                                       │ │
+  │   └───────────────────────────────────────────────────────┘ │
+  │                                                             │
+  │   <span class="highlight">Or explore on your own  &gt;</span>                                │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘</div>
+
+  <h3>3c. Context shortcuts on existing pages</h3>
+  <p>Each content page has an AI shortcut button. When clicked, it opens Build with AI <strong>pre-loaded with context</strong>, skipping the main menu.</p>
+
+  <table>
+    <tr><th>Page</th><th>Shortcut</th><th>AI starts with</th></tr>
+    <tr><td>Projects</td><td>[+ Create] &nbsp; [AI] button</td><td>"What topic would you like to create content about?"</td></tr>
+    <tr><td>Question Banks</td><td>[+ Create] &nbsp; [AI] button</td><td>"Which project would you like to generate questions from?"</td></tr>
+    <tr><td>Practice List</td><td>[+ Create] &nbsp; [AI] button</td><td>"What type of practice — Mirroring or Q&amp;A?"</td></tr>
+    <tr><td>Assignments</td><td>[Assign] button (existing)</td><td>No change — uses current assign-to-class dialog</td></tr>
+    <tr><td>Empty state (any page)</td><td>Prominent CTA card</td><td>"You don't have any [items] yet. Let AI help you create one!"</td></tr>
+  </table>
+
+  <h3>3d. Relationship between Build with AI and existing pages</h3>
+  <div class="callout callout-tip">
+    <strong>Everything AI creates appears on the corresponding page.</strong><br>
+    When AI creates a Project, it shows up on the Projects page. When AI generates a Question Bank, it's in the Question Banks page. Teachers can always go to those pages to manually edit, delete, or manage items. Build with AI is an alternative creation path — not a replacement for the existing pages.
+  </div>
+
+  <table>
+    <tr><th>AI does this</th><th>Creates this entity</th><th>Visible on this page</th></tr>
+    <tr><td>"I generated an article for you"</td><td>Project (projectConfig)</td><td>Projects</td></tr>
+    <tr><td>"Here are 10 MC questions"</td><td>Question Bank + Questions</td><td>Question Banks</td></tr>
+    <tr><td>"Mirroring practice is ready"</td><td>Practice</td><td>Practice List</td></tr>
+    <tr><td>"Assigned to Class A"</td><td>Assignment + Assignment History</td><td>Assignments</td></tr>
+  </table>
+
+  <!-- ── Section 4 ── -->
+  <h2><span class="num">4</span> Roles &amp; Access</h2>
+
+  <table>
+    <tr><th>Role</th><th>Access</th><th>Scope</th></tr>
+    <tr><td><strong>TEACHER</strong></td><td>Full access</td><td>Create content, generate questions, set up practices. No classroom assignment (no school context).</td></tr>
+    <tr><td><strong>SCHOOL_TEACHER</strong></td><td>Full access</td><td>Everything above + assign to own classes and students.</td></tr>
+    <tr><td><strong>SCHOOL_ADMIN</strong></td><td>Full access</td><td>Everything above + assign to any class in the school.</td></tr>
+    <tr><td>SCHOOL_STUDENT</td><td>No access</td><td>—</td></tr>
+    <tr><td>STUDENT</td><td>No access</td><td>—</td></tr>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Role-specific behavior in conversation:</strong><br>
+    When the conversation reaches the "Assign to Class" step, TEACHER users will see "Share Link" option only (no class assignment). SCHOOL_TEACHER and SCHOOL_ADMIN users will see the class selection interface.
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  PART B — CONVERSATION FLOWS (Section 5-8)            -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <!-- ── Section 5 ── -->
+  <h2><span class="num">5</span> Conversation Entry &amp; Intent Recognition</h2>
+
+  <h3>5a. Main menu</h3>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">5.1</span> Welcome &amp; Main Menu</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Hi [First Name]! What would you like to build today?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Create Content</span>
+        <span class="option-btn">Build Question Bank</span>
+        <span class="option-btn">Set Up Practice</span>
+        <span class="option-btn">View Student Progress</span>
+      </div>
+      <div class="free-input">
+        Teachers can also type freely. Examples:<br>
+        "I have an article about animals for my 3rd graders" &rarr; routes to <strong>Content Creation</strong>, pre-fills topic<br>
+        "Make 10 quiz questions from my Unit 5 project" &rarr; routes to <strong>Question Bank</strong>, links to existing project<br>
+        "I want students to practice reading aloud" &rarr; routes to <strong>Set Up Practice (Mirroring)</strong><br>
+        "How did Class A do last week?" &rarr; routes to <strong>View Student Progress</strong>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Button or intent = "Create Content" &rarr; Step 6.1<br>
+        Button or intent = "Build Question Bank" &rarr; Step 7.1<br>
+        Button or intent = "Set Up Practice" &rarr; Step 8.1<br>
+        Button or intent = "View Student Progress" &rarr; (out of scope for v1)<br>
+        Intent = unclear &rarr; Step 5.2
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">5.2</span> Clarification (when intent is unclear)</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        I'm not sure I understood. Could you tell me more about what you'd like to do?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Create Content</span>
+        <span class="option-btn">Build Question Bank</span>
+        <span class="option-btn">Set Up Practice</span>
+        <span class="option-btn">View Student Progress</span>
+      </div>
+      <div class="free-input">
+        Teacher can re-describe in different words. AI attempts to classify again.
+      </div>
+    </div>
+  </div>
+
+  <h3>5b. Intent recognition system</h3>
+  <p>When the teacher types free text instead of clicking a button, the system uses AI to understand their intent and extract parameters.</p>
+
+  <h4>Intent classification table</h4>
+  <table>
+    <tr><th>Intent</th><th>Description</th><th>Extractable Parameters</th></tr>
+    <tr>
+      <td><code>create_content</code></td>
+      <td>Teacher wants to create or upload an article/content</td>
+      <td>topic, hasArticle (bool), level, contentType, wordCount</td>
+    </tr>
+    <tr>
+      <td><code>build_question_bank</code></td>
+      <td>Teacher wants to generate or create questions</td>
+      <td>questionType (MC/TF/QA), count, linkedProject</td>
+    </tr>
+    <tr>
+      <td><code>setup_practice</code></td>
+      <td>Teacher wants to create a practice (Mirroring or QA)</td>
+      <td>practiceType (mirroring/qa), linkedProject, linkedQB</td>
+    </tr>
+    <tr>
+      <td><code>assign_to_students</code></td>
+      <td>Teacher wants to distribute an assignment</td>
+      <td>className, practiceName</td>
+    </tr>
+    <tr>
+      <td><code>view_progress</code></td>
+      <td>Teacher wants to check student results</td>
+      <td>className, assignmentName, studentName</td>
+    </tr>
+    <tr>
+      <td><code>full_workflow</code></td>
+      <td>Teacher describes the complete flow in one sentence</td>
+      <td>All of the above — AI chains multiple steps</td>
+    </tr>
+    <tr>
+      <td><code>unclear</code></td>
+      <td>AI cannot determine intent (confidence &lt; threshold)</td>
+      <td>—</td>
+    </tr>
+  </table>
+
+  <h4>AI confirmation before proceeding</h4>
+  <div class="callout callout-warn">
+    <strong>Rule:</strong> When the teacher uses free input, the AI must <strong>always confirm its understanding</strong> before taking any action. Never auto-execute based on NLP alone.
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">5.3</span> Intent Confirmation</div>
+    <div class="conv-step-body">
+      <p><em>Example: teacher typed "I have a story about the moon festival, make 5 quiz questions and assign to Class A"</em></p>
+      <div class="ai-msg">
+        It sounds like you want to:<br><br>
+        1. Use your story about the Moon Festival as content<br>
+        2. Generate 5 questions from it<br>
+        3. Assign the practice to Class A<br><br>
+        I'll also need to know your students' level and which question types you'd like. Should I start with reviewing your article?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Yes, let's start</span>
+        <span class="option-btn">Let me adjust</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Yes" &rarr; Step 6.2 (Content Input) with pre-filled article context<br>
+        "Let me adjust" &rarr; AI asks what to change
+      </div>
+    </div>
+  </div>
+
+  <h3>5c. Multi-language support</h3>
+  <p>Teachers may type in <strong>English or Chinese</strong>. The NLP router must handle both languages. AI responses should match the language the teacher used.</p>
+
+
+  <!-- ── Section 6 ── -->
+  <h2><span class="num">6</span> Content Creation Flow</h2>
+
+  <div class="phase-banner">
+    <h3>Phase 1 — Content Input &amp; Generation</h3>
+    <p>Teacher provides content (or AI generates it) &rarr; AI adjusts to student level &rarr; teacher reviews and confirms.</p>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.1</span> Choose Content Input Method</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        How would you like to provide your content?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Paste Article</span>
+        <span class="option-btn">Upload Image</span>
+        <span class="option-btn">From URL</span>
+        <span class="option-btn">Teaching Points Only</span>
+      </div>
+      <div class="free-input">
+        "I'll just type my article here" &rarr; routes to Paste Article<br>
+        "I have a photo of a textbook page" &rarr; routes to Upload Image<br>
+        "Here's a link to the article" &rarr; routes to From URL
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Paste Article &rarr; Step 6.2a<br>
+        Upload Image &rarr; Step 6.2b<br>
+        From URL &rarr; Step 6.2c<br>
+        Teaching Points Only &rarr; Step 6.2d
+      </div>
+    </div>
+  </div>
+
+  <h3>6.2 — Content Input (4 methods)</h3>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.2a</span> Paste Article</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Paste your article below. I'll analyze it and help you get started.
+      </div>
+      <div class="system-action">
+        Display a text area (expandable, max 1800 characters).<br>
+        Teacher pastes content and clicks [Submit].
+      </div>
+      <div class="ai-msg">
+        Got it! Here's what I received:<br><br>
+        <em>[Preview of pasted text, first 200 chars...]</em><br><br>
+        Does this look correct?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Looks good</span>
+        <span class="option-btn">I need to edit</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Looks good" &rarr; Step 6.3 (Level Selection)<br>
+        "I need to edit" &rarr; Re-open text area for editing
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.2b</span> Upload Image (OCR)</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Upload an image of your teaching material (textbook page, handout, etc.). I'll extract the text for you.
+      </div>
+      <div class="system-action">
+        Display <code>ImageUploadWithExtract</code> dropzone component.<br>
+        Accepts: PNG, JPEG. Max 10 files, 10MB each.<br>
+        Flow: upload to S3 &rarr; trigger OCR job &rarr; poll for completion &rarr; display extracted text.<br>
+        Show progress: uploading &rarr; processing &rarr; completed.<br>
+        <strong>Existing component:</strong> PR #377 on develop branch.
+      </div>
+      <div class="ai-msg">
+        I extracted the following text from your image:<br><br>
+        <em>[Extracted text preview...]</em><br><br>
+        Does this look correct? You can edit if the OCR missed anything.
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Looks good</span>
+        <span class="option-btn">I need to edit</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Looks good" &rarr; Step 6.3 (Level Selection)<br>
+        "I need to edit" &rarr; Show editable text area with extracted text pre-filled
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.2c</span> From URL</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Paste the URL of the article or resource you'd like to use.
+      </div>
+      <div class="system-action">
+        Display URL input field. Teacher pastes URL and clicks [Fetch].<br>
+        System fetches and extracts text content from the URL.<br>
+        <strong>Status: Requires new backend API (URL scraping).</strong>
+      </div>
+      <div class="ai-msg">
+        Here's what I found at that URL:<br><br>
+        <em>[Extracted text preview...]</em><br><br>
+        Does this look correct?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Looks good</span>
+        <span class="option-btn">I need to edit</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong> Same as 6.2a — confirm &rarr; Step 6.3
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.2d</span> Teaching Points Only (AI generates article)</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        What topic would you like to create content about? You can also list specific teaching points you'd like to include.
+      </div>
+      <div class="system-action">
+        Display two input fields:<br>
+        1. <strong>Topic</strong> (text input) — e.g. "Moon Festival"<br>
+        2. <strong>Teaching Points</strong> (text area, comma-separated) — e.g. "mooncake, lantern, family reunion, Chang'e"
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Submit &rarr; Step 6.3 (Level Selection) — article will be generated after level is set
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.3</span> Student Level Selection</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        What's your students' proficiency level? This helps me adjust the content difficulty.
+      </div>
+      <div class="system-action">
+        Display two dropdowns:<br>
+        1. <strong>Level Type</strong>: ACTFL / CEFR / HSK / TOCFL / IB_DP / IB_MYP<br>
+        2. <strong>Level</strong>: (options change based on type selected)<br><br>
+        If teacher previously used Build with AI, pre-fill with last used settings:<br>
+        "Last time you used ACTFL Intermediate. Use the same?"
+      </div>
+      <div class="free-input">
+        "My students are beginners" &rarr; AI suggests: "That sounds like ACTFL Novice or CEFR A1. Which framework do you use?"<br>
+        "B1 level" &rarr; AI auto-selects CEFR B1
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Level selected &rarr; Step 6.4 (for Teaching Points input) or Step 6.5 (for pasted/uploaded article)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.4</span> Content Generation Settings (Teaching Points path only)</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        How would you like the content to look?
+      </div>
+      <div class="system-action">
+        Display settings:<br>
+        1. <strong>Content Type</strong> dropdown: Conversation / Article / Story / Announcement / Script / Speech / Debate<br>
+        2. <strong>Word Count</strong> dropdown: 100 / 200 / 300 / 400 / 500 / 600 / 700 / 800<br>
+        3. <strong>Student's Native Language</strong> dropdown: English, Spanish, French, etc. (50+ options)
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Generate</span>
+      </div>
+      <div class="system-action">
+        Call <code>upsertProjectConfig</code> with generateType: CREATE.<br>
+        Show loading animation with progress message: "Generating your article..."<br>
+        Poll for completion.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Generation complete &rarr; Step 6.5 (Review)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.5</span> Review Generated / Submitted Content</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Here's your content! Review it below.<br><br>
+        <em>[Full article text displayed in editable area]</em><br><br>
+        Summary:<br>
+        &bull; [X] sentences &bull; [X] words &bull; [X] teaching points included &bull; ~[X] min reading time
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Looks good, continue</span>
+        <span class="option-btn">I want to edit</span>
+        <span class="option-btn">Regenerate</span>
+      </div>
+      <div class="free-input">
+        "Make it shorter" &rarr; AI regenerates with lower word count<br>
+        "Add more vocabulary about colors" &rarr; AI regenerates with additional instruction<br>
+        "Change it to a conversation format" &rarr; AI regenerates with different content type
+      </div>
+      <div class="system-action">
+        <strong>"I want to edit":</strong> Open inline editor (max 800 characters). Teacher edits directly, clicks [Save].<br>
+        <strong>"Regenerate":</strong> AI asks "Any specific changes you'd like?" (optional text input) &rarr; regenerate with additional instructions.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Looks good" &rarr; Step 6.6 (Name &amp; Save Project)<br>
+        "Edit" &rarr; inline edit &rarr; back to Step 6.5<br>
+        "Regenerate" &rarr; back to generation &rarr; Step 6.5
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">6.6</span> Name &amp; Save Project</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Your content is ready! What would you like to name this project?
+      </div>
+      <div class="system-action">
+        Display text input with auto-suggested name based on topic/content.<br>
+        Teacher can accept or type a custom name.
+      </div>
+      <div class="system-action">
+        Save project via <code>upsertProjectConfig</code>.<br>
+        Confirm teaching points via <code>splitArticle</code>.
+      </div>
+      <div class="ai-msg">
+        Project "<em>[name]</em>" saved!<br><br>
+        What would you like to do next?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Generate Questions</span>
+        <span class="option-btn">Set Up Practice</span>
+        <span class="option-btn">I'm done for now</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Generate Questions" &rarr; Step 7.1 (auto-linked to this project)<br>
+        "Set Up Practice" &rarr; Step 8.1 (auto-linked to this project)<br>
+        "I'm done" &rarr; Step 10.1 (Wrap Up)
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── Section 7 ── -->
+  <h2><span class="num">7</span> Question Bank Flow</h2>
+
+  <div class="phase-banner">
+    <h3>Phase 2 — Question Generation</h3>
+    <p>Generate questions from content, review and edit, save as a Question Bank.</p>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.1</span> Select or Create Question Bank</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Would you like to generate new questions or use an existing question bank?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Generate New Questions</span>
+        <span class="option-btn">Use Existing Question Bank</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Generate New" &rarr; Step 7.2<br>
+        "Use Existing" &rarr; Step 7.5 (Select from list)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.2</span> Select Source Project</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Which project should I generate questions from?
+      </div>
+      <div class="system-action">
+        If arriving from Step 6.6 (just created a project): auto-select that project, show confirmation.<br>
+        Otherwise: display dropdown list of all teacher's projects.
+      </div>
+      <div class="free-input">
+        "Use the article I just created" &rarr; auto-selects most recent project<br>
+        "The Unit 5 project" &rarr; AI fuzzy-matches to project name
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Project selected &rarr; Step 7.3
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.3</span> Configure Question Generation</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        What type of questions would you like? Select the types and how many.
+      </div>
+      <div class="system-action">
+        Display question configuration form:<br><br>
+        <strong>Question Types</strong> (checkboxes):<br>
+        &nbsp;&nbsp;Multiple Choice:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&#9744; Pinyin &nbsp; &#9744; Usage &nbsp; &#9744; Meaning &nbsp; &#9744; Comprehension<br>
+        &nbsp;&nbsp;Q&amp;A:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&#9744; Short Answer &nbsp; &#9744; Extension<br>
+        &nbsp;&nbsp;True / False (coming soon)<br><br>
+        <strong>Number of Questions</strong>: dropdown (1-10)
+      </div>
+      <div class="free-input">
+        "5 multiple choice about meaning" &rarr; auto-check Meaning, set count to 5<br>
+        "3 short answer and 3 comprehension" &rarr; auto-check both, set counts
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Generate</span>
+      </div>
+      <div class="system-action">
+        Create question bank via <code>createQuestionsBank</code>.<br>
+        Generate questions via <code>generateQuestions</code>.<br>
+        Show loading: "Generating [X] questions..."<br>
+        Poll for completion.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Generation complete &rarr; Step 7.4
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.4</span> Review &amp; Edit Questions</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Here are your questions! You can edit them directly or ask me to adjust.
+      </div>
+      <div class="system-action">
+        Display generated questions in editable format:<br><br>
+        <strong>For Multiple Choice:</strong><br>
+        Each question shows: Question text, Choice A/B/C/D, Correct answer.<br>
+        All fields are editable inline.<br><br>
+        <strong>For Q&amp;A:</strong><br>
+        Each question shows: Question text, Expected answer.<br>
+        All fields are editable inline.<br><br>
+        <strong>"Ask AI" button</strong> on each question: Teacher clicks &rarr; AI evaluates the question quality and suggests improvements.
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Looks good, save</span>
+        <span class="option-btn">Generate more questions</span>
+        <span class="option-btn">Add a question manually</span>
+      </div>
+      <div class="free-input">
+        "Question 3 is too easy, make it harder" &rarr; AI regenerates that specific question<br>
+        "Add 3 more about pinyin" &rarr; AI generates additional questions and appends
+      </div>
+      <div class="system-action">
+        <strong>"Generate more":</strong> Return to Step 7.3 config, append to existing bank.<br>
+        <strong>"Add manually":</strong> Show blank question form (MC or QA format). Save via <code>upsertQuestions</code>.<br>
+        <strong>"Looks good, save":</strong> Save all edits via <code>upsertQuestions</code>.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Looks good, save" &rarr; Step 7.6 (Next Steps)<br>
+        "Generate more" &rarr; Step 7.3 (loop)<br>
+        "Add manually" &rarr; inline form &rarr; back to Step 7.4
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.5</span> Select Existing Question Bank</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Here are your existing question banks. Which one would you like to use?
+      </div>
+      <div class="system-action">
+        Display list of existing question banks with: name, question count, creation date.<br>
+        Teacher selects one.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Selected &rarr; Step 7.6 (Next Steps) — skip generation, go directly to practice setup
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">7.6</span> Question Bank Complete — Next Steps</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Question bank "<em>[name]</em>" is ready with [X] questions!<br><br>
+        What would you like to do next?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Set Up Practice</span>
+        <span class="option-btn">Generate More Questions</span>
+        <span class="option-btn">I'm done for now</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Set Up Practice" &rarr; Step 8.1 (auto-linked to this project + question bank)<br>
+        "Generate More" &rarr; Step 7.3 (loop)<br>
+        "I'm done" &rarr; Step 10.1 (Wrap Up)
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── Section 8 ── -->
+  <h2><span class="num">8</span> Practice Setup &amp; Assignment Flow</h2>
+
+  <div class="phase-banner">
+    <h3>Phase 3 — Practice Creation &amp; Distribution</h3>
+    <p>Create a practice (Mirroring or QA), configure display settings, and assign to students.</p>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">8.1</span> Choose Practice Type</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        What type of practice would you like to create?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Mirroring (Read Aloud)</span>
+        <span class="option-btn">Q&amp;A (Answer Questions)</span>
+      </div>
+      <div class="free-input">
+        "I want students to practice reading" &rarr; Mirroring<br>
+        "I want them to answer questions about the article" &rarr; Q&amp;A
+      </div>
+      <div class="system-action">
+        <strong>Mirroring</strong> requires a Project (article content for students to read aloud).<br>
+        <strong>Q&amp;A</strong> requires a Question Bank (questions for students to answer).<br><br>
+        If arriving from the content creation flow (Steps 6-7), both may already be available. Auto-link them.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Mirroring &rarr; Step 8.2a<br>
+        Q&amp;A &rarr; Step 8.2b
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">8.2a</span> Configure Mirroring Practice</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Let's set up a Mirroring practice. Students will read the article aloud and get pronunciation feedback.
+      </div>
+      <div class="system-action">
+        Display configuration form:<br>
+        1. <strong>Practice Name</strong>: text input (auto-suggested from project name)<br>
+        2. <strong>Select Project</strong>: dropdown (auto-selected if coming from Step 6)<br>
+        3. <strong>Pinyin Preference</strong>:<br>
+        &nbsp;&nbsp;&#9744; Show Pinyin &nbsp; &#9744; No Pinyin &nbsp; &#9744; Student Choice
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Create Practice</span>
+      </div>
+      <div class="system-action">
+        Call <code>upsertPractice</code> with practiceType: MIRRORING, projectConfigSk, pinyinPreference.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Created &rarr; Step 8.3 (Display Settings)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">8.2b</span> Configure Q&amp;A Practice</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Let's set up a Q&amp;A practice. Students will answer questions and get AI feedback on their responses.
+      </div>
+      <div class="system-action">
+        Display configuration form:<br>
+        1. <strong>Practice Name</strong>: text input (auto-suggested from question bank name)<br>
+        2. <strong>Select Question Bank</strong>: dropdown (auto-selected if coming from Step 7)
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Create Practice</span>
+      </div>
+      <div class="system-action">
+        Call <code>upsertPractice</code> with practiceType: QA, questionsBankSk.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Created &rarr; Step 8.3 (Display Settings)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">8.3</span> Display Settings</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Your practice is created! Let me know if you'd like to customize how the content appears for students.
+      </div>
+      <div class="system-action">
+        <strong>Content Display</strong> (for Mirroring):<br>
+        &nbsp;&nbsp;&#9744; Chinese text without pinyin<br>
+        &nbsp;&nbsp;&#9744; Pinyin above text<br>
+        &nbsp;&nbsp;&#9744; Show translation<br><br>
+        <strong>Question Display</strong> (for Q&amp;A):<br>
+        &nbsp;&nbsp;&#9744; Full question with options<br>
+        &nbsp;&nbsp;&#9744; Questions without pinyin<br>
+        &nbsp;&nbsp;&#9744; Randomize question order
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Use defaults</span>
+        <span class="option-btn">Customize</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        Either option &rarr; Step 8.4 (Assign)
+      </div>
+    </div>
+  </div>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">8.4</span> Create Assignment &amp; Assign to Students</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Practice is ready! Would you like to assign it to your students now?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Assign to Class</span>
+        <span class="option-btn">Share Link</span>
+        <span class="option-btn">I'll do it later</span>
+      </div>
+      <div class="system-action">
+        <strong>"Assign to Class" (SCHOOL_TEACHER / SCHOOL_ADMIN only):</strong><br>
+        1. Create assignment via <code>upsertAssignment</code><br>
+        2. Display class selection (multi-select dropdown of teacher's classes)<br>
+        3. Display student selection (checkboxes, Select All / Deselect All)<br>
+        4. Click [Assign] &rarr; call <code>assignAssignmentToUsers</code><br><br>
+
+        <strong>"Share Link" (all roles):</strong><br>
+        1. Create assignment via <code>upsertAssignment</code><br>
+        2. Generate and display shareable link<br>
+        3. [Copy Link] button<br><br>
+
+        <strong>"I'll do it later":</strong><br>
+        Assignment is still created. Teacher can assign from the Assignments page later.
+      </div>
+      <div class="ai-msg">
+        <em>(After assigning)</em><br><br>
+        Done! Practice assigned to <strong>Class A</strong> (18 students) and <strong>Class B</strong> (22 students).<br><br>
+        Students will see this in their Assignment List when they log in.
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        After any option &rarr; Step 10.1 (Wrap Up)
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>TEACHER role (no school context):</strong> The "Assign to Class" option is not shown. Only "Share Link" and "I'll do it later" are available.
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  PART C — SUPPORTING MECHANISMS (Section 9-11)        -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <!-- ── Section 9 ── -->
+  <h2><span class="num">9</span> Draft, Resume &amp; History</h2>
+
+  <h3>9a. Auto-save draft</h3>
+  <p>The conversation state is automatically saved after each completed step. If the teacher closes the browser or navigates away, they can resume later.</p>
+
+  <table>
+    <tr><th>Behavior</th><th>Detail</th></tr>
+    <tr><td>When to save</td><td>After each step completion (user clicks a button or submits a form)</td></tr>
+    <tr><td>What is saved</td><td>Current step, all previous responses, any created entities (project SK, QB SK, etc.)</td></tr>
+    <tr><td>Where to save</td><td>localStorage (for quick resume) + backend (for cross-device access)</td></tr>
+    <tr><td>Draft expiry</td><td>30 days of inactivity</td></tr>
+  </table>
+
+  <h3>9b. Resume prompt</h3>
+  <p>When a teacher opens Build with AI and has an unfinished draft:</p>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">9.1</span> Resume Draft</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        Welcome back! You have an unfinished session from [date].<br><br>
+        You were working on: <strong>"[project name / topic]"</strong><br>
+        Last step: <strong>[step description, e.g. "Reviewing generated article"]</strong>
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Continue where I left off</span>
+        <span class="option-btn">Start fresh</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>9c. Build history</h3>
+  <p>Completed Build with AI sessions are saved as a history list. Teachers can view past sessions and see what was created.</p>
+
+  <table>
+    <tr><th>Field</th><th>Example</th></tr>
+    <tr><td>Date</td><td>Feb 28, 2026</td></tr>
+    <tr><td>Topic</td><td>Moon Festival</td></tr>
+    <tr><td>Created</td><td>1 Project, 1 Question Bank (10 MC), 1 Mirroring Practice</td></tr>
+    <tr><td>Assigned to</td><td>Class A (18 students)</td></tr>
+    <tr><td>Quick links</td><td>[View Project] [View Questions] [View Practice]</td></tr>
+  </table>
+
+
+  <!-- ── Section 10 ── -->
+  <h2><span class="num">10</span> Wrap Up &amp; Loop</h2>
+
+  <div class="conv-step">
+    <div class="conv-step-header"><span class="step-id">10.1</span> Session Complete</div>
+    <div class="conv-step-body">
+      <div class="ai-msg">
+        You're all set! Here's a summary of what we built:<br><br>
+        &bull; Project: "<em>[name]</em>"<br>
+        &bull; Question Bank: "<em>[name]</em>" (10 questions)<br>
+        &bull; Practice: "<em>[name]</em>" (Mirroring)<br>
+        &bull; Assigned to: Class A (18 students)<br><br>
+        Would you like to build anything else?
+      </div>
+      <div class="user-options">
+        <span class="option-btn">Build something else</span>
+        <span class="option-btn">Edit what I just made</span>
+        <span class="option-btn">I'm done</span>
+      </div>
+      <div class="routes">
+        <strong>Routes:</strong><br>
+        "Build something else" &rarr; Step 5.1 (Main Menu, fresh session)<br>
+        "Edit what I just made" &rarr; Navigate to relevant page (Projects / QB / Practice)<br>
+        "I'm done" &rarr; End conversation, show history
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Note:</strong> "Edit what I just made" navigates to the existing page (e.g., Projects). This keeps Build with AI focused on <em>creation</em>, and lets the existing pages handle <em>editing and management</em>.
+  </div>
+
+
+  <!-- ── Section 11 ── -->
+  <h2><span class="num">11</span> Edge Cases &amp; Rules</h2>
+
+  <h3>11a. Error handling</h3>
+  <table>
+    <tr><th>Scenario</th><th>AI Response</th><th>Action</th></tr>
+    <tr>
+      <td>AI content generation fails</td>
+      <td>"Sorry, I wasn't able to generate the content. This might be due to a temporary issue."</td>
+      <td>Show [Try Again] and [Enter Content Manually] buttons</td>
+    </tr>
+    <tr>
+      <td>OCR extraction fails</td>
+      <td>"I had trouble reading your image. The text might be too blurry or the image too small."</td>
+      <td>Show [Upload Another Image] and [Paste Text Instead] buttons</td>
+    </tr>
+    <tr>
+      <td>URL fetch fails</td>
+      <td>"I couldn't access that URL. It might be behind a login or unavailable."</td>
+      <td>Show [Try Another URL] and [Paste Text Instead] buttons</td>
+    </tr>
+    <tr>
+      <td>Question generation fails</td>
+      <td>"I wasn't able to generate questions. Let me try again."</td>
+      <td>Show [Try Again] and [Add Questions Manually] buttons</td>
+    </tr>
+    <tr>
+      <td>Insufficient credits</td>
+      <td>"You don't have enough credits to generate this content. Each generation uses 5 credits."</td>
+      <td>Show [Top Up Credits] link (navigates to billing page)</td>
+    </tr>
+  </table>
+
+  <h3>11b. Credits</h3>
+  <table>
+    <tr><th>Action</th><th>Credit Cost</th></tr>
+    <tr><td>Generate article (CREATE / REVISE / SUMMARY)</td><td>5 credits</td></tr>
+    <tr><td>Generate questions</td><td>Credits per generation (varies)</td></tr>
+    <tr><td>Create practice</td><td>Free</td></tr>
+    <tr><td>Create assignment</td><td>Free</td></tr>
+  </table>
+
+  <p>AI should show remaining credits at the start of each generation step: "This will use 5 credits. You have [X] remaining."</p>
+
+  <h3>11c. Conversation rules</h3>
+  <table>
+    <tr><th>Rule</th><th>Detail</th></tr>
+    <tr><td>Free input is always available</td><td>Every step that shows buttons must also show a text input field</td></tr>
+    <tr><td>AI always confirms NLP results</td><td>When interpreting free text, AI describes its understanding and asks for confirmation before acting</td></tr>
+    <tr><td>Fallback to buttons</td><td>If AI cannot understand free input after 2 attempts, show: "I'm not sure I understood. Please select an option below."</td></tr>
+    <tr><td>Language matching</td><td>AI responds in the same language the teacher used (English or Chinese)</td></tr>
+    <tr><td>No auto-execution</td><td>AI never creates entities, generates content, or assigns to students without explicit teacher confirmation</td></tr>
+    <tr><td>Progress is visible</td><td>A step indicator at the top shows where the teacher is in the overall flow</td></tr>
+    <tr><td>Back button always available</td><td>Teacher can go back to the previous step at any point</td></tr>
+  </table>
+
+  <h3>11d. Step indicator</h3>
+  <p>The conversation UI shows a progress bar at the top:</p>
+  <div class="flow-ascii"><span class="highlight">Progress indicator (visible at all times):</span>
+
+  <span class="green">[1. Content]</span> &mdash;&mdash; <span class="yellow">[2. Questions]</span> &mdash;&mdash; [3. Practice] &mdash;&mdash; [4. Assign] &mdash;&mdash; [5. Done]
+       <span class="green">&#10003;</span>             <span class="yellow">(current)</span>
+
+  <span class="highlight">Notes:</span>
+  - Steps that were skipped (e.g., teacher went straight to Practice) are grayed out
+  - Teacher can click any completed step to jump back
+  - Not all steps are required (teacher can stop at any point)</div>
+
+  <h3>11e. Entity created during conversation</h3>
+  <div class="callout callout-warn">
+    <strong>Important:</strong> Entities are created at specific points in the conversation, not at the end. This means if a teacher abandons the conversation midway, some entities may already exist.<br><br>
+    <strong>Project</strong> is saved at Step 6.6.<br>
+    <strong>Question Bank</strong> is saved at Step 7.3 (generation) or 7.4 (manual add).<br>
+    <strong>Practice</strong> is saved at Step 8.2.<br>
+    <strong>Assignment</strong> is saved at Step 8.4.<br><br>
+    Draft resume (Section 9) tracks which entities were already created, so the teacher doesn't create duplicates when resuming.
+  </div>
+
+  <h3>11f. Content dependency reference</h3>
+  <p>When a teacher creates content through Build with AI, the entities are linked: Project &rarr; Question Bank &rarr; Practice &rarr; Assignment. For detailed documentation on what happens when these are edited or deleted, see <a href="../../content-dependency-and-deletion.md"><strong>Content Dependency &amp; Deletion Behavior</strong></a>.</p>
+
+  <h3>11g. Naming corrections from flowchart</h3>
+  <p>The following naming changes were made from the original flowchart design to improve clarity:</p>
+  <table>
+    <tr><th>Original (Flowchart)</th><th>Updated (Spec)</th><th>Reason</th></tr>
+    <tr><td>"Multi Times"</td><td>"Number of Questions"</td><td>Original was unclear</td></tr>
+    <tr><td>"What will the marker scoring rubric?"</td><td>"Set Scoring Rubric"</td><td>Grammar fix</td></tr>
+    <tr><td>"Would you like to edit questions to the slides?"</td><td>"Would you like to add questions for this content?"</td><td>"Slides" was irrelevant</td></tr>
+    <tr><td>"Q: What is question type? Who knows?"</td><td>"Choose a question type"</td><td>Original was confusing</td></tr>
+    <tr><td>"Write Content Display"</td><td>"Content Display Settings"</td><td>Clearer label</td></tr>
+    <tr><td>"Content Bible"</td><td>"Content Library"</td><td>More standard term</td></tr>
+    <tr><td>"Student Work" (button)</td><td>"View Student Progress"</td><td>More specific</td></tr>
+    <tr><td>"Find a Material"</td><td>"Paste Article" / "Upload Image" etc.</td><td>Split into specific actions</td></tr>
+    <tr><td>"建題庫/問題庫"</td><td>"Build Question Bank"</td><td>Consistent language (English)</td></tr>
+  </table>
+
+
+  <!-- ── Footer ── -->
+  <footer>
+    Build with AI Spec &mdash; DAHUA AI Platform &mdash; v0.1 &mdash; 2026-02-28
+  </footer>
+
+</div>
+</body>
+</html>
