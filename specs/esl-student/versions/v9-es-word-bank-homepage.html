@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Word Bank Homepage v2 (Spanish)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Frame ── */
+    .app-frame {
+      display: flex; width: 100%; min-height: 100vh;
+      background: #fff;
+    }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-logo span {
+      font-size: 22px; font-weight: 900; color: #059669;
+      font-family: Georgia, serif;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active span { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .version-link {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+      transition: all .15s;
+    }
+    .version-link:hover { color: #475569; border-color: #cbd5e1; background: #f8fafc; }
+    .app-content { flex: 1; background: #fff; overflow-y: auto; padding: 4px 120px 4px 4px; }
+
+    /* ── Layout ── */
+    .page { display: flex; flex-direction: column; }
+
+    /* ── Upper half ── */
+    .upper {
+      display: flex; flex-direction: column; gap: 20px;
+      padding: 20px 36px 20px;
+      transition: max-height .4s ease, opacity .3s ease, padding .4s ease;
+      overflow: hidden;
+    }
+    .upper.collapsed { opacity: 0; padding-top: 0; padding-bottom: 0; }
+    .upper-top { display: grid; grid-template-columns: 552px 1fr; gap: 20px; align-items: stretch; }
+    .upper-left { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+    .section-label { font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 10px; }
+
+    /* Notice banner */
+    .notice-banner {
+      padding: 25px;
+      background: linear-gradient(135deg, #059669 0%, #6EE7B7 100%);
+      border: none; border-radius: 14px;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
+      display: flex; flex-direction: column; gap: 10px;
+      transition: opacity .3s ease, max-height .3s ease;
+      overflow: hidden;
+    }
+    .notice-banner.hidden { opacity: 0; max-height: 0; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border: none; }
+    .notice-icon { font-size: 20px; flex-shrink: 0; }
+    .notice-row { display: flex; align-items: center; gap: 15px; }
+    .notice-text { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .notice-title { font-size: 14px; font-weight: 500; color: #fff; display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+    .notice-sub { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85); }
+    .notice-streak {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.2); border-radius: 20px;
+      padding: 4px 12px; width: fit-content;
+      font-size: 12px; font-weight: 600; color: #fff;
+    }
+    .streak-fire { font-size: 14px; }
+    .streak-num { font-weight: 800; font-size: 14px; }
+    .notice-days-select {
+      appearance: none; -webkit-appearance: none;
+      background: rgba(255,255,255,.25); border: 1.5px solid rgba(255,255,255,.6);
+      border-radius: 6px; padding: 0 24px 0 8px; margin: 0 6px;
+      height: 24px; line-height: 24px;
+      color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+    }
+    .notice-days-select:hover { background-color: rgba(255,255,255,.35); border-color: #fff; }
+    .notice-days-select option { color: #1e293b; background: #fff; }
+    .notice-highlight {
+      background: rgba(255,255,255,.25); border: 1.5px solid rgba(255,255,255,.6);
+      border-radius: 6px; padding: 0 8px; margin: 0 6px;
+      height: 24px; line-height: 24px; display: inline-flex; align-items: center;
+      font-weight: 700;
+    }
+    .notice-close {
+      margin-left: 8px; flex-shrink: 0;
+      width: 24px; height: 24px; border-radius: 6px;
+      border: none; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.6); font-size: 16px; font-weight: 700;
+      transition: all .15s;
+    }
+    .notice-close:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* Practice row */
+    .practice-grid { display: flex; gap: 24px; }
+    .practice-btn {
+      display: flex; flex-direction: column; width: 120px; height: 135px;
+      padding: 0; align-items: center;
+      border-radius: 12px; border: 1px solid #E2E8F0;
+      background: #fff; box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
+      cursor: pointer; transition: all .15s; overflow: hidden;
+    }
+    .practice-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .practice-icon {
+      width: 120px; height: 90px; border-radius: 12px 12px 0 0;
+      background: #F8FAF9;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .practice-icon svg { width: 36px; height: 36px; }
+    .practice-name { font-size: 13px; font-weight: 700; color: #0f172a; text-align: center; display: flex; align-items: center; justify-content: center; flex: 1; }
+
+    /* Practice set cards */
+    .sets-module { }
+    .sets-grid { display: flex; gap: 20px; }
+    .set-card {
+      background: #fff; border-radius: 14px; padding: 0;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.07);
+      cursor: pointer; transition: all .2s;
+      display: flex; flex-direction: column; overflow: hidden;
+      flex: 1;
+    }
+    .set-card:first-child { width: 552px; flex: none; }
+    .set-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
+    .set-card-icon {
+      background: #F8FAF9; display: flex; align-items: center; justify-content: center;
+      padding: 24px 0; flex-shrink: 0;
+    }
+    .set-card-icon svg { width: 36px; height: 36px; }
+    .set-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; flex: 1; background: #fff; }
+    .set-count {
+      font-size: 10px; font-weight: 700; color: #059669;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    .set-name { font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.35; }
+    .set-desc { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+    .set-link { font-size: 11px; color: #059669; font-weight: 600; margin-top: auto; padding-top: 4px; text-align: right; }
+    .set-words { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; overflow: hidden; flex: 1; align-content: flex-start; }
+    .set-word-tag {
+      padding: 0 10px; border-radius: 6px;
+      background: #fff; border: 1px solid #e2e8f0;
+      font-size: 11px; font-weight: 500; color: #475569;
+      height: 30px; line-height: 30px; display: inline-flex; align-items: center;
+      white-space: nowrap;
+    }
+
+    /* ── Collapse toggle ── */
+    .collapse-toggle {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 10px 36px; cursor: pointer;
+      user-select: none; transition: background .15s;
+    }
+    .collapse-toggle:hover { background: rgba(0,0,0,.02); }
+    .collapse-toggle::before,
+    .collapse-toggle::after { content: ''; flex: 1; height: 1px; background: #cbd5e1; }
+    .collapse-label {
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; letter-spacing: .3px;
+    }
+    .collapse-chevron { display: inline-block; transition: transform .3s ease; font-size: 10px; line-height: 1; }
+    .collapse-toggle.collapsed .collapse-chevron { transform: rotate(180deg); }
+
+    /* ── Filters ── */
+    .filters { padding: 20px 36px 0; display: flex; flex-direction: column; gap: 8px; }
+    .filter-tabs { display: flex; gap: 6px; }
+    .ftab {
+      font-size: 12px; font-weight: 700; padding: 6px 16px; border-radius: 20px;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; transition: all .15s;
+    }
+    .ftab:hover { border-color: #6EE7B7; }
+    .ftab.active { background: #059669; color: #fff; border-color: #059669; }
+    .pill-count {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      background: #f1f5f9; padding: 1px 6px; border-radius: 8px;
+      min-width: 18px; text-align: center; display: inline-block;
+    }
+    .ftab.active .pill-count { background: rgba(255,255,255,.25); color: #fff; }
+    .filter-sub {
+      display: flex; gap: 6px; flex-wrap: wrap; padding-left: 4px;
+      overflow: hidden; max-height: 0; opacity: 0;
+      transition: max-height .3s ease, opacity .2s ease, margin .3s ease;
+    }
+    .filter-sub.open { max-height: 80px; opacity: 1; margin-top: 8px; }
+    .pill {
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      background: #fff; color: #475569; border: 1px solid #e2e8f0;
+      cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s;
+    }
+    .pill:hover { border-color: #6EE7B7; }
+    .pill.active { background: #ecfdf5; color: #059669; border-color: #059669; font-weight: 700; }
+    .pill.active .pill-count { background: #A7F3D0; color: #059669; }
+
+    /* ── Lower half ── */
+    .lower { display: grid; grid-template-columns: 552px 1fr; gap: 20px; padding: 20px 36px 60px; }
+
+    /* Word card */
+    .word-card {
+      background: #fff; border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .word-card-header { padding: 28px 24px 12px; }
+    .word-row { display: flex; align-items: center; gap: 12px; }
+    .word-en { font-size: 24px; font-weight: 800; color: #0f172a; }
+    .word-play {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #ecfdf5; border: 1.5px solid #6EE7B7;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      cursor: pointer;
+    }
+    .word-play svg { width: 14px; height: 14px; fill: #059669; }
+    .word-tl, .word-play-es { display: none; font-size: 18px; color: #64748b; font-weight: 600; }
+    .word-tl.show { display: inline; }
+    .word-play-es { font-size: inherit; }
+    .word-play-es.show { display: inline-flex; }
+    .word-video {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 5px;
+      background: #dbeafe; border: 1px solid #93c5fd; cursor: pointer;
+    }
+    .word-video svg { width: 13px; height: 13px; fill: #3b82f6; }
+    .pos-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .pos-badge { font-size: 11px; font-weight: 700; color: #475569; background: #F1F5F9; border: 1px solid #E2E8F0; padding: 3px 10px; border-radius: 20px; }
+    .state-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; border: 1px solid transparent; }
+    .state-badge.learning { color: #b45309; background: #FEF9C3; border-color: #FDE68A; }
+    .state-badge.mastered { color: #059669; background: #ECFDF5; border-color: #6EE7B7; }
+    .retry-btn {
+      display: none; align-items: center; justify-content: center; gap: 6px;
+      width: 100%;
+      font-size: 12px; font-weight: 700; color: #64748b;
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      transition: all .15s;
+    }
+    .retry-btn:hover { color: #0f172a; background: #f1f5f9; border-color: #cbd5e1; }
+    .retry-btn svg { width: 14px; height: 14px; }
+    .retry-btn.show { display: inline-flex; }
+
+    /* Confirm popup */
+    .confirm-overlay {
+      position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .confirm-overlay.show { opacity: 1; pointer-events: auto; }
+    .confirm-panel {
+      background: #fff; border-radius: 16px; width: 360px; padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18); text-align: center;
+      transform: translateY(12px) scale(.97);
+      transition: transform .25s cubic-bezier(.34,1.2,.64,1);
+    }
+    .confirm-overlay.show .confirm-panel { transform: translateY(0) scale(1); }
+    .confirm-icon { font-size: 36px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .confirm-desc { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
+    .confirm-desc strong { color: #0f172a; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .confirm-actions button {
+      flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .15s; border: none;
+    }
+    .confirm-cancel { background: #f1f5f9; color: #475569; }
+    .confirm-cancel:hover { background: #e2e8f0; }
+    .confirm-yes { background: #f59e0b; color: #fff; }
+    .confirm-yes:hover { background: #d97706; }
+    /* Practice setup modal */
+    .practice-setup-overlay {
+      position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .practice-setup-overlay.show { opacity: 1; pointer-events: auto; }
+    .ps-card {
+      background: #fff; border-radius: 18px; width: 620px; max-width: 95%;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      display: flex; flex-direction: column; overflow: hidden;
+      transform: translateY(12px) scale(.97);
+      transition: transform .25s cubic-bezier(.34,1.2,.64,1);
+    }
+    .practice-setup-overlay.show .ps-card { transform: translateY(0) scale(1); }
+    .ps-header { padding: 28px 32px 20px; border-bottom: 1px solid #e2e8f0; }
+    .ps-title { font-size: 20px; font-weight: 700; color: #0f172a; line-height: 33px; }
+    .ps-body { padding: 0 32px 24px; flex: 1; overflow-y: auto; }
+    .ps-section-title {
+      font-size: 13px; font-weight: 500; color: #64748b; line-height: 24px;
+      text-align: left; margin-bottom: 14px; margin-top: 28px;
+    }
+    .ps-option-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .ps-option {
+      padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ps-option:hover { border-color: #cbd5e1; background: #f8fafb; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .ps-option.selected { border-color: #059669; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.12); }
+    .ps-option-title { font-size: 13px; font-weight: 600; color: #334155; }
+    .ps-option.selected .ps-option-title { color: #059669; }
+    .ps-count-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .ps-count {
+      padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ps-count:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .ps-count.selected { border-color: #059669; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.12); }
+    .ps-count-num { font-size: 20px; font-weight: 400; color: #334155; }
+    .ps-count.selected .ps-count-num { color: #059669; }
+    .ps-count-label { font-size: 11px; color: #94a3b8; margin-top: 2px; font-weight: 500; }
+    .ps-count.selected .ps-count-label { color: #6ee7b7; }
+    .ps-divider { height: 1px; background: #e2e8f0; margin: 0; }
+    .ps-footer { padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    .ps-cancel {
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; color: #94a3b8; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .ps-cancel:hover { color: #475569; }
+    .ps-next {
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; color: #059669; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ps-next:hover { color: #1aab4e; }
+    .ps-practice-section { display: none; }
+    .ps-practice-section.show { display: block; }
+    .ps-subject-section { display: none; }
+    .ps-subject-section.show { display: block; }
+    .ps-subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .ps-subject {
+      padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ps-subject:hover { border-color: #cbd5e1; background: #f8fafb; }
+    .ps-subject.selected { border-color: #059669; background: #f0fdf4; }
+    .ps-subject-name { font-size: 13px; font-weight: 600; color: #334155; }
+    .ps-subject.selected .ps-subject-name { color: #059669; }
+    .ps-subject-count { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .ps-subject.selected .ps-subject-count { color: #6ee7b7; }
+    .ps-category-section { display: none; }
+    .ps-category-section.show { display: block; }
+    .ps-category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .ps-category {
+      padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ps-category:hover { border-color: #cbd5e1; background: #f8fafb; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .ps-category.selected { border-color: #059669; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.12); }
+    .ps-category-title { font-size: 13px; font-weight: 600; color: #334155; }
+    .ps-category.selected .ps-category-title { color: #059669; }
+
+    .word-card-body { padding: 0 24px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+    .word-def { font-size: 13px; color: #334155; line-height: 1.6; }
+    .example-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .example-text {
+      font-size: 13px; color: #475569; font-style: italic;
+      background: #f8fafc; padding: 10px 14px; border-radius: 6px;
+      border-left: 3px solid #e2e8f0; line-height: 1.6;
+    }
+    .example-text mark { background: #fef9c3; color: #854d0e; padding: 1px 4px; border-radius: 3px; font-style: normal; font-weight: 600; }
+    .meta-table { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+    .meta-row { display: flex; align-items: baseline; }
+    .meta-label { font-size: 11px; font-weight: 400; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; min-width: 76px; flex-shrink: 0; }
+    .meta-value { font-size: 13px; font-weight: 500; color: #334155; }
+
+    /* Translation toggle */
+    .translate-toggle {
+      display: flex; align-items: center; gap: 8px; margin-left: auto;
+    }
+    .translate-toggle-label { font-size: 11px; font-weight: 600; color: #475569; }
+    .translate-toggle-label.active { color: #334155; }
+    .toggle-switch {
+      width: 36px; height: 20px; border-radius: 10px; background: #e2e8f0;
+      position: relative; cursor: pointer; transition: background .2s;
+    }
+    .toggle-switch.on { background: #059669; }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform .2s;
+    }
+    .toggle-switch.on::after { transform: translateX(16px); }
+    .tl-line {
+      font-size: 12px; color: #64748b; margin-top: 14px; line-height: 1.5;
+      display: none;
+    }
+    .tl-line.show { display: block; }
+
+    /* Word list */
+    .wordlist {
+      background: #fff; border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wordlist-header {
+      padding: 14px 20px 10px;
+      font-size: 13px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wordlist-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: #64748b; }
+    .wordlist-items { padding: 0 20px 0; }
+    .wl-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+      transition: background .1s;
+    }
+    .wl-item:last-child { border-bottom: none; }
+    .wl-item:hover { background: #f8fafc; }
+    .wl-item.selected { background: #ecfdf5; border-radius: 6px; }
+    .wl-item.hidden { display: none; }
+    .wl-item.paged-hidden { display: none; }
+    .wl-word { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wl-def { font-size: 11px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+    .wl-state { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; border: 1px solid transparent; }
+    .wl-state.learning { color: #b45309; background: #FEF9C3; border-color: #FDE68A; }
+    .wl-state.mastered { color: #059669; background: #ECFDF5; border-color: #6EE7B7; }
+
+    /* Pagination */
+    .wl-pagination {
+      display: flex; align-items: center; justify-content: center;
+      padding: 10px 20px; gap: 4px; border-top: 1px solid #f1f5f9;
+      flex-shrink: 0;
+    }
+    .wl-page-btn {
+      width: 28px; height: 28px; border-radius: 6px; border: none;
+      background: transparent; color: #64748b; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .15s; font-family: inherit;
+    }
+    .wl-page-btn:hover { background: #f1f5f9; }
+    .wl-page-btn.active { background: #059669; color: #fff; }
+    .wl-page-btn:disabled { opacity: .3; cursor: default; }
+    .wl-page-btn:disabled:hover { background: transparent; }
+    .wl-page-arrow { font-size: 14px; }
+    .wl-page-info { font-size: 11px; color: #94a3b8; margin: 0 6px; }
+
+    /* ── Mastery Floating Panel ── */
+    .mastery-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,.35); z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .mastery-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .mastery-panel {
+      background: #fff; border-radius: 24px;
+      width: 440px; max-height: 85vh; overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.2);
+      transform: translateY(20px) scale(.96);
+      transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+      position: relative;
+    }
+    .mastery-overlay.show .mastery-panel {
+      transform: translateY(0) scale(1);
+    }
+
+    .mastery-panel-close {
+      position: absolute; top: 16px; right: 16px; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.85); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #64748b; font-size: 18px; font-weight: 700;
+      transition: all .15s; backdrop-filter: blur(4px);
+    }
+    .mastery-panel-close:hover { background: #fff; color: #0f172a; }
+
+    /* Hero illustration area */
+    .mastery-hero {
+      width: 100%; height: 200px; position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #ecfdf5 0%, #A7F3D0 40%, #6EE7B7 100%);
+    }
+    .mastery-hero-visual {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    /* Abstract decorative shapes */
+    .mastery-hero-shape {
+      position: absolute; border-radius: 50%; opacity: .25;
+    }
+    .mastery-hero-shape.s1 { width: 180px; height: 180px; background: #059669; top: -40px; right: -30px; }
+    .mastery-hero-shape.s2 { width: 120px; height: 120px; background: #059669; bottom: -30px; left: 20px; }
+    .mastery-hero-shape.s3 { width: 80px; height: 80px; background: #34d399; top: 30px; left: 60px; opacity: .18; }
+    /* Central badge */
+    .mastery-hero-badge {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .mastery-hero-star {
+      width: 64px; height: 64px; background: #fff; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; box-shadow: 0 8px 24px rgba(5,150,105,.2);
+    }
+    .mastery-hero-flow {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.7); border-radius: 20px;
+      padding: 6px 16px; backdrop-filter: blur(4px);
+    }
+    .mastery-hero-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .mastery-hero-dot.learning { background: #f59e0b; }
+    .mastery-hero-dot.mastered { background: #059669; }
+    .mastery-hero-arrow { color: #94a3b8; font-size: 13px; font-weight: 600; }
+    .mastery-hero-label { font-size: 12px; font-weight: 600; color: #475569; }
+
+    /* Panel body */
+    .mastery-body {
+      padding: 28px 32px 32px; text-align: center;
+    }
+    .mastery-body-title {
+      font-size: 22px; font-weight: 800; color: #0f172a;
+      margin-bottom: 12px; letter-spacing: -.3px;
+    }
+    .mastery-body-rules {
+      text-align: left; display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .mastery-body-rule {
+      font-size: 14px; color: #475569; line-height: 1.6;
+    }
+    .mastery-body-rule strong {
+      color: #0f172a; font-weight: 700;
+    }
+    .mastery-body-cta {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 36px; border-radius: 12px; border: none;
+      background: linear-gradient(90deg, #059669, #6EE7B7); color: #fff;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all .15s;
+    }
+    .mastery-body-cta:hover { background: linear-gradient(90deg, #16a34a, #059669); }
+
+    /* Trigger button (in notice area) */
+    .mastery-trigger {
+      display: flex; height: 24px;
+      padding: 5px 12px; justify-content: center; align-items: center;
+      gap: 6px; border-radius: 8px; background: #fff; border: none;
+      font-size: 12px; font-weight: 700; color: #059669; white-space: nowrap;
+      cursor: pointer; transition: all .15s; margin-left: auto; flex-shrink: 0;
+    }
+    .mastery-trigger:hover { background: #fff; border-color: #fff; }
+    .mastery-trigger svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* ── Word Card Mastery Progress ── */
+    .word-mastery {
+      padding: 12px 24px 20px;
+      min-height: 140px;
+    }
+    .word-mastery-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px;
+    }
+    .mastery-progress-bar {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+    }
+    .mastery-progress-track {
+      flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden;
+    }
+    .mastery-progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, #059669, #6EE7B7);
+      transition: width .6s ease;
+    }
+    .mastery-progress-label {
+      font-size: 11px; font-weight: 700; color: #475569; flex-shrink: 0;
+    }
+
+    .type-checks {
+      display: flex; gap: 8px;
+    }
+    .type-check {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; border: 1px solid #e2e8f0;
+    }
+    .type-check.done { background: #ecfdf5; border-color: #6EE7B7; color: #059669; }
+    .type-check.done svg { fill: #059669; }
+    .type-check.pending { background: #fff; border-color: #e2e8f0; color: #94a3b8; }
+    .type-check.pending svg { fill: #cbd5e1; }
+    .type-check svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+    .mastery-hint {
+      margin-top: 10px; font-size: 12px; font-weight: 600; color: #059669;
+      background: #ecfdf5; border-radius: 8px; padding: 8px 12px;
+      text-align: center; display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item" title="Dashboard">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" title="Live Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Live Class</span>
+    </div>
+    <div class="sidebar-item active" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word Bank</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">My Word Bank</span>
+      <a class="version-link" href="index.html" title="Version history">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+        Versions
+      </a>
+    </div>
+    <div class="app-content">
+      <div class="page">
+
+        <!-- ═══════════════════ UPPER HALF ═══════════════════ -->
+        <div class="upper" id="upper-section">
+
+          <!-- Top row: Notice banner + Practice entries -->
+          <div class="upper-top">
+            <!-- Notice banner -->
+            <div class="notice-banner" id="notice-banner">
+              <div class="notice-text">
+                <div class="notice-row">
+                  <span class="notice-title">In the last
+                    <select class="notice-days-select" id="notice-days">
+                      <option value="1">1 day</option>
+                      <option value="3">3 days</option>
+                      <option value="7" selected>7 days</option>
+                      <option value="14">14 days</option>
+                      <option value="30">30 days</option>
+                    </select>, you mastered <span class="notice-highlight"><span id="mastered-count">14</span> &nbsp;words</span>!</span>
+                  <button class="mastery-trigger" onclick="document.getElementById('mastery-overlay').classList.add('show')">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    How it works
+                  </button>
+                </div>
+                <span class="notice-sub">A little progress every day — keep it up!</span>
+                <span class="notice-streak"><span class="streak-fire">🔥</span> <span class="streak-num">12</span> day streak</span>
+              </div>
+            </div>
+            <div class="practice-grid">
+              <div class="practice-btn" style="cursor:pointer;" onclick="openPracticeSetup('Practice All', false)">
+                <div class="practice-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M10.21 0.334 7.565 5.626a0.603 0.603 0 0 0 0.54 0.874h5.29c0.45 0 0.741 -0.472 0.54 -0.874L11.29 0.334a0.604 0.604 0 0 0 -1.08 0ZM0 1A0.5 0.5 0 0 1 0.5 0.5h5A0.5 0.5 0 0 1 6 1v5a0.5 0.5 0 0 1 -0.5 0.5h-5A0.5 0.5 0 0 1 0 6V1Zm3 13a3 3 0 1 0 0 -6 3 3 0 0 0 0 6Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M8.5 8a0.75 0.75 0 0 0 0 1.5H13A0.75 0.75 0 0 0 13 8H8.5Zm-0.75 3a0.75 0.75 0 0 1 0.75 -0.75H13a0.75 0.75 0 0 1 0 1.5H8.5a0.75 0.75 0 0 1 -0.75 -0.75Zm0 2.25a0.75 0.75 0 0 1 0.75 -0.75H13a0.75 0.75 0 0 1 0 1.5H8.5a0.75 0.75 0 0 1 -0.75 -0.75Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="practice-name">Practice All</div>
+              </div>
+              <div class="practice-btn" style="cursor:pointer;" onclick="openPracticeSetup('Spelling', false)">
+                <div class="practice-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" d="M0 1.5A1.5 1.5 0 0 1 1.5 0h11A1.5 1.5 0 0 1 14 1.5v11a1.5 1.5 0 0 1 -1.5 1.5h-11A1.5 1.5 0 0 1 0 12.5v-11Z" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M7 3.875a0.242 0.242 0 0 0 -0.23 0.166L5.575 7.625h2.85L7.23 4.041A0.242 0.242 0 0 0 7 3.875Zm2.88 4.164L8.416 3.645a1.492 1.492 0 0 0 -2.832 0L4.12 8.04a0.624 0.624 0 0 0 -0.01 0.027l-0.828 2.486a0.625 0.625 0 1 0 1.186 0.396l0.69 -2.073h3.683l0.691 2.073a0.625 0.625 0 1 0 1.186 -0.396l-0.829 -2.486a0.626 0.626 0 0 0 -0.009 -0.027Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="practice-name">Spelling</div>
+              </div>
+              <div class="practice-btn" style="cursor:pointer;" onclick="openPracticeSetup('Multiple Choice', false)">
+                <div class="practice-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#059669" fill-rule="evenodd" d="M1 3.5a1 1 0 1 0 0 -2 1 1 0 0 0 0 2ZM2 7a1 1 0 1 1 -2 0 1 1 0 0 1 2 0Zm0 4.5a1 1 0 1 1 -2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M4 2.5a0.75 0.75 0 0 1 0.75 -0.75h8.5a0.75 0.75 0 0 1 0 1.5h-8.5A0.75 0.75 0 0 1 4 2.5ZM4 7a0.75 0.75 0 0 1 0.75 -0.75h8.5a0.75 0.75 0 0 1 0 1.5h-8.5A0.75 0.75 0 0 1 4 7Zm0.75 3.75a0.75 0.75 0 0 0 0 1.5h8.5a0.75 0.75 0 0 0 0 -1.5h-8.5Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="practice-name">Multiple Choice</div>
+              </div>
+              <div class="practice-btn" style="cursor:pointer;" onclick="openPracticeSetup('Vocabs Mirroring', false)">
+                <div class="practice-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M6.75 0a2.946 2.946 0 0 0 -2.946 2.946v3.425a2.946 2.946 0 1 0 5.892 0V2.946A2.946 2.946 0 0 0 6.75 0Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M2.5 6.763a0.75 0.75 0 1 0 -1.5 0 5.25 5.25 0 0 0 5 5.245v1.212a0.75 0.75 0 0 0 1.5 0v-1.213a5.25 5.25 0 0 0 5 -5.244 0.75 0.75 0 0 0 -1.5 0 3.75 3.75 0 0 1 -3.75 3.75h-0.486l-0.014 0 -0.014 0H6.25a3.75 3.75 0 0 1 -3.75 -3.75Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="practice-name">Mirroring</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sets-module">
+            <div class="sets-grid">
+              <div class="set-card" onclick="openPracticeSetup('Challenge of the Day', true)">
+                <div class="set-card-icon" style="padding:16px 16px 12px; align-items:flex-start;">
+                  <div class="set-words" style="margin:0;">
+                    <span class="set-word-tag">photosynthesis</span>
+                    <span class="set-word-tag">ecosystem</span>
+                    <span class="set-word-tag">metamorphosis</span>
+                    <span class="set-word-tag">hypothesis</span>
+                    <span class="set-word-tag">chromosome</span>
+                    <span class="set-word-tag">precipitation</span>
+                    <span class="set-word-tag">evaporation</span>
+                    <span class="set-word-tag">condensation</span>
+                    <span class="set-word-tag">atmosphere</span>
+                    <span class="set-word-tag">biodiversity</span>
+                  </div>
+                </div>
+                <div class="set-body">
+                  <div class="set-name">Challenge of the Day</div>
+                  <div class="set-desc">Master these words and level up today!</div>
+                </div>
+              </div>
+              <div class="set-card" onclick="openPracticeSetup('Focus Subject Words', true)">
+                <div class="set-card-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M0.5 0.125a0.5 0.5 0 0 0 -0.5 0.5v10a0.5 0.5 0 0 0 0.5 0.5h4.756A4.492 4.492 0 0 1 5 9.625c0 -1.271 0.527 -2.42 1.375 -3.238v-4.96A2 2 0 0 0 4.5 0.126h-4Zm7.125 1.303v4.105a4.5 4.5 0 0 1 6.347 3.584H14V0.625a0.5 0.5 0 0 0 -0.5 -0.5h-4a2 2 0 0 0 -1.875 1.303Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M7.75 9.625a1.75 1.75 0 1 1 3.5 0 1.75 1.75 0 0 1 -3.5 0Zm1.75 -3.25a3.25 3.25 0 1 0 1.706 6.017l1.263 1.263a0.75 0.75 0 0 0 1.06 -1.06l-1.262 -1.264A3.25 3.25 0 0 0 9.5 6.375Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="set-body">
+                  <div class="set-name">Focus Subject Words</div>
+                  <div class="set-desc">Pick a subject and practice its vocabulary</div>
+                </div>
+              </div>
+              <div class="set-card" onclick="openPracticeSetup('Newly Added', true)">
+                <div class="set-card-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M4.471 5.72a1 1 0 0 1 1.265 -1.265l7.12 2.375c0.92 0.307 0.908 1.612 -0.018 1.902l-2.026 0.637 2.7 2.7a1 1 0 0 1 -1.415 1.414l-2.706 -2.707 -0.642 2.046c-0.29 0.925 -1.596 0.937 -1.903 0.017l-2.375 -7.12Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M3.658 0.162a0.75 0.75 0 0 1 0.918 0.53l0.449 1.673a0.75 0.75 0 1 1 -1.45 0.389L3.129 1.08a0.75 0.75 0 0 1 0.53 -0.919ZM0.602 4.673A0.75 0.75 0 0 1 0.99 3.224l1.673 0.449a0.75 0.75 0 1 1 -0.388 1.448L0.602 4.673Zm1.465 4.082a0.75 0.75 0 1 1 -1.061 -1.06L2.231 6.47a0.75 0.75 0 0 1 1.06 1.06L2.067 8.755Zm6.46 -6.591a0.75 0.75 0 0 0 -1.06 -1.061L6.24 2.328a0.75 0.75 0 0 0 1.061 1.06l1.225 -1.224Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="set-body">
+                  <div class="set-name">Newly Added</div>
+                  <div class="set-desc">Practice your latest words first</div>
+                </div>
+              </div>
+              <div class="set-card" onclick="openPracticeSetup('Almost There', true)">
+                <div class="set-card-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                  <path fill="#6EE7B7" fill-rule="evenodd" d="M12.59 5.336a0.75 0.75 0 0 0 -0.87 0.126l-4.198 4.07 -1.818 -1.596a0.75 0.75 0 0 0 -1.031 0.039L0.425 12.313a0.75 0.75 0 0 0 -0.215 0.524l0 0.262c0 0.414 0.336 0.75 0.75 0.75l11.977 0c0.402 0 1.009 -0.317 1.026 -0.719V6.542a0.75 0.75 0 0 0 -0.4 -0.695l-0.973 -0.51Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M12.56 3.779a0.75 0.75 0 0 0 1.277 -0.457c0.09 -0.912 0.091 -1.438 0 -2.317a0.75 0.75 0 0 0 -0.669 -0.668c-0.879 -0.092 -1.404 -0.091 -2.317 0a0.75 0.75 0 0 0 -0.456 1.276l0.552 0.552L7.28 5.832l-1.6 -1.601a0.75 0.75 0 0 0 -1.06 0L0.273 8.575a0.75 0.75 0 0 0 1.061 1.06l3.814 -3.813L6.75 7.423a0.75 0.75 0 0 0 1.06 0l4.198 -4.197 0.553 0.553Z" clip-rule="evenodd" stroke-width="1"/>
+                  <path fill="#059669" fill-rule="evenodd" d="M5 13.849v-6.07a0.75 0.75 0 0 1 0.704 0.157l1.818 1.596 2.567 -2.49 0 6.807 -5.089 0Z" clip-rule="evenodd" stroke-width="1"/>
+                </svg></div>
+                <div class="set-body">
+                  <div class="set-name">Almost There</div>
+                  <div class="set-desc">Words close to mastery — one more push!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /upper -->
+
+        <!-- Collapse toggle -->
+        <div class="collapse-toggle" id="collapse-toggle">
+          <span class="collapse-label">Collapse <span class="collapse-chevron">▲</span></span>
+        </div>
+
+        <!-- ═══════════════════ FILTERS ═══════════════════ -->
+        <div class="filters">
+          <div class="filter-tabs">
+            <span class="ftab active" data-filter="all">All <span class="pill-count">36</span></span>
+            <span class="ftab" data-filter="subject">By Subject</span>
+            <span class="ftab" data-filter="source" data-source-val="live">Live Classes <span class="pill-count">15</span></span>
+            <span class="ftab" data-filter="source" data-source-val="teacher">Teacher Added <span class="pill-count">10</span></span>
+            <span class="ftab" data-filter="learning">Learning <span class="pill-count">21</span></span>
+            <span class="ftab" data-filter="mastered">Mastered <span class="pill-count">15</span></span>
+          </div>
+          <div class="filter-sub" data-group="subject" style="display:none;">
+            <span class="pill active" data-subject="science">Science <span class="pill-count">14</span></span>
+            <span class="pill" data-subject="math">Math <span class="pill-count">7</span></span>
+            <span class="pill" data-subject="history">History <span class="pill-count">8</span></span>
+            <span class="pill" data-subject="geography">Geography <span class="pill-count">7</span></span>
+          </div>
+        </div>
+
+        <!-- ═══════════════════ LOWER HALF ═══════════════════ -->
+        <div class="lower">
+
+          <!-- Word detail card -->
+          <div class="word-card">
+            <div class="word-card-header">
+              <div class="word-row">
+                <span class="word-en">hypothesis</span>
+                <span class="word-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+                <span class="word-tl" id="word-tl">hipótesis</span>
+                <span class="word-play word-play-es" id="word-play-es" title="Play Spanish pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+                <div class="translate-toggle">
+                  <span class="translate-toggle-label" id="tl-label">Translate</span>
+                  <div class="toggle-switch" id="tl-toggle" title="Toggle translation"></div>
+                </div>
+              </div>
+              <div class="pos-row">
+                <span class="pos-badge">noun</span>
+              </div>
+            </div>
+            <div class="word-card-body">
+              <p class="word-def">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</p>
+              <p class="tl-line" id="def-tl">Una explicación propuesta basada en evidencia limitada como punto de partida para una investigación más profunda.</p>
+              <div class="meta-table">
+                <div>
+                  <div class="example-label">Example</div>
+                  <div class="example-text">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+                  <p class="tl-line" id="example-tl">Necesitamos verificar nuestra hipótesis antes de sacar conclusiones.</p>
+                </div>
+                <div class="meta-row"><span class="meta-label">Type</span><span class="meta-value">Academic</span></div>
+                <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+                <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+              </div>
+            </div>
+            <!-- Mastery Progress -->
+            <div class="word-mastery">
+              <div class="word-mastery-title">Mastery Progress</div>
+              <div class="mastery-progress-bar">
+                <div class="mastery-progress-track">
+                  <div class="mastery-progress-fill" style="width: 40%;"></div>
+                </div>
+                <span class="mastery-progress-label">2 / 5</span>
+              </div>
+              <div class="type-checks">
+                <div class="type-check done">
+                  <svg viewBox="0 0 20 20"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.54-9.46a.75.75 0 0 0-1.08-1.04L9 10.94 7.54 9.5a.75.75 0 1 0-1.08 1.04l2 2a.75.75 0 0 0 1.08 0l4-4z"/></svg>
+                  Spelling
+                </div>
+                <div class="type-check pending">
+                  <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Multiple Choice
+                </div>
+                <div class="type-check done">
+                  <svg viewBox="0 0 20 20"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.54-9.46a.75.75 0 0 0-1.08-1.04L9 10.94 7.54 9.5a.75.75 0 1 0-1.08 1.04l2 2a.75.75 0 0 0 1.08 0l4-4z"/></svg>
+                  Mirroring
+                </div>
+              </div>
+              <div class="mastery-hint" id="mastery-hint"></div>
+              <button class="retry-btn" id="retry-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 0 1 9.3-4"/><path d="M13.5 8a5.5 5.5 0 0 1-9.3 4"/><path d="M11.5 1.5v2.5h-2.5"/><path d="M4.5 14.5v-2.5h2.5"/></svg>Back to Learning</button>
+            </div>
+          </div>
+
+          <!-- Word List -->
+          <div class="wordlist">
+            <div class="wordlist-header">
+              Word List
+              <span class="wordlist-badge" id="wl-count">36</span>
+            </div>
+            <div class="wordlist-items">
+              <div class="wl-item selected" data-subject="science" data-source="live" data-state="learning" data-tl="hipótesis" data-def="A proposed explanation made on the basis of limited evidence as a starting point for further investigation." data-def-tl="Una explicación propuesta basada en evidencia limitada como punto de partida para una investigación más profunda." data-example-tl="Necesitamos verificar nuestra hipótesis antes de sacar conclusiones." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1">
+                <div><div class="wl-word">hypothesis</div><div class="wl-def">A proposed explanation made on the basis of limited e...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="fotosíntesis" data-def="The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water." data-def-tl="El proceso por el cual las plantas verdes usan la luz solar para sintetizar alimentos a partir de dióxido de carbono y agua." data-example-tl="Durante la fotosíntesis, las plantas convierten la luz solar en energía." data-mastery="3" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">photosynthesis</div><div class="wl-def">The process by which green plants use sunlight...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="ecuación" data-def="A statement that the values of two expressions are equal, indicated by the sign =." data-def-tl="Una declaración que indica que los valores de dos expresiones son iguales, indicado por el signo =." data-example-tl="Resuelve esta ecuación para encontrar el valor de x." data-mastery="1" data-spell="1" data-mc="0" data-mirror="0">
+                <div><div class="wl-word">equation</div><div class="wl-def">A statement that the values of two expressions are equ...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="revolución" data-def="A forcible overthrow of a government or social order, in favor of a new system." data-def-tl="Un derrocamiento forzoso de un gobierno o un orden social, a favor de un nuevo sistema." data-example-tl="La Revolución Francesa cambió el curso de la historia europea." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0">
+                <div><div class="wl-word">revolution</div><div class="wl-def">A forcible overthrow of a government or social order...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="democracia" data-def="A system of government by the whole population or all the eligible members of a state, typically through elected representatives." data-def-tl="Un sistema de gobierno en el que toda la población participa a través de representantes elegidos." data-example-tl="En una democracia, los ciudadanos tienen derecho a votar por sus líderes." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">democracy</div><div class="wl-def">A system of government by the whole population...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="latitud" data-def="The angular distance of a place north or south of the earth's equator, usually expressed in degrees and minutes." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0">
+                <div><div class="wl-word">latitude</div><div class="wl-def">The angular distance of a place north or south...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecosistema" data-def="A biological community of interacting organisms and their physical environment." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">ecosystem</div><div class="wl-def">A biological community of interacting organisms...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="molécula" data-def="A group of atoms bonded together, representing the smallest fundamental unit of a chemical compound." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">molecule</div><div class="wl-def">A group of atoms bonded together...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="península" data-def="A piece of land almost surrounded by water or projecting out into a body of water." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1">
+                <div><div class="wl-word">peninsula</div><div class="wl-def">A piece of land almost surrounded by water...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="gravedad" data-def="The force that attracts a body toward the center of the earth." data-mastery="4" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">gravity</div><div class="wl-def">The force that attracts a body toward the center...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="geometría" data-def="The branch of mathematics concerned with the properties and relations of points, lines, surfaces, and solids." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">geometry</div><div class="wl-def">The branch of mathematics concerned with properties...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="precipitación" data-def="The action or process of precipitating a substance from a solution." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0">
+                <div><div class="wl-word">precipitation</div><div class="wl-def">The action or process of precipitating a substance...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="mastered" data-tl="burocracia" data-def="A system of government in which most of the important decisions are made by state officials rather than by elected representatives." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+                <div><div class="wl-word">bureaucracy</div><div class="wl-def">A system of government in which important decisions...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="evolución" data-def="The process by which different kinds of living organisms developed from earlier forms." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0">
+                <div><div class="wl-word">evolution</div><div class="wl-def">The process by which different kinds of living...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="learning" data-tl="longitud" data-def="The angular distance of a place east or west of the meridian at Greenwich.">
+                <div><div class="wl-word">longitude</div><div class="wl-def">The angular distance of a place east or west...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="mastered" data-tl="logaritmo" data-def="A quantity representing the power to which a fixed number must be raised to produce a given number.">
+                <div><div class="wl-word">logarithm</div><div class="wl-def">A quantity representing the power to which a fixed...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="átomo" data-def="The smallest particle of a chemical element that can exist.">
+                <div><div class="wl-word">atom</div><div class="wl-def">The smallest particle of a chemical element...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="live" data-state="learning" data-tl="ratificación" data-def="The action of signing or giving formal consent to a treaty, contract, or agreement.">
+                <div><div class="wl-word">ratification</div><div class="wl-def">The action of signing or giving formal consent...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="entropía" data-def="A thermodynamic quantity representing the unavailability of a system's thermal energy.">
+                <div><div class="wl-word">entropy</div><div class="wl-def">A thermodynamic quantity representing unavailability...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="practice" data-state="mastered" data-tl="llanura de inundación" data-def="The flat area of land next to a river that is often covered by water when the river floods.">
+                <div><div class="wl-word">floodplain</div><div class="wl-def">The flat area of land next to a river...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="teacher" data-state="learning" data-tl="raíz cuadrada" data-def="A number or quantity that when multiplied by itself gives a given number.">
+                <div><div class="wl-word">square root</div><div class="wl-def">A number that when multiplied by itself gives...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="practice" data-state="mastered" data-tl="imperialismo" data-def="The extension of a country's power and influence through diplomacy or military force.">
+                <div><div class="wl-word">imperialism</div><div class="wl-def">The extension of a country's power and influence...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="aceleración" data-def="The rate at which an object changes its velocity.">
+                <div><div class="wl-word">acceleration</div><div class="wl-def">The rate at which an object changes its velocity...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="atmósfera" data-def="The layer of gases surrounding the earth retained by gravity.">
+                <div><div class="wl-word">atmosphere</div><div class="wl-def">The layer of gases surrounding the earth...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="pi" data-def="The ratio of the circumference of a circle to its diameter, approximately 3.14159.">
+                <div><div class="wl-word">pi</div><div class="wl-def">The ratio of the circumference of a circle...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="dictador" data-def="A ruler with total power over a country, typically one who has obtained control by force.">
+                <div><div class="wl-word">dictator</div><div class="wl-def">A ruler with total power over a country...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecología" data-def="The branch of biology that deals with the relations of organisms to one another and their environment.">
+                <div><div class="wl-word">ecology</div><div class="wl-def">The branch of biology dealing with relations...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="mastered" data-tl="cuenca" data-def="A large natural stream of water flowing to the sea, a lake, or another stream.">
+                <div><div class="wl-word">river basin</div><div class="wl-def">A large natural stream of water flowing to the sea...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="desigualdad" data-def="A mathematical statement that two things are not equal.">
+                <div><div class="wl-word">inequality</div><div class="wl-def">A mathematical statement that two things are not...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="learning" data-tl="hercio" data-def="The SI unit of frequency, equal to one cycle per second.">
+                <div><div class="wl-word">hertz</div><div class="wl-def">The SI unit of frequency, equal to one cycle...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="inmigración" data-def="The movement of people to live in a new country or area.">
+                <div><div class="wl-word">immigration</div><div class="wl-def">The movement of people to live in a new country...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="catalizador" data-def="A substance that increases the rate of a chemical reaction without itself undergoing any permanent change.">
+                <div><div class="wl-word">catalyst</div><div class="wl-def">A substance that increases the rate of a chemical...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="practice" data-state="learning" data-tl="horizonte" data-def="The line at which the earth's surface and the sky appear to meet.">
+                <div><div class="wl-word">horizon</div><div class="wl-def">The line at which the earth's surface and sky...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="teacher" data-state="mastered" data-tl="vértice" data-def="Each angular point of a polygon, polyhedron, or other figure.">
+                <div><div class="wl-word">vertex</div><div class="wl-def">Each angular point of a polygon or polyhedron...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="practice" data-state="learning" data-tl="alianza" data-def="A formal agreement or treaty between two or more nations.">
+                <div><div class="wl-word">alliance</div><div class="wl-def">A formal agreement or treaty between two or more...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="mastered" data-tl="fuerza" data-def="A push or pull upon an object resulting from its interaction with another object.">
+                <div><div class="wl-word">force</div><div class="wl-def">A push or pull upon an object resulting from...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+            </div>
+            <div class="wl-pagination" id="wl-pagination"></div>
+          </div>
+
+        </div><!-- /lower -->
+
+      </div><!-- /page -->
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<!-- ═══════════════════ MASTERY FLOATING PANEL ═══════════════════ -->
+<div class="mastery-overlay" id="mastery-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="mastery-panel">
+    <button class="mastery-panel-close" onclick="document.getElementById('mastery-overlay').classList.remove('show')">&times;</button>
+
+    <!-- Hero illustration -->
+    <div class="mastery-hero">
+      <div class="mastery-hero-shape s1"></div>
+      <div class="mastery-hero-shape s2"></div>
+      <div class="mastery-hero-shape s3"></div>
+      <div class="mastery-hero-visual">
+        <div class="mastery-hero-badge">
+          <div class="mastery-hero-flow">
+            <span class="mastery-hero-dot learning"></span>
+            <span class="mastery-hero-label">Learning</span>
+            <span class="mastery-hero-arrow">→</span>
+            <span class="mastery-hero-dot mastered"></span>
+            <span class="mastery-hero-label">Mastered</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="mastery-body">
+      <div class="mastery-body-title">✨ Making a Word "Mastered"</div>
+
+      <div class="mastery-body-rules">
+        <p class="mastery-body-rule"><strong>The Power of 5</strong><br>Each word needs 5 correct hits to move from your Learning list to the Mastered list!</p>
+        <p class="mastery-body-rule"><strong>Mix Your Practice</strong><br>To master a word, you'll need to win at least once in every mode (Spelling, Multiple Choice, and Mirroring).</p>
+        <p class="mastery-body-rule"><strong>Keep it Fresh</strong><br>Want to review? You can manually move a "Mastered" word back to Learning at any time.</p>
+      </div>
+
+      <button class="mastery-body-cta" onclick="document.getElementById('mastery-overlay').classList.remove('show')">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CONFIRM RESET POPUP ═══════════════════ -->
+<div class="confirm-overlay" id="confirm-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="confirm-panel">
+    <div class="confirm-icon">🔄</div>
+    <div class="confirm-title">Move Back to Learning?</div>
+    <div class="confirm-desc" id="confirm-desc">This will reset all progress for <strong id="confirm-word"></strong>. You'll need to complete 5 practices again to master it.</div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="document.getElementById('confirm-overlay').classList.remove('show')">Cancel</button>
+      <button class="confirm-yes" id="confirm-yes">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Practice Setup Modal -->
+<div class="practice-setup-overlay" id="ps-overlay" onclick="if(event.target===this)closePracticeSetup()">
+  <div class="ps-card">
+    <div class="ps-header">
+      <div class="ps-title" id="ps-title">Challenge of the Day</div>
+    </div>
+    <div class="ps-body">
+      <div class="ps-category-section" id="ps-category-section">
+        <div class="ps-section-title">Select word category</div>
+        <div class="ps-category-grid">
+          <div class="ps-category" onclick="psSelectCategory(this)"><div class="ps-category-title">Newest</div></div>
+          <div class="ps-category selected" onclick="psSelectCategory(this)"><div class="ps-category-title">All Random</div></div>
+          <div class="ps-category" onclick="psSelectCategory(this)"><div class="ps-category-title">Untested</div></div>
+          <div class="ps-category" onclick="psSelectCategory(this)"><div class="ps-category-title">Most Errors</div></div>
+        </div>
+      </div>
+      <div class="ps-subject-section" id="ps-subject-section">
+        <div class="ps-section-title">Select subject</div>
+        <div class="ps-subject-grid">
+          <div class="ps-subject selected" onclick="psSelectSubject(this)"><div class="ps-subject-name">Science</div><div class="ps-subject-count">24 words</div></div>
+          <div class="ps-subject" onclick="psSelectSubject(this)"><div class="ps-subject-name">Math</div><div class="ps-subject-count">18 words</div></div>
+          <div class="ps-subject" onclick="psSelectSubject(this)"><div class="ps-subject-name">History</div><div class="ps-subject-count">15 words</div></div>
+          <div class="ps-subject" onclick="psSelectSubject(this)"><div class="ps-subject-name">Geography</div><div class="ps-subject-count">12 words</div></div>
+          <div class="ps-subject" onclick="psSelectSubject(this)"><div class="ps-subject-name">Art</div><div class="ps-subject-count">9 words</div></div>
+          <div class="ps-subject" onclick="psSelectSubject(this)"><div class="ps-subject-name">Music</div><div class="ps-subject-count">7 words</div></div>
+        </div>
+      </div>
+      <div class="ps-practice-section show" id="ps-practice-section">
+        <div class="ps-section-title">Select practice way</div>
+        <div class="ps-option-grid">
+          <div class="ps-option selected" data-way="all" onclick="psSelectWay(this)"><div class="ps-option-title">Practice All</div></div>
+          <div class="ps-option" data-way="spelling" onclick="psSelectWay(this)"><div class="ps-option-title">Spelling</div></div>
+          <div class="ps-option" data-way="mc" onclick="psSelectWay(this)"><div class="ps-option-title">Multiple Choice</div></div>
+          <div class="ps-option" data-way="mirroring" onclick="psSelectWay(this)"><div class="ps-option-title">Vocabs Mirroring</div></div>
+        </div>
+      </div>
+      <div id="ps-duration-section">
+        <div class="ps-section-title">How long do you want to practice today?</div>
+        <div class="ps-count-grid">
+          <div class="ps-count" data-min="3" onclick="psSelectCount(this)"><div class="ps-count-num">3</div><div class="ps-count-label">mins · 6 words</div></div>
+          <div class="ps-count selected" data-min="5" onclick="psSelectCount(this)"><div class="ps-count-num">5</div><div class="ps-count-label">mins · 10 words</div></div>
+          <div class="ps-count" data-min="10" onclick="psSelectCount(this)"><div class="ps-count-num">10</div><div class="ps-count-label">mins · 15 words</div></div>
+          <div class="ps-count" data-min="15" onclick="psSelectCount(this)"><div class="ps-count-num">15</div><div class="ps-count-label">mins · 20 words</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="ps-divider"></div>
+    <div class="ps-footer">
+      <button class="ps-cancel" onclick="closePracticeSetup()">Cancel</button>
+      <button class="ps-next" onclick="psGoNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var psCurrentTitle = '';
+function openPracticeSetup(title, showPracticeWay) {
+  psCurrentTitle = title;
+  document.getElementById('ps-title').textContent = title;
+  var section = document.getElementById('ps-practice-section');
+  var subjectSection = document.getElementById('ps-subject-section');
+  var categorySection = document.getElementById('ps-category-section');
+  if (showPracticeWay) { section.classList.add('show'); } else { section.classList.remove('show'); }
+  if (title === 'Focus Subject Words') { subjectSection.classList.add('show'); } else { subjectSection.classList.remove('show'); }
+  var showCategory = (title === 'Practice All' || title === 'Spelling' || title === 'Multiple Choice' || title === 'Vocabs Mirroring');
+  if (showCategory) { categorySection.classList.add('show'); } else { categorySection.classList.remove('show'); }
+  var durationSection = document.getElementById('ps-duration-section');
+  if (title === 'Challenge of the Day') { durationSection.style.display = 'none'; } else { durationSection.style.display = ''; }
+  document.getElementById('ps-overlay').classList.add('show');
+}
+function closePracticeSetup() { document.getElementById('ps-overlay').classList.remove('show'); }
+function psSelectWay(el) {
+  document.querySelectorAll('.ps-option').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function psSelectSubject(el) {
+  document.querySelectorAll('.ps-subject').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function psSelectCategory(el) {
+  document.querySelectorAll('.ps-category').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function psSelectCount(el) {
+  document.querySelectorAll('.ps-count').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function psGoNext() {
+  var way = '';
+  var selected = document.querySelector('.ps-option.selected');
+  if (selected) way = selected.getAttribute('data-way');
+  var demoMap = {
+    'spelling': '../demo-spelling-es.html',
+    'mc': '../demo-multiple-choice-es.html',
+    'mirroring': '../demo-vocabs-mirroring-v2-es.html',
+    'all': '../demo-mixed-es.html'
+  };
+  var titleMap = {
+    'Spelling': '../demo-spelling-es.html',
+    'Multiple Choice': '../demo-multiple-choice-es.html',
+    'Vocabs Mirroring': '../demo-vocabs-mirroring-v2-es.html',
+    'Practice All': '../demo-mixed-es.html'
+  };
+  var url = titleMap[psCurrentTitle] || demoMap[way] || '../demo-mixed-es.html';
+  window.location.href = url;
+}
+</script>
+
+<script>
+(function () {
+  /* ── Notice banner close ── */
+  const noticeBanner = document.getElementById('notice-banner');
+  const noticeClose = document.getElementById('notice-close');
+  if (noticeClose && noticeBanner) {
+    noticeClose.addEventListener('click', () => {
+      noticeBanner.style.maxHeight = noticeBanner.scrollHeight + 'px';
+      void noticeBanner.offsetHeight;
+      noticeBanner.classList.add('hidden');
+    });
+  }
+
+  /* ── Notice time filter ── */
+  const masteredPerDay = { 1: 2, 3: 5, 7: 14, 14: 22, 30: 36 };
+  document.getElementById('notice-days').addEventListener('change', function() {
+    document.getElementById('mastered-count').textContent = masteredPerDay[this.value] || 0;
+  });
+
+  /* ── Filter tabs ── */
+  const tabs = document.querySelectorAll('.ftab');
+  const subGroups = document.querySelectorAll('.filter-sub');
+  const items = document.querySelectorAll('.wl-item');
+  const countBadge = document.getElementById('wl-count');
+
+  let activeFilter = 'all';
+  let activeSub = null;
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFilter = tab.dataset.filter;
+      activeSub = tab.dataset.sourceVal || null;
+
+      subGroups.forEach(g => {
+        if (g.dataset.group === activeFilter) {
+          g.style.display = 'flex';
+          requestAnimationFrame(() => g.classList.add('open'));
+          const pills = g.querySelectorAll('.pill');
+          pills.forEach((p, i) => p.classList.toggle('active', i === 0));
+          if (pills[0]) activeSub = pills[0].dataset.subject || pills[0].dataset.source;
+        } else {
+          g.classList.remove('open');
+          setTimeout(() => { g.style.display = 'none'; }, 300);
+        }
+      });
+      applyFilter();
+    });
+  });
+
+  /* ── Sub-pill click ── */
+  subGroups.forEach(group => {
+    group.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeSub = pill.dataset.subject || pill.dataset.source;
+        applyFilter();
+      });
+    });
+  });
+
+  const PER_PAGE = 8;
+  let currentPage = 1;
+
+  function applyFilter() {
+    let visible = 0;
+    items.forEach(item => {
+      let show = true;
+      switch (activeFilter) {
+        case 'all': show = true; break;
+        case 'learning': show = item.dataset.state === 'learning'; break;
+        case 'mastered': show = item.dataset.state === 'mastered'; break;
+        case 'subject': show = activeSub ? item.dataset.subject === activeSub : true; break;
+        case 'source': show = activeSub ? item.dataset.source === activeSub : true; break;
+      }
+      item.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    if (countBadge) countBadge.textContent = visible;
+    currentPage = 1;
+    applyPagination();
+  }
+
+  function getVisibleItems() {
+    return Array.from(items).filter(i => !i.classList.contains('hidden'));
+  }
+
+  function applyPagination() {
+    const visible = getVisibleItems();
+    const totalPages = Math.ceil(visible.length / PER_PAGE);
+    const start = (currentPage - 1) * PER_PAGE;
+    const end = start + PER_PAGE;
+
+    visible.forEach((item, i) => {
+      item.classList.toggle('paged-hidden', i < start || i >= end);
+    });
+
+    // Select first on page
+    items.forEach(i => i.classList.remove('selected'));
+    const firstOnPage = visible[start];
+    if (firstOnPage) {
+      firstOnPage.classList.add('selected');
+      firstOnPage.click();
+    }
+
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    const container = document.getElementById('wl-pagination');
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    let html = '';
+    html += '<button class="wl-page-btn wl-page-arrow" data-page="prev" ' + (currentPage === 1 ? 'disabled' : '') + '>&lsaquo;</button>';
+    for (let p = 1; p <= totalPages; p++) {
+      html += '<button class="wl-page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>';
+    }
+    html += '<button class="wl-page-btn wl-page-arrow" data-page="next" ' + (currentPage === totalPages ? 'disabled' : '') + '>&rsaquo;</button>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.wl-page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.dataset.page;
+        if (p === 'prev') { if (currentPage > 1) currentPage--; }
+        else if (p === 'next') { if (currentPage < totalPages) currentPage++; }
+        else currentPage = parseInt(p);
+        applyPagination();
+      });
+    });
+  }
+
+  subGroups.forEach(g => { g.style.display = 'none'; });
+
+  // Init pagination on load
+  applyPagination();
+
+  /* ── Word list click → update card ── */
+  const wordCard = document.querySelector('.word-card');
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      items.forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      if (!wordCard) return;
+      const word = item.querySelector('.wl-word')?.textContent || '';
+      const def = item.dataset.def || item.querySelector('.wl-def')?.textContent || '';
+      const state = item.dataset.state;
+      const tl = item.dataset.tl || '';
+      const cardWord = wordCard.querySelector('.word-en');
+      const cardTl = wordCard.querySelector('.word-tl');
+      const cardDef = wordCard.querySelector('.word-def');
+      const cardState = wordCard.querySelector('.state-badge');
+      if (cardWord) cardWord.textContent = word;
+      if (cardTl) cardTl.textContent = tl;
+      if (cardDef) cardDef.textContent = def;
+      if (cardState) {
+        cardState.className = 'state-badge ' + state;
+        cardState.innerHTML = state === 'mastered' ? 'Mastered' : 'Learning';
+      }
+      var retryBtn = document.getElementById('retry-btn');
+      if (retryBtn) retryBtn.className = 'retry-btn' + (state === 'mastered' ? ' show' : '');
+      // Update translations
+      var defTlEl = document.getElementById('def-tl');
+      var exTlEl = document.getElementById('example-tl');
+      if (defTlEl) defTlEl.textContent = item.dataset.defTl || '';
+      if (exTlEl) exTlEl.textContent = item.dataset.exampleTl || '';
+
+      // Update mastery progress
+      var mastery = parseInt(item.dataset.mastery || '0');
+      var spell = parseInt(item.dataset.spell || '0');
+      var mc = parseInt(item.dataset.mc || '0');
+      var mirror = parseInt(item.dataset.mirror || '0');
+      var fill = document.querySelector('.mastery-progress-fill');
+      var label = document.querySelector('.mastery-progress-label');
+      if (fill) fill.style.width = (mastery / 5 * 100) + '%';
+      if (label) label.textContent = mastery + ' / 5';
+
+      var checksContainer = document.querySelector('.type-checks');
+      var hint = document.getElementById('mastery-hint');
+      var isMastered = state === 'mastered';
+
+      if (checksContainer) checksContainer.style.display = isMastered ? 'none' : 'flex';
+      if (hint) hint.style.display = 'none';
+
+      if (!isMastered) {
+        var checkSvgDone = '<svg viewBox="0 0 20 20"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.54-9.46a.75.75 0 0 0-1.08-1.04L9 10.94 7.54 9.5a.75.75 0 1 0-1.08 1.04l2 2a.75.75 0 0 0 1.08 0l4-4z"/></svg>';
+        var checkSvgPending = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+        var checks = document.querySelectorAll('.type-check');
+        var types = [spell, mc, mirror];
+        var names = ['Spelling', 'Multiple Choice', 'Mirroring'];
+        checks.forEach(function(el, i) {
+          el.className = 'type-check ' + (types[i] ? 'done' : 'pending');
+          el.innerHTML = (types[i] ? checkSvgDone : checkSvgPending) + ' ' + names[i];
+        });
+
+        var remaining = 5 - mastery;
+        if (hint && remaining > 0 && remaining <= 3) {
+          hint.textContent = remaining + ' more practice' + (remaining > 1 ? 's' : '') + ' to master this word!';
+          hint.style.display = 'block';
+        }
+      }
+    });
+  });
+
+  /* ── Retry button: show confirm popup ── */
+  var retryBtn = document.getElementById('retry-btn');
+  var confirmOverlay = document.getElementById('confirm-overlay');
+  var confirmWord = document.getElementById('confirm-word');
+  var confirmYes = document.getElementById('confirm-yes');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', function() {
+      var selected = document.querySelector('.wl-item.selected');
+      if (!selected || selected.dataset.state !== 'mastered') return;
+      var word = selected.querySelector('.wl-word')?.textContent || '';
+      if (confirmWord) confirmWord.textContent = word;
+      if (confirmOverlay) confirmOverlay.classList.add('show');
+    });
+  }
+  if (confirmYes) {
+    confirmYes.addEventListener('click', function() {
+      var selected = document.querySelector('.wl-item.selected');
+      if (selected) {
+        selected.dataset.state = 'learning';
+        selected.dataset.mastery = '0';
+        selected.dataset.spell = '0';
+        selected.dataset.mc = '0';
+        selected.dataset.mirror = '0';
+        var stateEl = selected.querySelector('.wl-state');
+        if (stateEl) { stateEl.className = 'wl-state learning'; stateEl.textContent = 'Learning'; }
+        selected.click();
+      }
+      if (confirmOverlay) confirmOverlay.classList.remove('show');
+    });
+  }
+
+  /* ── Collapse toggle ── */
+  const collapseBtn = document.getElementById('collapse-toggle');
+  const upper = document.getElementById('upper-section');
+  if (collapseBtn && upper) {
+    upper.style.maxHeight = upper.scrollHeight + 'px';
+    collapseBtn.addEventListener('click', () => {
+      const isCollapsed = upper.classList.contains('collapsed');
+      const label = collapseBtn.querySelector('.collapse-label');
+      if (isCollapsed) {
+        /* ── Expand ── */
+        upper.classList.remove('collapsed');
+        upper.style.maxHeight = 'none';
+        const h = upper.scrollHeight;
+        upper.style.maxHeight = '0px';
+        void upper.offsetHeight;
+        upper.style.maxHeight = h + 'px';
+        collapseBtn.classList.remove('collapsed');
+        if (label) label.innerHTML = 'Collapse <span class="collapse-chevron">▲</span>';
+        upper.addEventListener('transitionend', function handler() {
+          upper.style.maxHeight = 'none';
+          upper.removeEventListener('transitionend', handler);
+        });
+      } else {
+        /* ── Collapse ── */
+        upper.style.maxHeight = upper.scrollHeight + 'px';
+        void upper.offsetHeight;
+        upper.style.maxHeight = '0px';
+        upper.classList.add('collapsed');
+        collapseBtn.classList.add('collapsed');
+        if (label) label.innerHTML = 'Expand <span class="collapse-chevron">▲</span>';
+      }
+    });
+  }
+  /* ── Translation toggle ── */
+  var tlOn = false;
+  var tlToggle = document.getElementById('tl-toggle');
+  var tlLabel = document.getElementById('tl-label');
+  var defTl = document.getElementById('def-tl');
+  var exampleTl = document.getElementById('example-tl');
+  var wordTl = document.getElementById('word-tl');
+  var wordPlayZh = document.getElementById('word-play-es');
+
+  function updateTlDisplay() {
+    if (defTl) defTl.classList.toggle('show', tlOn);
+    if (exampleTl) exampleTl.classList.toggle('show', tlOn);
+    if (wordTl) wordTl.classList.toggle('show', tlOn);
+    if (wordPlayZh) wordPlayZh.classList.toggle('show', tlOn);
+    if (tlLabel) tlLabel.classList.toggle('active', tlOn);
+  }
+
+  if (tlToggle) {
+    tlToggle.addEventListener('click', function() {
+      tlOn = !tlOn;
+      tlToggle.classList.toggle('on', tlOn);
+      updateTlDisplay();
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

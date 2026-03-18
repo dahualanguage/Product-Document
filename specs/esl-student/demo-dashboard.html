@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Student Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      width: 1440px; height: 100vh; overflow: hidden;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 1440px; height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #10b981; }
+    .sidebar-item.active span { color: #10b981; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px; gap: 16px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-date { font-size: 12px; color: #94a3b8; font-weight: 500; }
+
+    .app-content {
+      flex: 1; background: #f8fafc; overflow-y: auto;
+      padding: 28px 36px 60px;
+    }
+
+    /* ── Welcome banner ── */
+    .welcome-banner {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+      border-radius: 16px; padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: ''; position: absolute; right: -20px; top: -20px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(255,255,255,.15);
+    }
+    .welcome-text h2 { font-size: 20px; font-weight: 800; color: #065f46; margin-bottom: 4px; }
+    .welcome-text p { font-size: 13px; color: #059669; font-weight: 500; }
+    .welcome-streak {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.6); padding: 10px 18px; border-radius: 12px;
+      position: relative; z-index: 1;
+    }
+    .streak-fire { font-size: 28px; }
+    .streak-num { font-size: 24px; font-weight: 800; color: #065f46; line-height: 1; }
+    .streak-label { font-size: 11px; color: #059669; font-weight: 600; }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff; border-radius: 14px; padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .stat-icon svg { width: 22px; height: 22px; }
+    .stat-icon.green { background: #ecfdf5; }
+    .stat-icon.green svg { fill: #10b981; }
+    .stat-icon.blue { background: #eff6ff; }
+    .stat-icon.blue svg { fill: #3b82f6; }
+    .stat-icon.amber { background: #fffbeb; }
+    .stat-icon.amber svg { fill: #f59e0b; }
+    .stat-icon.purple { background: #f5f3ff; }
+    .stat-icon.purple svg { fill: #8b5cf6; }
+    .stat-value { font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+    .stat-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    .stat-change {
+      font-size: 10px; font-weight: 700; color: #10b981;
+      display: flex; align-items: center; gap: 2px; margin-top: 2px;
+    }
+    .stat-change svg { width: 10px; height: 10px; fill: currentColor; }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid; grid-template-columns: 1fr 340px; gap: 20px;
+    }
+
+    /* ── Card shared ── */
+    .dash-card {
+      background: #fff; border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      overflow: hidden;
+    }
+    .dash-card-header {
+      padding: 18px 22px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dash-card-title { font-size: 14px; font-weight: 800; color: #0f172a; }
+    .dash-card-action {
+      font-size: 11px; font-weight: 600; color: #10b981;
+      text-decoration: none; cursor: pointer;
+    }
+    .dash-card-action:hover { color: #059669; }
+
+    /* ── Weekly Progress ── */
+    .weekly-chart { padding: 0 22px 20px; }
+    .week-bars { display: flex; align-items: flex-end; gap: 12px; height: 140px; }
+    .week-bar-col {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .week-bar-track {
+      width: 100%; height: 120px; background: #f1f5f9; border-radius: 8px;
+      position: relative; overflow: hidden; display: flex; align-items: flex-end;
+    }
+    .week-bar-fill {
+      width: 100%; border-radius: 8px;
+      transition: height 1.2s cubic-bezier(.34, 1.56, .64, 1);
+      height: 0;
+    }
+    .week-bar-fill.green { background: linear-gradient(to top, #22C55E, #4ade80); }
+    .week-bar-fill.light { background: linear-gradient(to top, #86efac, #bbf7d0); }
+    .week-bar-count {
+      font-size: 10px; font-weight: 700; color: #0f172a;
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      opacity: 0; transition: opacity .5s .8s;
+    }
+    .week-bar-col.animated .week-bar-count { opacity: 1; }
+    .week-day { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .week-day.today { color: #10b981; font-weight: 800; }
+
+    /* ── Mastery ring ── */
+    .mastery-section { padding: 0 22px 22px; }
+    .mastery-ring-wrap {
+      display: flex; align-items: center; gap: 28px;
+    }
+    .ring-container {
+      width: 120px; height: 120px; position: relative; flex-shrink: 0;
+    }
+    .ring-svg { width: 120px; height: 120px; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: #f1f5f9; stroke-width: 10; }
+    .ring-fill {
+      fill: none; stroke-width: 10; stroke-linecap: round;
+      transition: stroke-dashoffset 1.5s cubic-bezier(.34, 1.2, .64, 1);
+    }
+    .ring-fill.mastered { stroke: #22C55E; }
+    .ring-fill.learning { stroke: #fbbf24; }
+    .ring-fill.new { stroke: #e2e8f0; }
+    .ring-center {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .ring-pct { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .ring-label { font-size: 10px; color: #94a3b8; font-weight: 600; }
+
+    .mastery-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .legend-item {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .legend-dot.mastered { background: #22C55E; }
+    .legend-dot.learning { background: #fbbf24; }
+    .legend-dot.new { background: #e2e8f0; }
+    .legend-text { flex: 1; }
+    .legend-name { font-size: 12px; font-weight: 600; color: #475569; }
+    .legend-count { font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+    /* ── Recent practices ── */
+    .recent-list { padding: 0; }
+    .recent-item {
+      padding: 14px 22px; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; transition: background .15s;
+    }
+    .recent-item:last-child { border-bottom: none; }
+    .recent-item:hover { background: #f8fafc; }
+    .recent-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .recent-icon svg { width: 18px; height: 18px; }
+    .recent-icon.spelling { background: #dbeafe; }
+    .recent-icon.spelling svg { fill: #3b82f6; }
+    .recent-icon.mc { background: #e0e7ff; }
+    .recent-icon.mc svg { fill: #6366f1; }
+    .recent-icon.mirroring { background: #fed7aa; }
+    .recent-icon.mirroring svg { fill: #ea580c; }
+    .recent-icon.mixed { background: #ecfdf5; }
+    .recent-icon.mixed svg { fill: #10b981; }
+    .recent-info { flex: 1; min-width: 0; }
+    .recent-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .recent-meta { font-size: 11px; color: #94a3b8; }
+    .recent-score {
+      font-size: 14px; font-weight: 800; flex-shrink: 0;
+    }
+    .recent-score.high { color: #22C55E; }
+    .recent-score.mid { color: #f59e0b; }
+    .recent-score.low { color: #ef4444; }
+    .recent-bar-wrap {
+      width: 60px; height: 6px; background: #f1f5f9; border-radius: 3px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .recent-bar {
+      height: 100%; border-radius: 3px;
+      transition: width 1s cubic-bezier(.34, 1.2, .64, 1);
+      width: 0;
+    }
+    .recent-bar.high { background: #22C55E; }
+    .recent-bar.mid { background: #f59e0b; }
+    .recent-bar.low { background: #ef4444; }
+
+    /* ── Achievements ── */
+    .achievements { padding: 0 22px 22px; }
+    .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .badge-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 14px 8px; border-radius: 12px; background: #f8fafc;
+      border: 1px solid #e2e8f0; transition: all .3s;
+      cursor: default;
+    }
+    .badge-item.earned {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border-color: #fde68a;
+    }
+    .badge-item.earned .badge-emoji { transform: scale(1); }
+    .badge-item .badge-emoji {
+      font-size: 28px; margin-bottom: 6px;
+      transition: transform .5s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .badge-item:not(.earned) .badge-emoji { filter: grayscale(1); opacity: .3; }
+    .badge-name { font-size: 10px; font-weight: 700; color: #475569; text-align: center; line-height: 1.3; }
+    .badge-item:not(.earned) .badge-name { color: #cbd5e1; }
+
+    /* ── Today's words toast ── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: #fff; border-radius: 14px; padding: 16px 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      display: flex; align-items: center; gap: 12px;
+      transform: translateY(120px); opacity: 0;
+      transition: all .5s cubic-bezier(.34, 1.2, .64, 1);
+      z-index: 100;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .toast-text { flex: 1; }
+    .toast-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .toast-sub { font-size: 11px; color: #64748b; }
+    .toast-progress {
+      width: 100%; height: 4px; background: #f1f5f9; border-radius: 2px;
+      margin-top: 6px; overflow: hidden;
+    }
+    .toast-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #22C55E, #4ade80);
+      border-radius: 2px; transition: width 1.5s cubic-bezier(.34, 1, .64, 1);
+      width: 0;
+    }
+    .toast-close {
+      width: 24px; height: 24px; border-radius: 6px;
+      border: none; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #94a3b8; font-size: 16px; font-weight: 700;
+      transition: all .15s; flex-shrink: 0;
+    }
+    .toast-close:hover { background: #f1f5f9; color: #475569; }
+
+    /* ── XP pulse animation ── */
+    @keyframes xpPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .xp-pulse { animation: xpPulse .6s ease; }
+
+    /* ── Count-up animation helper ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp .5s ease forwards; }
+
+    /* ── Confetti burst ── */
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(60px) rotate(360deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: absolute; width: 6px; height: 6px; border-radius: 2px;
+      animation: confettiFall 1.2s ease forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item active" title="Dashboard">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" title="Live Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Live Class</span>
+    </div>
+    <div class="sidebar-item" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word Bank</span>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">Dashboard</span>
+      <span class="header-date">Thursday, March 13, 2026</span>
+    </div>
+
+    <div class="app-content">
+
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2>Good morning, Emily! &#x1F44B;</h2>
+          <p>You've learned <strong>12 new words</strong> this week. Keep it up!</p>
+        </div>
+        <div class="welcome-streak">
+          <span class="streak-fire">&#x1F525;</span>
+          <div>
+            <div class="streak-num" id="streak-num">0</div>
+            <div class="streak-label">Day Streak</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-words">0</div>
+            <div class="stat-label">Words Learned</div>
+            <div class="stat-change"><svg viewBox="0 0 10 10"><path d="M5 1L9 6H1z"/></svg> +12 this week</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-time">0</div>
+            <div class="stat-label">Minutes Today</div>
+            <div class="stat-change"><svg viewBox="0 0 10 10"><path d="M5 1L9 6H1z"/></svg> +8 vs yesterday</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">
+            <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-accuracy">0%</div>
+            <div class="stat-label">Avg Accuracy</div>
+            <div class="stat-change"><svg viewBox="0 0 10 10"><path d="M5 1L9 6H1z"/></svg> +5% this week</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-sessions">0</div>
+            <div class="stat-label">Sessions Done</div>
+            <div class="stat-change"><svg viewBox="0 0 10 10"><path d="M5 1L9 6H1z"/></svg> +3 this week</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="main-grid">
+        <div class="left-col" style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Weekly Progress -->
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Weekly Progress</span>
+              <span class="dash-card-action">This Week &#x25BE;</span>
+            </div>
+            <div class="weekly-chart">
+              <div class="week-bars" id="week-bars">
+                <!-- JS rendered -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Word Mastery -->
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Word Mastery</span>
+              <a class="dash-card-action" href="demo-word-bank.html">View All</a>
+            </div>
+            <div class="mastery-section">
+              <div class="mastery-ring-wrap">
+                <div class="ring-container">
+                  <svg class="ring-svg" viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle class="ring-fill mastered" id="ring-mastered" cx="60" cy="60" r="50"
+                      stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                    <circle class="ring-fill learning" id="ring-learning" cx="60" cy="60" r="50"
+                      stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                  </svg>
+                  <div class="ring-center">
+                    <div class="ring-pct" id="ring-pct">0%</div>
+                    <div class="ring-label">Mastered</div>
+                  </div>
+                </div>
+                <div class="mastery-legend">
+                  <div class="legend-item">
+                    <span class="legend-dot mastered"></span>
+                    <div class="legend-text">
+                      <div class="legend-name">Mastered</div>
+                    </div>
+                    <span class="legend-count" id="legend-mastered">0</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot learning"></span>
+                    <div class="legend-text">
+                      <div class="legend-name">Learning</div>
+                    </div>
+                    <span class="legend-count" id="legend-learning">0</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot new"></span>
+                    <div class="legend-text">
+                      <div class="legend-name">New</div>
+                    </div>
+                    <span class="legend-count" id="legend-new">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-col" style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Recent Practices -->
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Recent Practices</span>
+              <span class="dash-card-action">See All</span>
+            </div>
+            <div class="recent-list" id="recent-list">
+              <!-- JS rendered -->
+            </div>
+          </div>
+
+          <!-- Achievements -->
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <span class="dash-card-title">Achievements</span>
+              <span class="dash-card-action">4 / 9</span>
+            </div>
+            <div class="achievements">
+              <div class="badge-grid" id="badge-grid">
+                <!-- JS rendered -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">
+  <div class="toast-icon">&#x1F4DA;</div>
+  <div class="toast-text">
+    <div class="toast-title">Today's Goal: 15 words</div>
+    <div class="toast-sub">You've completed <strong id="toast-count">8</strong> of 15 words</div>
+    <div class="toast-progress">
+      <div class="toast-progress-fill" id="toast-fill"></div>
+    </div>
+  </div>
+  <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">&#xD7;</button>
+</div>
+
+<script>
+/* ── Data ── */
+var WEEKLY = [
+  { day: 'Mon', words: 18, practiced: true },
+  { day: 'Tue', words: 12, practiced: true },
+  { day: 'Wed', words: 22, practiced: true },
+  { day: 'Thu', words: 8, practiced: true },
+  { day: 'Fri', words: 15, practiced: true },
+  { day: 'Sat', words: 6, practiced: true },
+  { day: 'Sun', words: 0, practiced: false },
+];
+var TODAY_IDX = 3; /* Thursday */
+
+var MASTERY = { mastered: 68, learning: 42, new: 15 };
+
+var RECENT = [
+  { type: 'mixed', title: 'Practice All', words: 20, score: 95, time: '12 min ago' },
+  { type: 'spelling', title: 'Spelling Practice', words: 15, score: 80, time: '2 hours ago' },
+  { type: 'mc', title: 'Multiple Choice', words: 10, score: 100, time: 'Yesterday' },
+  { type: 'mirroring', title: 'Vocabs Mirroring', words: 10, score: 60, time: 'Yesterday' },
+  { type: 'spelling', title: 'Spelling Practice', words: 20, score: 85, time: '2 days ago' },
+];
+
+var BADGES = [
+  { emoji: '&#x1F31F;', name: 'First Word', earned: true },
+  { emoji: '&#x1F525;', name: '7-Day Streak', earned: true },
+  { emoji: '&#x1F4AF;', name: 'Perfect Score', earned: true },
+  { emoji: '&#x1F3AF;', name: '50 Words', earned: true },
+  { emoji: '&#x1F680;', name: '100 Words', earned: false },
+  { emoji: '&#x1F451;', name: 'Week Master', earned: false },
+  { emoji: '&#x26A1;', name: 'Speed Demon', earned: false },
+  { emoji: '&#x1F9E0;', name: 'All Types', earned: false },
+  { emoji: '&#x1F3C6;', name: '500 Words', earned: false },
+];
+
+var STATS = { words: 125, time: 23, accuracy: 87, sessions: 18 };
+
+/* ── Animated counter ── */
+function animateCount(el, target, suffix, duration) {
+  suffix = suffix || '';
+  duration = duration || 1200;
+  var start = 0;
+  var startTime = null;
+  function step(ts) {
+    if (!startTime) startTime = ts;
+    var progress = Math.min((ts - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    var current = Math.round(start + (target - start) * eased);
+    el.textContent = current + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+    else el.classList.add('xp-pulse');
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── Weekly bars ── */
+function renderWeekly() {
+  var maxWords = Math.max.apply(null, WEEKLY.map(function(d) { return d.words; }));
+  var container = document.getElementById('week-bars');
+  container.innerHTML = WEEKLY.map(function(d, i) {
+    var pct = maxWords > 0 ? (d.words / maxWords * 100) : 0;
+    var isToday = i === TODAY_IDX;
+    var barClass = isToday ? 'green' : 'light';
+    return '<div class="week-bar-col" data-pct="' + pct + '" data-count="' + d.words + '">' +
+      '<div class="week-bar-track" style="position:relative">' +
+        '<span class="week-bar-count">' + d.words + '</span>' +
+        '<div class="week-bar-fill ' + barClass + '" style="height:0"></div>' +
+      '</div>' +
+      '<span class="week-day' + (isToday ? ' today' : '') + '">' + d.day + '</span>' +
+    '</div>';
+  }).join('');
+
+  /* Animate bars after a short delay */
+  setTimeout(function() {
+    var cols = container.querySelectorAll('.week-bar-col');
+    cols.forEach(function(col, i) {
+      setTimeout(function() {
+        var fill = col.querySelector('.week-bar-fill');
+        fill.style.height = col.getAttribute('data-pct') + '%';
+        col.classList.add('animated');
+      }, i * 100);
+    });
+  }, 400);
+}
+
+/* ── Mastery ring ── */
+function renderMastery() {
+  var total = MASTERY.mastered + MASTERY.learning + MASTERY.new;
+  var masteredPct = MASTERY.mastered / total;
+  var learningPct = MASTERY.learning / total;
+  var circumference = 2 * Math.PI * 50; /* r=50 */
+
+  document.getElementById('legend-mastered').textContent = MASTERY.mastered;
+  document.getElementById('legend-learning').textContent = MASTERY.learning;
+  document.getElementById('legend-new').textContent = MASTERY.new;
+
+  setTimeout(function() {
+    /* Mastered ring */
+    var masteredOffset = circumference * (1 - masteredPct);
+    document.getElementById('ring-mastered').style.strokeDashoffset = masteredOffset;
+
+    /* Learning ring — starts where mastered ends */
+    var learningEl = document.getElementById('ring-learning');
+    learningEl.style.strokeDashoffset = circumference * (1 - learningPct);
+    learningEl.style.transform = 'rotate(' + (masteredPct * 360) + 'deg)';
+    learningEl.style.transformOrigin = '60px 60px';
+
+    animateCount(document.getElementById('ring-pct'), Math.round(masteredPct * 100), '%', 1500);
+  }, 600);
+}
+
+/* ── Recent practices ── */
+function renderRecent() {
+  var iconSvgs = {
+    spelling: '<svg viewBox="0 0 24 24"><path d="M12.45 16h2.09L9.43 3H7.57L2.46 16h2.09l1.12-3h5.64l1.14 3zm-6.02-5L8.5 5.48 10.57 11H6.43zm15.16.59l-8.09 8.09L9.83 16l-1.41 1.41 5.09 5.09L23 13l-1.41-1.41z"/></svg>',
+    mc: '<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm3-4H7v-2h8v2zm2-4H7V7h10v2z"/></svg>',
+    mirroring: '<svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 2.99-1.34 2.99-3L15 6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.42 2.72 6.23 6 6.72V22h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>',
+    mixed: '<svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>'
+  };
+  var list = document.getElementById('recent-list');
+  list.innerHTML = RECENT.map(function(r) {
+    var scoreClass = r.score >= 90 ? 'high' : r.score >= 70 ? 'mid' : 'low';
+    return '<div class="recent-item">' +
+      '<div class="recent-icon ' + r.type + '">' + iconSvgs[r.type] + '</div>' +
+      '<div class="recent-info">' +
+        '<div class="recent-title">' + r.title + '</div>' +
+        '<div class="recent-meta">' + r.words + ' words · ' + r.time + '</div>' +
+      '</div>' +
+      '<span class="recent-score ' + scoreClass + '">' + r.score + '%</span>' +
+      '<div class="recent-bar-wrap"><div class="recent-bar ' + scoreClass + '" data-width="' + r.score + '"></div></div>' +
+    '</div>';
+  }).join('');
+
+  /* Animate bars */
+  setTimeout(function() {
+    list.querySelectorAll('.recent-bar').forEach(function(bar, i) {
+      setTimeout(function() {
+        bar.style.width = bar.getAttribute('data-width') + '%';
+      }, i * 150);
+    });
+  }, 800);
+}
+
+/* ── Achievements ── */
+function renderBadges() {
+  var grid = document.getElementById('badge-grid');
+  grid.innerHTML = BADGES.map(function(b) {
+    return '<div class="badge-item' + (b.earned ? ' earned' : '') + '">' +
+      '<span class="badge-emoji">' + b.emoji + '</span>' +
+      '<span class="badge-name">' + b.name + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Toast ── */
+function showToast() {
+  var toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(function() {
+    document.getElementById('toast-fill').style.width = '53%';
+  }, 300);
+}
+
+/* ── Init ── */
+renderWeekly();
+renderMastery();
+renderRecent();
+renderBadges();
+
+/* Animate stats with count-up */
+setTimeout(function() {
+  animateCount(document.getElementById('stat-words'), STATS.words, '', 1400);
+  animateCount(document.getElementById('stat-time'), STATS.time, '', 1000);
+  animateCount(document.getElementById('stat-accuracy'), STATS.accuracy, '%', 1200);
+  animateCount(document.getElementById('stat-sessions'), STATS.sessions, '', 1000);
+  animateCount(document.getElementById('streak-num'), 7, '', 800);
+}, 200);
+
+/* Show toast after 1.5s */
+setTimeout(showToast, 1500);
+</script>
+
+</body>
+</html>
