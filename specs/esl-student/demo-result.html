@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Practice Result</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      width: 1440px; height: 100vh; overflow: hidden;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 1440px; height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #10b981; }
+    .sidebar-item.active span { color: #10b981; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px; gap: 12px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: #64748b;
+      text-decoration: none; padding: 6px 10px; border-radius: 6px;
+      transition: all .15s;
+    }
+    .back-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .back-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .header-divider { width: 1px; height: 24px; background: #e2e8f0; }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+
+    .app-content { flex: 1; background: #EFF5FF; overflow-y: auto; display: flex; flex-direction: column; }
+
+    /* ── Progress bar ── */
+    .progress-bar-wrap { flex-shrink: 0; }
+    .progress-bar { height: 4px; background: #e2e8f0; width: 100%; }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #77ED8B, #22C55E);
+      width: 100%; border-radius: 0 2px 2px 0;
+    }
+
+    /* ── Result area ── */
+    .result-area {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 48px 36px 80px;
+      max-width: 680px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Result card ── */
+    .result-card {
+      background: #fff; border-radius: 16px; width: 100%;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      text-align: center; padding: 40px 40px 36px;
+    }
+    .result-emoji { font-size: 48px; margin-bottom: 16px; }
+    .result-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .result-subtitle { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+
+    .result-stats {
+      display: flex; justify-content: center; gap: 32px; margin-bottom: 28px;
+    }
+    .stat-num { font-size: 28px; font-weight: 800; }
+    .stat-num.green { color: #22C55E; }
+    .stat-num.red { color: #ef4444; }
+    .stat-num.dark { color: #0f172a; }
+    .stat-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+    .result-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn-secondary {
+      padding: 12px 24px; border-radius: 10px;
+      background: #f1f5f9; color: #475569;
+      font-weight: 700; font-size: 13px; text-decoration: none;
+      transition: all .15s; border: none; cursor: pointer; font-family: inherit;
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-primary {
+      padding: 12px 24px; border-radius: 10px;
+      background: linear-gradient(135deg, #77ED8B, #22C55E); color: #fff;
+      border: none; font-weight: 700; font-size: 13px;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #5FE077, #1aab4e); }
+
+    /* ── Word Summary ── */
+    .word-summary {
+      width: 100%; margin-top: 20px;
+      background: #fff; border-radius: 16px;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      overflow: hidden;
+    }
+    .summary-tabs {
+      display: flex; border-bottom: 1px solid #e2e8f0;
+    }
+    .summary-tab {
+      flex: 1; padding: 14px 0; text-align: center;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all .15s; background: #fff; border: none;
+      font-family: inherit; color: #94a3b8;
+      border-bottom: 2px solid transparent;
+    }
+    .summary-tab:hover { color: #475569; background: #f8fafc; }
+    .summary-tab.active { color: #0f172a; border-bottom-color: #22C55E; }
+    .summary-tab .tab-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; margin-left: 6px; padding: 0 6px;
+    }
+    .summary-tab.active .tab-count.green { background: #f0fdf4; color: #22C55E; }
+    .summary-tab.active .tab-count.red { background: #fef2f2; color: #ef4444; }
+    .summary-tab:not(.active) .tab-count { background: #f1f5f9; color: #94a3b8; }
+
+    .summary-list { padding: 0; }
+    .summary-item {
+      padding: 14px 24px; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .summary-item:last-child { border-bottom: none; }
+
+    .summary-icon {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .summary-icon.correct { background: #f0fdf4; }
+    .summary-icon.correct svg { fill: #22C55E; }
+    .summary-icon.wrong { background: #fef2f2; }
+    .summary-icon.wrong svg { fill: #ef4444; }
+    .summary-icon svg { width: 14px; height: 14px; }
+
+    .summary-word-info { flex: 1; min-width: 0; }
+    .summary-word-row { display: flex; align-items: center; gap: 10px; }
+    .summary-word { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .summary-tl { font-size: 13px; font-weight: 600; color: #64748b; }
+    .summary-def { font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 2px; }
+
+    .summary-type {
+      font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px;
+      text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0;
+    }
+    .summary-type.spelling { background: #dbeafe; color: #3b82f6; }
+    .summary-type.mc { background: #e0e7ff; color: #6366f1; }
+    .summary-type.mirroring { background: #fed7aa; color: #ea580c; }
+
+    .summary-play {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s;
+    }
+    .summary-play:hover { background: #d1fae5; }
+    .summary-play svg { width: 13px; height: 13px; fill: #10b981; }
+
+    .summary-empty {
+      padding: 40px 24px; text-align: center;
+      color: #94a3b8; font-size: 13px; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item" title="Dashboard">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" title="Live Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Live Class</span>
+    </div>
+    <div class="sidebar-item active" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word Bank</span>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <a class="back-btn" href="demo-word-bank.html">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Word Bank
+      </a>
+      <div class="header-divider"></div>
+      <span class="app-header-title">Practice All</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <div class="result-area">
+
+        <!-- Result Card -->
+        <div class="result-card">
+          <div class="result-emoji">🎉</div>
+          <div class="result-title">Practice Complete!</div>
+          <div class="result-subtitle" id="result-subtitle">You finished all 10 words</div>
+          <div class="result-stats">
+            <div><div class="stat-num green" id="stat-correct">7</div><div class="stat-label">CORRECT</div></div>
+            <div><div class="stat-num red" id="stat-wrong">3</div><div class="stat-label">WRONG</div></div>
+            <div><div class="stat-num dark" id="stat-pct">70%</div><div class="stat-label">ACCURACY</div></div>
+          </div>
+          <div class="result-actions">
+            <a class="btn-secondary" href="demo-word-bank.html">Back to Word Bank</a>
+            <button class="btn-primary" onclick="location.reload()">Practice Again</button>
+          </div>
+        </div>
+
+        <!-- Word Summary -->
+        <div class="word-summary">
+          <div class="summary-tabs">
+            <button class="summary-tab active" onclick="switchTab('all', this)">
+              All <span class="tab-count green" id="tab-all-count">10</span>
+            </button>
+            <button class="summary-tab" onclick="switchTab('correct', this)">
+              Correct <span class="tab-count green" id="tab-correct-count">7</span>
+            </button>
+            <button class="summary-tab" onclick="switchTab('wrong', this)">
+              Wrong <span class="tab-count red" id="tab-wrong-count">3</span>
+            </button>
+          </div>
+          <div class="summary-list" id="summary-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Sample result data ── */
+var results = [
+  { word: 'parliament', tl: '議會', def: 'The highest legislative body in a country, responsible for making laws.', type: 'spelling', correct: true },
+  { word: 'hypothesis', tl: '假說', def: 'A proposed explanation made on the basis of limited evidence.', type: 'mc', correct: true },
+  { word: 'continent', tl: '大陸', def: 'One of the seven large landmasses on the earth\'s surface.', type: 'spelling', correct: false },
+  { word: 'democracy', tl: '民主', def: 'A system of government by the whole population, typically through elected representatives.', type: 'mc', correct: true },
+  { word: 'latitude', tl: '緯度', def: 'The angular distance of a place north or south of the equator.', type: 'mirroring', correct: true },
+  { word: 'chromosome', tl: '染色體', def: 'A thread-like structure of nucleic acids and protein found in cell nuclei.', type: 'mc', correct: false },
+  { word: 'constitution', tl: '憲法', def: 'A body of fundamental principles according to which a state is governed.', type: 'spelling', correct: true },
+  { word: 'photosynthesis', tl: '光合作用', def: 'The process by which green plants use sunlight to synthesize foods.', type: 'mirroring', correct: true },
+  { word: 'erosion', tl: '侵蝕', def: 'The gradual wearing away of rock or soil by physical breakdown or chemical solution.', type: 'mirroring', correct: false },
+  { word: 'peninsula', tl: '半島', def: 'A piece of land almost surrounded by water or projecting out into a body of water.', type: 'mc', correct: true },
+];
+
+var correctWords = results.filter(function(r) { return r.correct; });
+var wrongWords = results.filter(function(r) { return !r.correct; });
+
+/* Update stats */
+document.getElementById('stat-correct').textContent = correctWords.length;
+document.getElementById('stat-wrong').textContent = wrongWords.length;
+document.getElementById('stat-pct').textContent = Math.round(correctWords.length / results.length * 100) + '%';
+document.getElementById('result-subtitle').textContent = 'You finished all ' + results.length + ' words';
+document.getElementById('tab-all-count').textContent = results.length;
+document.getElementById('tab-correct-count').textContent = correctWords.length;
+document.getElementById('tab-wrong-count').textContent = wrongWords.length;
+
+var TYPE_LABELS = { spelling: 'Spelling', mc: 'MC', mirroring: 'Mirroring' };
+
+function renderList(words) {
+  var list = document.getElementById('summary-list');
+  if (words.length === 0) {
+    list.innerHTML = '<div class="summary-empty">No words in this category</div>';
+    return;
+  }
+  list.innerHTML = words.map(function(w) {
+    var iconClass = w.correct ? 'correct' : 'wrong';
+    var iconSvg = w.correct
+      ? '<svg viewBox="0 0 20 20"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.54-9.46a.75.75 0 0 0-1.08-1.04L9 10.94 7.54 9.5a.75.75 0 1 0-1.08 1.04l2 2a.75.75 0 0 0 1.08 0l4-4z"/></svg>'
+      : '<svg viewBox="0 0 20 20"><path d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm2.47-10.53a.75.75 0 0 1 .06 1.06L10.56 11l1.97 2.47a.75.75 0 1 1-1.06 1.06L10 12.06l-1.47 2.47a.75.75 0 1 1-1.06-1.06L9.44 11 7.47 8.53a.75.75 0 0 1 1.06-1.06L10 9.94l1.47-2.47a.75.75 0 0 1 1 0z"/></svg>';
+
+    return '<div class="summary-item">' +
+      '<div class="summary-icon ' + iconClass + '">' + iconSvg + '</div>' +
+      '<div class="summary-word-info">' +
+        '<div class="summary-word-row">' +
+          '<span class="summary-word">' + w.word + '</span>' +
+          '<span class="summary-tl">' + w.tl + '</span>' +
+        '</div>' +
+        '<div class="summary-def">' + w.def + '</div>' +
+      '</div>' +
+      '<span class="summary-type ' + w.type + '">' + TYPE_LABELS[w.type] + '</span>' +
+      '<span class="summary-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>' +
+    '</div>';
+  }).join('');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.summary-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+
+  if (tab === 'all') renderList(results);
+  else if (tab === 'correct') renderList(correctWords);
+  else renderList(wrongWords);
+}
+
+/* Initial render */
+renderList(results);
+</script>
+
+</body>
+</html>
