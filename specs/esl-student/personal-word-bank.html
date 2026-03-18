@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spec — Personal Word Bank</title>
+  <script src="../../shared/diagrams-esl-student.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,10 +25,43 @@
     }
     .topbar a:hover { color: #1e293b; }
     .topbar .sep { color: #cbd5e1; }
-    .topbar .current { color: #8b5cf6; font-weight: 700; }
+    .topbar .current { color: #10b981; font-weight: 700; }
 
     /* ── Layout ── */
-    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #10b981; border-left-color: #10b981; font-weight: 700; background: #ecfdf5; }
+    .sidebar a.nav-visual { color: #94a3b8; font-size: 11px; letter-spacing: .02em; }
+    .sidebar a.nav-visual::before { content: '◇ '; font-size: 9px; }
+    .sidebar a.nav-visual:hover { color: #64748b; }
+    .sidebar a.nav-visual.active { color: #10b981; }
+    .sidebar a.nav-visual.active::before { content: '◆ '; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
 
     /* ── Header ── */
     .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
@@ -42,7 +77,7 @@
       display: flex; align-items: center; gap: 8px;
     }
     h2 .num {
-      font-size: 11px; font-weight: 700; color: #fff; background: #8b5cf6;
+      font-size: 11px; font-weight: 700; color: #fff; background: #10b981;
       padding: 2px 8px; border-radius: 4px;
     }
     h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
@@ -64,7 +99,8 @@
     table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
     th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
     th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
-    td { color: #475569; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #ecfdf5; }
 
     /* ── Callouts ── */
     .callout {
@@ -83,7 +119,7 @@
       font-size: 17px; font-weight: 700; color: #5b21b6; line-height: 1.5;
     }
     .callout-question .q-context {
-      font-size: 12px; color: #7c3aed; margin-top: 6px; font-weight: 500;
+      font-size: 12px; color: #059669; margin-top: 6px; font-weight: 500;
     }
 
     /* ── Code / Schema blocks ── */
@@ -136,14 +172,728 @@
     .state-card h4.mastery-title { color: #065f46; }
     .state-card p { font-size: 13px; color: #475569; margin: 0 0 6px; }
 
+    /* ── Word Sources Diagram ── */
+    .ws-diagram {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 28px 32px 24px; margin: 16px 0 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ws-root-row { text-align: center; margin-bottom: 20px; }
+    .ws-root-node {
+      display: inline-block; padding: 9px 28px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 14px; font-weight: 700;
+    }
+    .ws-connector-row {
+      display: flex; justify-content: center;
+      position: relative; height: 32px; margin-bottom: 0;
+    }
+    .ws-connector-row::before {
+      content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 16px;
+      background: #cbd5e1;
+    }
+    .ws-connector-row::after {
+      content: ''; position: absolute; top: 16px;
+      left: calc(16.67% + 8px); right: calc(16.67% + 8px);
+      height: 1px; background: #cbd5e1;
+    }
+    .ws-branches { display: flex; gap: 16px; }
+    .ws-branch {
+      flex: 1; border-radius: 10px; overflow: hidden; border: 1px solid;
+      position: relative;
+    }
+    .ws-branch::before {
+      content: ''; position: absolute; top: -16px; left: 50%;
+      width: 1px; height: 16px; background: #cbd5e1;
+    }
+    .ws-branch-live { border-color: #bfdbfe; }
+    .ws-branch-practice { border-color: #c4b5fd; }
+    .ws-branch-teacher { border-color: #fed7aa; }
+    .ws-branch-header {
+      padding: 10px 16px; font-size: 12px; font-weight: 700; line-height: 1.4;
+    }
+    .ws-branch-live .ws-branch-header { background: #eff6ff; color: #1e40af; }
+    .ws-branch-practice .ws-branch-header { background: #ecfdf5; color: #5b21b6; }
+    .ws-branch-teacher .ws-branch-header { background: #fff7ed; color: #9a3412; }
+    .ws-branch-tag {
+      display: block; font-size: 10px; font-weight: 600;
+      letter-spacing: .3px; text-transform: uppercase; opacity: .7; margin-bottom: 2px;
+    }
+    .ws-branch-items { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .ws-item {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .ws-item-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 3px; }
+    .ws-item-sub { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .ws-item-auto { border-color: #bfdbfe; background: #eff6ff; }
+    .ws-item-auto .ws-item-sub { color: #1e40af; font-weight: 500; }
+
+    /* ── Practice Setup Flow (tree diagram) ── */
+    .ps-diagram {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 28px 32px 24px; margin: 16px 0 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .ps-root-row { text-align: center; margin-bottom: 20px; }
+    .ps-root-node {
+      display: inline-block; padding: 9px 28px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 14px; font-weight: 700;
+    }
+    .ps-connector-row {
+      display: flex; justify-content: center;
+      position: relative; height: 32px; margin-bottom: 0;
+    }
+    .ps-connector-row::before {
+      content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 16px;
+      background: #cbd5e1;
+    }
+    .ps-connector-row::after {
+      content: ''; position: absolute; top: 16px;
+      left: calc(16.67% + 8px); right: calc(16.67% + 8px);
+      height: 1px; background: #cbd5e1;
+    }
+    .ps-branches { display: flex; gap: 16px; }
+    .ps-branch {
+      flex: 1; border-radius: 10px; overflow: hidden; border: 1px solid;
+      position: relative;
+    }
+    .ps-branch::before {
+      content: ''; position: absolute; top: -16px; left: 50%;
+      width: 1px; height: 16px; background: #cbd5e1;
+    }
+    .ps-branch-type { border-color: #c4b5fd; }
+    .ps-branch-category { border-color: #bfdbfe; }
+    .ps-branch-count { border-color: #fed7aa; }
+    .ps-branch-header {
+      padding: 10px 16px; font-size: 12px; font-weight: 700; line-height: 1.4;
+    }
+    .ps-branch-type .ps-branch-header { background: #ecfdf5; color: #5b21b6; }
+    .ps-branch-category .ps-branch-header { background: #eff6ff; color: #1e40af; }
+    .ps-branch-count .ps-branch-header { background: #fff7ed; color: #9a3412; }
+    .ps-branch-tag {
+      display: block; font-size: 10px; font-weight: 600;
+      letter-spacing: .3px; text-transform: uppercase; opacity: .7; margin-bottom: 2px;
+    }
+    .ps-branch-items { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .ps-item {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .ps-item-title { font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 3px; }
+    .ps-item-sub { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .ps-item-note { border-color: #fed7aa; background: #fff7ed; }
+    .ps-item-note .ps-item-sub { color: #9a3412; font-weight: 500; }
+
+    /* ── Inline wireframe (directly expanded) ── */
+    .wf-inline {
+      margin: 0 0 28px; overflow-x: auto;
+    }
+    .wf-inline-label {
+      font-size: 13px; font-weight: 700; color: #334155;
+      margin: 20px 0 8px;
+    }
+
+    /* ── Demo link cards ── */
+    .demo-links { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 24px; }
+    .demo-link-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px; border-radius: 12px;
+      border: 1.5px solid #e2e8f0; background: #fff;
+      text-decoration: none; color: inherit;
+      transition: all .2s; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .demo-link-card:hover { border-color: #10b981; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.1); }
+    .demo-link-icon { font-size: 24px; flex-shrink: 0; width: 40px; text-align: center; }
+    .demo-link-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .demo-link-text strong { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .demo-link-text span { font-size: 12px; color: #64748b; }
+    .demo-link-arrow { font-size: 24px; color: #cbd5e1; font-weight: 300; flex-shrink: 0; }
+    /* ── Word Bank Page Wireframe (Bento) ── */
+    .wbp {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px;
+      overflow: hidden; margin: 20px 0 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .wbp-title-bar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .wbp-title-icon {
+      width: 28px; height: 28px; border-radius: 6px; background: #ecfdf5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #10b981;
+    }
+    .wbp-title-text { font-size: 14px; font-weight: 700; color: #0f172a; }
+    /* App body: sidebar + main */
+    .wbp-body { display: flex; min-height: 580px; }
+    /* Sidebar */
+    .wbp-sidebar {
+      width: 170px; flex-shrink: 0; background: #f8fafc;
+      border-right: 1px solid #e2e8f0; padding: 14px 0;
+      display: flex; flex-direction: column;
+    }
+    .wbp-sb-section { margin-bottom: 16px; }
+    .wbp-sb-label {
+      font-size: 9px; font-weight: 400; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px;
+      padding: 0 16px 6px;
+    }
+    .wbp-sb-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 16px; font-size: 12px; font-weight: 600; color: #475569;
+    }
+    .wbp-sb-item.active {
+      background: #ecfdf5; color: #059669;
+      border-right: 3px solid #10b981;
+    }
+    .wbp-sb-icon {
+      width: 18px; height: 18px; display: inline-flex; align-items: center;
+      justify-content: center; margin-right: 8px; font-size: 12px;
+    }
+    .wbp-sb-name { flex: 1; }
+    .wbp-sb-count {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      background: #e2e8f0; padding: 1px 6px; border-radius: 8px;
+      min-width: 22px; text-align: center;
+    }
+    .wbp-sb-item.active .wbp-sb-count { background: #d1fae5; color: #059669; }
+    .wbp-sb-divider { height: 1px; background: #e2e8f0; margin: 4px 16px 12px; }
+    /* Bento grid */
+    .wbp-grid {
+      display: grid; flex: 1;
+      grid-template-columns: 3fr 2fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 12px; padding: 14px;
+      min-height: 0;
+    }
+    /* Panel base */
+    .wbp-panel {
+      background: #fff; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .wbp-panel-header {
+      padding: 12px 16px 8px; font-size: 12px; font-weight: 700; color: #0f172a;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .wbp-panel-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    }
+    /* Word Entry Card (top-left) */
+    .wbp-entry {
+      grid-row: 1; grid-column: 1;
+      display: flex; flex-direction: column;
+    }
+    .wbp-entry-header {
+      padding: 20px 24px 14px; border-bottom: 1px solid #f1f5f9;
+    }
+    .wbp-entry-label {
+      font-size: 10px; font-weight: 600; color: #10b981;
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 6px;
+    }
+    .wbp-entry-word-row { display: flex; align-items: center; gap: 10px; }
+    .wbp-entry-word { font-size: 26px; font-weight: 800; color: #0f172a; }
+    .wbp-entry-play {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .wbp-entry-play svg { width: 14px; height: 14px; fill: #10b981; }
+    .wbp-entry-play-sm {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      font-size: 9px; color: #10b981; cursor: pointer;
+      margin-left: 6px; vertical-align: middle; line-height: 1;
+    }
+    .wbp-entry-pos {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      color: #10b981; background: #ecfdf5; padding: 3px 10px;
+      border-radius: 4px; margin-top: 8px;
+    }
+    .wbp-entry-body { padding: 16px 24px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .wbp-entry-row { display: flex; gap: 14px; align-items: flex-start; }
+    .wbp-entry-lbl {
+      font-size: 11px; font-weight: 400; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .3px;
+      min-width: 80px; flex-shrink: 0; padding-top: 2px;
+    }
+    .wbp-entry-val { font-size: 13px; color: #334155; flex: 1; }
+    .wbp-entry-context {
+      font-size: 13px; color: #475569; font-style: italic;
+      background: #f8fafc; padding: 10px 14px; border-radius: 6px;
+      border-left: 3px solid #e2e8f0; line-height: 1.6;
+    }
+    .wbp-entry-context mark {
+      background: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px;
+      font-style: normal; font-weight: 600;
+    }
+    /* Progress bar */
+    .wbp-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .wbp-bar {
+      flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px;
+      overflow: hidden; min-width: 100px;
+    }
+    .wbp-bar-fill {
+      height: 100%; border-radius: 4px; background: #f59e0b;
+    }
+    .wbp-bar-fill.mastered { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .wbp-bar-pct {
+      font-size: 12px; font-weight: 700; color: #64748b;
+      min-width: 36px; text-align: right;
+    }
+    .wbp-bar-pct.mastered { color: #d97706; }
+    /* Compact bar for list items */
+    .wbp-bar-sm { height: 5px; min-width: 48px; border-radius: 3px; }
+    .wbp-bar-sm .wbp-bar-fill { border-radius: 3px; }
+    .wbp-bar-pct-sm { font-size: 10px; font-weight: 700; color: #64748b; min-width: 28px; }
+    .wbp-bar-pct-sm.mastered { color: #d97706; }
+    /* Card navigation (prev/next) */
+    .wbp-entry-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px; border-top: 1px solid #f1f5f9; margin-top: auto;
+    }
+    .wbp-entry-nav-btn {
+      font-size: 11px; font-weight: 600; color: #10b981;
+      background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px;
+      padding: 5px 12px; display: flex; align-items: center; gap: 4px;
+    }
+    .wbp-entry-nav-btn.disabled { color: #cbd5e1; background: #f8fafc; border-color: #e2e8f0; }
+    .wbp-entry-nav-count { font-size: 10px; color: #94a3b8; font-weight: 600; }
+    /* Word List (bottom-left) */
+    .wbp-list { grid-row: 2; grid-column: 1; display: flex; flex-direction: column; }
+    /* Practice buttons (top-right) */
+    .wbp-practice { grid-row: 1; grid-column: 2; }
+    .wbp-practice-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; padding: 10px 16px 14px;
+    }
+    .wbp-practice-btn {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 12px; text-align: center;
+      transition: all .15s;
+    }
+    .wbp-practice-label {
+      font-size: 10px; font-weight: 700; color: #10b981;
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px;
+    }
+    .wbp-practice-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .wbp-practice-desc { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    .wbp-practice-count {
+      font-size: 10px; font-weight: 700; color: #059669;
+      background: #ecfdf5; padding: 2px 6px; border-radius: 4px;
+      margin-top: 6px; display: inline-block;
+    }
+    /* V3: Filtered view (sidebar + word card + list) */
+    .wbp-filtered {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 14px; gap: 12px; min-height: 0;
+    }
+    .wbp-filtered-bar {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wbp-filtered-title {
+      font-size: 15px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wbp-filtered-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+    }
+    .wbp-filtered-actions {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wbp-filtered-practice {
+      font-size: 11px; font-weight: 700; color: #fff;
+      background: #10b981; border: none;
+      padding: 6px 14px; border-radius: 6px;
+      display: flex; align-items: center; gap: 5px;
+      cursor: pointer;
+    }
+    .wbp-filtered-practice svg { width: 13px; height: 13px; fill: #fff; }
+    .wbp-filtered-sort {
+      font-size: 11px; font-weight: 600; color: #64748b;
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      padding: 5px 12px; border-radius: 6px;
+    }
+    /* Word card inside filtered view */
+    .wbp-filtered-card {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+      display: flex;
+    }
+    .wbp-fc-main { flex: 1; display: flex; flex-direction: column; }
+    .wbp-fc-detail {
+      flex-shrink: 0; width: 220px; background: #f8fafc;
+      border-left: 1px solid #f1f5f9; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .wbp-fc-detail-row { }
+    .wbp-fc-detail-lbl {
+      font-size: 9px; font-weight: 400; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px;
+    }
+    .wbp-fc-detail-val { font-size: 12px; color: #334155; }
+    /* Filtered word list table */
+    .wbp-flist {
+      background: #fff; border-radius: 10px; flex: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+    }
+    .wbp-flist-header {
+      display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 80px;
+      padding: 10px 16px; font-size: 10px; font-weight: 700;
+      color: #94a3b8; text-transform: uppercase; letter-spacing: .4px;
+      border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .wbp-flist-row {
+      display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 80px;
+      padding: 10px 16px; border-bottom: 1px solid #f1f5f9;
+      align-items: center;
+    }
+    .wbp-flist-row:last-child { border-bottom: none; }
+    .wbp-flist-row.selected { background: #ecfdf5; }
+    .wbp-frow-word { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .wbp-frow-tl { font-size: 11px; color: #94a3b8; }
+    .wbp-frow-context {
+      font-size: 11px; color: #64748b; font-style: italic;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wbp-frow-source {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 4px; display: inline-block;
+    }
+    .wbp-frow-state {
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      border-radius: 4px; display: inline-block;
+    }
+    .wbp-frow-progress { display: flex; align-items: center; gap: 5px; }
+    /* Learning Curve Chart (bottom-right) */
+    .wbp-chart { grid-row: 2; grid-column: 2; display: flex; flex-direction: column; }
+    .wbp-chart-area { flex: 1; padding: 8px 16px 12px; position: relative; }
+    .wbp-chart-svg { width: 100%; height: 100%; min-height: 160px; }
+    .wbp-chart-legend {
+      display: flex; gap: 14px; padding: 0 16px 10px;
+      flex-wrap: wrap;
+    }
+    .wbp-chart-legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; color: #64748b; font-weight: 600;
+    }
+    .wbp-chart-legend-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .wbp-chart-stats {
+      display: flex; gap: 12px; padding: 0 16px 8px;
+    }
+    .wbp-chart-stat {
+      font-size: 10px; color: #94a3b8;
+    }
+    .wbp-chart-stat strong {
+      color: #0f172a; font-size: 14px; font-weight: 800;
+      display: block; margin-bottom: 1px;
+    }
+    .wbp-list-tabs {
+      display: flex; gap: 6px; padding: 0 16px 8px;
+    }
+    .wbp-list-tab {
+      font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px;
+      background: #f1f5f9; color: #64748b;
+    }
+    .wbp-list-tab.active { background: #10b981; color: #fff; }
+    .wbp-list-items { flex: 1; padding: 0 16px 12px; }
+    .wbp-list-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-bottom: 1px solid #f1f5f9;
+    }
+    .wbp-list-item:last-child { border-bottom: none; }
+    .wbp-list-word { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wbp-list-tl { font-size: 10px; color: #94a3b8; }
+    .wbp-list-meta { display: flex; align-items: center; gap: 8px; }
+    .wbp-list-subject {
+      font-size: 9px; font-weight: 600; color: #64748b;
+      background: #f1f5f9; padding: 2px 6px; border-radius: 3px;
+    }
+    /* (list progress uses .wbp-bar-sm) */
+
+    /* ── Practice Setup Wireframe ── */
+    .wbp-setup {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px;
+      overflow: hidden;
+    }
+    .wbp-setup-header {
+      background: #fff; padding: 20px 28px 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .wbp-setup-title {
+      font-size: 17px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .wbp-setup-title svg { width: 20px; height: 20px; fill: #10b981; }
+    .wbp-setup-subtitle {
+      font-size: 12px; color: #64748b; margin-top: 4px;
+    }
+    /* Stepper bar */
+    .wbp-stepper {
+      display: flex; align-items: center; gap: 0;
+      padding: 18px 28px; background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .wbp-step {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wbp-step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #e2e8f0; color: #94a3b8;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wbp-step.active .wbp-step-num {
+      background: #10b981; color: #fff;
+    }
+    .wbp-step.done .wbp-step-num {
+      background: #d1fae5; color: #059669;
+    }
+    .wbp-step-text {
+      font-size: 12px; font-weight: 600; color: #94a3b8;
+    }
+    .wbp-step.active .wbp-step-text { color: #0f172a; }
+    .wbp-step.done .wbp-step-text { color: #059669; }
+    .wbp-step-line {
+      flex: 1; height: 2px; background: #e2e8f0; margin: 0 12px;
+    }
+    .wbp-step-line.done { background: #a7f3d0; }
+    /* Setup body */
+    .wbp-setup-body {
+      padding: 24px 28px 28px;
+    }
+    .wbp-setup-label {
+      font-size: 13px; font-weight: 700; color: #334155;
+      margin-bottom: 14px;
+    }
+    /* Practice type cards (Step 1) */
+    .wbp-type-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .wbp-type-card {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 16px; cursor: pointer; transition: border-color .15s;
+    }
+    .wbp-type-card:hover { border-color: #a7f3d0; }
+    .wbp-type-card.selected { border-color: #10b981; background: #ecfdf5; }
+    .wbp-type-card-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: #f1f5f9; display: flex;
+      align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .wbp-type-card.selected .wbp-type-card-icon { background: #d1fae5; }
+    .wbp-type-card-icon svg { width: 18px; height: 18px; fill: #64748b; }
+    .wbp-type-card.selected .wbp-type-card-icon svg { fill: #059669; }
+    .wbp-type-card-name {
+      font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 3px;
+    }
+    .wbp-type-card-desc {
+      font-size: 11px; color: #64748b; line-height: 1.4;
+    }
+    .wbp-type-card.selected .wbp-type-card-name { color: #059669; }
+    /* Category pills (Step 2) */
+    .wbp-cat-grid {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .wbp-cat-pill {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 12px 20px; cursor: pointer; transition: border-color .15s;
+      text-align: center;
+    }
+    .wbp-cat-pill:hover { border-color: #a7f3d0; }
+    .wbp-cat-pill.selected { border-color: #10b981; background: #ecfdf5; }
+    .wbp-cat-pill-name {
+      font-size: 13px; font-weight: 700; color: #0f172a;
+    }
+    .wbp-cat-pill.selected .wbp-cat-pill-name { color: #059669; }
+    .wbp-cat-pill-desc {
+      font-size: 10px; color: #94a3b8; margin-top: 2px;
+    }
+    /* Count selector (Step 3) */
+    .wbp-count-row {
+      display: flex; gap: 12px;
+    }
+    .wbp-count-btn {
+      width: 72px; height: 56px; border-radius: 10px;
+      background: #fff; border: 2px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; color: #334155;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .wbp-count-btn:hover { border-color: #a7f3d0; }
+    .wbp-count-btn.selected { border-color: #10b981; background: #ecfdf5; color: #059669; }
+    /* Summary + start */
+    .wbp-setup-summary {
+      margin-top: 24px; padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wbp-summary-tags {
+      display: flex; gap: 8px; align-items: center;
+      flex-wrap: wrap;
+    }
+    .wbp-summary-tag {
+      font-size: 11px; font-weight: 600; padding: 4px 12px;
+      border-radius: 6px; background: #f1f5f9; color: #475569;
+    }
+    .wbp-summary-sep {
+      font-size: 10px; color: #cbd5e1;
+    }
+    .wbp-start-btn {
+      background: #10b981; color: #fff; border: none;
+      padding: 10px 28px; border-radius: 8px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .wbp-start-btn svg { width: 16px; height: 16px; fill: #fff; }
+    /* ── Popup overlay scene ── */
+    .wbp-popup-scene {
+      position: relative; border-radius: 12px; overflow: hidden;
+      min-height: 520px;
+    }
+    .wbp-popup-bg { position: absolute; inset: 0; }
+    .wbp-popup-overlay {
+      position: absolute; inset: 0;
+      background: rgba(15,23,42,.55); backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .wbp-popup-window {
+      background: #fff; border-radius: 14px;
+      width: 100%; max-width: 520px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      position: relative;
+    }
+    .wbp-popup-close {
+      position: absolute; top: 12px; right: 14px;
+      width: 28px; height: 28px; border-radius: 6px;
+      border: none; background: #f1f5f9; cursor: pointer;
+      font-size: 16px; color: #64748b;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wbp-popup-header { padding: 20px 24px 0; }
+    .wbp-popup-entry-hint {
+      font-size: 11px; color: #64748b; margin-top: 4px;
+    }
+    /* Popup stepper (reuse light stepper style) */
+    .wbp-popup-stepper {
+      display: flex; align-items: center; padding: 16px 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .wbp-popup-step { display: flex; align-items: center; gap: 6px; }
+    .wbp-popup-step-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #e2e8f0; color: #94a3b8;
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wbp-popup-step span:last-child { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .wbp-popup-step.active .wbp-popup-step-num { background: #10b981; color: #fff; }
+    .wbp-popup-step.active span:last-child { color: #0f172a; }
+    .wbp-popup-step.done .wbp-popup-step-num { background: #d1fae5; color: #059669; }
+    .wbp-popup-step.done span:last-child { color: #059669; }
+    .wbp-popup-step-line { flex: 1; height: 2px; background: #e2e8f0; margin: 0 10px; }
+    .wbp-popup-step-line.done { background: #a7f3d0; }
+    /* Popup body */
+    .wbp-popup-body { padding: 18px 24px 20px; }
+    /* Locked row */
+    .wbp-popup-locked {
+      display: flex; align-items: center; gap: 10px;
+      background: #f1f5f9; border-radius: 8px;
+      padding: 8px 14px; margin-bottom: 16px;
+    }
+    .wbp-popup-locked-label {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    .wbp-popup-locked-val {
+      font-size: 13px; font-weight: 700; color: #0f172a;
+    }
+    /* Popup summary */
+    .wbp-popup-summary {
+      margin-top: 18px; padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── Inline flow diagram ── */
+    .zoom-toolbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; background: #f8fafc;
+      border: 1px solid #e2e8f0; border-bottom: none; border-radius: 8px 8px 0 0;
+    }
+    .zoom-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 6px;
+      background: #fff; border: 1px solid #e2e8f0;
+      font-size: 14px; font-weight: 700; cursor: pointer; color: #475569;
+      font-family: inherit; transition: all .15s;
+    }
+    .zoom-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+    .zoom-btn.text-btn { width: auto; padding: 0 8px; font-size: 11px; }
+    .zoom-btn svg { width: 14px; height: 14px; }
+    .zoom-level { font-size: 12px; font-weight: 600; color: #475569; min-width: 36px; text-align: center; }
+    .diagram-viewport {
+      position: relative; width: 100%; height: 560px;
+      overflow: hidden; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;
+      cursor: grab; margin-bottom: 20px;
+    }
+    .diagram-viewport:active { cursor: grabbing; }
+    .diagram-viewport .mermaid,
+    .diagram-viewport .mermaid-lazy {
+      transform-origin: 0 0;
+      position: absolute; top: 0; left: 0;
+    }
+    .diagram-viewport .mermaid-lazy {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; color: #94a3b8; font-size: 13px;
+    }
+
+    /* ── Practice Tabs ── */
+    .practice-tabs {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      overflow: hidden; margin: 12px 0 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .practice-tab-bar {
+      display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .practice-tab-btn {
+      flex: 1; padding: 12px 8px; text-align: center;
+      font-size: 13px; font-weight: 600; color: #64748b;
+      background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .practice-tab-btn:hover { color: #334155; background: #f1f5f9; }
+    .practice-tab-btn.active {
+      color: #10b981; border-bottom-color: #10b981; background: #fff;
+    }
+    .practice-tab-panel {
+      display: none; padding: 24px;
+    }
+    .practice-tab-panel.active { display: block; }
+    .practice-tab-panel .modality {
+      font-size: 12px; font-weight: 600; color: #10b981;
+      background: #ecfdf5; display: inline-block;
+      padding: 3px 10px; border-radius: 4px; margin-bottom: 12px;
+    }
+
     footer {
       text-align: center; padding: 24px 0; color: #94a3b8;
       font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px;
     }
 
-    @media (max-width: 600px) {
-      .topbar { padding: 12px 16px; }
-      .container { padding: 24px 16px 60px; }
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
+      .main-content { padding: 24px 20px 60px; }
       .source-grid, .state-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -159,8 +909,73 @@
   <span class="current">Personal Word Bank</span>
 </div>
 
-<!-- ── CONTENT ── -->
-<div class="container">
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#goal" class="active">1. Feature Goal</a></li>
+      <li>
+        <a href="#sources">2. Word Sources</a>
+        <ol>
+          <li><a href="#sources-entry">Word Entry Information</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#structure">3. Word Bank Structure</a>
+        <ol>
+          <li><a href="#structure-wireframes" class="nav-visual">Interactive Demo</a></li>
+          <li><a href="#mastery-threshold">Mastery Threshold</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#practice">4. Practice Mode</a>
+        <ol>
+          <li><a href="#practice-flow" class="nav-visual">Flow Diagram</a></li>
+          <li><a href="#practice-wireframes" class="nav-visual">Interactive Demos</a></li>
+          <li><a href="#practice-selection">Practice Setup</a></li>
+          <li><a href="#practice-spelling">a. Spelling</a></li>
+          <li><a href="#practice-pronunciation">b. Vocabs Mirroring</a></li>
+          <li><a href="#practice-mc">c. Multiple Choice</a></li>
+          <li><a href="#practice-mixed">d. Practice All</a></li>
+          <li><a href="#practice-rules">Practice Rules</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#tracking">5. Attempt Tracking</a>
+        <ol>
+          <li><a href="#tracking-session">Per Session</a></li>
+          <li><a href="#tracking-existing">Existing System</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#integration">6. Integration Points</a>
+        <ol>
+          <li><a href="#int-live">6a. Live Classroom</a></li>
+          <li><a href="#int-errors">6b. Practice Errors</a></li>
+          <li><a href="#int-mirroring">6c. Mirroring</a></li>
+          <li><a href="#int-dashboard">6d. Data Dashboard</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#nav">7. Navigation &amp; Access</a>
+        <ol>
+          <li><a href="#nav-student">7a. Student Access</a></li>
+          <li><a href="#teacher-word-bank">7b. Teacher &amp; Admin</a></li>
+          <li><a href="#nav-teacher-dashboard">7c. Teacher Dashboard</a></li>
+          <li><a href="#nav-teacher-assign">7d. Teacher Assign Flow</a></li>
+          <li><a href="#nav-teacher-individual">7e. Individual Student</a></li>
+        </ol>
+      </li>
+      <li><a href="#rules">8. Rules Summary</a></li>
+      <li><a href="#future">9. Future: Contextual Mirroring</a></li>
+    </ol>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
 
   <div class="doc-header">
     <h1>Personal Word Bank</h1>
@@ -173,258 +988,1141 @@
   </div>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">1</span> Feature Goal</h2>
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
 
   <div class="callout-question">
-    <div class="q-text">ESL students encounter unfamiliar words across multiple touchpoints &mdash; live classes, Mirroring practice, QA Discussion &mdash; but have no centralized place to collect, review, and reinforce them.</div>
+    <div class="q-text">ESL students encounter unfamiliar words across multiple touchpoints &mdash; live classes, post-class practice, teacher assignments &mdash; but have no centralized place to collect, review, and reinforce them.</div>
     <div class="q-context">The Personal Word Bank gives every student a single, persistent vocabulary space that grows from their real learning experiences, with a clear path from "unknown" to "mastered".</div>
   </div>
 
   <p>The Personal Word Bank is a <strong>per-student vocabulary collection</strong> that:</p>
   <ol>
-    <li><strong>Aggregates words</strong> from four sources: Live Classroom word clicks, practice errors, Mirroring word tags, and teacher-assigned vocabulary.</li>
-    <li><strong>Organizes words</strong> into two states: <strong>To Do</strong> (needs practice) and <strong>Mastery</strong> (learned).</li>
-    <li><strong>Provides 4 practice types</strong> &mdash; Spelling, Pronunciation, Mirroring (self-created content), and Multiple Choice &mdash; students can practice their word bank anytime.</li>
-    <li><strong>Tracks mastery</strong> using a multi-modal threshold: 5 successful attempts per word, covering at least 3 different practice types.</li>
+    <li><strong>Aggregates words</strong> from three sources: Live Classroom word clicks, Practice (Vocabs Mirroring / Vocabs Multiple Choice / any Mirroring word tagging), and Teacher-assigned vocabulary.</li>
+    <li><strong>Organizes words</strong> into two states: <strong>Learning</strong> (needs practice) and <strong>Mastered</strong> (learned).</li>
+    <li><strong>Provides 3 core practice types</strong> &mdash; Spelling, Vocabs Mirroring, and Multiple Choice &mdash; plus a <strong>Practice All</strong> mode that randomly assigns a type per word. Students can practice their word bank anytime.</li>
+    <li><strong>Tracks mastery</strong> using a multi-modal threshold: 5 successful attempts per word, covering all 3 core practice types.</li>
   </ol>
 
+  <template id="wbp-v2">
+  <div class="wbp">
+    <div class="wbp-title-bar">
+      <div class="wbp-title-icon">&#9733;</div>
+      <span class="wbp-title-text">My Word Bank</span>
+    </div>
+    <div class="wbp-body">
+
+    <!-- Sidebar -->
+    <nav class="wbp-sidebar">
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Overview</div>
+        <div class="wbp-sb-item active">
+          <span class="wbp-sb-icon">&#9733;</span>
+          <span class="wbp-sb-name">All Words</span>
+          <span class="wbp-sb-count">42</span>
+        </div>
+        <div class="wbp-sb-item">
+          <span class="wbp-sb-icon">&#9998;</span>
+          <span class="wbp-sb-name">Learning</span>
+          <span class="wbp-sb-count">28</span>
+        </div>
+        <div class="wbp-sb-item">
+          <span class="wbp-sb-icon">&#10003;</span>
+          <span class="wbp-sb-name">Mastered</span>
+          <span class="wbp-sb-count">14</span>
+        </div>
+      </div>
+      <div class="wbp-sb-divider"></div>
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Subjects</div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Science</span><span class="wbp-sb-count">12</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Math</span><span class="wbp-sb-count">9</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">History</span><span class="wbp-sb-count">8</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Geography</span><span class="wbp-sb-count">7</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">English</span><span class="wbp-sb-count">6</span></div>
+      </div>
+      <div class="wbp-sb-divider"></div>
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Sources</div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Live Classroom</span><span class="wbp-sb-count">18</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Practice</span><span class="wbp-sb-count">15</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Teacher Added</span><span class="wbp-sb-count">9</span></div>
+      </div>
+    </nav>
+
+    <!-- Bento grid -->
+    <div class="wbp-grid">
+
+      <!-- TOP-LEFT: Word Entry Card -->
+      <div class="wbp-panel wbp-entry">
+        <div class="wbp-entry-header">
+          <div class="wbp-entry-label">Newest Word</div>
+          <div class="wbp-entry-word-row">
+            <div class="wbp-entry-word">hypothesis</div>
+            <span class="wbp-entry-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+          </div>
+          <div class="wbp-entry-pos">noun</div>
+        </div>
+        <div class="wbp-entry-body">
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Definition</span>
+            <div class="wbp-entry-context">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</div>
+          </div>
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Translation</span>
+            <span class="wbp-entry-val">假說；假設 <span class="wbp-entry-play-sm" title="Play translation">&#9654;</span></span>
+          </div>
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Example</span>
+            <div class="wbp-entry-context">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+          </div>
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Source</span>
+            <span class="wbp-entry-val">Live Classroom</span>
+          </div>
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Subject</span>
+            <span class="wbp-entry-val">Science</span>
+          </div>
+          <div class="wbp-entry-row">
+            <span class="wbp-entry-lbl">Learning Progress</span>
+            <div class="wbp-entry-val">
+              <div class="wbp-bar-wrap">
+                <div class="wbp-bar"><div class="wbp-bar-fill" style="width:40%"></div></div>
+                <span class="wbp-bar-pct">40%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wbp-entry-nav">
+          <span class="wbp-entry-nav-btn disabled">&larr; Prev</span>
+          <span class="wbp-entry-nav-count">1 / 42</span>
+          <span class="wbp-entry-nav-btn">Next &rarr;</span>
+        </div>
+      </div>
+
+      <!-- TOP-RIGHT: Practice Buttons -->
+      <div class="wbp-panel wbp-practice">
+        <div class="wbp-panel-header">Practice <span class="wbp-panel-badge" style="background:#ecfdf5;color:#059669;">This Week</span></div>
+        <div class="wbp-practice-grid">
+          <div class="wbp-practice-btn">
+            <div class="wbp-practice-label">a</div>
+            <div class="wbp-practice-name">Spelling</div>
+            <div class="wbp-practice-desc">Type the word</div>
+            <div class="wbp-practice-count">5x this week</div>
+          </div>
+          <div class="wbp-practice-btn">
+            <div class="wbp-practice-label">b</div>
+            <div class="wbp-practice-name">Vocabs Mirroring</div>
+            <div class="wbp-practice-desc">Pronounce the word</div>
+            <div class="wbp-practice-count">3x this week</div>
+          </div>
+          <div class="wbp-practice-btn">
+            <div class="wbp-practice-label">c</div>
+            <div class="wbp-practice-name">Multiple Choice</div>
+            <div class="wbp-practice-desc">Pick the answer</div>
+            <div class="wbp-practice-count">7x this week</div>
+          </div>
+          <div class="wbp-practice-btn">
+            <div class="wbp-practice-label">d</div>
+            <div class="wbp-practice-name">Contextual Mirroring</div>
+            <div class="wbp-practice-desc">Use in sentence</div>
+            <div class="wbp-practice-count">2x this week</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM-LEFT: Word List -->
+      <div class="wbp-panel wbp-list">
+        <div class="wbp-panel-header">Word List <span class="wbp-panel-badge" style="background:#f1f5f9;color:#64748b;">42</span></div>
+        <div class="wbp-list-tabs">
+          <span class="wbp-list-tab active">Newest</span>
+          <span class="wbp-list-tab">Subject</span>
+          <span class="wbp-list-tab">Most Errors</span>
+        </div>
+        <div class="wbp-list-items">
+          <div class="wbp-list-item"><div><div class="wbp-list-word">hypothesis</div><div class="wbp-list-tl">假說</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">Science</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:40%"></div></div><span class="wbp-bar-pct-sm">40%</span></div></div></div>
+          <div class="wbp-list-item"><div><div class="wbp-list-word">photosynthesis</div><div class="wbp-list-tl">光合作用</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">Science</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:60%"></div></div><span class="wbp-bar-pct-sm">60%</span></div></div></div>
+          <div class="wbp-list-item"><div><div class="wbp-list-word">equation</div><div class="wbp-list-tl">方程式</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">Math</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:20%"></div></div><span class="wbp-bar-pct-sm">20%</span></div></div></div>
+          <div class="wbp-list-item"><div><div class="wbp-list-word">revolution</div><div class="wbp-list-tl">革命</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">History</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:80%"></div></div><span class="wbp-bar-pct-sm">80%</span></div></div></div>
+          <div class="wbp-list-item"><div><div class="wbp-list-word">democracy</div><div class="wbp-list-tl">民主</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">History</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill mastered" style="width:100%"></div></div><span class="wbp-bar-pct-sm mastered">100%</span></div></div></div>
+          <div class="wbp-list-item"><div><div class="wbp-list-word">latitude</div><div class="wbp-list-tl">緯度</div></div><div class="wbp-list-meta"><span class="wbp-list-subject">Geography</span><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:0%"></div></div><span class="wbp-bar-pct-sm">0%</span></div></div></div>
+        </div>
+      </div>
+
+      <!-- BOTTOM-RIGHT: Learning Curve -->
+      <div class="wbp-panel wbp-chart">
+        <div class="wbp-panel-header">Learning Curve <span class="wbp-panel-badge" style="background:#ecfdf5;color:#059669;">&#8599; Trending up</span></div>
+        <div class="wbp-chart-stats">
+          <div class="wbp-chart-stat"><strong>14</strong>Mastered</div>
+          <div class="wbp-chart-stat"><strong>28</strong>Learning</div>
+          <div class="wbp-chart-stat"><strong>67%</strong>Accuracy</div>
+        </div>
+        <div class="wbp-chart-area">
+          <svg class="wbp-chart-svg" viewBox="0 0 320 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid -->
+            <line x1="30" y1="10" x2="30" y2="120" stroke="#f1f5f9" stroke-width="1"/>
+            <line x1="30" y1="120" x2="310" y2="120" stroke="#e2e8f0" stroke-width="1"/>
+            <line x1="30" y1="92" x2="310" y2="92" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="30" y1="65" x2="310" y2="65" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="30" y1="37" x2="310" y2="37" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3"/>
+            <!-- Y-axis -->
+            <text x="24" y="123" text-anchor="end" font-size="8" fill="#94a3b8">0</text>
+            <text x="24" y="95" text-anchor="end" font-size="8" fill="#94a3b8">10</text>
+            <text x="24" y="68" text-anchor="end" font-size="8" fill="#94a3b8">20</text>
+            <text x="24" y="40" text-anchor="end" font-size="8" fill="#94a3b8">30</text>
+            <text x="24" y="13" text-anchor="end" font-size="8" fill="#94a3b8">40</text>
+            <!-- X-axis -->
+            <text x="53" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W1</text>
+            <text x="100" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W2</text>
+            <text x="147" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W3</text>
+            <text x="193" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W4</text>
+            <text x="240" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W5</text>
+            <text x="287" y="133" text-anchor="middle" font-size="8" fill="#94a3b8">W6</text>
+            <!-- Total Words — indigo -->
+            <path d="M53,106 L100,92 L147,78 L193,65 L240,51 L287,37 L287,120 L53,120 Z" fill="#eef2ff" opacity="0.5"/>
+            <polyline points="53,106 100,92 147,78 193,65 240,51 287,37" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="53" cy="106" r="3" fill="#6366f1"/><circle cx="100" cy="92" r="3" fill="#6366f1"/><circle cx="147" cy="78" r="3" fill="#6366f1"/><circle cx="193" cy="65" r="3" fill="#6366f1"/><circle cx="240" cy="51" r="3" fill="#6366f1"/><circle cx="287" cy="37" r="3.5" fill="#fff" stroke="#6366f1" stroke-width="2"/>
+            <!-- Mastered — amber -->
+            <path d="M53,117 L100,114 L147,109 L193,100 L240,92 L287,83 L287,120 L53,120 Z" fill="#fef3c7" opacity="0.6"/>
+            <polyline points="53,117 100,114 147,109 193,100 240,92 287,83" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="53" cy="117" r="3" fill="#f59e0b"/><circle cx="100" cy="114" r="3" fill="#f59e0b"/><circle cx="147" cy="109" r="3" fill="#f59e0b"/><circle cx="193" cy="100" r="3" fill="#f59e0b"/><circle cx="240" cy="92" r="3" fill="#f59e0b"/><circle cx="287" cy="83" r="3.5" fill="#fff" stroke="#f59e0b" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="wbp-chart-legend">
+          <div class="wbp-chart-legend-item"><span class="wbp-chart-legend-dot" style="background:#6366f1;"></span> Total Words</div>
+          <div class="wbp-chart-legend-item"><span class="wbp-chart-legend-dot" style="background:#f59e0b;"></span> Mastered</div>
+        </div>
+      </div>
+
+    </div><!-- /wbp-grid -->
+    </div><!-- /wbp-body -->
+  </div><!-- /wbp V2 -->
+  </template>
+
+  <template id="wbp-v3">
+  <div class="wbp">
+    <div class="wbp-title-bar">
+      <div class="wbp-title-icon">&#9733;</div>
+      <span class="wbp-title-text">My Word Bank</span>
+    </div>
+    <div class="wbp-body">
+
+    <!-- Sidebar — Science active -->
+    <nav class="wbp-sidebar">
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Overview</div>
+        <div class="wbp-sb-item">
+          <span class="wbp-sb-icon">&#9733;</span>
+          <span class="wbp-sb-name">All Words</span>
+          <span class="wbp-sb-count">42</span>
+        </div>
+        <div class="wbp-sb-item">
+          <span class="wbp-sb-icon">&#9998;</span>
+          <span class="wbp-sb-name">Learning</span>
+          <span class="wbp-sb-count">28</span>
+        </div>
+        <div class="wbp-sb-item">
+          <span class="wbp-sb-icon">&#10003;</span>
+          <span class="wbp-sb-name">Mastered</span>
+          <span class="wbp-sb-count">14</span>
+        </div>
+      </div>
+      <div class="wbp-sb-divider"></div>
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Subjects</div>
+        <div class="wbp-sb-item active"><span class="wbp-sb-name">Science</span><span class="wbp-sb-count">12</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Math</span><span class="wbp-sb-count">9</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">History</span><span class="wbp-sb-count">8</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Geography</span><span class="wbp-sb-count">7</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">English</span><span class="wbp-sb-count">6</span></div>
+      </div>
+      <div class="wbp-sb-divider"></div>
+      <div class="wbp-sb-section">
+        <div class="wbp-sb-label">Sources</div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Live Classroom</span><span class="wbp-sb-count">18</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Practice</span><span class="wbp-sb-count">15</span></div>
+        <div class="wbp-sb-item"><span class="wbp-sb-name">Teacher Added</span><span class="wbp-sb-count">9</span></div>
+      </div>
+    </nav>
+
+    <!-- Filtered view: word card + list -->
+    <div class="wbp-filtered">
+      <div class="wbp-filtered-bar">
+        <div class="wbp-filtered-title">
+          Science
+          <span class="wbp-filtered-badge" style="background:#fff7ed;color:#9a3412;">12 words</span>
+        </div>
+        <div class="wbp-filtered-actions">
+          <button class="wbp-filtered-practice"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Practice Science</button>
+          <span class="wbp-filtered-sort">Sort: Newest first &#9662;</span>
+        </div>
+      </div>
+
+      <!-- Expanded word card (selected word from list) -->
+      <div class="wbp-filtered-card">
+        <div class="wbp-fc-main">
+          <div class="wbp-entry-header">
+            <div class="wbp-entry-label">Selected Word</div>
+            <div class="wbp-entry-word-row">
+              <div class="wbp-entry-word">hypothesis</div>
+              <span class="wbp-entry-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+            </div>
+            <div class="wbp-entry-pos">noun</div>
+          </div>
+          <div class="wbp-entry-body">
+            <div class="wbp-entry-row">
+              <span class="wbp-entry-lbl">Definition</span>
+              <div class="wbp-entry-context">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</div>
+            </div>
+            <div class="wbp-entry-row">
+              <span class="wbp-entry-lbl">Translation</span>
+              <span class="wbp-entry-val">假說；假設 <span class="wbp-entry-play-sm" title="Play translation">&#9654;</span></span>
+            </div>
+            <div class="wbp-entry-row">
+              <span class="wbp-entry-lbl">Example</span>
+              <div class="wbp-entry-context">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+            </div>
+          </div>
+        </div>
+        <div class="wbp-fc-detail">
+          <div class="wbp-fc-detail-row">
+            <div class="wbp-fc-detail-lbl">Source</div>
+            <div class="wbp-fc-detail-val">Live Classroom</div>
+          </div>
+          <div class="wbp-fc-detail-row">
+            <div class="wbp-fc-detail-lbl">Subject</div>
+            <div class="wbp-fc-detail-val">Science</div>
+          </div>
+          <div class="wbp-fc-detail-row">
+            <div class="wbp-fc-detail-lbl">Word Type</div>
+            <div class="wbp-fc-detail-val">Academic</div>
+          </div>
+          <div class="wbp-fc-detail-row">
+            <div class="wbp-fc-detail-lbl">State</div>
+            <div class="wbp-fc-detail-val">Learning</div>
+          </div>
+          <div class="wbp-fc-detail-row">
+            <div class="wbp-fc-detail-lbl">Learning Progress</div>
+            <div class="wbp-fc-detail-val">
+              <div class="wbp-bar-wrap">
+                <div class="wbp-bar"><div class="wbp-bar-fill" style="width:40%"></div></div>
+                <span class="wbp-bar-pct">40%</span>
+              </div>
+            </div>
+          </div>
+          <div class="wbp-entry-nav" style="border-top:none;padding:8px 0 0;margin-top:auto;">
+            <span class="wbp-entry-nav-btn disabled">&larr;</span>
+            <span class="wbp-entry-nav-count">1 / 12</span>
+            <span class="wbp-entry-nav-btn">&rarr;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtered word list -->
+      <div class="wbp-flist">
+        <div class="wbp-flist-header">
+          <span>Word</span>
+          <span>Example</span>
+          <span>Source</span>
+          <span>State</span>
+          <span>Learning Progress</span>
+        </div>
+        <div class="wbp-flist-row selected">
+          <div><div class="wbp-frow-word">hypothesis</div><div class="wbp-frow-tl">假說</div></div>
+          <div class="wbp-frow-context">We need to test our hypothesis before&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#eff6ff;color:#1e40af;">Live Classroom</span></div>
+          <div><span class="wbp-frow-state" style="background:#fef9c3;color:#854d0e;">Learning</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:40%"></div></div><span class="wbp-bar-pct-sm">40%</span></div></div>
+        </div>
+        <div class="wbp-flist-row">
+          <div><div class="wbp-frow-word">photosynthesis</div><div class="wbp-frow-tl">光合作用</div></div>
+          <div class="wbp-frow-context">Plants use photosynthesis to convert light&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#eff6ff;color:#1e40af;">Live Classroom</span></div>
+          <div><span class="wbp-frow-state" style="background:#fef9c3;color:#854d0e;">Learning</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:60%"></div></div><span class="wbp-bar-pct-sm">60%</span></div></div>
+        </div>
+        <div class="wbp-flist-row">
+          <div><div class="wbp-frow-word">organism</div><div class="wbp-frow-tl">有機體</div></div>
+          <div class="wbp-frow-context">An organism can be single-celled or&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#ecfdf5;color:#059669;">Practice</span></div>
+          <div><span class="wbp-frow-state" style="background:#fef9c3;color:#854d0e;">Learning</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:20%"></div></div><span class="wbp-bar-pct-sm">20%</span></div></div>
+        </div>
+        <div class="wbp-flist-row">
+          <div><div class="wbp-frow-word">nucleus</div><div class="wbp-frow-tl">細胞核</div></div>
+          <div class="wbp-frow-context">The nucleus contains the cell&rsquo;s genetic&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#ecfdf5;color:#059669;">Teacher Added</span></div>
+          <div><span class="wbp-frow-state" style="background:#f0fdf4;color:#166534;">Mastered</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill mastered" style="width:100%"></div></div><span class="wbp-bar-pct-sm mastered">100%</span></div></div>
+        </div>
+        <div class="wbp-flist-row">
+          <div><div class="wbp-frow-word">ecosystem</div><div class="wbp-frow-tl">生態系統</div></div>
+          <div class="wbp-frow-context">A coral reef is a complex ecosystem&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#eff6ff;color:#1e40af;">Live Classroom</span></div>
+          <div><span class="wbp-frow-state" style="background:#fef9c3;color:#854d0e;">Learning</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill" style="width:80%"></div></div><span class="wbp-bar-pct-sm">80%</span></div></div>
+        </div>
+        <div class="wbp-flist-row">
+          <div><div class="wbp-frow-word">molecule</div><div class="wbp-frow-tl">分子</div></div>
+          <div class="wbp-frow-context">A water molecule consists of two hydrogen&hellip;</div>
+          <div><span class="wbp-frow-source" style="background:#ecfdf5;color:#059669;">Practice</span></div>
+          <div><span class="wbp-frow-state" style="background:#f0fdf4;color:#166534;">Mastered</span></div>
+          <div class="wbp-frow-progress"><div class="wbp-bar-wrap"><div class="wbp-bar wbp-bar-sm"><div class="wbp-bar-fill mastered" style="width:100%"></div></div><span class="wbp-bar-pct-sm mastered">100%</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /wbp-body -->
+  </div><!-- /wbp V3 -->
+  </template>
+
+  <template id="wbp-v4">
+  <!-- Composite: dimmed Word Bank page + dark popup -->
+  <div class="wbp-popup-scene">
+    <!-- Background: Word Bank homepage (dimmed) -->
+    <div class="wbp-popup-bg">
+      <div class="wbp" style="opacity:.35;pointer-events:none;margin:0;">
+        <div class="wbp-title-bar">
+          <div class="wbp-title-icon">&#9733;</div>
+          <span class="wbp-title-text">My Word Bank</span>
+        </div>
+        <div class="wbp-body">
+          <nav class="wbp-sidebar">
+            <div class="wbp-sb-label">Overview</div>
+            <div class="wbp-sb-item active"><span>&#9733; All Words</span><span class="wbp-sb-count">42</span></div>
+            <div class="wbp-sb-item"><span>&#9998; Learning</span><span class="wbp-sb-count">28</span></div>
+            <div class="wbp-sb-item"><span>&#10003; Mastered</span><span class="wbp-sb-count">14</span></div>
+            <div class="wbp-sb-divider"></div>
+            <div class="wbp-sb-label">Subjects</div>
+            <div class="wbp-sb-item"><span>Science</span><span class="wbp-sb-count">12</span></div>
+            <div class="wbp-sb-item"><span>Math</span><span class="wbp-sb-count">9</span></div>
+            <div class="wbp-sb-item"><span>History</span><span class="wbp-sb-count">8</span></div>
+          </nav>
+          <div class="wbp-grid" style="min-height:320px;">
+            <div class="wbp-panel wbp-entry" style="min-height:200px;"></div>
+            <div class="wbp-panel wbp-practice" style="min-height:200px;">
+              <div class="wbp-panel-header">Practice</div>
+              <div class="wbp-practice-grid">
+                <div class="wbp-practice-btn" style="border-color:#10b981;background:#ecfdf5;">
+                  <div class="wbp-practice-label">a</div>
+                  <div class="wbp-practice-name">Spelling</div>
+                </div>
+                <div class="wbp-practice-btn"><div class="wbp-practice-label">b</div><div class="wbp-practice-name">Vocabs Mirroring</div></div>
+                <div class="wbp-practice-btn"><div class="wbp-practice-label">c</div><div class="wbp-practice-name">Multiple Choice</div></div>
+                <div class="wbp-practice-btn"><div class="wbp-practice-label">d</div><div class="wbp-practice-name">Contextual Mirroring</div></div>
+              </div>
+            </div>
+            <div class="wbp-panel" style="min-height:120px;"></div>
+            <div class="wbp-panel" style="min-height:120px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Dark popup overlay -->
+    <div class="wbp-popup-overlay">
+      <div class="wbp-popup-window">
+        <button class="wbp-popup-close">&times;</button>
+        <!-- Popup header -->
+        <div class="wbp-popup-header">
+          <div class="wbp-setup-title">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Practice Setup
+          </div>
+          <div class="wbp-popup-entry-hint">Via homepage shortcut &mdash; &ldquo;Spelling&rdquo; pre-selected</div>
+        </div>
+        <!-- Stepper -->
+        <div class="wbp-popup-stepper">
+          <div class="wbp-popup-step done"><span class="wbp-popup-step-num">&#10003;</span><span>Practice Type</span></div>
+          <div class="wbp-popup-step-line done"></div>
+          <div class="wbp-popup-step active"><span class="wbp-popup-step-num">2</span><span>Word Category</span></div>
+          <div class="wbp-popup-step-line"></div>
+          <div class="wbp-popup-step"><span class="wbp-popup-step-num">3</span><span>Question Count</span></div>
+        </div>
+        <!-- Body -->
+        <div class="wbp-popup-body">
+          <!-- Locked Step 1 -->
+          <div class="wbp-popup-locked">
+            <span class="wbp-popup-locked-label">Practice Type</span>
+            <span class="wbp-popup-locked-val">Spelling</span>
+          </div>
+          <!-- Step 2: active -->
+          <div class="wbp-setup-label">Select word category</div>
+          <div class="wbp-cat-grid">
+            <div class="wbp-cat-pill"><div class="wbp-cat-pill-name">Newest</div><div class="wbp-cat-pill-desc">Recently added</div></div>
+            <div class="wbp-cat-pill selected"><div class="wbp-cat-pill-name">All Random</div><div class="wbp-cat-pill-desc">Random from Learning</div></div>
+            <div class="wbp-cat-pill"><div class="wbp-cat-pill-name">Untested</div><div class="wbp-cat-pill-desc">0 attempts</div></div>
+            <div class="wbp-cat-pill"><div class="wbp-cat-pill-name">Most Errors</div><div class="wbp-cat-pill-desc">Highest error rate</div></div>
+          </div>
+          <!-- Summary -->
+          <div class="wbp-popup-summary">
+            <div class="wbp-summary-tags">
+              <span class="wbp-summary-tag" style="background:#ecfdf5;color:#059669;">Spelling</span>
+              <span class="wbp-summary-sep">&rarr;</span>
+              <span class="wbp-summary-tag" style="background:#eff6ff;color:#1e40af;">All Random</span>
+              <span class="wbp-summary-sep">&rarr;</span>
+              <span class="wbp-summary-tag" style="color:#94a3b8;">Count?</span>
+            </div>
+            <button class="wbp-start-btn" style="opacity:.4;cursor:default;">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Start
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </template>
+
+  <template id="wbp-v5">
+  <!-- Composite: dimmed filtered view + dark popup -->
+  <div class="wbp-popup-scene">
+    <!-- Background: Filtered page (dimmed) -->
+    <div class="wbp-popup-bg">
+      <div class="wbp" style="opacity:.35;pointer-events:none;margin:0;">
+        <div class="wbp-title-bar">
+          <div class="wbp-title-icon">&#9733;</div>
+          <span class="wbp-title-text">My Word Bank</span>
+        </div>
+        <div class="wbp-body">
+          <nav class="wbp-sidebar">
+            <div class="wbp-sb-label">Subjects</div>
+            <div class="wbp-sb-item active"><span>Science</span><span class="wbp-sb-count">12</span></div>
+            <div class="wbp-sb-item"><span>Math</span><span class="wbp-sb-count">9</span></div>
+            <div class="wbp-sb-item"><span>History</span><span class="wbp-sb-count">8</span></div>
+          </nav>
+          <div class="wbp-filtered" style="min-height:300px;">
+            <div class="wbp-filtered-bar">
+              <div class="wbp-filtered-title">Science <span class="wbp-filtered-badge" style="background:#fff7ed;color:#9a3412;">12 words</span></div>
+              <div class="wbp-filtered-actions">
+                <button class="wbp-filtered-practice" style="border-color:#10b981;box-shadow:0 0 0 2px #10b981;"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Practice Science</button>
+                <span class="wbp-filtered-sort">Sort: Newest first &#9662;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Dark popup overlay -->
+    <div class="wbp-popup-overlay">
+      <div class="wbp-popup-window">
+        <button class="wbp-popup-close">&times;</button>
+        <!-- Popup header -->
+        <div class="wbp-popup-header">
+          <div class="wbp-setup-title">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Practice Setup
+          </div>
+          <div class="wbp-popup-entry-hint">Via &ldquo;Practice Science&rdquo; button &mdash; practicing Science words only</div>
+        </div>
+        <!-- Stepper -->
+        <div class="wbp-popup-stepper">
+          <div class="wbp-popup-step active"><span class="wbp-popup-step-num">1</span><span>Practice Type</span></div>
+          <div class="wbp-popup-step-line"></div>
+          <div class="wbp-popup-step"><span class="wbp-popup-step-num">2</span><span>Word Category</span></div>
+          <div class="wbp-popup-step-line"></div>
+          <div class="wbp-popup-step"><span class="wbp-popup-step-num">3</span><span>Question Count</span></div>
+        </div>
+        <!-- Body -->
+        <div class="wbp-popup-body">
+          <!-- Locked scope badge -->
+          <div class="wbp-popup-locked">
+            <span class="wbp-popup-locked-label">Scope</span>
+            <span class="wbp-popup-locked-val">Science &middot; 12 words</span>
+          </div>
+          <!-- Step 1: active -->
+          <div class="wbp-setup-label">Select a practice type</div>
+          <div class="wbp-type-grid">
+            <div class="wbp-type-card selected">
+              <div class="wbp-type-card-icon"><svg viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg></div>
+              <div class="wbp-type-card-name">Spelling</div>
+              <div class="wbp-type-card-desc">Listen and type the word</div>
+            </div>
+            <div class="wbp-type-card">
+              <div class="wbp-type-card-icon"><svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V6zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></div>
+              <div class="wbp-type-card-name">Vocabs Mirroring</div>
+              <div class="wbp-type-card-desc">Listen and repeat</div>
+            </div>
+            <div class="wbp-type-card">
+              <div class="wbp-type-card-icon"><svg viewBox="0 0 24 24"><path d="M11 17h2v-1h1c.55 0 1-.45 1-1v-3c0-.55-.45-1-1-1h-3v-1h4V8h-2V7h-2v1h-1c-.55 0-1 .45-1 1v3c0 .55.45 1 1 1h3v1H9v2h2v1z"/></svg></div>
+              <div class="wbp-type-card-name">Multiple Choice</div>
+              <div class="wbp-type-card-desc">Pick the correct meaning</div>
+            </div>
+            <div class="wbp-type-card">
+              <div class="wbp-type-card-icon"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h18v8zM6 15h12v-2H6v2z"/></svg></div>
+              <div class="wbp-type-card-name">Contextual Mirroring</div>
+              <div class="wbp-type-card-desc">Read and repeat in context</div>
+            </div>
+          </div>
+          <!-- Summary -->
+          <div class="wbp-popup-summary">
+            <div class="wbp-summary-tags">
+              <span class="wbp-summary-tag" style="background:#ecfdf5;color:#059669;">Spelling</span>
+              <span class="wbp-summary-sep">&rarr;</span>
+              <span class="wbp-summary-tag" style="color:#94a3b8;">Category?</span>
+              <span class="wbp-summary-sep">&rarr;</span>
+              <span class="wbp-summary-tag" style="color:#94a3b8;">Count?</span>
+            </div>
+            <button class="wbp-start-btn" style="opacity:.4;cursor:default;">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Start
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </template>
+
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">2</span> Word Sources</h2>
+  <h2 id="sources"><span class="num">2</span> Word Sources</h2>
 
-  <p>Words enter the Personal Word Bank from four channels:</p>
+  <p>Words enter the Personal Word Bank from three source categories:</p>
 
-  <div class="source-grid">
-    <div class="source-card">
-      <h4><span class="badge badge-live">LIVE</span> Live Classroom</h4>
-      <p>During live class, the subject teacher's speech is transcribed in real-time. Students tap unfamiliar words in the transcript &mdash; the system provides context-based definitions. When a student taps, the word is <strong>automatically saved</strong> to their Personal Word Bank as "To Do".</p>
+  <!-- Word Sources Diagram -->
+  <div class="ws-diagram">
+    <div class="ws-root-row">
+      <span class="ws-root-node">Personal Word Bank Sources</span>
     </div>
-    <div class="source-card">
-      <h4><span class="badge badge-practice">PRACTICE</span> Practice Errors</h4>
-      <p>When students complete teacher-assigned practices (Mirroring or QA Discussion) and make errors &mdash; mispronounced words, unknown vocabulary in AI feedback &mdash; those words can be <strong>saved to the Word Bank</strong> via a "Save to Word Bank" action.</p>
+    <div class="ws-connector-row"></div>
+    <div class="ws-branches">
+
+      <!-- Live Classroom -->
+      <div class="ws-branch ws-branch-live">
+        <div class="ws-branch-header">
+          <span class="ws-branch-tag">Source 1</span>
+          Live Classroom
+        </div>
+        <div class="ws-branch-items">
+          <div class="ws-item">
+            <div class="ws-item-title">Word Tap in Transcript</div>
+            <div class="ws-item-sub">Timing: During class<br>Trigger: Student taps word in live transcript &rarr; system shows translation</div>
+          </div>
+          <div class="ws-item ws-item-auto">
+            <div class="ws-item-title">Auto-saved</div>
+            <div class="ws-item-sub">Tapped words are automatically saved to Word Bank as &ldquo;Learning&rdquo;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Practice -->
+      <div class="ws-branch ws-branch-practice">
+        <div class="ws-branch-header">
+          <span class="ws-branch-tag">Source 2 &mdash; Post-class Practice</span>
+          Practice (3 types)
+        </div>
+        <div class="ws-branch-items">
+          <div class="ws-item">
+            <div class="ws-item-title">Vocabs Mirroring</div>
+            <div class="ws-item-sub">After practice &rarr; words with low pronunciation score &rarr; &ldquo;Save to Word Bank&rdquo;</div>
+          </div>
+          <div class="ws-item">
+            <div class="ws-item-title">Vocabs Multiple Choice</div>
+            <div class="ws-item-sub">After practice &rarr; incorrectly answered words &rarr; &ldquo;Save to Word Bank&rdquo;</div>
+          </div>
+          <div class="ws-item">
+            <div class="ws-item-title">Any Mirroring Practice</div>
+            <div class="ws-item-sub">During any Mirroring practice (teacher-assigned or self-initiated) &rarr; student taps unknown words &rarr; &ldquo;Save to Word Bank&rdquo;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teacher Added -->
+      <div class="ws-branch ws-branch-teacher">
+        <div class="ws-branch-header">
+          <span class="ws-branch-tag">Source 3</span>
+          Teacher Added
+        </div>
+        <div class="ws-branch-items">
+          <div class="ws-item">
+            <div class="ws-item-title">Manual / Bulk Assign</div>
+            <div class="ws-item-sub">Timing: Anytime<br>Teacher adds words individually or in bulk to student&rsquo;s Word Bank</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
-  <div class="source-grid">
-    <div class="source-card">
-      <h4><span class="badge" style="background:#fce7f3; color:#be185d;">MIRRORING</span> Mirroring Word Tag</h4>
-      <p>During any <strong>Mirroring practice</strong> (teacher-assigned or Word Bank self-created), students can <strong>tag words they don't know</strong> directly in the practice text. Tagged words are saved to the Word Bank as "To Do" with the Mirroring sentence as context.</p>
-    </div>
-    <div class="source-card">
-      <h4><span class="badge" style="background:#f3e8ff; color:#7c3aed;">TEACHER</span> Teacher Added</h4>
-      <p>Teachers can <strong>manually add words</strong> to a student's Word Bank &mdash; individually or in bulk to an entire class. This allows teachers to proactively assign target vocabulary (e.g., this week's unit words) that students should practice, even before they encounter them in class.</p>
-    </div>
-  </div>
+
+  <table>
+    <thead>
+      <tr><th>Source</th><th>Context</th><th>Trigger</th><th>Auto / Manual</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Live Classroom</strong></td>
+        <td>During class</td>
+        <td>Student taps a word in the live transcript; system shows contextual translation and auto-saves to Word Bank</td>
+        <td>Auto</td>
+      </tr>
+      <tr>
+        <td><strong>Practice &mdash; Vocabs Mirroring</strong></td>
+        <td>Post-class practice</td>
+        <td>After practice ends, words with low pronunciation scores show &ldquo;Save to Word Bank&rdquo;</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td><strong>Practice &mdash; Vocabs Multiple Choice</strong></td>
+        <td>Post-class practice</td>
+        <td>After practice ends, incorrectly answered words show &ldquo;Save to Word Bank&rdquo;</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td><strong>Practice &mdash; Any Mirroring</strong></td>
+        <td>During any Mirroring practice (teacher-assigned or self-initiated)</td>
+        <td>Student taps unknown words during practice &rarr; &ldquo;Save to Word Bank&rdquo;</td>
+        <td>Manual</td>
+      </tr>
+      <tr>
+        <td><strong>Teacher Added</strong></td>
+        <td>Anytime</td>
+        <td>Teacher manually or bulk-assigns words to student</td>
+        <td>Teacher action</td>
+      </tr>
+    </tbody>
+  </table>
 
   <div class="callout callout-info">
     <strong>Connection to Live Classroom (Flow 6):</strong> The Live Classroom source directly integrates with the clickable transcript feature. Each word click that shows a definition also saves the word to the Personal Word Bank. The same context sentence is shared for learning reference.
   </div>
 
-  <h3>Word Entry Information</h3>
+  <h3 id="sources-entry">Word Entry Information</h3>
   <p>Each word saved to the Personal Word Bank includes:</p>
 
   <table>
-    <tr>
-      <th>Field</th>
-      <th>Description</th>
-    </tr>
+    <thead><tr><th>Field</th><th>Description</th><th>Data Source</th></tr></thead>
+    <tbody>
     <tr>
       <td>Word</td>
       <td>The English word or phrase</td>
+      <td>Original context</td>
+    </tr>
+    <tr>
+      <td>Part of speech</td>
+      <td>Grammatical category: <em>noun</em>, <em>verb</em>, <em>adjective</em>, etc.</td>
+      <td>Dictionary API</td>
+    </tr>
+    <tr>
+      <td>Pronunciation audio</td>
+      <td>Native-speaker audio clip of the English word. Student can tap a play button to hear the correct pronunciation.</td>
+      <td>Dictionary API / TTS</td>
+    </tr>
+    <tr>
+      <td>Definition (EN)</td>
+      <td>English-to-English definition <strong>adapted to the student&rsquo;s WIDA proficiency level</strong>. The system generates three complexity tiers so ESL learners can understand meaning in the target language. Example &mdash; <em>hypothesis</em>:
+        <table style="margin:8px 0 4px;font-size:12px;line-height:1.6;width:100%;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:6px 8px;white-space:nowrap;font-weight:700;color:#059669;">Beginner</td>
+            <td style="padding:6px 8px;color:#64748b;">WIDA 1&ndash;2 (Entering / Emerging)</td>
+            <td style="padding:6px 8px;">&ldquo;An idea that you can test to see if it is true.&rdquo;</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:6px 8px;white-space:nowrap;font-weight:700;color:#d97706;">Intermediate</td>
+            <td style="padding:6px 8px;color:#64748b;">WIDA 3&ndash;4 (Developing / Expanding)</td>
+            <td style="padding:6px 8px;">&ldquo;A suggested explanation for something that has not yet been proven.&rdquo;</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 8px;white-space:nowrap;font-weight:700;color:#6366f1;">Advanced</td>
+            <td style="padding:6px 8px;color:#64748b;">WIDA 5&ndash;6 (Bridging / Reaching)</td>
+            <td style="padding:6px 8px;">&ldquo;A proposed explanation made on the basis of limited evidence as a starting point for further investigation.&rdquo;</td>
+          </tr>
+        </table>
+      </td>
+      <td>AI generated (based on WIDA level)</td>
     </tr>
     <tr>
       <td>Translation</td>
-      <td>Translation in the student's native language</td>
+      <td>Translation in the student&rsquo;s native language (e.g., <em>hypothesis</em> &rarr; 假說)</td>
+      <td>Translation API</td>
     </tr>
     <tr>
-      <td>Context sentence</td>
-      <td>The original sentence where the word appeared</td>
+      <td>Translation audio</td>
+      <td>Audio playback of the translated word in the student&rsquo;s native language. Helps students connect the English word to its spoken equivalent in their L1. Example: tap play to hear &ldquo;假說&rdquo; in Mandarin.</td>
+      <td>TTS (native language)</td>
+    </tr>
+    <tr>
+      <td>Example sentence</td>
+      <td>A sentence demonstrating the word in context, with the target word highlighted. Auto-generated by the system to show natural usage.</td>
+      <td>AI generated</td>
     </tr>
     <tr>
       <td>Source</td>
-      <td>Where the word came from: <strong>Live Classroom</strong>, <strong>Practice Error</strong>, <strong>Mirroring Tag</strong>, or <strong>Teacher Added</strong></td>
+      <td>Where the word came from: <strong>Live Classroom</strong>, <strong>Practice</strong> (Vocabs Mirroring / Vocabs MC / any Mirroring word tagging), or <strong>Teacher Added</strong></td>
+      <td>System</td>
+    </tr>
+    <tr>
+      <td>Subject</td>
+      <td>Which subject the word originated from (e.g., Science, History, Math). Auto-detected from the classroom or content source.</td>
+      <td>System</td>
+    </tr>
+    <tr>
+      <td>Word type</td>
+      <td><strong>Academic</strong> or <strong>General</strong> &mdash; whether the word is academic vocabulary (e.g., <em>hypothesis</em>, <em>significant</em>) or general everyday vocabulary (e.g., <em>happy</em>, <em>run</em>). Auto-classified by the system.</td>
+      <td>System / AI</td>
     </tr>
     <tr>
       <td>State</td>
-      <td><strong>To Do</strong> (needs practice) or <strong>Mastery</strong> (learned)</td>
+      <td><strong>Learning</strong> (needs practice) or <strong>Mastered</strong> (learned)</td>
+      <td>System</td>
     </tr>
     <tr>
       <td>Practice progress</td>
       <td>Number of successful attempts completed (out of 5), and which practice types have been done</td>
+      <td>System</td>
     </tr>
+    </tbody>
   </table>
 
+
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">3</span> Word Bank Structure</h2>
+  <h2 id="structure"><span class="num">3</span> Word Bank Structure</h2>
 
   <p>The Word Bank is divided into two distinct groups:</p>
 
   <div class="state-grid">
     <div class="state-card state-todo">
-      <h4 class="todo-title">To Do</h4>
-      <p><strong>Words that need practice.</strong> All new words start here. Each word shows its progress (e.g., 3/5 attempts) <strong>and which practice types have been completed</strong> (icon badges). Words stay in To Do until the student completes 5 successful attempts covering at least 3 different types.</p>
+      <h4 class="todo-title">Learning</h4>
+      <p><strong>Words that need practice.</strong> All new words start here. Each word shows its progress (e.g., 3/5 attempts) <strong>and which practice types have been completed</strong> (icon badges). Words stay in Learning until the student completes 5 successful attempts covering at least 3 different types.</p>
       <p style="font-size: 12px; color: #92400e; margin: 0;">Sorted by: most recently added first</p>
     </div>
     <div class="state-card state-mastery">
-      <h4 class="mastery-title">Mastery</h4>
-      <p><strong>Words the student has learned.</strong> A word moves here after 5 successful attempts across at least 3 different practice types. Mastery words remain accessible for review but are no longer included in default practice sessions.</p>
+      <h4 class="mastery-title">Mastered</h4>
+      <p><strong>Words the student has learned.</strong> A word moves here after 5 successful attempts covering all 3 practice types. Mastered words remain accessible for review but are no longer included in default practice sessions.</p>
       <p style="font-size: 12px; color: #065f46; margin: 0;">Sorted by: most recently mastered first</p>
     </div>
   </div>
 
-  <h3>Mastery Threshold: Why 5 Times Across 3+ Types?</h3>
+  <h3 id="structure-wireframes">Interactive Demo</h3>
+  <div class="demo-links">
+    <a class="demo-link-card" href="demo-word-bank.html">
+      <span class="demo-link-icon">🖥</span>
+      <span class="demo-link-text">
+        <strong>Word Bank Homepage</strong>
+        <span>Interactive demo — sidebar navigation, word list, word detail card, translate toggle</span>
+      </span>
+      <span class="demo-link-arrow">&rsaquo;</span>
+    </a>
+  </div>
+
+  <h3 id="mastery-threshold">Mastery Threshold: Why 5 Times Across 3+ Types?</h3>
 
   <p>SLA research suggests learners need <strong>6&ndash;8 meaningful encounters</strong> to acquire a word (Nation 2001, Webb 2007, Horst/Cobb/Meara 1998). We chose <strong>5 attempts</strong> rather than 6&ndash;8 because each attempt engages a <strong>different modality</strong>, making each encounter significantly richer than simple repetition:</p>
 
+  <h4>Practice Types</h4>
   <table>
+    <thead><tr><th>Practice Type</th><th>Modality Engaged</th></tr></thead>
+    <tbody>
     <tr>
-      <th>Practice Type</th>
-      <th>Modality Engaged</th>
-    </tr>
-    <tr>
-      <td>Spelling</td>
+      <td>a. Spelling</td>
       <td><strong>Written recall</strong> &mdash; actively retrieve the word's form from memory</td>
     </tr>
     <tr>
-      <td>Pronunciation</td>
-      <td><strong>Spoken production</strong> &mdash; say the word and receive pronunciation feedback</td>
+      <td>b. Vocabs Mirroring</td>
+      <td><strong>Spoken production</strong> &mdash; say the word and receive pronunciation feedback (reuses existing Vocabs Mirroring module)</td>
     </tr>
     <tr>
-      <td>Mirroring (self-created content)</td>
-      <td><strong>Contextual comprehension + oral production</strong> &mdash; encounter the word in generated sentences and practice speaking</td>
-    </tr>
-    <tr>
-      <td>Multiple Choice</td>
+      <td>c. Multiple Choice</td>
       <td><strong>Recognition + meaning recall</strong> &mdash; identify correct meaning/usage among distractors</td>
     </tr>
+    </tbody>
   </table>
 
-  <p>Requiring <strong>at least 3 different types</strong> ensures the student has engaged the word through multiple cognitive pathways (written, spoken, contextual, recognition), which research shows produces stronger and more durable vocabulary knowledge than repeating the same task.</p>
+  <p>Requiring <strong>all 3 practice types</strong> ensures the student has engaged the word through multiple cognitive pathways (written, spoken, recognition), which research shows produces stronger and more durable vocabulary knowledge than repeating the same task.</p>
 
   <div class="callout callout-tip">
     <strong>Design note:</strong> Both the total count (5) and minimum type diversity (3) are configurable at the system level. If future data shows a different optimal combination, it can be adjusted.
   </div>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">4</span> Practice Mode</h2>
+  <h2 id="practice"><span class="num">4</span> Practice Mode</h2>
 
-  <p>Students access practice via a <strong>"Practice" button in the top-right corner</strong> of the Word Bank page. The system offers <strong>4 practice types</strong>, each engaging a different learning modality.</p>
+  <p>The system offers <strong>3 core practice types</strong> (Spelling, Vocabs Mirroring, Multiple Choice), each engaging a different learning modality, plus a <strong>Practice All</strong> mode that randomly assigns one of the 3 types per word.</p>
 
   <div class="callout callout-info">
     <strong>Builds on existing Vocabulary Practice:</strong> The platform already has a Vocabulary Practice system with card-based UI, animated card stack, recording controls, star ratings, and graded pronunciation feedback (GradedSentence). Word Bank practice reuses these UI patterns and components.
   </div>
 
-  <!-- ── Word Selection ── -->
-  <h3>Word Selection (Before Practice Starts)</h3>
-  <div class="card">
-    <p>After choosing a practice type, students see a <strong>word selection screen</strong> before the session begins:</p>
-    <ol>
-      <li>All <strong>To Do</strong> words are listed with checkboxes (all checked by default)</li>
-      <li>Each word shows: word, translation, and current progress (X/5 + type badges)</li>
-      <li>Student can <strong>uncheck words they want to skip</strong> this session</li>
-      <li>Tap <strong>"Start"</strong> to begin with the selected words</li>
-    </ol>
-    <p>This gives students control over their practice &mdash; for example, focusing on a specific set of words before a test, or skipping words they recently practiced.</p>
-  </div>
-
-  <!-- ── 4 Practice Types ── -->
-  <h3>4a. Spelling</h3>
-  <div class="card">
-    <p><strong>Modality:</strong> Written recall</p>
-    <ol>
-      <li>Card shows: <strong>context sentence</strong> (target word replaced by <code>_____</code>) + translation/definition</li>
-      <li>Student <strong>types the correct English word</strong></li>
-      <li>If <strong>correct</strong> &rarr; success sound effect + green animation &rarr; counts as 1 attempt</li>
-      <li>If <strong>incorrect</strong> &rarr; error sound effect + correct spelling shown briefly (red highlight) &rarr; does <strong>not</strong> count</li>
-    </ol>
-  </div>
-
-  <h3>4b. Pronunciation</h3>
-  <div class="card">
-    <p><strong>Modality:</strong> Spoken production</p>
-    <ol>
-      <li>Card shows the word + plays <strong>TTS audio</strong> (Azure, student's preferred speed)</li>
-      <li>Student taps <strong>Record</strong> and speaks the word aloud</li>
-      <li>System shows <strong>color-coded pronunciation feedback</strong> (GradedSentence: <span style="color:#16a34a;">green</span>/<span style="color:#f59e0b;">orange</span>/<span style="color:#ef4444;">red</span>) + <strong>star rating</strong></li>
-      <li>Student can <strong>Redo</strong> or <strong>Continue</strong> &rarr; completing a recording counts as 1 attempt</li>
-    </ol>
-  </div>
-
-  <h3>4c. Content Mirroring (Self-Created Content)</h3>
-  <div class="card">
-    <p><strong>Modality:</strong> Contextual comprehension + oral production</p>
-    <ol>
-      <li>Student taps <strong>"Start Practice"</strong> and selects <strong>Content Mirroring</strong></li>
-      <li>Word selection screen &mdash; student unchecks words to skip, then confirms</li>
-      <li><strong>"Creating Content"</strong> loading screen &mdash; system generates a short passage that naturally incorporates the selected vocabulary words</li>
-      <li><strong>"Your article is ready &mdash; personalized to your level and word bank"</strong> preview screen appears:
-        <ul>
-          <li>Shows the generated article with target words highlighted</li>
-          <li>Each sentence includes an L1 translation alongside the English text</li>
-          <li>Student can <strong>Accept</strong> or <strong>Reject</strong> the article</li>
-          <li>If <strong>Reject</strong> &rarr; system generates a new article with the same words</li>
-          <li>If <strong>Accept</strong> &rarr; tap <strong>"Let's start"</strong> to begin Mirroring practice</li>
-        </ul>
-      </li>
-      <li>Student does <strong>Mirroring practice</strong> with the accepted article &mdash; listen to each sentence, then repeat aloud</li>
-      <li>System evaluates pronunciation with color-coded feedback + star rating</li>
-      <li>Each vocabulary word that appears in the generated content and is successfully mirrored counts as <strong>1 Mirroring attempt</strong> for that word</li>
-    </ol>
-    <div class="callout callout-tip" style="margin-top: 12px;">
-      <strong>Key benefit:</strong> Students encounter their vocabulary words <strong>in natural context</strong>, not in isolation. The generated sentences reinforce both the word's meaning and its usage patterns. This is the richest practice type because it combines reading comprehension, listening, and speaking.
+  <h3 id="practice-flow">Student Practice Flow</h3>
+  <div class="flow-section" style="margin: 16px 0 20px;">
+    <div class="zoom-toolbar" data-for="studentPracticeFlow">
+      <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+      <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+      <div class="zoom-level" data-label>100%</div>
+      <button class="zoom-btn" data-action="fit" title="Fit to view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+    </div>
+    <div class="diagram-viewport" id="studentPracticeFlow">
+      <pre class="mermaid-lazy" data-key="studentPracticeFlow">Loading diagram…</pre>
     </div>
   </div>
 
-  <h3>4d. Multiple Choice</h3>
-  <div class="card">
-    <p><strong>Modality:</strong> Recognition + meaning recall</p>
-    <ol>
-      <li>System generates <strong>MC questions</strong> from the student's To Do words (AI-generated distractors)</li>
-      <li>Question types may include: English &rarr; Translation, Translation &rarr; English, Context sentence &rarr; correct word, Audio &rarr; correct word</li>
-      <li>Student selects an answer</li>
-      <li>If <strong>correct</strong> &rarr; success sound effect &rarr; counts as 1 attempt</li>
-      <li>If <strong>incorrect</strong> &rarr; error sound effect + correct answer highlighted &rarr; does <strong>not</strong> count</li>
-    </ol>
+  <h3 id="practice-wireframes">Interactive Demos</h3>
+  <div class="demo-links">
+    <a class="demo-link-card" href="demo-spelling.html">
+      <span class="demo-link-icon">✏️</span>
+      <span class="demo-link-text">
+        <strong>Spelling Practice</strong>
+        <span>60s timer, 3-strike hints, type the word from context sentence</span>
+      </span>
+      <span class="demo-link-arrow">&rsaquo;</span>
+    </a>
+    <a class="demo-link-card" href="demo-multiple-choice.html">
+      <span class="demo-link-icon">☑️</span>
+      <span class="demo-link-text">
+        <strong>Multiple Choice</strong>
+        <span>20s timer, progressive hints, pick from 4 options</span>
+      </span>
+      <span class="demo-link-arrow">&rsaquo;</span>
+    </a>
+    <a class="demo-link-card" href="demo-vocabs-mirroring-v2.html">
+      <span class="demo-link-icon">🎤</span>
+      <span class="demo-link-text">
+        <strong>Vocabs Mirroring</strong>
+        <span>20s timer, 5-star rating, say word then sentence</span>
+      </span>
+      <span class="demo-link-arrow">&rsaquo;</span>
+    </a>
+    <a class="demo-link-card" href="demo-mixed.html">
+      <span class="demo-link-icon">🔀</span>
+      <span class="demo-link-text">
+        <strong>Practice All</strong>
+        <span>Random type per word, equal distribution across Spelling / MC / Mirroring</span>
+      </span>
+      <span class="demo-link-arrow">&rsaquo;</span>
+    </a>
   </div>
 
-  <!-- ── Wireframe ── -->
-  <div class="flow-ascii">
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  <span class="highlight">PERSONAL WORD BANK</span>                                      [ Start Practice ]  │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  <span class="highlight">All (20)</span>    <span class="green">Mastered (8)</span>    <span class="yellow">Learning (10)</span>    New (2)                        │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  Word / Phrase  │ Type  │ Pronunciation │ Source          │ Mastery │  Act  │
-│  ───────────────┼───────┼───────────────┼─────────────────┼─────────┼─────  │
-│  grateful       │ Adj   │ /ˈɡreɪt.fəl/ │ <span class="green">Live Classroom</span>  │ <span class="green">4/5</span>     │ ✎ 🗑  │
-│  abundant       │ Adj   │ /əˈbʌn.dənt/ │ <span class="yellow">Teacher Added</span>   │ <span class="yellow">2/5</span>     │ ✎ 🗑  │
-│  contribute     │ Verb  │ /kənˈtrɪb.juːt│ <span class="green">Mirroring Tag</span>   │ <span class="yellow">1/5</span>     │ ✎ 🗑  │
-│  courage        │ Noun  │ /ˈkʌr.ɪdʒ/   │ <span class="red">Practice Error</span>  │ <span class="red">0/5</span>     │ ✎ 🗑  │
-│  ...            │ ...   │ ...           │ ...             │ ...     │ ...   │
-└──────────────────────────────────────────────────────────────────────────────┘
+  <!-- ── Practice Setup ── -->
+  <h3 id="practice-selection">Practice Setup (Before Practice Starts)</h3>
+  <div class="ps-diagram">
+    <div class="ps-root-row">
+      <span class="ps-root-node">Practice Setup</span>
+    </div>
+    <div class="ps-connector-row"></div>
+    <div class="ps-branches">
 
-<span class="highlight">Student User Flow — Content Mirroring</span>
+      <!-- Step 1: Practice Type -->
+      <div class="ps-branch ps-branch-type">
+        <div class="ps-branch-header">
+          <span class="ps-branch-tag">Step 1</span>
+          Practice Type
+        </div>
+        <div class="ps-branch-items">
+          <div class="ps-item">
+            <div class="ps-item-title">a. Spelling</div>
+            <div class="ps-item-sub">Written recall</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">b. Vocabs Mirroring</div>
+            <div class="ps-item-sub">Spoken production (reuses existing module)</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">c. Multiple Choice</div>
+            <div class="ps-item-sub">Recognition + meaning recall</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">d. Practice All</div>
+            <div class="ps-item-sub">Random type per word (counts toward assigned type)</div>
+          </div>
+        </div>
+      </div>
 
-<span class="yellow">1. Word Bank</span>       <span class="yellow">2. Select Type</span>      <span class="yellow">3. Pick Words</span>       <span class="yellow">4. Generating</span>       <span class="yellow">5. Preview</span>          <span class="yellow">6. Practice</span>
-┌──────────┐      ┌──────────┐       ┌──────────┐       ┌──────────┐       ┌──────────┐       ┌──────────┐
-│ Word list│      │ Reading  │       │ ☑ word 1 │       │          │       │ Article  │       │ Listen   │
-│ + Start  │ ──&gt;  │ Custom   │  ──&gt;  │ ☑ word 2 │  ──&gt;  │ Creating │  ──&gt;  │ is ready │  ──&gt;  │ + Repeat │
-│ Practice │      │<span class="green"> Content </span>│       │ ☐ skip   │       │ Content..│       │<span class="green"> Accept</span>/<span class="red">Rej</span>│       │ Feedback │
-│          │      │ Personal │       │ [Start]  │       │          │       │[Let start]│       │ Score    │
-└──────────┘      └──────────┘       └──────────┘       └──────────┘       └──────────┘       └──────────┘</div>
+      <!-- Step 2: Word Category -->
+      <div class="ps-branch ps-branch-category">
+        <div class="ps-branch-header">
+          <span class="ps-branch-tag">Step 2</span>
+          Word Category
+        </div>
+        <div class="ps-branch-items">
+          <div class="ps-item">
+            <div class="ps-item-title">Newest</div>
+            <div class="ps-item-sub">Most recently added to the Word Bank</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">All Random</div>
+            <div class="ps-item-sub">Randomly selected from all Learning words</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">Untested</div>
+            <div class="ps-item-sub">Words with no practice attempts yet (0/5)</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">Most Errors</div>
+            <div class="ps-item-sub">Words with the highest error rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Practice Duration -->
+      <div class="ps-branch ps-branch-count">
+        <div class="ps-branch-header">
+          <span class="ps-branch-tag">Step 3</span>
+          Practice Duration
+        </div>
+        <div class="ps-branch-items">
+          <div class="ps-item">
+            <div class="ps-item-title">3 / 5 / 10 / 15 minutes</div>
+            <div class="ps-item-sub">Student chooses session length; word count mapped per practice type</div>
+          </div>
+          <div class="ps-item">
+            <div class="ps-item-title">Insufficient words</div>
+            <div class="ps-item-sub">System fills remaining slots with other least-practiced words</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 3 Practice Types (Tabs) ── -->
+  <div class="practice-tabs">
+    <div class="practice-tab-bar">
+      <button class="practice-tab-btn active" data-tab="spelling" id="practice-spelling">a. Spelling</button>
+      <button class="practice-tab-btn" data-tab="vocabs" id="practice-pronunciation">b. Vocabs Mirroring</button>
+      <button class="practice-tab-btn" data-tab="mc" id="practice-mc">c. Multiple Choice</button>
+      <button class="practice-tab-btn" data-tab="mixed" id="practice-mixed">d. Practice All</button>
+    </div>
+
+    <div class="practice-tab-panel active" data-tab="spelling">
+      <span class="modality">Written recall</span>
+      <p style="margin:8px 0 4px;font-size:12px;color:#64748b;"><strong>Duration &rarr; Word count:</strong> 3 min &rarr; 6 words &nbsp;|&nbsp; 5 min &rarr; 10 &nbsp;|&nbsp; 10 min &rarr; 15 &nbsp;|&nbsp; 15 min &rarr; 20</p>
+      <ol>
+        <li>System presents a <strong>context sentence</strong> with the target word blanked out</li>
+        <li>Student <strong>types the correct English word</strong></li>
+        <li><strong>Timer:</strong> 60 seconds per question; warning at 10s remaining; timeout = wrong</li>
+        <li><strong>3-strike progressive hints:</strong>
+          <ul style="margin:4px 0 4px 16px;list-style:disc;">
+            <li>1st wrong &rarr; show <strong>translation + definition</strong></li>
+            <li>2nd wrong &rarr; show <strong>first letter hint</strong></li>
+            <li>3rd wrong &rarr; <strong>reveal answer</strong> and move on</li>
+          </ul>
+        </li>
+        <li><strong>Scoring:</strong> only 1st-attempt correct = Correct; any hint used = Wrong</li>
+      </ol>
+      <h4 style="margin-top:16px;">Flow Diagram</h4>
+      <div class="flow-section" style="margin: 12px 0 0;">
+        <div class="zoom-toolbar" data-for="spellingPracticeFlowSpec">
+          <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+          <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+          <div class="zoom-level" data-label>100%</div>
+          <button class="zoom-btn" data-action="fit" title="Fit to view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+          <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+        </div>
+        <div class="diagram-viewport" id="spellingPracticeFlowSpec">
+          <pre class="mermaid-lazy" data-key="spellingPracticeFlow">Loading diagram…</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="practice-tab-panel" data-tab="vocabs">
+      <span class="modality">Spoken production &mdash; 2-step per word (word + sentence)</span>
+      <p style="margin:8px 0 4px;font-size:12px;color:#64748b;"><strong>Duration &rarr; Word count:</strong> 3 min &rarr; 6 words &nbsp;|&nbsp; 5 min &rarr; 10 &nbsp;|&nbsp; 10 min &rarr; 15 &nbsp;|&nbsp; 15 min &rarr; 20</p>
+      <ol>
+        <li>Each word has <strong>2 steps:</strong> first say the <strong>word</strong>, then say the <strong>example sentence</strong></li>
+        <li>Card shows the target text (word or sentence) with Chinese translation; <strong>no phonetic/pinyin</strong></li>
+        <li>Student taps the <strong>mic button</strong> to record, taps again to submit</li>
+        <li><strong>Timer:</strong> 10 seconds for word step, 20 seconds for sentence step; warning at 5s remaining; timeout = wrong</li>
+        <li>System scores pronunciation with <strong>5-star rating</strong> (&geq;3 stars = pass, &lt;3 = fail)</li>
+        <li><strong>Hint:</strong> speaker/play button is hidden initially; appears after 1st failed attempt as a pronunciation hint</li>
+        <li><strong>3-strike rule:</strong> 3 failed recordings &rarr; auto-advance to next step/word</li>
+        <li><strong>Scoring:</strong> 1st-attempt pass = Correct; pass after hint(s) = Wrong; 3 fails = Wrong</li>
+      </ol>
+      <h4 style="margin-top:16px;">Flow Diagram</h4>
+      <div class="flow-section" style="margin: 12px 0 0;">
+        <div class="zoom-toolbar" data-for="mirroringPracticeFlowSpec">
+          <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+          <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+          <div class="zoom-level" data-label>100%</div>
+          <button class="zoom-btn" data-action="fit" title="Fit to view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+          <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+        </div>
+        <div class="diagram-viewport" id="mirroringPracticeFlowSpec">
+          <pre class="mermaid-lazy" data-key="mirroringPracticeFlow">Loading diagram…</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="practice-tab-panel" data-tab="mc">
+      <span class="modality">Recognition + meaning recall</span>
+      <p style="margin:8px 0 4px;font-size:12px;color:#64748b;"><strong>Duration &rarr; Word count:</strong> 3 min &rarr; 10 words &nbsp;|&nbsp; 5 min &rarr; 15 &nbsp;|&nbsp; 10 min &rarr; 20 &nbsp;|&nbsp; 15 min &rarr; 35</p>
+      <ol>
+        <li>System presents a <strong>context sentence</strong> with the target word blanked out, plus <strong>4 options</strong> (1 correct + 3 AI-generated distractors)</li>
+        <li><strong>Timer:</strong> 20 seconds per question; warning at 5s remaining; timeout = wrong (reveals answer)</li>
+        <li><strong>Progressive hints on wrong answers:</strong>
+          <ul style="margin:4px 0 4px 16px;list-style:disc;">
+            <li>1st attempt &rarr; <strong>no hints</strong></li>
+            <li>2nd attempt (after 1st wrong) &rarr; show <strong>definition</strong></li>
+            <li>3rd attempt (after 2nd wrong) &rarr; show <strong>definition + translation</strong></li>
+          </ul>
+        </li>
+        <li><strong>3rd wrong:</strong> correct answer is revealed and auto-advance</li>
+        <li><strong>Scoring:</strong> only 1st-attempt correct = Correct; any wrong attempt used = Wrong</li>
+      </ol>
+      <h4 style="margin-top:16px;">Flow Diagram</h4>
+      <div class="flow-section" style="margin: 12px 0 0;">
+        <div class="zoom-toolbar" data-for="mcPracticeFlowSpec">
+          <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+          <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+          <div class="zoom-level" data-label>100%</div>
+          <button class="zoom-btn" data-action="fit" title="Fit to view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+          <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+        </div>
+        <div class="diagram-viewport" id="mcPracticeFlowSpec">
+          <pre class="mermaid-lazy" data-key="mcPracticeFlow">Loading diagram…</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="practice-tab-panel" data-tab="mixed">
+      <span class="modality">Random assignment &mdash; each word gets one of the 3 core types</span>
+      <p style="margin:8px 0 4px;font-size:12px;color:#64748b;"><strong>Duration &rarr; Word count:</strong> same as Spelling (3 min &rarr; 6 &nbsp;|&nbsp; 5 min &rarr; 10 &nbsp;|&nbsp; 10 min &rarr; 15 &nbsp;|&nbsp; 15 min &rarr; 20)</p>
+      <ol>
+        <li><strong>Type assignment:</strong> system randomly assigns each word a practice type (Spelling, Vocabs Mirroring, or Multiple Choice) with <strong>equal distribution</strong> across the 3 types</li>
+        <li>Each word follows the <strong>exact same rules</strong> as its assigned type (timer, hints, scoring, strikes)</li>
+        <li><strong>Mastery counting:</strong> each word's attempt counts toward the <strong>assigned type</strong> — e.g., a word assigned Spelling in Practice All counts as a Spelling attempt</li>
+        <li><strong>Quick Vocab Preview:</strong> shows all words before practice starts; practice type indicators are hidden (student discovers each word's type during practice)</li>
+        <li><strong>Scoring:</strong> follows the assigned type's scoring rules; result page shows the practice type badge per word</li>
+      </ol>
+
+      <div class="callout callout-info" style="margin-top:12px;">
+        <strong>Why Practice All?</strong> It helps students who are close to Mastery by automatically filling in missing practice types. Instead of manually choosing 3 separate sessions, one Mixed session can cover all types.
+      </div>
+      <h4 style="margin-top:16px;">Flow Diagram</h4>
+      <div class="flow-section" style="margin: 12px 0 0;">
+        <div class="zoom-toolbar" data-for="mixedPracticeFlowSpec">
+          <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+          <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+          <div class="zoom-level" data-label>100%</div>
+          <button class="zoom-btn" data-action="fit" title="Fit to view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+          <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+        </div>
+        <div class="diagram-viewport" id="mixedPracticeFlowSpec">
+          <pre class="mermaid-lazy" data-key="mixedPracticeFlow">Loading diagram…</pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
   <!-- ── Practice Rules ── -->
-  <h3>Practice Rules</h3>
+  <h3 id="practice-rules">Practice Rules</h3>
   <table>
-    <tr>
-      <th>Rule</th>
-      <th>Detail</th>
-    </tr>
+    <thead><tr><th>Rule</th><th>Detail</th></tr></thead>
+    <tbody>
     <tr>
       <td>Mastery threshold</td>
-      <td><strong>5 successful attempts</strong> per word, covering <strong>at least 3 different practice types</strong></td>
+      <td><strong>5 successful attempts</strong> per word, covering <strong>all 3 practice types</strong></td>
     </tr>
     <tr>
       <td>What counts as "successful"</td>
-      <td>Spelling correct, pronunciation recorded, Mirroring completed, or MC answered correctly. No minimum pronunciation score required.</td>
+      <td>Spelling correct, pronunciation recorded, or MC answered correctly. No minimum pronunciation score required.</td>
     </tr>
     <tr>
       <td>Incorrect attempt</td>
@@ -432,74 +2130,37 @@
     </tr>
     <tr>
       <td>Type diversity</td>
-      <td>Student must use <strong>at least 3 of 4 practice types</strong> for a word to reach Mastery. The remaining 2 attempts can be any type.</td>
-    </tr>
-    <tr>
-      <td>Progress display</td>
-      <td>Each word card shows: attempt count (X/5) <strong>and</strong> icon badges for completed practice types (✎ 🔊 🎤 ✓). Students can immediately see what types they still need.</td>
+      <td>Student must use <strong>all 3 practice types</strong> for a word to reach Mastered. The remaining 2 attempts can be any type.</td>
     </tr>
     <tr>
       <td>Practice type selection</td>
-      <td>Student <strong>chooses which type</strong> to practice each session. System highlights types they haven't tried yet for incomplete words.</td>
+      <td>Student <strong>chooses which type</strong> to practice each session, or selects <strong>Practice All</strong> for random assignment. System indicates which types they haven't tried yet for incomplete words.</td>
+    </tr>
+    <tr>
+      <td>Practice All counting</td>
+      <td>Practice All is a <strong>mode, not a type</strong>. Each word's attempt counts toward the assigned core type (Spelling / MC / Mirroring). Helps fill missing types for mastery.</td>
     </tr>
     <tr>
       <td>Mastery transition</td>
-      <td>Immediate &mdash; word moves to Mastery as soon as 5th attempt completes (with 3+ types satisfied)</td>
+      <td>Immediate &mdash; word moves to Mastered as soon as 5th attempt completes (with 3+ types satisfied)</td>
     </tr>
     <tr>
       <td>Re-practice mastered words</td>
-      <td>Students can manually move a Mastery word back to To Do if they want to review</td>
+      <td>Students can manually move a Mastered word back to Learning if they want to review</td>
     </tr>
-  </table>
-
-  <!-- ── Reused Components ── -->
-  <h3>Reused Components from Vocabulary Practice</h3>
-  <p>The following existing components from the Vocabulary Practice system are reused:</p>
-  <table>
-    <tr>
-      <th>Component</th>
-      <th>Used In</th>
-    </tr>
-    <tr>
-      <td><strong>Card Stack</strong></td>
-      <td>Spelling, Pronunciation, Multiple Choice &mdash; animated card transitions</td>
-    </tr>
-    <tr>
-      <td><strong>Recording Controls</strong></td>
-      <td>Pronunciation, Mirroring &mdash; Record / Redo / Continue buttons</td>
-    </tr>
-    <tr>
-      <td><strong>Star Rating</strong></td>
-      <td>Pronunciation, Mirroring &mdash; gradient-fill pronunciation quality stars</td>
-    </tr>
-    <tr>
-      <td><strong>GradedSentence</strong></td>
-      <td>Pronunciation, Mirroring &mdash; per-syllable color-coded feedback</td>
-    </tr>
-    <tr>
-      <td><strong>MC Question UI</strong></td>
-      <td>Multiple Choice &mdash; question stem, 4 options, correct/incorrect feedback</td>
-    </tr>
-    <tr>
-      <td><strong>Mirroring Content Display</strong></td>
-      <td>Mirroring &mdash; sentence display, TTS playback, recording flow</td>
-    </tr>
-    <tr>
-      <td><strong>Start Page / Completion Dialog</strong></td>
-      <td>All types &mdash; pre-practice summary and end-of-session results</td>
-    </tr>
+    </tbody>
   </table>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">5</span> Attempt Tracking</h2>
+  <h2 id="tracking"><span class="num">5</span> Attempt Tracking</h2>
 
   <p>Every Personal Word Bank practice session is recorded as an <strong>attempt record</strong>, visible to both the student and their teachers.</p>
 
-  <h3>What gets recorded per session</h3>
+  <h3 id="tracking-session">What gets recorded per session</h3>
   <ul>
     <li>Which words the student practiced and <strong>which practice type</strong> was used</li>
     <li>Result per word (correct / incorrect)</li>
-    <li>Pronunciation scores (for Pronunciation and Mirroring types)</li>
+    <li>Pronunciation scores (for Vocabs Mirroring)</li>
     <li>How many successful attempts each word had before and after the session</li>
     <li>How many distinct practice types each word has completed (towards the 3-type requirement)</li>
     <li>Whether any word reached mastery (5 attempts + 3 types) in this session</li>
@@ -510,7 +2171,7 @@
     <strong>Teacher visibility:</strong> Attempt records appear in the teacher's dashboard alongside regular practice records. Teachers can see which students are actively reviewing their Word Bank and how their vocabulary is growing. Word Bank practice sessions are distinguished from teacher-assigned practice attempts.
   </div>
 
-  <h3>Relationship with existing attempt system</h3>
+  <h3 id="tracking-existing">Relationship with existing attempt system</h3>
   <p>The platform already supports <strong>versioned attempt tracking</strong> for teacher-assigned practices (Mirroring and QA Discussion). Each practice attempt creates a separate history record with scores, conversations, and AI summaries.</p>
   <p>Personal Word Bank practice sessions should integrate with the same attempt tracking system where possible, so that:</p>
   <ul>
@@ -520,37 +2181,36 @@
   </ul>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">6</span> Integration Points</h2>
+  <h2 id="integration"><span class="num">6</span> Integration Points</h2>
 
-  <h3>6a. Live Classroom &rarr; Word Bank</h3>
+  <h3 id="int-live">6a. Live Classroom &rarr; Word Bank</h3>
   <div class="card">
     <ol>
       <li>Subject teacher speaks &rarr; speech is transcribed in real-time</li>
       <li>Student taps a word in the live transcript</li>
       <li>Popup shows translation/definition based on context</li>
-      <li><strong>Simultaneously:</strong> the word is auto-saved to Personal Word Bank as "To Do" (source: Live Classroom)</li>
+      <li><strong>Simultaneously:</strong> the word is auto-saved to Personal Word Bank as &ldquo;Learning&rdquo; (source: Live Classroom)</li>
       <li>No duplicate &mdash; if the word already exists in the bank, the context sentence is updated with the newer occurrence</li>
     </ol>
   </div>
 
-  <h3>6b. Practice Errors &rarr; Word Bank</h3>
+  <h3 id="int-errors">6b. Practice Errors &rarr; Word Bank</h3>
   <div class="card">
     <ol>
-      <li>Student completes a Mirroring or QA practice assigned by teacher</li>
-      <li>For <strong>Mirroring</strong>: words with low pronunciation scores are highlighted</li>
-      <li>For <strong>QA Discussion</strong>: when AI provides a correction sentence (Mirroring mode in QA), the key vocabulary is identified</li>
+      <li>Student completes a Mirroring practice assigned by teacher</li>
+      <li>Words with low pronunciation scores are highlighted</li>
       <li>Student sees a <strong>"Save to Word Bank"</strong> button next to flagged words</li>
-      <li>Tapping saves the word to the Word Bank (source: Practice Error) with the practice context sentence</li>
+      <li>Tapping saves the word to the Word Bank (source: Practice) with the practice context sentence</li>
     </ol>
   </div>
 
-  <h3>6c. Mirroring Practice &rarr; Word Bank (Word Tagging)</h3>
+  <h3 id="int-mirroring">6c. Mirroring Practice &rarr; Word Bank (Word Tagging)</h3>
   <div class="card">
     <ol>
       <li>Student is doing <strong>any Mirroring practice</strong> (teacher-assigned or Word Bank self-created content)</li>
       <li>The practice text displays on screen &mdash; student can <strong>tap/click any word</strong> they don't know</li>
       <li>Tapped word is highlighted and a <strong>"Save to Word Bank"</strong> tooltip appears</li>
-      <li>Confirming saves the word to the bank (source: Mirroring Tag) with the Mirroring sentence as context</li>
+      <li>Confirming saves the word to the bank (source: Practice) with the Mirroring sentence as context</li>
       <li>Student continues the Mirroring practice without interruption</li>
     </ol>
     <div class="callout callout-tip" style="margin-top: 12px;">
@@ -558,133 +2218,28 @@
     </div>
   </div>
 
-  <h3>6d. Word Bank &rarr; Data Dashboard</h3>
+  <h3 id="int-dashboard">6d. Word Bank &rarr; Data Dashboard</h3>
   <div class="card">
     <ul>
-      <li>Total words in To Do / Mastery per student</li>
+      <li>Total words in Learning / Mastered per student</li>
       <li>Mastery rate over time (words mastered per week)</li>
       <li>Practice frequency (Word Bank sessions per week)</li>
-      <li>Word sources breakdown (% from Live Classroom vs Practice Errors)</li>
+      <li>Word sources breakdown (% from Live Classroom vs Practice vs Teacher Added)</li>
     </ul>
   </div>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">7</span> UI Components</h2>
+  <h2 id="nav"><span class="num">7</span> Navigation &amp; Access</h2>
 
-  <h3>7a. Word Bank Page (Student View)</h3>
-  <table>
-    <tr>
-      <th>Element</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <td>Filter tabs</td>
-      <td>Four tabs: <strong>All</strong>, <strong>Mastered</strong>, <strong>Learning</strong>, <strong>New</strong> &mdash; each with a count badge</td>
-    </tr>
-    <tr>
-      <td>Start Practice button</td>
-      <td>Top-right corner, primary color. Opens practice type selector. Only enabled when To Do has at least 1 word</td>
-    </tr>
-    <tr>
-      <td>Word list table</td>
-      <td>Columns: <strong>Word / Phrase</strong>, <strong>Type</strong> (part of speech: Noun, Verb, Adj, etc.), <strong>Pronunciation</strong>, <strong>Source</strong> (badge showing origin), <strong>Mastery</strong> (X/5 progress), <strong>Actions</strong> (edit, delete)</td>
-    </tr>
-    <tr>
-      <td>Search bar</td>
-      <td>Filter words by text search</td>
-    </tr>
-    <tr>
-      <td>Sort options</td>
-      <td>By date added, by progress (attempts), alphabetical</td>
-    </tr>
-    <tr>
-      <td>Delete button</td>
-      <td>Each row has a visible <strong>delete button</strong> (trash icon) to remove the word from the bank</td>
-    </tr>
-  </table>
-
-  <h3>7b. Practice Type Selection</h3>
-  <table>
-    <tr>
-      <th>Element</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <td>Type selector</td>
-      <td>4 large buttons: ✎ Spell, 🔊 Say, 🎤 Mirror, ✓ MC. Student picks one to start a session.</td>
-    </tr>
-    <tr>
-      <td>Type hint</td>
-      <td>System highlights types the student hasn't tried yet for their To Do words (e.g., "3 words still need Pronunciation")</td>
-    </tr>
-  </table>
-
-  <h3>7c. Word Card (To Do list)</h3>
-  <table>
-    <tr>
-      <th>Element</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <td>Progress count</td>
-      <td><strong>X/5</strong> showing total successful attempts</td>
-    </tr>
-    <tr>
-      <td>Practice type badges</td>
-      <td>4 small icons (✎ 🔊 🎤 ✓) per word. <strong>Filled</strong> = completed that type, <strong>empty</strong> = not yet done. Students can instantly see which types they still need.</td>
-    </tr>
-    <tr>
-      <td>Type count indicator</td>
-      <td>Shows how many distinct types completed (e.g., "2/3 types") so student knows if they need more diversity</td>
-    </tr>
-  </table>
-
-  <h3>7d. General Practice UI</h3>
-  <table>
-    <tr>
-      <th>Element</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <td>Sound effects</td>
-      <td>Success sound on correct answer; error sound on incorrect answer (all practice types)</td>
-    </tr>
-    <tr>
-      <td>Progress indicator</td>
-      <td>Dot progress bar showing X/5 per word + practice type badges</td>
-    </tr>
-    <tr>
-      <td>Mastery celebration</td>
-      <td>When 5th attempt completes (with 3+ types): confetti animation + "Mastered!" badge</td>
-    </tr>
-    <tr>
-      <td>Completion dialog</td>
-      <td>End screen: words practiced, accuracy, new mastery count, practice types covered</td>
-    </tr>
-  </table>
-
-  <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">8</span> Navigation &amp; Access</h2>
-
-  <h3>8a. Student Access</h3>
+  <h3 id="nav-student">7a. Student Access</h3>
   <div class="card">
-    <p>Add a new sidebar section <strong>"Personal Learning"</strong> with the Word Bank entry:</p>
-    <div class="formula">Dashboard           (existing)
-Courses             (existing)
-Projects            (existing)
-CFA                 (existing)
-Practice List       (existing)
-Assignment          (existing)
-──────────────────
-PERSONAL LEARNING   (NEW section header)
-└── Word Bank       (NEW &mdash; icon: bookmark/book)</div>
-    <p>Students who can access their own Word Bank:</p>
+    <p>Word Bank is accessed via a new <strong>"Personal Learning"</strong> section in the student sidebar.</p>
     <ul>
-      <li><strong>SCHOOL_STUDENT</strong> &mdash; full access (view, practice, delete words)</li>
+      <li><strong>SCHOOL_STUDENT</strong> &mdash; full access (view, practice)</li>
     </ul>
   </div>
 
-  <h3 id="teacher-word-bank">8b. Teacher &amp; Admin Access</h3>
+  <h3 id="teacher-word-bank">7b. Teacher &amp; Admin Access</h3>
 
   <div class="card">
     <p>Teachers and admins access the Word Bank system through a dedicated <strong>"Student's Word Bank"</strong> page in the sidebar. This provides an overview dashboard and per-student detail views.</p>
@@ -697,16 +2252,14 @@ PERSONAL LEARNING   (NEW section header)
   </div>
 
   <!-- ── Teacher Dashboard ── -->
-  <h3>8c. Teacher Word Bank Dashboard</h3>
+  <h3 id="nav-teacher-dashboard">7c. Teacher Word Bank Dashboard</h3>
   <div class="card">
     <p>The teacher's landing page for Word Bank management. Shows aggregate data and a student list.</p>
 
-    <h4>Dashboard Stats (top row)</h4>
+    <h4>Dashboard Stats</h4>
     <table>
-      <tr>
-        <th>Stat</th>
-        <th>Description</th>
-      </tr>
+      <thead><tr><th>Stat</th><th>Description</th></tr></thead>
+      <tbody>
       <tr>
         <td><strong>Important Students</strong></td>
         <td>Count of students who need attention (low mastery % or stalled progress)</td>
@@ -723,6 +2276,7 @@ PERSONAL LEARNING   (NEW section header)
         <td><strong>Assignments</strong></td>
         <td>Count of teacher-assigned word sets this week</td>
       </tr>
+      </tbody>
     </table>
 
     <h4>Top 5 Targeted Words of the Week</h4>
@@ -730,10 +2284,8 @@ PERSONAL LEARNING   (NEW section header)
 
     <h4>Student List Table</h4>
     <table>
-      <tr>
-        <th>Column</th>
-        <th>Description</th>
-      </tr>
+      <thead><tr><th>Column</th><th>Description</th></tr></thead>
+      <tbody>
       <tr>
         <td>First Name / Last Name</td>
         <td>Student identity</td>
@@ -748,51 +2300,22 @@ PERSONAL LEARNING   (NEW section header)
       </tr>
       <tr>
         <td>Mastery %</td>
-        <td>Percentage of words that have reached Mastery (color-coded: <span style="color:#16a34a;">green</span> &ge; 70%, <span style="color:#f59e0b;">amber</span> 40&ndash;69%, <span style="color:#ef4444;">red</span> &lt; 40%)</td>
+        <td>Percentage of words that have reached Mastered (color-coded: <span style="color:#16a34a;">green</span> &ge; 70%, <span style="color:#f59e0b;">amber</span> 40&ndash;69%, <span style="color:#ef4444;">red</span> &lt; 40%)</td>
       </tr>
-      <tr>
-        <td>Removed Words</td>
-        <td>Count of words the student has deleted (flags potential disengagement)</td>
-      </tr>
-      <tr>
-        <td>Actions</td>
-        <td>Click row to open individual student view; three-dot menu for quick actions</td>
-      </tr>
+      </tbody>
     </table>
-
-    <p>Top-level action button: <strong>"Assign words to student's word bank"</strong> (blue button, top-right).</p>
   </div>
 
-  <div class="flow-ascii">
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  <span class="highlight">STUDENT'S WORD BANK</span>                  [ Assign words to student's word bank ]  │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  Important Students    Total Words    Practice Engagement    Assignments    │
-│  <span class="red">30</span>                    <span class="highlight">1,020</span>          <span class="green">120</span>                    <span class="yellow">80</span>              │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  <span class="yellow">Top 5 Targeted Words of the Week</span>                                          │
-│  1. adequate    2. environment    3. contribute    4. significant    5. ...  │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  First Name │ Last Name │  Email     │ Word Count │ Mastery % │ Removed    │
-│  ───────────┼───────────┼────────────┼────────────┼───────────┼──────────  │
-│  Emily      │ Park      │ e@mail.c   │  45        │ <span class="green">72%</span>       │ 2          │
-│  James      │ Chen      │ j@mail.c   │  38        │ <span class="yellow">51%</span>       │ 0          │
-│  Sofia      │ Kim       │ s@mail.c   │  52        │ <span class="red">28%</span>       │ 8          │
-│  ...        │ ...       │ ...        │  ...       │ ...       │ ...        │
-└──────────────────────────────────────────────────────────────────────────────┘</div>
-
   <!-- ── Teacher Assign Flow ── -->
-  <h3>8d. Teacher Assign Flow (Add Words in Bulk)</h3>
+  <h3 id="nav-teacher-assign">7d. Teacher Assign Flow (Add Words in Bulk)</h3>
   <div class="card">
     <p>Multi-step flow for teachers to assign vocabulary to students' Word Banks. Can be started from the dashboard or from an individual student's view.</p>
 
     <h4>Step 1 &mdash; Choose Word Source</h4>
     <p>Teacher selects where to pull words from:</p>
     <table>
-      <tr>
-        <th>Source</th>
-        <th>Description</th>
-      </tr>
+      <thead><tr><th>Source</th><th>Description</th></tr></thead>
+      <tbody>
       <tr>
         <td><strong>From Projects</strong></td>
         <td>Browse existing project content and select vocabulary words from articles/passages</td>
@@ -809,115 +2332,44 @@ PERSONAL LEARNING   (NEW section header)
         <td><strong>Add Manually</strong></td>
         <td>Type words/phrases directly into a text input field, one at a time</td>
       </tr>
+      </tbody>
     </table>
 
     <h4>Step 2 &mdash; Select / Enter Words</h4>
     <ul>
-      <li><strong>From content source:</strong> system displays extracted words with checkboxes. Teacher selects the words to include.</li>
-      <li><strong>Manual entry:</strong> Teacher types a <strong>Word / Phrase</strong> into a text field. System auto-fills pronunciation. Teacher can click <strong>"Add"</strong> to append each word to the list. Repeat for multiple words.</li>
-      <li>Both modes can be combined &mdash; pull some words from a project and add others manually.</li>
+      <li><strong>From content source:</strong> system extracts words and teacher selects which to include</li>
+      <li><strong>Manual entry:</strong> teacher enters words directly; system auto-fills pronunciation</li>
+      <li>Both modes can be combined</li>
     </ul>
 
     <h4>Step 3 &mdash; Review and Confirm</h4>
-    <p>A review table shows all selected words with auto-detected <strong>Part of Speech</strong> tags (Noun, Verb, Adjective, etc.). Teacher can:</p>
-    <ul>
-      <li>Edit part of speech if auto-detection is wrong</li>
-      <li>Remove words from the list before confirming</li>
-      <li>See total word count that will be assigned</li>
-    </ul>
+    <p>All selected words shown with auto-detected <strong>Part of Speech</strong> tags. Teacher can edit POS, remove words, and see total count.</p>
 
     <h4>Step 4 &mdash; Select Classes and Students</h4>
-    <p><strong>"Active Classes and Students"</strong> screen:</p>
-    <ul>
-      <li>Teacher selects target <strong>class(es)</strong> from a dropdown</li>
-      <li>Student list appears with checkboxes &mdash; select all or pick individual students</li>
-      <li>Shows count: "<em>N words will be added to each selected student's Word Bank</em>"</li>
-      <li>Click <strong>"Assign Students"</strong> to execute</li>
-    </ul>
+    <p>Teacher selects target <strong>class(es)</strong> and individual students to receive the assigned words.</p>
 
     <h4>Step 5 &mdash; Confirmation</h4>
-    <p>Success screen: <strong>"These words are now in the student's Word Bank."</strong></p>
-    <ul>
-      <li><strong>"Back to student's word bank"</strong> &mdash; return to dashboard</li>
-      <li><strong>"Assign more words"</strong> &mdash; restart the flow</li>
-    </ul>
+    <p>Words are added to selected students' Word Banks (source: Teacher Added).</p>
   </div>
 
-  <div class="flow-ascii">
-<span class="highlight">Teacher Assign Flow</span>
-
-<span class="yellow">Step 1</span>                <span class="yellow">Step 2</span>                <span class="yellow">Step 3</span>                 <span class="yellow">Step 4</span>                <span class="yellow">Step 5</span>
-Choose Source          Select Words           Review &amp; Confirm        Select Students        Done!
-┌──────────┐          ┌──────────┐          ┌───────────────┐       ┌──────────────┐      ┌──────────────┐
-│ Projects │──&gt;       │ ☑ word 1 │          │ Word  │ POS   │       │ ☑ Class A    │      │ <span class="green">✓ Words are</span>  │
-│ Practice │──&gt;       │ ☑ word 2 │   ──&gt;    │ run   │ Verb  │  ──&gt;  │   ☑ Emily    │ ──&gt;  │ <span class="green">  now in the</span> │
-│ Assign.. │──&gt;       │ ☐ word 3 │          │ happy │ Adj   │       │   ☑ James    │      │ <span class="green">  Word Bank</span>  │
-│ Manual   │──&gt;       │ + Add... │          │ goal  │ Noun  │       │   ☐ Sofia    │      │              │
-└──────────┘          └──────────┘          └───────────────┘       └──────────────┘      └──────────────┘</div>
-
   <!-- ── Individual Student View ── -->
-  <h3>8e. Individual Student Word Bank (Teacher View)</h3>
+  <h3 id="nav-teacher-individual">7e. Individual Student Word Bank (Teacher View)</h3>
   <div class="card">
-    <p>Clicking a student row in the dashboard opens their <strong>individual Word Bank detail view</strong>.</p>
-
-    <h4>Header</h4>
-    <p>Breadcrumb: <code>Student's Word Bank &gt; [Student Name]'s Personal Word Bank</code></p>
-    <p>Filter tabs: <strong>All</strong> (with count), <strong>Mastered</strong> (with count), <strong>Learning</strong> (with count)</p>
-
-    <h4>Word List Table</h4>
-    <table>
-      <tr>
-        <th>Column</th>
-        <th>Description</th>
-      </tr>
-      <tr>
-        <td>Word / Phrase</td>
-        <td>The English word or phrase</td>
-      </tr>
-      <tr>
-        <td>Type</td>
-        <td>Part of speech (Noun, Verb, Adjective, etc.)</td>
-      </tr>
-      <tr>
-        <td>Pronunciation</td>
-        <td>Phonetic pronunciation</td>
-      </tr>
-      <tr>
-        <td>Source</td>
-        <td>Badge: Live Classroom, Practice Error, Mirroring Tag, or Teacher Added</td>
-      </tr>
-      <tr>
-        <td>Mastery</td>
-        <td>Progress indicator (X/5) with practice type badges</td>
-      </tr>
-      <tr>
-        <td>Actions</td>
-        <td>Edit (pencil icon) and Delete (trash icon)</td>
-      </tr>
-    </table>
+    <p>Teacher can view any individual student's Word Bank, filtered by All / Mastered / Learning.</p>
 
     <h4>Teacher Actions</h4>
     <table>
-      <tr>
-        <th>Action</th>
-        <th>Description</th>
-      </tr>
+      <thead><tr><th>Action</th><th>Description</th></tr></thead>
+      <tbody>
       <tr>
         <td><strong>Add words</strong></td>
-        <td>"Add to student's word bank" button &mdash; opens the assign flow (Step 2 onward) pre-scoped to this student</td>
+        <td>Opens the assign flow (Step 2 onward) pre-scoped to this student</td>
       </tr>
       <tr>
         <td><strong>Edit word</strong></td>
         <td>Modify word details, part of speech, or translation</td>
       </tr>
-      <tr>
-        <td><strong>Remove word</strong></td>
-        <td>Delete a word from the student's bank</td>
-      </tr>
-      <tr>
-        <td><strong>Move between groups</strong></td>
-        <td>Move a word from Learning to Mastered (or vice versa) if teacher deems appropriate</td>
-      </tr>
+      </tbody>
     </table>
   </div>
 
@@ -926,21 +2378,20 @@ Choose Source          Select Words           Review &amp; Confirm        Select
   </div>
 
   <!-- ════════════════════════════════════════ -->
-  <h2><span class="num">9</span> Rules Summary</h2>
+  <h2 id="rules"><span class="num">8</span> Rules Summary</h2>
 
   <div class="card" style="border-left: 4px solid #8b5cf6;">
-    <h3 style="margin-top: 0; color: #5b21b6;">Game Rules &mdash; displayed in-app to students</h3>
+    <h3 style="margin-top: 0; color: #5b21b6;">Core Rules</h3>
     <ol>
-      <li>Words you tap in Live Classroom are <strong>automatically saved</strong> to your Word Bank.</li>
-      <li>Words you get wrong in practice can be <strong>manually saved</strong> to your Word Bank.</li>
-      <li>Your teacher can also <strong>add words</strong> for you to practice.</li>
-      <li>All new words start in <strong>"To Do"</strong>.</li>
-      <li>There are <strong>4 ways to practice</strong>: ✎ Spell it, 🔊 Say it, 🎤 Mirror it (in sentences), ✓ Multiple Choice.</li>
-      <li>Each correct practice = <strong>1 successful attempt</strong>. Wrong answers don't count &mdash; but you'll see the correct answer!</li>
-      <li>To master a word, you need <strong>5 successful attempts</strong> using <strong>at least 3 different practice types</strong>.</li>
-      <li>Check the <strong>badges on each word</strong> (✎ 🔊 🎤 ✓) to see which types you've done and what you still need.</li>
-      <li>After mastering a word, it moves to <strong>"Mastery"</strong>.</li>
-      <li>Your practice records are saved &mdash; your teacher can see your progress!</li>
+      <li>Words tapped in Live Classroom are <strong>automatically saved</strong> to the Word Bank.</li>
+      <li>Words answered incorrectly in practice can be <strong>manually saved</strong> to the Word Bank.</li>
+      <li>Teachers can also <strong>add words</strong> to a student's Word Bank.</li>
+      <li>All new words start in <strong>&ldquo;Learning&rdquo;</strong>.</li>
+      <li>There are <strong>3 practice types</strong>: Spelling, Vocabs Mirroring, and Multiple Choice.</li>
+      <li>Each correct practice = <strong>1 successful attempt</strong>. Incorrect answers do not count.</li>
+      <li>To master a word: <strong>5 successful attempts</strong> using <strong>all 3 practice types</strong>.</li>
+      <li>After mastering a word, it moves to <strong>&ldquo;Mastered&rdquo;</strong>.</li>
+      <li>All practice records are saved and visible to teachers.</li>
     </ol>
   </div>
 
@@ -948,8 +2399,251 @@ Choose Source          Select Words           Review &amp; Confirm        Select
     <strong>Open question:</strong> Should we implement <strong>spaced repetition</strong> (requiring attempts to be spread across multiple days) or keep it simple (5 attempts regardless of timing)? The current spec uses the simpler model for MVP. Spaced repetition could be added as a v2 enhancement.
   </div>
 
-  <footer>DAHUA AI &middot; Product Spec &middot; ESL Student (3.2) &mdash; Personal Word Bank &middot; February 2026</footer>
-</div>
+  <!-- ════════════════════════════════════════ -->
+  <h2 id="future"><span class="num">9</span> Future: Contextual Mirroring (Next Phase)</h2>
+
+  <div class="callout callout-info">
+    <strong>Not in current scope.</strong> Contextual Mirroring is planned as the 4th practice type in a future release. The sections below document the intended design for reference.
+  </div>
+
+  <h3>Overview</h3>
+  <p><strong>Contextual comprehension + oral production</strong> &mdash; the richest practice type, combining reading comprehension, listening, and speaking in natural context.</p>
+
+  <h3>Flow</h3>
+  <ol>
+    <li>Student selects a word to practice</li>
+    <li>System auto-generates <strong>multiple example sentences</strong> demonstrating the word in different real-world contexts</li>
+    <li>Student browses the example sentences and practices speaking each one aloud</li>
+    <li>System evaluates pronunciation with graded feedback</li>
+    <li>Each sentence successfully spoken counts as <strong>1 Contextual Mirroring attempt</strong> for that word</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <strong>Key benefit:</strong> Students encounter their vocabulary words <strong>in natural context</strong>, not in isolation. The generated sentences reinforce both the word's meaning and its usage patterns.
+  </div>
+
+  <h3>Impact on Mastery Rules When Added</h3>
+  <p>When Contextual Mirroring is introduced as the 4th practice type, the mastery threshold should be re-evaluated:</p>
+  <ul>
+    <li>Current: 5 attempts covering all 3 types</li>
+    <li>Proposed: 5 attempts covering at least 3 of 4 types (restores flexibility)</li>
+    <li>Contextual Mirroring skips the &ldquo;Question Count&rdquo; step (not applicable)</li>
+  </ul>
+
+  <h3>Design Notes</h3>
+  <ul>
+    <li>Contextual Mirroring reuses the existing Mirroring practice UI (card stack, recording controls, GradedSentence feedback)</li>
+    <li>Example sentences are AI-generated per word, refreshed each session for variety</li>
+    <li>Pronunciation scores from Contextual Mirroring sessions are included in attempt tracking</li>
+  </ul>
+
+  <h3>Word Deletion (Student)</h3>
+  <ul>
+    <li>Students can delete words from their Word Bank</li>
+    <li>Deletion rules TBD: which states allow deletion (Learning only? Mastered too?), soft-delete vs permanent, recovery option</li>
+    <li>Teacher dashboard would show &ldquo;Removed Words&rdquo; count per student to flag potential disengagement</li>
+  </ul>
+
+  <h3>Teacher Override (Move Between Groups)</h3>
+  <ul>
+    <li>Teachers can manually move a word from Learning to Mastered (or vice versa)</li>
+    <li>Rules TBD: how override interacts with attempt progress (reset count? preserve history?), audit trail for overrides</li>
+    <li>Also includes teacher ability to remove words from a student&rsquo;s bank</li>
+  </ul>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; ESL Student (3.2) &mdash; Personal Word Bank &middot; March 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<script>
+/* ── Practice Tabs ── */
+document.querySelectorAll('.practice-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabs = btn.closest('.practice-tabs');
+    tabs.querySelectorAll('.practice-tab-btn').forEach(b => b.classList.remove('active'));
+    tabs.querySelectorAll('.practice-tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    tabs.querySelector(`.practice-tab-panel[data-tab="${btn.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+/* ── Sidebar scroll tracking ── */
+(() => {
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const ids = [...links].map(a => a.getAttribute('href').slice(1)).filter(Boolean);
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  if (!sections.length) return;
+
+  const setActive = (id) => {
+    links.forEach(a => {
+      if (a.getAttribute('href') === '#' + id) {
+        a.classList.add('active');
+      } else {
+        a.classList.remove('active');
+      }
+    });
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setActive(entry.target.id);
+      }
+    });
+  }, {
+    rootMargin: '-80px 0px -60% 0px',
+    threshold: 0
+  });
+
+  sections.forEach(s => observer.observe(s));
+})();
+
+/* ── Inline wireframe rendering (clone templates into .wf-inline containers) ── */
+document.querySelectorAll('.wf-inline').forEach(function(container) {
+  var id = container.getAttribute('data-wbp');
+  var tpl = document.getElementById(id);
+  if (!tpl) return;
+  container.appendChild(tpl.content.cloneNode(true));
+});
+
+/* ── Mermaid init (startOnLoad false — lazy rendering) ── */
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dbeafe',
+    primaryTextColor: '#1e40af',
+    primaryBorderColor: '#93c5fd',
+    lineColor: '#94a3b8',
+    secondaryColor: '#fef9c3',
+    tertiaryColor: '#f8fafc',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '13px',
+    nodeBorder: '#93c5fd',
+    mainBkg: '#dbeafe',
+    clusterBkg: '#f8fafc',
+    clusterBorder: '#e2e8f0',
+    edgeLabelBackground: '#ffffff',
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    padding: 16,
+    nodeSpacing: 40,
+    rankSpacing: 50,
+    useMaxWidth: false,
+  },
+});
+
+/* ── DiagramPanZoom for inline flow ── */
+class DiagramPanZoom {
+  constructor(viewportEl) {
+    this.viewport = viewportEl;
+    this.scale = 1; this.panX = 0; this.panY = 0;
+    this.minScale = 0.15; this.maxScale = 3;
+    this.dragging = false; this.startX = 0; this.startY = 0;
+    this.svg = null; this.svgW = 0; this.svgH = 0;
+    this.label = this.viewport.closest('.flow-section').querySelector('[data-label]');
+    this._bind();
+  }
+  init() {
+    this.svg = this.viewport.querySelector('svg');
+    if (!this.svg) return;
+    this.svg.style.maxWidth = 'none';
+    this.svg.removeAttribute('width');
+    this.svgW = this.svg.getBoundingClientRect().width;
+    this.svgH = this.svg.getBoundingClientRect().height;
+    this.fitToView();
+  }
+  apply() {
+    if (!this.svg) return;
+    this.svg.style.transform = `translate(${this.panX}px,${this.panY}px) scale(${this.scale})`;
+    this.svg.style.transformOrigin = '0 0';
+    if (this.label) this.label.textContent = Math.round(this.scale * 100) + '%';
+  }
+  fitToView() {
+    const vw = this.viewport.clientWidth, vh = this.viewport.clientHeight;
+    this.svg.style.transform = 'scale(1)'; this.svg.style.transformOrigin = '0 0';
+    this.svgW = this.svg.scrollWidth; this.svgH = this.svg.scrollHeight;
+    this.scale = Math.min(vw / this.svgW, vh / this.svgH) * 0.92;
+    this.scale = Math.max(this.minScale, Math.min(this.maxScale, this.scale));
+    this.panX = (vw - this.svgW * this.scale) / 2;
+    this.panY = Math.max((vh - this.svgH * this.scale) / 2, 10);
+    this.apply();
+  }
+  resetZoom() {
+    this.scale = 1;
+    this.panX = Math.max((this.viewport.clientWidth - this.svgW) / 2, 0);
+    this.panY = 10; this.apply();
+  }
+  zoomTo(s, cx, cy) {
+    s = Math.max(this.minScale, Math.min(this.maxScale, s));
+    const r = s / this.scale;
+    this.panX = cx - (cx - this.panX) * r;
+    this.panY = cy - (cy - this.panY) * r;
+    this.scale = s; this.apply();
+  }
+  zoomIn() { this.zoomTo(this.scale * 1.25, this.viewport.clientWidth / 2, this.viewport.clientHeight / 2); }
+  zoomOut() { this.zoomTo(this.scale / 1.25, this.viewport.clientWidth / 2, this.viewport.clientHeight / 2); }
+  _bind() {
+    this.viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const r = this.viewport.getBoundingClientRect();
+      this.zoomTo(this.scale * (e.deltaY < 0 ? 1.12 : 0.88), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    this.viewport.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      this.dragging = true; this.startX = e.clientX - this.panX; this.startY = e.clientY - this.panY;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!this.dragging) return;
+      this.panX = e.clientX - this.startX; this.panY = e.clientY - this.startY; this.apply();
+    });
+    window.addEventListener('mouseup', () => { this.dragging = false; });
+  }
+}
+
+/* ── Render inline Mermaid diagrams on page load ── */
+const fcDiagrams = {};
+
+document.querySelectorAll('.diagram-viewport .mermaid-lazy').forEach(async (pre) => {
+  const key = pre.dataset.key;
+  if (!key || !window.ESL_STUDENT || !window.ESL_STUDENT[key]) return;
+  pre.textContent = window.ESL_STUDENT[key];
+  pre.classList.remove('mermaid-lazy');
+  pre.classList.add('mermaid');
+  await mermaid.run({ nodes: [pre] });
+  requestAnimationFrame(() => {
+    const vp = pre.closest('.diagram-viewport');
+    if (vp && !fcDiagrams[vp.id]) {
+      const d = new DiagramPanZoom(vp);
+      d.init();
+      fcDiagrams[vp.id] = d;
+    }
+  });
+});
+
+window.addEventListener('resize', () => {
+  Object.values(fcDiagrams).forEach((d) => d.fitToView());
+});
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.zoom-toolbar .zoom-btn');
+  if (!btn) return;
+  const toolbar = btn.closest('.zoom-toolbar');
+  const id = toolbar?.dataset.for;
+  const d = fcDiagrams[id];
+  if (!d) return;
+  const action = btn.dataset.action;
+  if (action === 'in') d.zoomIn();
+  else if (action === 'out') d.zoomOut();
+  else if (action === 'fit') d.fitToView();
+  else if (action === 'reset') d.resetZoom();
+});
+</script>
 
 </body>
 </html>

@@ -141,4 +141,52 @@ window.FLOW6 = {
     classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
     classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d`,
 
+  /* ── ESL Teacher — Create ESL Group ── */
+  createGroupFlow: `flowchart TD
+    START([ESL Teacher]):::start
+
+    subgraph DASH ["My Students Dashboard"]
+        ViewList["View current student list<br/>All students assigned to this ESL Teacher"]
+        NewBtn["Click + New Group"]
+    end
+
+    subgraph CREATE ["Create Group"]
+        InputName["Enter group name<br/>e.g. Group A — Beginner"]
+        ApplyFilter["Filter student pool"]
+        FilterNote["Filters available:<br/>English Level · Subject · Grade · Native Language"]:::info
+        SelectStudents["Manually select students<br/>from filtered list"]
+        CheckMin{≥ 2 students<br/>selected?}:::decision
+        TooFew["Show validation error:<br/>Minimum 2 students required"]:::warn
+        CheckConflict{"Any selected student<br/>already in another group?"}:::decision
+        TransferWarn["Alert: Student will be<br/>moved from existing group<br/>Teacher confirms transfer"]:::info
+        Preview["Preview group<br/>Name · member list · student count"]
+        Save(["Create Group"]):::done
+    end
+
+    START --> ViewList
+    ViewList --> NewBtn
+    NewBtn --> InputName
+    InputName --> ApplyFilter
+    ApplyFilter ~~~ FilterNote
+    ApplyFilter --> SelectStudents
+    SelectStudents --> CheckMin
+    CheckMin -->|No| TooFew
+    TooFew --> SelectStudents
+    CheckMin -->|Yes| CheckConflict
+    CheckConflict -->|No conflict| Preview
+    CheckConflict -->|Has conflict| TransferWarn
+    TransferWarn --> Preview
+    Preview --> Save
+
+    Save --> Updated([Group created<br/>Students assigned to new group]):::endnode
+
+    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
+    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
+    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
+    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
+    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d`,
+
 };

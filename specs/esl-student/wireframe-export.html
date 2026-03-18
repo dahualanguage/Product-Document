@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Word Bank Homepage — Export</title>
+  <style>
+    /* reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0; padding: 0;
+      color: #1e293b; font-size: 14px; line-height: 1.5;
+    }
+    .export-frame { width: 1440px; height: 1024px; overflow: hidden; }
+
+    /* ══════════════════════════════════════
+       Product Frame (App Shell)
+       ══════════════════════════════════════ */
+    .wbp-app-frame {
+      display: flex; width: 100%; height: 100%;
+      background: #fff; border-radius: 0; overflow: hidden;
+    }
+    .wbp-app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 4px;
+    }
+    .wbp-app-sidebar-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: #94a3b8; cursor: pointer; transition: all .15s;
+    }
+    .wbp-app-sidebar-icon:hover { background: #f1f5f9; color: #64748b; }
+    .wbp-app-sidebar-icon.active { background: #ecfdf5; color: #10b981; }
+    .wbp-app-sidebar-icon svg { width: 24px; height: 24px; fill: currentColor; }
+    .wbp-app-main {
+      flex: 1; display: flex; flex-direction: column; min-width: 0;
+    }
+    .wbp-app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .wbp-app-header-title {
+      font-size: 16px; font-weight: 700; color: #0f172a;
+    }
+    .wbp-app-content {
+      flex: 1; background: #EFF5FF; overflow-y: auto;
+    }
+
+    /* ══════════════════════════════════════
+       Homepage v4: Upper/Lower Split
+       ══════════════════════════════════════ */
+    .wbp-v4 {
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Upper half: practice+stats | AI themes ── */
+    .wbp-v4-upper {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      padding: 14px 20px 0;
+      transition: max-height .4s ease, opacity .3s ease, padding .4s ease;
+      overflow: hidden;
+    }
+    .wbp-v4-upper.collapsed {
+      max-height: 0 !important; opacity: 0;
+      padding-top: 0; padding-bottom: 0;
+    }
+    .wbp-v4-upper-left {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    /* Practice 2x2 */
+    .wbp-v4-practice {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .wbp-practice-btn {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 10px; text-align: center;
+      transition: all .15s;
+    }
+    .wbp-practice-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .wbp-practice-desc { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+    /* Stats / encouragement */
+    .wbp-v4-stats {
+      background: #fff; border-radius: 10px; padding: 12px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .wbp-v4-stats-copy {
+      font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px;
+    }
+    .wbp-v4-stats-sub {
+      font-size: 11px; color: #64748b; margin-bottom: 8px;
+    }
+    .wbp-v4-stats-bar {
+      width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;
+      overflow: hidden; margin-bottom: 8px;
+    }
+    .wbp-v4-stats-bar-fill {
+      height: 100%; border-radius: 4px; background: #f59e0b;
+    }
+    .wbp-v4-stats-nums {
+      display: flex; gap: 24px;
+    }
+    .wbp-v4-stats-num {
+      display: flex; align-items: baseline; gap: 5px;
+    }
+    .wbp-v4-stats-num strong {
+      font-size: 17px; font-weight: 800; color: #0f172a;
+    }
+    .wbp-v4-stats-num.green strong { color: #10b981; }
+    .wbp-v4-stats-num span {
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+    }
+
+    /* AI themes: right panel with horizontal scroll */
+    .wbp-v4-upper-right {
+      background: #fff; border-radius: 10px; padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      display: flex; flex-direction: column;
+    }
+    .wbp-v4-themes-title {
+      font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 10px;
+    }
+    .wbp-v4-themes-scroll-wrap {
+      position: relative; flex: 1;
+    }
+    .wbp-v4-themes-scroll-wrap::after {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 32px; height: 100%;
+      background: linear-gradient(to right, transparent, #fff);
+      pointer-events: none; border-radius: 0 10px 10px 0;
+    }
+    .wbp-v4-themes-scroll {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .wbp-v4-themes-scroll::-webkit-scrollbar { display: none; }
+    .wbp-v4-theme-card {
+      min-width: 155px; flex-shrink: 0;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 12px 14px; scroll-snap-align: start;
+      transition: border-color .15s, box-shadow .15s;
+      cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+    }
+    .wbp-v4-theme-card:hover {
+      border-color: #a7f3d0; box-shadow: 0 2px 8px rgba(16,185,129,.1);
+    }
+    .wbp-v4-theme-card-icon { font-size: 18px; }
+    .wbp-v4-theme-card-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .wbp-v4-theme-card-count { font-size: 11px; color: #64748b; }
+    .wbp-v4-theme-card-arrow {
+      font-size: 11px; color: #10b981; font-weight: 600; margin-top: auto;
+    }
+    /* Pagination dots */
+    .wbp-v4-themes-dots {
+      display: flex; justify-content: center; gap: 6px; margin-top: 6px;
+    }
+    .wbp-v4-themes-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1;
+    }
+    .wbp-v4-themes-dot.active { background: #10b981; }
+
+    /* ── Collapse toggle bar ── */
+    .wbp-v4-collapse-toggle {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 6px 20px; cursor: pointer;
+      user-select: none; transition: background .15s;
+    }
+    .wbp-v4-collapse-toggle:hover { background: rgba(0,0,0,.02); }
+    .wbp-v4-collapse-toggle::before {
+      content: ''; flex: 1; height: 1px; background: #cbd5e1;
+    }
+    .wbp-v4-collapse-toggle::after {
+      content: ''; flex: 1; height: 1px; background: #cbd5e1;
+    }
+    .wbp-v4-collapse-label {
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; letter-spacing: .3px;
+    }
+    .wbp-v4-collapse-chevron {
+      display: inline-block; transition: transform .3s ease;
+      font-size: 10px; line-height: 1;
+    }
+    .wbp-v4-collapse-toggle.collapsed .wbp-v4-collapse-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* ── Filter bar: primary tabs + expandable sub-pills ── */
+    .wbp-v4-filters {
+      padding: 16px 20px 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .wbp-v4-filter-tabs {
+      display: flex; gap: 6px;
+    }
+    .wbp-v4-ftab {
+      font-size: 12px; font-weight: 700; padding: 6px 16px; border-radius: 20px;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; transition: all .15s;
+    }
+    .wbp-v4-ftab:hover { border-color: #a7f3d0; }
+    .wbp-v4-ftab.active {
+      background: #10b981; color: #fff; border-color: #10b981;
+    }
+    .wbp-v4-filter-sub {
+      display: flex; gap: 6px; flex-wrap: wrap; padding-left: 4px;
+      overflow: hidden; max-height: 0; opacity: 0;
+      transition: max-height .3s ease, opacity .2s ease, margin .3s ease;
+      margin-top: 0;
+    }
+    .wbp-v4-filter-sub.open {
+      max-height: 80px; opacity: 1; margin-top: 8px;
+    }
+    .wbp-v4-pill {
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      background: #fff; color: #475569; border: 1px solid #e2e8f0;
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+      transition: all .15s;
+    }
+    .wbp-v4-pill:hover { border-color: #a7f3d0; }
+    .wbp-v4-pill.active {
+      background: #ecfdf5; color: #059669; border-color: #10b981; font-weight: 700;
+    }
+    .wbp-v4-pill-count {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      background: #f1f5f9; padding: 1px 6px; border-radius: 8px;
+      min-width: 18px; text-align: center;
+    }
+    .wbp-v4-pill.active .wbp-v4-pill-count {
+      background: #d1fae5; color: #059669;
+    }
+
+    /* ── Lower half: word card | word list ── */
+    .wbp-v4-lower {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      padding: 12px 20px 20px;
+    }
+
+    /* Expanded word card */
+    .wbp-v4-card {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wbp-v4-card-header { padding: 10px 24px 12px; }
+    .wbp-v4-card-word-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .wbp-v4-card-word {
+      font-size: 24px; font-weight: 800; color: #0f172a;
+    }
+    .wbp-v4-card-tl {
+      font-size: 18px; color: #64748b; font-weight: 600;
+    }
+    .wbp-v4-card-pos-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 6px;
+    }
+    .wbp-v4-card-pos {
+      font-size: 11px; font-weight: 700; color: #10b981;
+      background: #ecfdf5; padding: 3px 10px; border-radius: 4px;
+    }
+    .wbp-v4-card-state {
+      font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 4px;
+    }
+    .wbp-v4-card-state.learning {
+      color: #d97706; background: #fef3c7;
+    }
+    .wbp-v4-card-state.mastered {
+      color: #059669; background: #d1fae5;
+    }
+    .wbp-v4-card-body {
+      padding: 0 24px 16px; flex: 1;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .wbp-v4-card-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-top: 1px solid #f1f5f9; margin-top: auto;
+    }
+
+    /* Word entry shared styles */
+    .wbp-entry-play {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .wbp-entry-play svg { width: 14px; height: 14px; fill: #10b981; }
+    .wbp-entry-play-sm {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      font-size: 9px; color: #10b981; cursor: pointer;
+      margin-left: 6px; vertical-align: middle; line-height: 1;
+    }
+    .wbp-entry-context {
+      font-size: 13px; color: #475569; font-style: italic;
+      background: #f8fafc; padding: 10px 14px; border-radius: 6px;
+      border-left: 3px solid #e2e8f0; line-height: 1.6;
+    }
+    .wbp-entry-context mark {
+      background: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px;
+      font-style: normal; font-weight: 600;
+    }
+    .wbp-entry-row { display: flex; gap: 14px; align-items: flex-start; }
+    .wbp-entry-lbl {
+      font-size: 11px; font-weight: 400; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .3px;
+      min-width: 80px; flex-shrink: 0; padding-top: 2px;
+    }
+    .wbp-entry-val { font-size: 13px; color: #334155; flex: 1; }
+    .wbp-entry-nav-btn {
+      font-size: 11px; font-weight: 600; color: #10b981;
+      background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px;
+      padding: 5px 12px; display: flex; align-items: center; gap: 4px;
+    }
+    .wbp-entry-nav-btn.disabled { color: #cbd5e1; background: #f8fafc; border-color: #e2e8f0; }
+    .wbp-entry-nav-count { font-size: 10px; color: #94a3b8; font-weight: 600; }
+
+    /* Word list (right side of lower half) */
+    .wbp-v4-wordlist {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wbp-v4-wordlist-header {
+      padding: 14px 20px 10px;
+      font-size: 13px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wbp-v4-wordlist-items { padding: 0 20px 16px; flex: 1; }
+    .wbp-v4-wl-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 10px; border-bottom: 1px solid #f1f5f9;
+    }
+    .wbp-v4-wl-item:last-child { border-bottom: none; }
+    .wbp-v4-wl-item.selected { background: #ecfdf5; border-radius: 6px; }
+    .wbp-v4-wl-word { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wbp-v4-wl-def {
+      font-size: 11px; color: #64748b; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 280px;
+    }
+    .wbp-v4-wl-state {
+      font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .wbp-v4-wl-state.learning { color: #d97706; background: #fef3c7; }
+    .wbp-v4-wl-state.mastered { color: #059669; background: #d1fae5; }
+
+    .wbp-panel-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="export-frame">
+    <div class="wbp-app-frame">
+      <!-- Product Sidebar (88px) -->
+      <nav class="wbp-app-sidebar">
+        <div class="wbp-app-sidebar-icon" title="Classes">
+          <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM10 8l5 4-5 4V8z"/></svg>
+        </div>
+        <div class="wbp-app-sidebar-icon" title="Analytics">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        </div>
+        <div class="wbp-app-sidebar-icon" title="Favorites">
+          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        </div>
+        <div class="wbp-app-sidebar-icon active" title="Word Bank">
+          <svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
+        </div>
+        <div class="wbp-app-sidebar-icon" title="Practice">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        </div>
+      </nav>
+      <!-- Main area -->
+      <div class="wbp-app-main">
+        <div class="wbp-app-header">
+          <span class="wbp-app-header-title">My Word Bank</span>
+        </div>
+        <div class="wbp-app-content">
+
+      <div class="wbp-v4">
+
+        <!-- UPPER HALF -->
+        <div class="wbp-v4-upper">
+
+          <!-- Left: Practice 2x2 + Stats -->
+          <div class="wbp-v4-upper-left">
+            <!-- Practice buttons -->
+            <div class="wbp-v4-practice">
+              <div class="wbp-practice-btn">
+                <div class="wbp-practice-name">Spelling</div>
+                <div class="wbp-practice-desc">Type the word</div>
+              </div>
+              <div class="wbp-practice-btn">
+                <div class="wbp-practice-name">Multiple Choice</div>
+                <div class="wbp-practice-desc">Pick the answer</div>
+              </div>
+              <div class="wbp-practice-btn">
+                <div class="wbp-practice-name">Vocabs Mirroring</div>
+                <div class="wbp-practice-desc">Pronounce the word</div>
+              </div>
+              <div class="wbp-practice-btn">
+                <div class="wbp-practice-name">Contextual Mirroring</div>
+                <div class="wbp-practice-desc">Use in sentence</div>
+              </div>
+            </div>
+            <!-- Stats with encouragement -->
+            <div class="wbp-v4-stats">
+              <div class="wbp-v4-stats-copy">&#24050;&#25484;&#25569; 14 &#20491;&#23383;&#65281;</div>
+              <div class="wbp-v4-stats-sub">&#27599;&#22825;&#36914;&#27493;&#19968;&#40670;&#40670;&#65292;&#32380;&#32396;&#21152;&#27833;</div>
+              <div class="wbp-v4-stats-bar">
+                <div class="wbp-v4-stats-bar-fill" style="width:33%"></div>
+              </div>
+              <div class="wbp-v4-stats-nums">
+                <div class="wbp-v4-stats-num green"><strong>14</strong><span>Mastered</span></div>
+                <div class="wbp-v4-stats-num"><strong>28</strong><span>Learning</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: AI Theme Cards (horizontal scroll) -->
+          <div class="wbp-v4-upper-right">
+            <div class="wbp-v4-themes-title">Pick a set to practice</div>
+            <div class="wbp-v4-themes-scroll-wrap">
+              <div class="wbp-v4-themes-scroll">
+                <div class="wbp-v4-theme-card">
+                  <div class="wbp-v4-theme-card-icon">&#10060;</div>
+                  <div class="wbp-v4-theme-card-name">&#26368;&#24120;&#20986;&#37679;&#30340; 10 &#20491;&#23383;</div>
+                  <div class="wbp-v4-theme-card-count">10 words &middot; 20% avg</div>
+                  <div class="wbp-v4-theme-card-arrow">View &rsaquo;</div>
+                </div>
+                <div class="wbp-v4-theme-card">
+                  <div class="wbp-v4-theme-card-icon">&#127381;</div>
+                  <div class="wbp-v4-theme-card-name">&#26368;&#26032;&#21152;&#20837;&#30340; 10 &#20491;&#23383;</div>
+                  <div class="wbp-v4-theme-card-count">10 words</div>
+                  <div class="wbp-v4-theme-card-arrow">View &rsaquo;</div>
+                </div>
+                <div class="wbp-v4-theme-card">
+                  <div class="wbp-v4-theme-card-icon">&#128197;</div>
+                  <div class="wbp-v4-theme-card-name">&#26412;&#36913;&#37325;&#40670;&#35079;&#32722;</div>
+                  <div class="wbp-v4-theme-card-count">6 words</div>
+                  <div class="wbp-v4-theme-card-arrow">View &rsaquo;</div>
+                </div>
+                <div class="wbp-v4-theme-card">
+                  <div class="wbp-v4-theme-card-icon">&#10067;</div>
+                  <div class="wbp-v4-theme-card-name">&#36996;&#27794;&#28204;&#35430;&#36942;&#30340;&#23383;</div>
+                  <div class="wbp-v4-theme-card-count">12 words</div>
+                  <div class="wbp-v4-theme-card-arrow">View &rsaquo;</div>
+                </div>
+              </div>
+            </div>
+            <div class="wbp-v4-themes-dots">
+              <div class="wbp-v4-themes-dot active"></div>
+              <div class="wbp-v4-themes-dot"></div>
+            </div>
+          </div>
+
+        </div><!-- /upper -->
+
+        <!-- Collapse toggle -->
+        <div class="wbp-v4-collapse-toggle" id="wbp-collapse-toggle">
+          <span class="wbp-v4-collapse-label">收合 <span class="wbp-v4-collapse-chevron">&#9650;</span></span>
+        </div>
+
+        <!-- FILTERS (tab + sub-pills) -->
+        <div class="wbp-v4-filters">
+          <!-- Primary tabs -->
+          <div class="wbp-v4-filter-tabs">
+            <span class="wbp-v4-ftab active" data-filter="all">All <span class="wbp-v4-pill-count" style="background:#d1fae5;color:#059669">42</span></span>
+            <span class="wbp-v4-ftab" data-filter="subject">By Subject</span>
+            <span class="wbp-v4-ftab" data-filter="source">By Source</span>
+            <span class="wbp-v4-ftab" data-filter="learning">Learning <span class="wbp-v4-pill-count">28</span></span>
+            <span class="wbp-v4-ftab" data-filter="mastered">Mastered <span class="wbp-v4-pill-count">14</span></span>
+          </div>
+          <!-- Sub-pills: By Subject -->
+          <div class="wbp-v4-filter-sub" data-group="subject" style="display:none;">
+            <span class="wbp-v4-pill active" data-subject="science">Science <span class="wbp-v4-pill-count">12</span></span>
+            <span class="wbp-v4-pill" data-subject="math">Math <span class="wbp-v4-pill-count">9</span></span>
+            <span class="wbp-v4-pill" data-subject="history">History <span class="wbp-v4-pill-count">8</span></span>
+            <span class="wbp-v4-pill" data-subject="geography">Geography <span class="wbp-v4-pill-count">7</span></span>
+            <span class="wbp-v4-pill" data-subject="english">English <span class="wbp-v4-pill-count">6</span></span>
+          </div>
+          <!-- Sub-pills: By Source -->
+          <div class="wbp-v4-filter-sub" data-group="source" style="display:none;">
+            <span class="wbp-v4-pill active" data-source="live">Live Classroom <span class="wbp-v4-pill-count">18</span></span>
+            <span class="wbp-v4-pill" data-source="practice">Practice <span class="wbp-v4-pill-count">14</span></span>
+            <span class="wbp-v4-pill" data-source="teacher">Teacher Added <span class="wbp-v4-pill-count">10</span></span>
+          </div>
+        </div>
+
+        <!-- LOWER HALF -->
+        <div class="wbp-v4-lower">
+
+          <!-- Left: Expanded Word Card -->
+          <div class="wbp-v4-card">
+            <div class="wbp-v4-card-header" style="padding-top:16px">
+              <div class="wbp-v4-card-word-row">
+                <span class="wbp-v4-card-word">hypothesis</span>
+                <span class="wbp-entry-play" title="Play pronunciation"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#10b981"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+                <span class="wbp-v4-card-tl">&#20551;&#35498;</span>
+                <span class="wbp-entry-play-sm" title="Play translation">&#9654;</span>
+              </div>
+              <div class="wbp-v4-card-pos-row">
+                <span class="wbp-v4-card-pos">noun</span>
+                <span class="wbp-v4-card-state learning">&#9679; &#23416;&#32722;&#20013;</span>
+              </div>
+            </div>
+            <div class="wbp-v4-card-body">
+              <div class="wbp-entry-context">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</div>
+              <div class="wbp-entry-row">
+                <span class="wbp-entry-lbl">Example</span>
+                <div class="wbp-entry-context">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+              </div>
+              <div class="wbp-entry-row">
+                <span class="wbp-entry-lbl">Source</span>
+                <span class="wbp-entry-val">Live Classroom</span>
+              </div>
+              <div class="wbp-entry-row">
+                <span class="wbp-entry-lbl">Subject</span>
+                <span class="wbp-entry-val">Science</span>
+              </div>
+            </div>
+            <div class="wbp-v4-card-nav">
+              <span class="wbp-entry-nav-btn disabled">&larr; Prev</span>
+              <span class="wbp-entry-nav-count">1 / 42</span>
+              <span class="wbp-entry-nav-btn">Next &rarr;</span>
+            </div>
+          </div>
+
+          <!-- Right: Word List with definition + state -->
+          <div class="wbp-v4-wordlist">
+            <div class="wbp-v4-wordlist-header">
+              Word List
+              <span class="wbp-panel-badge" style="background:#f1f5f9;color:#64748b;">42</span>
+            </div>
+            <div class="wbp-v4-wordlist-items">
+              <div class="wbp-v4-wl-item selected" data-subject="science" data-source="live" data-state="learning">
+                <div><div class="wbp-v4-wl-word">hypothesis</div><div class="wbp-v4-wl-def">A proposed explanation made on the basis of limited evidence...</div></div>
+                <span class="wbp-v4-wl-state learning">學習中</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="science" data-source="live" data-state="learning">
+                <div><div class="wbp-v4-wl-word">photosynthesis</div><div class="wbp-v4-wl-def">The process by which green plants use sunlight...</div></div>
+                <span class="wbp-v4-wl-state learning">學習中</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="math" data-source="practice" data-state="learning">
+                <div><div class="wbp-v4-wl-word">equation</div><div class="wbp-v4-wl-def">A statement that the values of two expressions are equal...</div></div>
+                <span class="wbp-v4-wl-state learning">學習中</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="history" data-source="teacher" data-state="learning">
+                <div><div class="wbp-v4-wl-word">revolution</div><div class="wbp-v4-wl-def">A forcible overthrow of a government or social order...</div></div>
+                <span class="wbp-v4-wl-state learning">學習中</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="history" data-source="live" data-state="mastered">
+                <div><div class="wbp-v4-wl-word">democracy</div><div class="wbp-v4-wl-def">A system of government by the whole population...</div></div>
+                <span class="wbp-v4-wl-state mastered">已學習</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="geography" data-source="live" data-state="learning">
+                <div><div class="wbp-v4-wl-word">latitude</div><div class="wbp-v4-wl-def">The angular distance of a place north or south...</div></div>
+                <span class="wbp-v4-wl-state learning">學習中</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="science" data-source="practice" data-state="mastered">
+                <div><div class="wbp-v4-wl-word">ecosystem</div><div class="wbp-v4-wl-def">A biological community of interacting organisms...</div></div>
+                <span class="wbp-v4-wl-state mastered">已學習</span>
+              </div>
+              <div class="wbp-v4-wl-item" data-subject="science" data-source="teacher" data-state="mastered">
+                <div><div class="wbp-v4-wl-word">molecule</div><div class="wbp-v4-wl-def">A group of atoms bonded together...</div></div>
+                <span class="wbp-v4-wl-state mastered">已學習</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /lower -->
+
+      </div><!-- /wbp-v4 -->
+
+        </div><!-- /wbp-app-content -->
+      </div><!-- /wbp-app-main -->
+    </div><!-- /wbp-app-frame -->
+  </div><!-- /export-frame -->
+</body>
+</html>
