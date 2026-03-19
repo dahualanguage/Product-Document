@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Word Bank Homepage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Frame ── */
+    .app-frame {
+      display: flex; width: 100%; min-height: 100vh;
+      background: #fff;
+    }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-logo span {
+      font-size: 22px; font-weight: 900; color: #059669;
+      font-family: Georgia, serif;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #10b981; }
+    .sidebar-item.active span { color: #10b981; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .app-content { flex: 1; background: #EFF5FF; overflow-y: auto; padding: 4px 120px 4px 4px; }
+
+    /* ── Layout ── */
+    .page { display: flex; flex-direction: column; }
+
+    /* ── Upper half ── */
+    .upper {
+      display: grid; grid-template-columns: 300px 1fr; gap: 36px;
+      padding: 36px 36px 20px;
+      transition: max-height .4s ease, opacity .3s ease, padding .4s ease;
+      overflow: hidden; align-items: end;
+    }
+    .upper.collapsed { max-height: 0 !important; opacity: 0; padding-top: 0; padding-bottom: 0; }
+    .upper-left { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Stats */
+    .stats-card {
+      background: #fff; border-radius: 10px; padding: 14px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .stats-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .stats-sub { font-size: 11px; color: #10b981; margin-bottom: 10px; }
+    .stats-bar { width: 100%; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .stats-bar-fill { height: 100%; border-radius: 4px; background: #10b981; }
+    .stats-nums { display: flex; gap: 24px; }
+    .stats-num { display: flex; align-items: baseline; gap: 5px; }
+    .stats-num strong { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .stats-num.green strong { color: #10b981; }
+    .stats-num span { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
+
+    /* Practice 2x2 */
+    .practice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .practice-btn {
+      background: #fff; border: none; border-radius: 12px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: all .15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .practice-btn:hover { background: #f8fafc; }
+    .practice-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .practice-icon svg { width: 18px; height: 18px; }
+    .practice-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+
+    /* Practice set cards */
+    .sets-module { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+    .sets-title { font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 14px; }
+    .sets-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .set-card {
+      background: #fff; border-radius: 14px; padding: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      cursor: pointer; transition: all .2s;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .set-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.1); transform: translateY(-2px); }
+    .set-thumb {
+      aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center;
+      margin: 10px 10px 0; border-radius: 10px; background: #f1f5f9;
+    }
+    .set-icon { font-size: 32px; }
+    .set-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .set-count {
+      font-size: 10px; font-weight: 700; color: #10b981;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    .set-name { font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.35; }
+    .set-link { font-size: 11px; color: #94a3b8; margin-top: auto; padding-top: 4px; }
+
+    /* ── Collapse toggle ── */
+    .collapse-toggle {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 10px 36px; cursor: pointer;
+      user-select: none; transition: background .15s;
+    }
+    .collapse-toggle:hover { background: rgba(0,0,0,.02); }
+    .collapse-toggle::before,
+    .collapse-toggle::after { content: ''; flex: 1; height: 1px; background: #cbd5e1; }
+    .collapse-label {
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; letter-spacing: .3px;
+    }
+    .collapse-chevron { display: inline-block; transition: transform .3s ease; font-size: 10px; line-height: 1; }
+    .collapse-toggle.collapsed .collapse-chevron { transform: rotate(180deg); }
+
+    /* ── Filters ── */
+    .filters { padding: 16px 36px 0; display: flex; flex-direction: column; gap: 8px; }
+    .filter-tabs { display: flex; gap: 6px; }
+    .ftab {
+      font-size: 12px; font-weight: 700; padding: 6px 16px; border-radius: 20px;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; transition: all .15s;
+    }
+    .ftab:hover { border-color: #a7f3d0; }
+    .ftab.active { background: #10b981; color: #fff; border-color: #10b981; }
+    .pill-count {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      background: #f1f5f9; padding: 1px 6px; border-radius: 8px;
+      min-width: 18px; text-align: center; display: inline-block;
+    }
+    .ftab.active .pill-count { background: rgba(255,255,255,.25); color: #fff; }
+    .filter-sub {
+      display: flex; gap: 6px; flex-wrap: wrap; padding-left: 4px;
+      overflow: hidden; max-height: 0; opacity: 0;
+      transition: max-height .3s ease, opacity .2s ease, margin .3s ease;
+    }
+    .filter-sub.open { max-height: 80px; opacity: 1; margin-top: 8px; }
+    .pill {
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      background: #fff; color: #475569; border: 1px solid #e2e8f0;
+      cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s;
+    }
+    .pill:hover { border-color: #a7f3d0; }
+    .pill.active { background: #ecfdf5; color: #059669; border-color: #10b981; font-weight: 700; }
+    .pill.active .pill-count { background: #d1fae5; color: #059669; }
+
+    /* ── Lower half ── */
+    .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; padding: 14px 36px 36px; }
+
+    /* Word card */
+    .word-card {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .word-card-header { padding: 16px 24px 12px; }
+    .word-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .word-en { font-size: 24px; font-weight: 800; color: #0f172a; }
+    .word-play {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      cursor: pointer;
+    }
+    .word-play svg { width: 14px; height: 14px; fill: #10b981; }
+    .word-tl { font-size: 18px; color: #64748b; font-weight: 600; }
+    .word-video {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 5px;
+      background: #dbeafe; border: 1px solid #93c5fd; cursor: pointer;
+    }
+    .word-video svg { width: 13px; height: 13px; fill: #3b82f6; }
+    .pos-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .pos-badge { font-size: 11px; font-weight: 700; color: #10b981; background: #ecfdf5; padding: 3px 10px; border-radius: 4px; }
+    .state-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 4px; }
+    .state-badge.learning { color: #d97706; background: #fef3c7; }
+    .state-badge.mastered { color: #059669; background: #d1fae5; }
+    .word-card-body { padding: 0 24px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+    .word-def { font-size: 13px; color: #334155; line-height: 1.6; }
+    .example-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .example-text {
+      font-size: 13px; color: #475569; font-style: italic;
+      background: #f8fafc; padding: 10px 14px; border-radius: 6px;
+      border-left: 3px solid #e2e8f0; line-height: 1.6;
+    }
+    .example-text mark { background: #d1fae5; color: #059669; padding: 1px 4px; border-radius: 3px; font-style: normal; font-weight: 600; }
+    .meta-table { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .meta-row { display: flex; align-items: baseline; }
+    .meta-label { font-size: 11px; font-weight: 400; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; min-width: 76px; flex-shrink: 0; }
+    .meta-value { font-size: 13px; font-weight: 500; color: #334155; }
+
+    /* Word list */
+    .wordlist {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04); overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .wordlist-header {
+      padding: 14px 20px 10px;
+      font-size: 13px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wordlist-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: #64748b; }
+    .wordlist-items { padding: 0 20px 16px; flex: 1; overflow-y: auto; }
+    .wl-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+      transition: background .1s;
+    }
+    .wl-item:last-child { border-bottom: none; }
+    .wl-item:hover { background: #f8fafc; }
+    .wl-item.selected { background: #ecfdf5; border-radius: 6px; }
+    .wl-item.hidden { display: none; }
+    .wl-word { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .wl-def { font-size: 11px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+    .wl-state { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+    .wl-state.learning { color: #d97706; background: #fef3c7; }
+    .wl-state.mastered { color: #059669; background: #d1fae5; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><span>D</span></div>
+    <div class="sidebar-item" title="Classes">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Classes</span>
+    </div>
+    <div class="sidebar-item active" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <span>Word bank</span>
+    </div>
+    <div class="sidebar-item" title="Practice">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-5h2v5zm4 0h-2V7h2v10zm4 0h-2v-3h2v3z"/></svg>
+      <span>Practice</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">My Word Bank</span>
+    </div>
+    <div class="app-content">
+      <div class="page">
+
+        <!-- ═══════════════════ UPPER HALF ═══════════════════ -->
+        <div class="upper" id="upper-section">
+
+          <!-- Left: Stats + Practice 2x2 -->
+          <div class="upper-left">
+            <div class="stats-card">
+              <div class="stats-title">14 Words Mastered!</div>
+              <div class="stats-sub">A little progress every day — keep it up!</div>
+              <div class="stats-bar"><div class="stats-bar-fill" style="width:33%"></div></div>
+              <div class="stats-nums">
+                <div class="stats-num green"><strong>14</strong><span>Mastered</span></div>
+                <div class="stats-num"><strong>28</strong><span>Learning</span></div>
+              </div>
+            </div>
+            <div class="practice-grid" style="grid-template-columns: 1fr;">
+              <div class="practice-btn">
+                <div class="practice-icon" style="background:#dbeafe;"><svg viewBox="0 0 24 24" fill="#3b82f6"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>
+                <div class="practice-name">Spelling</div>
+              </div>
+              <div class="practice-btn">
+                <div class="practice-icon" style="background:#e0e7ff;"><svg viewBox="0 0 24 24" fill="#6366f1"><path d="M11 7H2v2h9V7zm0 8H2v2h9v-2zm5.34-4L12.8 7.46l1.41-1.41 2.12 2.12 4.24-4.24L22 5.34 16.34 11zm0 8l-3.54-3.54 1.41-1.41 2.12 2.12 4.24-4.24L22 13.34 16.34 19z"/></svg></div>
+                <div class="practice-name">Multiple Choice</div>
+              </div>
+              <div class="practice-btn">
+                <div class="practice-icon" style="background:#d1fae5;"><svg viewBox="0 0 24 24" fill="#10b981"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V6zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></div>
+                <div class="practice-name">Vocabs Mirroring</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Pick a set to practice -->
+          <div class="sets-module">
+            <div class="sets-title">Pick a set to practice</div>
+            <div class="sets-grid">
+              <div class="set-card">
+                <div class="set-thumb" style="background:#fef2f2;"><div class="set-icon">❌</div></div>
+                <div class="set-body">
+                  <div class="set-count">10 words · 20% avg</div>
+                  <div class="set-name">Top 10 Most Missed</div>
+                  <div class="set-link">View ›</div>
+                </div>
+              </div>
+              <div class="set-card">
+                <div class="set-thumb" style="background:#eff6ff;"><div class="set-icon">📋</div></div>
+                <div class="set-body">
+                  <div class="set-count">10 words</div>
+                  <div class="set-name">10 Recently Added</div>
+                  <div class="set-link">View ›</div>
+                </div>
+              </div>
+              <div class="set-card">
+                <div class="set-thumb" style="background:#fefce8;"><div class="set-icon">🏆</div></div>
+                <div class="set-body">
+                  <div class="set-count">6 words</div>
+                  <div class="set-name">Weekly Review Focus</div>
+                  <div class="set-link">View ›</div>
+                </div>
+              </div>
+              <div class="set-card">
+                <div class="set-thumb" style="background:#fef2f2;"><div class="set-icon">❓</div></div>
+                <div class="set-body">
+                  <div class="set-count">12 words</div>
+                  <div class="set-name">Not Yet Tested</div>
+                  <div class="set-link">View ›</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /upper -->
+
+        <!-- Collapse toggle -->
+        <div class="collapse-toggle" id="collapse-toggle">
+          <span class="collapse-label">Collapse <span class="collapse-chevron">▲</span></span>
+        </div>
+
+        <!-- ═══════════════════ FILTERS ═══════════════════ -->
+        <div class="filters">
+          <div class="filter-tabs">
+            <span class="ftab active" data-filter="all">All <span class="pill-count" style="background:#d1fae5;color:#059669">42</span></span>
+            <span class="ftab" data-filter="subject">By Subject</span>
+            <span class="ftab" data-filter="source">By Source</span>
+            <span class="ftab" data-filter="learning">Learning <span class="pill-count">28</span></span>
+            <span class="ftab" data-filter="mastered">Mastered <span class="pill-count">14</span></span>
+          </div>
+          <div class="filter-sub" data-group="subject" style="display:none;">
+            <span class="pill active" data-subject="science">Science <span class="pill-count">12</span></span>
+            <span class="pill" data-subject="math">Math <span class="pill-count">9</span></span>
+            <span class="pill" data-subject="history">History <span class="pill-count">8</span></span>
+            <span class="pill" data-subject="geography">Geography <span class="pill-count">7</span></span>
+            <span class="pill" data-subject="english">English <span class="pill-count">6</span></span>
+          </div>
+          <div class="filter-sub" data-group="source" style="display:none;">
+            <span class="pill active" data-source="live">Live Classroom <span class="pill-count">18</span></span>
+            <span class="pill" data-source="practice">Practice <span class="pill-count">14</span></span>
+            <span class="pill" data-source="teacher">Teacher Added <span class="pill-count">10</span></span>
+          </div>
+        </div>
+
+        <!-- ═══════════════════ LOWER HALF ═══════════════════ -->
+        <div class="lower">
+
+          <!-- Word detail card -->
+          <div class="word-card">
+            <div class="word-card-header">
+              <div class="word-row">
+                <span class="word-en">hypothesis</span>
+                <span class="word-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>
+                <span class="word-tl">假說</span>
+                <span class="word-video" title="Video"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></span>
+              </div>
+              <div class="pos-row">
+                <span class="pos-badge">noun</span>
+                <span class="state-badge learning">● Learning</span>
+              </div>
+            </div>
+            <div class="word-card-body">
+              <p class="word-def">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</p>
+              <div>
+                <div class="example-label">Example</div>
+                <div class="example-text">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+              </div>
+              <div class="meta-table">
+                <div class="meta-row"><span class="meta-label">Type</span><span class="meta-value">Academic</span></div>
+                <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+                <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Word List -->
+          <div class="wordlist">
+            <div class="wordlist-header">
+              Word List
+              <span class="wordlist-badge" id="wl-count">42</span>
+            </div>
+            <div class="wordlist-items">
+              <div class="wl-item selected" data-subject="science" data-source="live" data-state="learning" data-def="A proposed explanation made on the basis of limited evidence as a starting point for further investigation.">
+                <div><div class="wl-word">hypothesis</div><div class="wl-def">A proposed explanation made on the basis of limited e...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-def="The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water.">
+                <div><div class="wl-word">photosynthesis</div><div class="wl-def">The process by which green plants use sunlight...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-def="A statement that the values of two expressions are equal, indicated by the sign =.">
+                <div><div class="wl-word">equation</div><div class="wl-def">A statement that the values of two expressions are equ...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-def="A forcible overthrow of a government or social order, in favor of a new system.">
+                <div><div class="wl-word">revolution</div><div class="wl-def">A forcible overthrow of a government or social order...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-def="A system of government by the whole population or all the eligible members of a state, typically through elected representatives.">
+                <div><div class="wl-word">democracy</div><div class="wl-def">A system of government by the whole population...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-def="The angular distance of a place north or south of the earth's equator, usually expressed in degrees and minutes.">
+                <div><div class="wl-word">latitude</div><div class="wl-def">The angular distance of a place north or south...</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-def="A biological community of interacting organisms and their physical environment.">
+                <div><div class="wl-word">ecosystem</div><div class="wl-def">A biological community of interacting organisms...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-def="A group of atoms bonded together, representing the smallest fundamental unit of a chemical compound.">
+                <div><div class="wl-word">molecule</div><div class="wl-def">A group of atoms bonded together...</div></div>
+                <span class="wl-state mastered">Mastered</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /lower -->
+
+      </div><!-- /page -->
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<script>
+(function () {
+  /* ── Filter tabs ── */
+  const tabs = document.querySelectorAll('.ftab');
+  const subGroups = document.querySelectorAll('.filter-sub');
+  const items = document.querySelectorAll('.wl-item');
+  const countBadge = document.getElementById('wl-count');
+
+  let activeFilter = 'all';
+  let activeSub = null;
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFilter = tab.dataset.filter;
+      activeSub = null;
+
+      subGroups.forEach(g => {
+        if (g.dataset.group === activeFilter) {
+          g.style.display = 'flex';
+          requestAnimationFrame(() => g.classList.add('open'));
+          const pills = g.querySelectorAll('.pill');
+          pills.forEach((p, i) => p.classList.toggle('active', i === 0));
+          if (pills[0]) activeSub = pills[0].dataset.subject || pills[0].dataset.source;
+        } else {
+          g.classList.remove('open');
+          setTimeout(() => { g.style.display = 'none'; }, 300);
+        }
+      });
+      applyFilter();
+    });
+  });
+
+  /* ── Sub-pill click ── */
+  subGroups.forEach(group => {
+    group.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeSub = pill.dataset.subject || pill.dataset.source;
+        applyFilter();
+      });
+    });
+  });
+
+  function applyFilter() {
+    let visible = 0;
+    items.forEach(item => {
+      let show = true;
+      switch (activeFilter) {
+        case 'all': show = true; break;
+        case 'learning': show = item.dataset.state === 'learning'; break;
+        case 'mastered': show = item.dataset.state === 'mastered'; break;
+        case 'subject': show = activeSub ? item.dataset.subject === activeSub : true; break;
+        case 'source': show = activeSub ? item.dataset.source === activeSub : true; break;
+      }
+      item.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    if (countBadge) countBadge.textContent = visible;
+    items.forEach(item => item.classList.remove('selected'));
+    const first = document.querySelector('.wl-item:not(.hidden)');
+    if (first) first.classList.add('selected');
+  }
+
+  subGroups.forEach(g => { g.style.display = 'none'; });
+
+  /* ── Word list click → update card ── */
+  const wordCard = document.querySelector('.word-card');
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      items.forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      if (!wordCard) return;
+      const word = item.querySelector('.wl-word')?.textContent || '';
+      const def = item.dataset.def || item.querySelector('.wl-def')?.textContent || '';
+      const state = item.dataset.state;
+      const cardWord = wordCard.querySelector('.word-en');
+      const cardDef = wordCard.querySelector('.word-def');
+      const cardState = wordCard.querySelector('.state-badge');
+      if (cardWord) cardWord.textContent = word;
+      if (cardDef) cardDef.textContent = def;
+      if (cardState) {
+        cardState.className = 'state-badge ' + state;
+        cardState.innerHTML = state === 'mastered' ? '● Mastered' : '● Learning';
+      }
+    });
+  });
+
+  /* ── Collapse toggle ── */
+  const collapseBtn = document.getElementById('collapse-toggle');
+  const upper = document.getElementById('upper-section');
+  if (collapseBtn && upper) {
+    upper.style.maxHeight = upper.scrollHeight + 'px';
+    collapseBtn.addEventListener('click', () => {
+      const isCollapsed = upper.classList.contains('collapsed');
+      const label = collapseBtn.querySelector('.collapse-label');
+      if (isCollapsed) {
+        upper.classList.remove('collapsed');
+        upper.style.maxHeight = upper.scrollHeight + 'px';
+        collapseBtn.classList.remove('collapsed');
+        if (label) label.innerHTML = 'Collapse <span class="collapse-chevron">▲</span>';
+      } else {
+        upper.style.maxHeight = upper.scrollHeight + 'px';
+        requestAnimationFrame(() => {
+          upper.classList.add('collapsed');
+          collapseBtn.classList.add('collapsed');
+          if (label) label.innerHTML = 'Expand <span class="collapse-chevron">▲</span>';
+        });
+      }
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
