@@ -150,8 +150,8 @@
     <div class="meta">
       <span>ESL Student</span>
       <span>Status: Ready for Dev</span>
-      <span>UI Version: v6</span>
-      <span>Date: 2026-03-11</span>
+      <span>UI Version: v7</span>
+      <span>Date: 2026-03-30</span>
     </div>
     <a class="demo-link" href="demo-word-bank.html">Open Interactive Demo &rarr;</a>
   </div>
@@ -361,15 +361,43 @@
       <li><strong>State badge</strong>: Learning = <code>#d97706</code> / <code>#fef3c7</code>, Mastered = <code>#059669</code> / <code>#d1fae5</code></li>
     </ul>
 
-    <h4>Body</h4>
+    <h4>Body — Text Definition (default)</h4>
     <ul>
       <li><strong>Definition</strong>: 13px, <code>#334155</code></li>
       <li><strong>Chinese definition</strong>: 12px, <code>#64748b</code> — toggle-controlled</li>
       <li>Divider: <code>1px solid #e2e8f0</code>, padding-top 18px, margin-top 14px</li>
-      <li><strong>Example</strong>: italic 13px, <code>#475569</code>, left border <code>3px solid #e2e8f0</code>, <code>#f8fafc</code> bg</li>
+      <li><strong>Example sentence</strong>: italic 13px, <code>#475569</code>, left border <code>3px solid #e2e8f0</code>, <code>#f8fafc</code> bg</li>
       <li><strong>Highlight word in example</strong>: <code>&lt;mark&gt;</code> with <code>#fef9c3</code> bg, <code>#854d0e</code> text</li>
+      <li><strong>Example dynamically updates</strong> per word — each word has its own example sentence (stored in <code>data-example</code>)</li>
       <li><strong>Chinese example</strong>: toggle-controlled</li>
-      <li><strong>Meta rows</strong>: Type, Source, Subject — label 11px uppercase <code>#94a3b8</code>, value 13px weight 500 <code>#334155</code></li>
+      <li><strong>Meta rows</strong>: Source, Subject only (Type and Word Level removed) — label 11px uppercase <code>#94a3b8</code>, value 13px weight 500 <code>#334155</code></li>
+    </ul>
+
+    <h4>Body — Image Definition (for simple words)</h4>
+    <div class="callout-info">
+      <strong>Image-based words:</strong> Some simple vocabulary (e.g. "plant") don't need a text definition — they show a photo instead. When <code>data-image</code> is present, hide the text definition and show the image.
+    </div>
+    <ul>
+      <li><strong>Image</strong>: <code>200×200px</code> (1:1 aspect ratio), <code>object-fit: cover</code>, radius <code>12px</code>, shadow <code>0 2px 8px rgba(0,0,0,.08)</code></li>
+      <li>Text definition (<code>.word-def</code>) is hidden via <code>display: none</code></li>
+      <li>Example sentence and meta rows still display normally below the image</li>
+    </ul>
+
+    <h4>Mastery Progress</h4>
+    <ul>
+      <li>Appears below the body section</li>
+      <li><strong>Progress bar</strong>: track <code>#f1f5f9</code>, fill <code>#10b981</code>, label "N / 5"</li>
+      <li><strong>Practice type checks</strong>: Spelling, Multiple Choice, Mirroring — each shows done (green check) or pending (gray circle)</li>
+      <li><strong>Mastery rule</strong>: 5 correct hits total + at least 1 from each practice type → word becomes "Mastered"</li>
+      <li><strong>Hint text</strong>: "N more practice(s) to master this word!" shown when remaining ≤ 3</li>
+      <li>Hidden entirely when word state is <code>mastered</code></li>
+    </ul>
+
+    <h4>Retry (Mastered words only)</h4>
+    <ul>
+      <li>"Back to Learning" button appears only for mastered words</li>
+      <li>Shows confirmation popup: "Move Back to Learning?"</li>
+      <li>On confirm: resets mastery to 0, state → learning, all practice checks → pending</li>
     </ul>
   </div>
 
@@ -411,17 +439,25 @@
   <table>
     <tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr>
     <tr><td><code>word</code></td><td>string</td><td>English word</td><td>"hypothesis"</td></tr>
-    <tr><td><code>translation</code></td><td>string</td><td>Chinese translation</td><td>"假說"</td></tr>
-    <tr><td><code>definition</code></td><td>string</td><td>English definition</td><td>"A proposed explanation..."</td></tr>
-    <tr><td><code>definitionTranslation</code></td><td>string</td><td>Chinese definition</td><td>"基於有限證據..."</td></tr>
-    <tr><td><code>example</code></td><td>string</td><td>Example sentence (with target word highlighted)</td><td>"We need to test our &lt;mark&gt;hypothesis&lt;/mark&gt;..."</td></tr>
-    <tr><td><code>exampleTranslation</code></td><td>string</td><td>Chinese example translation</td><td>"在得出任何結論之前..."</td></tr>
+    <tr><td><code>translation</code></td><td>string</td><td>L1 translation (Chinese / Spanish / etc.)</td><td>"假說"</td></tr>
+    <tr><td><code>definition</code></td><td>string</td><td>English definition (empty for image-only words)</td><td>"A proposed explanation..."</td></tr>
+    <tr><td><code>definitionTranslation</code></td><td>string</td><td>L1 definition translation</td><td>"基於有限證據..."</td></tr>
+    <tr><td><code>imageUrl</code></td><td>string | null</td><td>Photo URL for simple words (replaces text definition)</td><td>"https://images.unsplash.com/..."</td></tr>
+    <tr><td><code>example</code></td><td>string</td><td>Example sentence (plain text, word highlighted at render)</td><td>"We need to test our hypothesis before..."</td></tr>
+    <tr><td><code>exampleTranslation</code></td><td>string</td><td>L1 example translation</td><td>"在得出任何結論之前..."</td></tr>
     <tr><td><code>partOfSpeech</code></td><td>string</td><td>POS tag</td><td>"noun"</td></tr>
-    <tr><td><code>type</code></td><td>string</td><td>Word type classification</td><td>"Academic"</td></tr>
     <tr><td><code>source</code></td><td>enum</td><td>Where word came from</td><td>"live" | "practice" | "teacher"</td></tr>
     <tr><td><code>subject</code></td><td>string</td><td>Subject category</td><td>"Science"</td></tr>
     <tr><td><code>state</code></td><td>enum</td><td>Mastery state</td><td>"learning" | "mastered"</td></tr>
+    <tr><td><code>mastery</code></td><td>number</td><td>Practice hits count (0–5)</td><td>2</td></tr>
+    <tr><td><code>spellDone</code></td><td>boolean</td><td>Completed Spelling practice</td><td>true</td></tr>
+    <tr><td><code>mcDone</code></td><td>boolean</td><td>Completed Multiple Choice practice</td><td>false</td></tr>
+    <tr><td><code>mirrorDone</code></td><td>boolean</td><td>Completed Mirroring practice</td><td>true</td></tr>
   </table>
+
+  <div class="callout-warn">
+    <strong>Removed fields (vs v6):</strong> <code>type</code> (Word Type classification) and <code>wordLevel</code> (WIDA/ELPAC/CEFR tags) have been removed from the UI. They are no longer displayed on the word detail card.
+  </div>
 
   <h3>3.2 Source Values</h3>
   <table>
@@ -446,7 +482,7 @@
 
   <table>
     <tr><th>Action</th><th>Behavior</th></tr>
-    <tr><td>Click word list item</td><td>Highlight item (<code>.selected</code>), update detail card with all fields</td></tr>
+    <tr><td>Click word list item</td><td>Highlight item (<code>.selected</code>), update detail card: word, translation, definition (or image), example sentence, meta rows, mastery progress, practice checks</td></tr>
     <tr><td>Click filter tab</td><td>Activate tab, reset to page 1, show/hide sub-pills row, refilter word list</td></tr>
     <tr><td>Click sub-pill</td><td>Activate pill, refilter word list within current tab category</td></tr>
     <tr><td>Click pagination</td><td>Change visible page, auto-select first word on new page</td></tr>
@@ -545,8 +581,23 @@
   </div>
 
 
-  <!-- ══════════════════════════════════ 9. LIVE PREVIEW ══════════════════════════════════ -->
-  <h2><span class="num">9</span> Live Preview</h2>
+  <!-- ══════════════════════════════════ 9. I18N ══════════════════════════════════ -->
+  <h2><span class="num">9</span> Internationalization (i18n)</h2>
+  <p>Two demo versions exist for different L1 (native language) student profiles:</p>
+
+  <table>
+    <tr><th>Demo</th><th>Student L1</th><th>Translation Field</th></tr>
+    <tr><td><a href="demo-word-bank.html" style="color:#10b981; font-weight:600;">demo-word-bank.html</a></td><td>Chinese (Traditional)</td><td>Word, definition, and example translated to 中文</td></tr>
+    <tr><td><a href="demo-word-bank-es.html" style="color:#10b981; font-weight:600;">demo-word-bank-es.html</a></td><td>Spanish</td><td>Word, definition, and example translated to Español</td></tr>
+  </table>
+
+  <div class="callout-info">
+    <strong>Backend note:</strong> The translation fields (<code>translation</code>, <code>definitionTranslation</code>, <code>exampleTranslation</code>) should be populated based on the student's L1 language setting. The UI shell (English labels like "Source", "Subject") stays in English for both versions.
+  </div>
+
+
+  <!-- ══════════════════════════════════ 10. LIVE PREVIEW ══════════════════════════════════ -->
+  <h2><span class="num">10</span> Live Preview</h2>
   <p>Below is the interactive demo embedded at actual scale:</p>
   <div class="screenshot-frame">
     <iframe src="demo-word-bank.html" title="Word Bank Homepage Demo"></iframe>
