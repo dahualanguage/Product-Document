@@ -154,7 +154,7 @@
 
     /* Practice set cards */
     .sets-module { }
-    .sets-grid { display: flex; gap: 20px; }
+    .sets-grid { display: grid; grid-template-columns: 552px 1fr 1fr 1fr; gap: 20px; }
     .set-card {
       background: #fff; border-radius: 14px; padding: 0;
       border: 1px solid #e2e8f0;
@@ -163,7 +163,7 @@
       display: flex; flex-direction: column; overflow: hidden;
       flex: 1;
     }
-    .set-card:first-child { width: 552px; flex: none; }
+    .set-card:first-child { }
     .set-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
     .set-card-icon {
       background: #f1f5f9; display: flex; align-items: center; justify-content: center;
@@ -236,13 +236,13 @@
     .pill.active .pill-count { background: #A7F3D0; color: #059669; }
 
     /* ── Lower half ── */
-    .lower { display: grid; grid-template-columns: 552px 1fr; gap: 20px; padding: 20px 36px 60px; }
+    .lower { display: grid; grid-template-columns: 552px 1fr; gap: 20px; padding: 20px 36px 60px; align-items: stretch; }
 
     /* Word card */
     .word-card {
       background: #fff; border-radius: 10px;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow-x: hidden; overflow-y: auto;
       display: flex; flex-direction: column;
     }
     .word-card-header { padding: 28px 24px 12px; }
@@ -400,6 +400,8 @@
 
     .word-card-body { padding: 0 24px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
     .word-def { font-size: 13px; color: #334155; line-height: 1.6; }
+    .word-image { display: none; width: 200px; height: 200px; aspect-ratio: 1/1; border-radius: 12px; margin: 8px 0; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .word-image.show { display: block; }
     .example-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
     .example-text {
       font-size: 13px; color: #475569; font-style: italic;
@@ -411,6 +413,15 @@
     .meta-row { display: flex; align-items: baseline; }
     .meta-label { font-size: 11px; font-weight: 400; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; min-width: 76px; flex-shrink: 0; }
     .meta-value { font-size: 13px; font-weight: 500; color: #334155; }
+    .meta-row.meta-row-level { align-items: flex-start; padding-top: 2px; }
+    .fw-indicator { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; font-size: 11px; color: #64748b; }
+    .fw-select { font-size: 11px; padding: 2px 6px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; color: #334155; font-weight: 600; cursor: pointer; }
+    .level-tags { display: inline-flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .level-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; line-height: 1.4; }
+    .level-tag.wida { background: #ede9fe; color: #5b21b6; }
+    .level-tag.elpac { background: #dbeafe; color: #1e40af; }
+    .level-tag.cefr { background: #ecfdf5; color: #065f46; }
+    .level-tag-framework { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: .7; margin-right: 1px; }
 
     /* Translation toggle */
     .translate-toggle {
@@ -663,6 +674,14 @@
   <div class="app-main">
     <div class="app-header">
       <span class="app-header-title">My Word Bank</span>
+      <span class="fw-indicator">
+        Proficiency:
+        <select class="fw-select" id="fw-select" onchange="updateFramework(this.value)">
+          <option value="wida" selected>WIDA</option>
+          <option value="elpac">ELPAC</option>
+          <option value="cefr">CEFR</option>
+        </select>
+      </span>
       <a class="version-link" href="versions/index.html" title="Version history">
         <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
         Versions
@@ -795,15 +814,15 @@
         <!-- ═══════════════════ FILTERS ═══════════════════ -->
         <div class="filters">
           <div class="filter-tabs">
-            <span class="ftab active" data-filter="all">All <span class="pill-count">36</span></span>
+            <span class="ftab active" data-filter="all">All <span class="pill-count">37</span></span>
             <span class="ftab" data-filter="subject">By Subject</span>
-            <span class="ftab" data-filter="source" data-source-val="live">Live Classes <span class="pill-count">15</span></span>
+            <span class="ftab" data-filter="source" data-source-val="live">Live Classes <span class="pill-count">16</span></span>
             <span class="ftab" data-filter="source" data-source-val="teacher">Teacher Added <span class="pill-count">10</span></span>
-            <span class="ftab" data-filter="learning">Learning <span class="pill-count">21</span></span>
+            <span class="ftab" data-filter="learning">Learning <span class="pill-count">22</span></span>
             <span class="ftab" data-filter="mastered">Mastered <span class="pill-count">15</span></span>
           </div>
           <div class="filter-sub" data-group="subject" style="display:none;">
-            <span class="pill active" data-subject="science">Science <span class="pill-count">14</span></span>
+            <span class="pill active" data-subject="science">Science <span class="pill-count">15</span></span>
             <span class="pill" data-subject="math">Math <span class="pill-count">7</span></span>
             <span class="pill" data-subject="history">History <span class="pill-count">8</span></span>
             <span class="pill" data-subject="geography">Geography <span class="pill-count">7</span></span>
@@ -832,6 +851,7 @@
             </div>
             <div class="word-card-body">
               <p class="word-def">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</p>
+              <img class="word-image" id="word-image" alt="" />
               <p class="tl-line" id="def-tl">Una explicación propuesta basada en evidencia limitada como punto de partida para una investigación más profunda.</p>
               <div class="meta-table">
                 <div>
@@ -839,7 +859,6 @@
                   <div class="example-text">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
                   <p class="tl-line" id="example-tl">Necesitamos verificar nuestra hipótesis antes de sacar conclusiones.</p>
                 </div>
-                <div class="meta-row"><span class="meta-label">Type</span><span class="meta-value">Academic</span></div>
                 <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
                 <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
               </div>
@@ -876,150 +895,154 @@
           <div class="wordlist">
             <div class="wordlist-header">
               Word List
-              <span class="wordlist-badge" id="wl-count">36</span>
+              <span class="wordlist-badge" id="wl-count">37</span>
             </div>
             <div class="wordlist-items">
-              <div class="wl-item selected" data-subject="science" data-source="live" data-state="learning" data-tl="hipótesis" data-def="A proposed explanation made on the basis of limited evidence as a starting point for further investigation." data-def-tl="Una explicación propuesta basada en evidencia limitada como punto de partida para una investigación más profunda." data-example-tl="Necesitamos verificar nuestra hipótesis antes de sacar conclusiones." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1">
+              <div class="wl-item selected" data-subject="science" data-source="live" data-state="learning" data-tl="hipótesis" data-def="A proposed explanation made on the basis of limited evidence as a starting point for further investigation." data-def-tl="Una explicación propuesta basada en evidencia limitada como punto de partida para una investigación más profunda." data-example-tl="Necesitamos verificar nuestra hipótesis antes de sacar conclusiones." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1" data-wida="4,5" data-elpac="3,4" data-cefr="B2,C1" data-example="We need to test our hypothesis before drawing any conclusions.">
                 <div><div class="wl-word">hypothesis</div><div class="wl-def">A proposed explanation made on the basis of limited e...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="fotosíntesis" data-def="The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water." data-def-tl="El proceso por el cual las plantas verdes usan la luz solar para sintetizar alimentos a partir de dióxido de carbono y agua." data-example-tl="Durante la fotosíntesis, las plantas convierten la luz solar en energía." data-mastery="3" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="fotosíntesis" data-def="The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water." data-def-tl="El proceso por el cual las plantas verdes usan la luz solar para sintetizar alimentos a partir de dióxido de carbono y agua." data-example-tl="Durante la fotosíntesis, las plantas convierten la luz solar en energía." data-mastery="3" data-spell="1" data-mc="1" data-mirror="1" data-wida="4,5" data-elpac="3,4" data-cefr="B1,B2" data-example="During photosynthesis, plants convert sunlight into energy.">
                 <div><div class="wl-word">photosynthesis</div><div class="wl-def">The process by which green plants use sunlight...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="ecuación" data-def="A statement that the values of two expressions are equal, indicated by the sign =." data-def-tl="Una declaración que indica que los valores de dos expresiones son iguales, indicado por el signo =." data-example-tl="Resuelve esta ecuación para encontrar el valor de x." data-mastery="1" data-spell="1" data-mc="0" data-mirror="0">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="planta" data-def="" data-image="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=480&q=80" data-def-tl="" data-example-tl="Hay muchas plantas en el salón de clases." data-mastery="1" data-spell="1" data-mc="0" data-mirror="0" data-wida="1,2" data-elpac="1" data-cefr="A1" data-example="There are many plants in the classroom.">
+                <div><div class="wl-word">plant</div><div class="wl-def">🌱</div></div>
+                <span class="wl-state learning">Learning</span>
+              </div>
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="ecuación" data-def="A statement that the values of two expressions are equal, indicated by the sign =." data-def-tl="Una declaración que indica que los valores de dos expresiones son iguales, indicado por el signo =." data-example-tl="Resuelve esta ecuación para encontrar el valor de x." data-mastery="1" data-spell="1" data-mc="0" data-mirror="0" data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="Solve this equation to find the value of x.">
                 <div><div class="wl-word">equation</div><div class="wl-def">A statement that the values of two expressions are equ...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="revolución" data-def="A forcible overthrow of a government or social order, in favor of a new system." data-def-tl="Un derrocamiento forzoso de un gobierno o un orden social, a favor de un nuevo sistema." data-example-tl="La Revolución Francesa cambió el curso de la historia europea." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0">
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="revolución" data-def="A forcible overthrow of a government or social order, in favor of a new system." data-def-tl="Un derrocamiento forzoso de un gobierno o un orden social, a favor de un nuevo sistema." data-example-tl="La Revolución Francesa cambió el curso de la historia europea." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0" data-wida="3,4" data-elpac="2,3" data-cefr="B1,B2" data-example="The French Revolution changed the course of European history.">
                 <div><div class="wl-word">revolution</div><div class="wl-def">A forcible overthrow of a government or social order...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="democracia" data-def="A system of government by the whole population or all the eligible members of a state, typically through elected representatives." data-def-tl="Un sistema de gobierno en el que toda la población participa a través de representantes elegidos." data-example-tl="En una democracia, los ciudadanos tienen derecho a votar por sus líderes." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="democracia" data-def="A system of government by the whole population or all the eligible members of a state, typically through elected representatives." data-def-tl="Un sistema de gobierno en el que toda la población participa a través de representantes elegidos." data-example-tl="En una democracia, los ciudadanos tienen derecho a votar por sus líderes." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1" data-wida="3,4" data-elpac="2,3" data-cefr="B1,B2" data-example="In a democracy, citizens have the right to vote for their leaders.">
                 <div><div class="wl-word">democracy</div><div class="wl-def">A system of government by the whole population...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="latitud" data-def="The angular distance of a place north or south of the earth's equator, usually expressed in degrees and minutes." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0">
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="latitud" data-def="The angular distance of a place north or south of the earth's equator, usually expressed in degrees and minutes." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0" data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="The latitude of the equator is zero degrees.">
                 <div><div class="wl-word">latitude</div><div class="wl-def">The angular distance of a place north or south...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecosistema" data-def="A biological community of interacting organisms and their physical environment." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecosistema" data-def="A biological community of interacting organisms and their physical environment." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1" data-wida="4,5" data-elpac="3,4" data-cefr="B1,B2" data-example="Coral reefs are one of the most diverse ecosystems on Earth.">
                 <div><div class="wl-word">ecosystem</div><div class="wl-def">A biological community of interacting organisms...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="molécula" data-def="A group of atoms bonded together, representing the smallest fundamental unit of a chemical compound." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="molécula" data-def="A group of atoms bonded together, representing the smallest fundamental unit of a chemical compound." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1" data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="A water molecule is made up of two hydrogen atoms and one oxygen atom.">
                 <div><div class="wl-word">molecule</div><div class="wl-def">A group of atoms bonded together...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="península" data-def="A piece of land almost surrounded by water or projecting out into a body of water." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1">
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="península" data-def="A piece of land almost surrounded by water or projecting out into a body of water." data-mastery="2" data-spell="1" data-mc="0" data-mirror="1" data-wida="3,4" data-elpac="2,3" data-cefr="B1" data-example="Italy is a large peninsula surrounded by the Mediterranean Sea.">
                 <div><div class="wl-word">peninsula</div><div class="wl-def">A piece of land almost surrounded by water...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="gravedad" data-def="The force that attracts a body toward the center of the earth." data-mastery="4" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="gravedad" data-def="The force that attracts a body toward the center of the earth." data-mastery="4" data-spell="1" data-mc="1" data-mirror="1" data-wida="2,3" data-elpac="2" data-cefr="A2,B1" data-example="Gravity is what keeps us on the ground.">
                 <div><div class="wl-word">gravity</div><div class="wl-def">The force that attracts a body toward the center...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="geometría" data-def="The branch of mathematics concerned with the properties and relations of points, lines, surfaces, and solids." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="geometría" data-def="The branch of mathematics concerned with the properties and relations of points, lines, surfaces, and solids." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1" data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="We learned about triangles and circles in geometry class.">
                 <div><div class="wl-word">geometry</div><div class="wl-def">The branch of mathematics concerned with properties...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="precipitación" data-def="The action or process of precipitating a substance from a solution." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="precipitación" data-def="The action or process of precipitating a substance from a solution." data-mastery="0" data-spell="0" data-mc="0" data-mirror="0" data-wida="5,6" data-elpac="3,4" data-cefr="B2,C1" data-example="The weather forecast calls for heavy precipitation this weekend.">
                 <div><div class="wl-word">precipitation</div><div class="wl-def">The action or process of precipitating a substance...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="teacher" data-state="mastered" data-tl="burocracia" data-def="A system of government in which most of the important decisions are made by state officials rather than by elected representatives." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1">
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="mastered" data-tl="burocracia" data-def="A system of government in which most of the important decisions are made by state officials rather than by elected representatives." data-mastery="5" data-spell="1" data-mc="1" data-mirror="1" data-wida="5,6" data-elpac="4" data-cefr="B2,C1" data-example="The country&#39;s bureaucracy made it difficult to start a new business.">
                 <div><div class="wl-word">bureaucracy</div><div class="wl-def">A system of government in which important decisions...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="evolución" data-def="The process by which different kinds of living organisms developed from earlier forms." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0">
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="learning" data-tl="evolución" data-def="The process by which different kinds of living organisms developed from earlier forms." data-mastery="1" data-spell="0" data-mc="1" data-mirror="0" data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="Darwin&#39;s theory of evolution explains how species change over time.">
                 <div><div class="wl-word">evolution</div><div class="wl-def">The process by which different kinds of living...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="learning" data-tl="longitud" data-def="The angular distance of a place east or west of the meridian at Greenwich.">
+              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="learning" data-tl="longitud" data-def="The angular distance of a place east or west of the meridian at Greenwich." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="Lines of longitude run from the North Pole to the South Pole.">
                 <div><div class="wl-word">longitude</div><div class="wl-def">The angular distance of a place east or west...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="practice" data-state="mastered" data-tl="logaritmo" data-def="A quantity representing the power to which a fixed number must be raised to produce a given number.">
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="mastered" data-tl="logaritmo" data-def="A quantity representing the power to which a fixed number must be raised to produce a given number." data-wida="5,6" data-elpac="4" data-cefr="B2,C1" data-example="You can use a logarithm to solve exponential equations.">
                 <div><div class="wl-word">logarithm</div><div class="wl-def">A quantity representing the power to which a fixed...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="átomo" data-def="The smallest particle of a chemical element that can exist.">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="átomo" data-def="The smallest particle of a chemical element that can exist." data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="An atom is the basic building block of all matter.">
                 <div><div class="wl-word">atom</div><div class="wl-def">The smallest particle of a chemical element...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="live" data-state="learning" data-tl="ratificación" data-def="The action of signing or giving formal consent to a treaty, contract, or agreement.">
+              <div class="wl-item" data-subject="history" data-source="live" data-state="learning" data-tl="ratificación" data-def="The action of signing or giving formal consent to a treaty, contract, or agreement." data-wida="5,6" data-elpac="3,4" data-cefr="B2,C1" data-example="The ratification of the treaty required approval from all member states.">
                 <div><div class="wl-word">ratification</div><div class="wl-def">The action of signing or giving formal consent...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="entropía" data-def="A thermodynamic quantity representing the unavailability of a system's thermal energy.">
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="mastered" data-tl="entropía" data-def="A thermodynamic quantity representing the unavailability of a system's thermal energy." data-wida="6" data-elpac="4" data-cefr="C1,C2" data-example="Entropy in a closed system always tends to increase over time.">
                 <div><div class="wl-word">entropy</div><div class="wl-def">A thermodynamic quantity representing unavailability...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="practice" data-state="mastered" data-tl="llanura de inundación" data-def="The flat area of land next to a river that is often covered by water when the river floods.">
+              <div class="wl-item" data-subject="geography" data-source="practice" data-state="mastered" data-tl="llanura de inundación" data-def="The flat area of land next to a river that is often covered by water when the river floods." data-wida="3,4" data-elpac="2,3" data-cefr="B1" data-example="Farmers often use the rich soil of the floodplain to grow crops.">
                 <div><div class="wl-word">floodplain</div><div class="wl-def">The flat area of land next to a river...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="teacher" data-state="learning" data-tl="raíz cuadrada" data-def="A number or quantity that when multiplied by itself gives a given number.">
+              <div class="wl-item" data-subject="math" data-source="teacher" data-state="learning" data-tl="raíz cuadrada" data-def="A number or quantity that when multiplied by itself gives a given number." data-wida="2,3" data-elpac="2" data-cefr="A2,B1" data-example="The square root of 144 is 12.">
                 <div><div class="wl-word">square root</div><div class="wl-def">A number that when multiplied by itself gives...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="practice" data-state="mastered" data-tl="imperialismo" data-def="The extension of a country's power and influence through diplomacy or military force.">
+              <div class="wl-item" data-subject="history" data-source="practice" data-state="mastered" data-tl="imperialismo" data-def="The extension of a country's power and influence through diplomacy or military force." data-wida="5,6" data-elpac="4" data-cefr="B2,C1" data-example="European imperialism had a lasting impact on Africa and Asia.">
                 <div><div class="wl-word">imperialism</div><div class="wl-def">The extension of a country's power and influence...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="aceleración" data-def="The rate at which an object changes its velocity.">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="aceleración" data-def="The rate at which an object changes its velocity." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="The car&#39;s acceleration from 0 to 60 mph took only five seconds.">
                 <div><div class="wl-word">acceleration</div><div class="wl-def">The rate at which an object changes its velocity...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="atmósfera" data-def="The layer of gases surrounding the earth retained by gravity.">
+              <div class="wl-item" data-subject="geography" data-source="live" data-state="learning" data-tl="atmósfera" data-def="The layer of gases surrounding the earth retained by gravity." data-wida="3,4" data-elpac="2,3" data-cefr="B1" data-example="Earth&#39;s atmosphere protects us from harmful solar radiation.">
                 <div><div class="wl-word">atmosphere</div><div class="wl-def">The layer of gases surrounding the earth...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="pi" data-def="The ratio of the circumference of a circle to its diameter, approximately 3.14159.">
+              <div class="wl-item" data-subject="math" data-source="live" data-state="mastered" data-tl="pi" data-def="The ratio of the circumference of a circle to its diameter, approximately 3.14159." data-wida="1,2" data-elpac="1" data-cefr="A1" data-example="The value of pi is approximately 3.14159.">
                 <div><div class="wl-word">pi</div><div class="wl-def">The ratio of the circumference of a circle...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="dictador" data-def="A ruler with total power over a country, typically one who has obtained control by force.">
+              <div class="wl-item" data-subject="history" data-source="teacher" data-state="learning" data-tl="dictador" data-def="A ruler with total power over a country, typically one who has obtained control by force." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="The dictator ruled the country for over thirty years.">
                 <div><div class="wl-word">dictator</div><div class="wl-def">A ruler with total power over a country...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecología" data-def="The branch of biology that deals with the relations of organisms to one another and their environment.">
+              <div class="wl-item" data-subject="science" data-source="practice" data-state="mastered" data-tl="ecología" data-def="The branch of biology that deals with the relations of organisms to one another and their environment." data-wida="4,5" data-elpac="3,4" data-cefr="B1,B2" data-example="She is studying ecology to understand how animals interact with their environment.">
                 <div><div class="wl-word">ecology</div><div class="wl-def">The branch of biology dealing with relations...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="mastered" data-tl="cuenca" data-def="A large natural stream of water flowing to the sea, a lake, or another stream.">
+              <div class="wl-item" data-subject="geography" data-source="teacher" data-state="mastered" data-tl="cuenca" data-def="A large natural stream of water flowing to the sea, a lake, or another stream." data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="The Amazon river basin is the largest in the world.">
                 <div><div class="wl-word">river basin</div><div class="wl-def">A large natural stream of water flowing to the sea...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="desigualdad" data-def="A mathematical statement that two things are not equal.">
+              <div class="wl-item" data-subject="math" data-source="practice" data-state="learning" data-tl="desigualdad" data-def="A mathematical statement that two things are not equal." data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="Solve the inequality to find all possible values of x.">
                 <div><div class="wl-word">inequality</div><div class="wl-def">A mathematical statement that two things are not...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="teacher" data-state="learning" data-tl="hercio" data-def="The SI unit of frequency, equal to one cycle per second.">
+              <div class="wl-item" data-subject="science" data-source="teacher" data-state="learning" data-tl="hercio" data-def="The SI unit of frequency, equal to one cycle per second." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="The frequency of the sound wave was measured at 440 hertz.">
                 <div><div class="wl-word">hertz</div><div class="wl-def">The SI unit of frequency, equal to one cycle...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="inmigración" data-def="The movement of people to live in a new country or area.">
+              <div class="wl-item" data-subject="history" data-source="live" data-state="mastered" data-tl="inmigración" data-def="The movement of people to live in a new country or area." data-wida="3,4" data-elpac="2,3" data-cefr="A2,B1" data-example="Immigration has shaped the culture of many countries.">
                 <div><div class="wl-word">immigration</div><div class="wl-def">The movement of people to live in a new country...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="catalizador" data-def="A substance that increases the rate of a chemical reaction without itself undergoing any permanent change.">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="learning" data-tl="catalizador" data-def="A substance that increases the rate of a chemical reaction without itself undergoing any permanent change." data-wida="5,6" data-elpac="3,4" data-cefr="B2,C1" data-example="The enzyme acts as a catalyst to speed up the chemical reaction.">
                 <div><div class="wl-word">catalyst</div><div class="wl-def">A substance that increases the rate of a chemical...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="geography" data-source="practice" data-state="learning" data-tl="horizonte" data-def="The line at which the earth's surface and the sky appear to meet.">
+              <div class="wl-item" data-subject="geography" data-source="practice" data-state="learning" data-tl="horizonte" data-def="The line at which the earth's surface and the sky appear to meet." data-wida="2,3" data-elpac="2" data-cefr="A2" data-example="We watched the sun slowly sink below the horizon.">
                 <div><div class="wl-word">horizon</div><div class="wl-def">The line at which the earth's surface and sky...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="math" data-source="teacher" data-state="mastered" data-tl="vértice" data-def="Each angular point of a polygon, polyhedron, or other figure.">
+              <div class="wl-item" data-subject="math" data-source="teacher" data-state="mastered" data-tl="vértice" data-def="Each angular point of a polygon, polyhedron, or other figure." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="A triangle has three vertices, or vertex points.">
                 <div><div class="wl-word">vertex</div><div class="wl-def">Each angular point of a polygon or polyhedron...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
-              <div class="wl-item" data-subject="history" data-source="practice" data-state="learning" data-tl="alianza" data-def="A formal agreement or treaty between two or more nations.">
+              <div class="wl-item" data-subject="history" data-source="practice" data-state="learning" data-tl="alianza" data-def="A formal agreement or treaty between two or more nations." data-wida="4,5" data-elpac="3" data-cefr="B1,B2" data-example="The two countries formed an alliance to defend against the common threat.">
                 <div><div class="wl-word">alliance</div><div class="wl-def">A formal agreement or treaty between two or more...</div></div>
                 <span class="wl-state learning">Learning</span>
               </div>
-              <div class="wl-item" data-subject="science" data-source="live" data-state="mastered" data-tl="fuerza" data-def="A push or pull upon an object resulting from its interaction with another object.">
+              <div class="wl-item" data-subject="science" data-source="live" data-state="mastered" data-tl="fuerza" data-def="A push or pull upon an object resulting from its interaction with another object." data-wida="1,2" data-elpac="1" data-cefr="A1" data-example="A magnet exerts a force on nearby metal objects.">
                 <div><div class="wl-word">force</div><div class="wl-def">A push or pull upon an object resulting from...</div></div>
                 <span class="wl-state mastered">Mastered</span>
               </div>
@@ -1193,6 +1216,26 @@ function psGoNext() {
 </script>
 
 <script>
+var currentFramework = 'wida';
+var frameworkLabels = { wida: 'WIDA', elpac: 'ELPAC', cefr: 'CEFR' };
+
+function renderLevelTags(item) {
+  var container = document.getElementById('word-level-tags');
+  if (!container) return;
+  var fw = currentFramework;
+  var vals = item.dataset[fw];
+  var label = frameworkLabels[fw];
+  var html = '';
+  if (vals) vals.split(',').forEach(function(l) { html += '<span class="level-tag ' + fw + '"><span class="level-tag-framework">' + label + '</span>' + l.trim() + '</span>'; });
+  container.innerHTML = html || '<span style="color:#94a3b8;font-size:12px;">—</span>';
+}
+
+function updateFramework(fw) {
+  currentFramework = fw;
+  var selected = document.querySelector('.wl-item.selected');
+  if (selected) renderLevelTags(selected);
+}
+
 (function () {
   /* ── Notice banner close ── */
   const noticeBanner = document.getElementById('notice-banner');
@@ -1348,7 +1391,15 @@ function psGoNext() {
       const cardState = wordCard.querySelector('.state-badge');
       if (cardWord) cardWord.textContent = word;
       if (cardTl) cardTl.textContent = tl;
-      if (cardDef) cardDef.textContent = def;
+      var imgSrc = item.dataset.image || '';
+      var wordImg = document.getElementById('word-image');
+      if (imgSrc) {
+        if (cardDef) cardDef.style.display = 'none';
+        if (wordImg) { wordImg.src = imgSrc; wordImg.alt = word; wordImg.className = 'word-image show'; }
+      } else {
+        if (cardDef) { cardDef.style.display = ''; cardDef.textContent = def; }
+        if (wordImg) { wordImg.className = 'word-image'; wordImg.src = ''; }
+      }
       if (cardState) {
         cardState.className = 'state-badge ' + state;
         cardState.innerHTML = state === 'mastered' ? 'Mastered' : 'Learning';
@@ -1360,6 +1411,18 @@ function psGoNext() {
       var exTlEl = document.getElementById('example-tl');
       if (defTlEl) defTlEl.textContent = item.dataset.defTl || '';
       if (exTlEl) exTlEl.textContent = item.dataset.exampleTl || '';
+
+      // Update example sentence
+      var exTextEl = wordCard.querySelector('.example-text');
+      var exampleSentence = item.dataset.example || '';
+      if (exTextEl) {
+        if (exampleSentence) {
+          var escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          exTextEl.innerHTML = exampleSentence.replace(new RegExp('(' + escaped + ')', 'i'), '<mark>$1</mark>');
+        } else {
+          exTextEl.innerHTML = '';
+        }
+      }
 
       // Update mastery progress
       var mastery = parseInt(item.dataset.mastery || '0');
