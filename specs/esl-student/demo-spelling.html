@@ -102,9 +102,6 @@
       padding: 36px 40px; display: flex; flex-direction: column; gap: 24px;
     }
 
-    /* Hint 1: play audio button (hidden until 1st wrong) */
-    .hint-section { display: none; }
-    .hint-section.revealed { display: block; animation: hintReveal .3s ease; }
     @keyframes hintReveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
     .hint-play {
       display: inline-flex; align-items: center; gap: 8px;
@@ -142,21 +139,15 @@
       letter-spacing: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
-    /* Context sentence */
-    .context-sentence {
-      font-size: 16px; color: #334155; line-height: 1.8;
+    /* Word definition */
+    .word-def {
+      font-size: 15px; color: #334155; line-height: 1.7;
       padding: 16px 20px; background: #f8fafc; border-radius: 10px;
-      border-left: 3px solid #e2e8f0;
+      border-left: 3px solid #10b981;
     }
-    .blank {
-      display: inline-block; min-width: 120px;
-      border-bottom: 2.5px dashed #10b981;
-      color: transparent; margin: 0 4px; position: relative;
-    }
-    .blank::after {
-      content: '?'; position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      color: #10b981; font-weight: 700; font-size: 18px;
+    .word-def-label {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
     }
 
     /* Input area */
@@ -491,24 +482,25 @@
           <!-- Question counter (as card title) -->
           <div class="q-counter">Question <strong id="q-current">3</strong> of <strong>10</strong></div>
 
-          <!-- Hint 1: play audio (hidden until 1st wrong) -->
-          <div class="hint-section" id="hint-section">
+          <!-- Audio play button (always visible) -->
+          <div>
             <button class="hint-play" id="hint-play-btn" title="Play pronunciation" type="button">
               <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg>
               <span>Play word</span>
             </button>
           </div>
 
-          <!-- Hint 2: first letter (hidden until 2nd wrong) -->
+          <!-- Word definition -->
+          <div class="word-def">
+            <div class="word-def-label">Definition</div>
+            <div id="word-def-text">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</div>
+          </div>
+
+          <!-- Hint 1: first letter (hidden until 1st wrong) -->
           <div class="hint-letter" id="hint-letter">💡 Starts with <strong id="hint-letter-char">h</strong></div>
 
-          <!-- Hint 3: 1st/3rd/5th letter pattern (hidden until 3rd wrong) -->
+          <!-- Hint 2: 1/3/5 letter pattern (hidden until 2nd wrong) -->
           <div class="hint-pattern" id="hint-pattern">💡 Pattern <strong id="hint-pattern-text">h _ p _ t _ _ _ _ _</strong></div>
-
-          <!-- Context sentence with blank -->
-          <div class="context-sentence">
-            We need to test our <span class="blank">hypothesis</span> before drawing any conclusions.
-          </div>
 
           <!-- Input -->
           <div class="input-area">
@@ -660,12 +652,12 @@ window._allWords = [
   const statWrong = document.getElementById('stat-wrong');
   const statRemaining = document.getElementById('stat-remaining');
 
-  const hintSection = document.getElementById('hint-section');
   const hintLetter = document.getElementById('hint-letter');
   const hintLetterChar = document.getElementById('hint-letter-char');
   const hintPattern = document.getElementById('hint-pattern');
   const hintPatternText = document.getElementById('hint-pattern-text');
   const hintPlayBtn = document.getElementById('hint-play-btn');
+  const wordDefText = document.getElementById('word-def-text');
 
   function getPatternString(word) {
     var out = [];
@@ -697,11 +689,9 @@ window._allWords = [
     speakWord(w.word);
     hintLetterChar.textContent = w.word.charAt(0).toUpperCase();
     hintPatternText.textContent = getPatternString(w.word);
-    hintSection.classList.add('revealed');
     hintLetter.classList.remove('revealed');
     hintPattern.classList.remove('revealed');
-    document.querySelector('.context-sentence').innerHTML =
-      w.sentence.replace('<blank>', '<span class="blank">' + w.word + '</span>');
+    wordDefText.textContent = w.def;
     input.value = '';
     input.className = 'spell-input';
     input.disabled = false;
@@ -744,7 +734,7 @@ window._allWords = [
       attempts++;
 
       if (attempts === 1) {
-        // 1st wrong → reveal first letter + replay
+        // 1st wrong → reveal first letter + replay audio
         hintLetter.classList.add('revealed');
         speakWord(word.word);
         input.className = 'spell-input wrong';
@@ -752,7 +742,7 @@ window._allWords = [
         input.focus();
         setTimeout(function() { input.className = 'spell-input'; }, 800);
       } else if (attempts === 2) {
-        // 2nd wrong → reveal 1/3/5 letter pattern + replay (hide first-letter hint)
+        // 2nd wrong → reveal letter pattern + replay audio (hide first-letter hint)
         hintLetter.classList.remove('revealed');
         hintPattern.classList.add('revealed');
         speakWord(word.word);

@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Insights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; height: 100vh; background: #fff; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer; position: relative;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item span.sidebar-badge {
+      position: absolute; top: 4px; right: 8px; min-width: 16px; height: 16px;
+      padding: 0 4px; border-radius: 8px; background: #ef4444; color: #fff;
+      font-size: 10px; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; border: 2px solid #fff;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active span { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      background: #ecfdf5; color: #059669; border: 1px solid #6EE7B7;
+    }
+
+    /* ── Master-Detail Layout ── */
+    .master-detail {
+      flex: 1; display: flex; min-height: 0; overflow: hidden;
+    }
+
+    /* ── Left: Inbox (40%) ── */
+    .inbox-panel {
+      width: 40%; flex-shrink: 0; background: #f1f5f9;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .inbox-panel-header {
+      padding: 28px 28px 0; flex-shrink: 0;
+    }
+    .inbox-panel-title {
+      font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 2px;
+    }
+    .inbox-panel-sub {
+      font-size: 12px; color: #94a3b8; margin-bottom: 14px;
+    }
+    .inbox-filter {
+      display: flex; gap: 4px; margin-bottom: 14px;
+    }
+
+    .inbox-filter-tab {
+      font-family: inherit;
+      font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      border: 1px solid #e2e8f0; background: #fff; color: #64748b;
+      cursor: pointer; transition: all .15s;
+    }
+    .inbox-filter-tab:hover { border-color: #cbd5e1; color: #334155; }
+    .inbox-filter-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .inbox-scroll {
+      flex: 1; overflow-y: auto; padding: 0 20px 24px;
+    }
+
+    /* Session card */
+    .session-card {
+      padding: 14px 16px; margin-bottom: 8px; border-radius: 10px;
+      cursor: pointer; transition: all .12s; border: 2px solid #e2e8f0; background: #fff;
+    }
+    .session-card:hover { background: #f8fafc; }
+    .session-card.active {
+      background: #ecfdf5; border-color: #059669;
+    }
+    .session-card.unread { background: #fefce8; }
+    .session-card.unread:hover { background: #fef9c3; }
+    .session-card.unread.active { background: #ecfdf5; border-color: #059669; }
+
+    .sc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .sc-title { font-size: 13px; font-weight: 700; color: #0f172a; flex: 1; }
+    .session-card:not(.unread):not(.active) .sc-title { font-weight: 500; color: #64748b; }
+    .sc-time { font-size: 10px; color: #cbd5e1; flex-shrink: 0; }
+    .session-card.unread .sc-time { color: #94a3b8; font-weight: 600; }
+
+    .sc-meta { font-size: 11px; color: #94a3b8; }
+    .sc-meta .teacher { font-weight: 600; color: #64748b; }
+
+    .sc-bottom { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .sc-wc { font-size: 10px; font-weight: 700; color: #475569; white-space: nowrap; }
+    .sc-bar-wrap { flex: 1; display: flex; align-items: center; gap: 5px; }
+    .sc-bar-bg { flex: 1; height: 4px; background: #f1f5f9; border-radius: 2px; overflow: hidden; }
+    .sc-bar { height: 100%; border-radius: 2px; background: linear-gradient(90deg, rgba(110,231,183,0.5), #059669); }
+    .sc-bar-pct { font-size: 9px; font-weight: 700; color: #059669; width: 26px; text-align: right; }
+
+    /* ── Right: Detail (60%) ── */
+    .detail-panel {
+      flex: 1; background: #f8faf9; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .detail-header {
+      padding: 20px 28px; background: #fff; border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+    .detail-title-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
+    }
+    .detail-title { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .detail-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .detail-action {
+      font-family: inherit;
+      font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 8px;
+      background: #059669; color: #fff; border: none; cursor: pointer;
+      transition: background .15s;
+    }
+    .detail-action:hover { background: #047857; }
+    .detail-action-secondary {
+      font-family: inherit;
+      font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 8px;
+      background: #fff; color: #334155; border: 1px solid #e2e8f0; cursor: pointer;
+      transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none;
+    }
+    .detail-action-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .detail-action-secondary svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .detail-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .dm-pill {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px;
+      background: #f1f5f9; color: #475569;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .dm-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dm-sep { color: #e2e8f0; font-size: 10px; }
+    .dm-pill.green { background: #ecfdf5; color: #059669; font-weight: 700; }
+
+    .detail-scroll {
+      flex: 1; overflow-y: auto; padding: 20px 28px 40px;
+    }
+
+    /* ── Word Table ── */
+    .word-table-wrap {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05); overflow: hidden;
+    }
+    .word-table-head {
+      padding: 12px 18px; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .wth-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .wth-count { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .wth-legend {
+      margin-left: auto; display: flex; align-items: center; gap: 10px;
+      font-size: 10px; color: #94a3b8;
+    }
+    .legend-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      margin-right: 3px;
+    }
+
+    .wt { width: 100%; border-collapse: collapse; }
+    .wt th {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .4px; padding: 8px 14px; text-align: left;
+      border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+    }
+    .wt th.center { text-align: center; }
+    .wt td { padding: 0; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    .wt tr:last-child td { border-bottom: none; }
+
+    .wt-row { cursor: pointer; transition: background .1s; }
+    .wt-row:hover { background: #f8faf9; }
+    .wt-row.active { background: #ecfdf5; }
+    .wt-row td { padding: 10px 14px; vertical-align: middle; }
+
+    .wt-rank { font-size: 10px; font-weight: 700; color: #cbd5e1; width: 32px; text-align: center; }
+    .wt-word { font-size: 15px; font-weight: 700; color: #0f172a; }
+
+    .wt-levels { display: flex; gap: 3px; flex-wrap: wrap; }
+    .wt-lvl {
+      font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+      white-space: nowrap; line-height: 1.4;
+    }
+    .wt-lvl.wida  { background: #ede9fe; color: #6d28d9; }
+    .wt-lvl.elpac { background: #dbeafe; color: #1d4ed8; }
+    .wt-lvl.cefr  { background: #fef3c7; color: #92400e; }
+
+    .wt-bar-cell { width: 140px; }
+    .wt-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .wt-bar-bg {
+      flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden;
+    }
+    .wt-bar {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, rgba(110,231,183,0.5), #059669);
+    }
+    .wt-bar-pct { font-size: 11px; font-weight: 700; color: #059669; width: 32px; text-align: right; }
+
+    .wt-tip {
+      position: relative; cursor: help;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .wt-tip-icon {
+      width: 14px; height: 14px; color: #94a3b8; transition: color .3s;
+    }
+    .wt-tip:hover .wt-tip-icon { color: #059669; }
+
+    .wt-tip-popup {
+      position: absolute; top: calc(100% + 12px); right: 0;
+      transform: translateY(-6px);
+      width: 280px; padding: 0;
+      background: linear-gradient(to bottom right, rgba(15,23,42,.96), rgba(30,41,59,.96));
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px; border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 0 30px rgba(5,150,105,.15), 0 10px 24px rgba(0,0,0,.3);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: all .3s cubic-bezier(.4,0,.2,1); z-index: 100;
+      overflow: hidden;
+    }
+    .wt-tip:hover .wt-tip-popup,
+    .wt-tip.show .wt-tip-popup {
+      opacity: 1; visibility: visible; transform: translateY(0);
+    }
+    /* glow overlay */
+    .wt-tip-glow {
+      position: absolute; inset: 0; border-radius: 16px;
+      background: linear-gradient(to right, rgba(5,150,105,.08), rgba(16,185,129,.08));
+      filter: blur(20px); opacity: .5; pointer-events: none;
+    }
+    /* arrow */
+    .wt-tip-popup::after {
+      content: ''; position: absolute; top: -6px; right: 24px;
+      transform: rotate(45deg);
+      width: 12px; height: 12px;
+      background: linear-gradient(135deg, rgba(15,23,42,.96) 50%, transparent 50%);
+      border-left: 1px solid rgba(255,255,255,.1);
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .wt-tip-body { position: relative; padding: 14px 16px; text-transform: none; letter-spacing: 0; }
+    .wt-tip-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .wt-tip-dot {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(5,150,105,.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wt-tip-dot svg { width: 16px; height: 16px; color: #6ee7b7; }
+    .wt-tip-label { font-size: 13px; font-weight: 700; color: #fff; }
+    .wt-tip-desc {
+      font-size: 12px; color: #cbd5e1; line-height: 1.55; margin-bottom: 10px;
+    }
+    .wt-tip-footer {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: #64748b;
+    }
+    .wt-tip-footer svg { width: 14px; height: 14px; color: #059669; flex-shrink: 0; }
+    .wt-tip-tags { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .wt-tip-tag-row { display: flex; align-items: center; gap: 8px; }
+    .wt-tip-tag {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      flex-shrink: 0; min-width: 28px; text-align: center;
+    }
+    .wt-tip-tag.wida  { background: #ede9fe; color: #6d28d9; }
+    .wt-tip-tag.elpac { background: #dbeafe; color: #1d4ed8; }
+    .wt-tip-tag.cefr  { background: #fef3c7; color: #92400e; }
+    .wt-tip-tag-info { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+
+    .wt-count-cell { width: 64px; text-align: center; }
+    .wt-count { font-size: 11px; font-weight: 600; color: #475569; }
+
+    .wt-expand-cell { width: 36px; text-align: center; }
+    .wt-expand {
+      font-size: 18px; font-weight: 700; color: #94a3b8; transition: transform .2s; display: inline-block;
+    }
+    .wt-row.active .wt-expand { transform: rotate(90deg); color: #059669; }
+
+    /* Detail row */
+    .wt-detail { display: none; }
+    .wt-detail.show { display: table-row; }
+    .wt-detail td { padding: 0 14px 14px; background: #f8faf9; }
+    .wt-detail-inner {
+      padding: 12px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    }
+    .wt-detail-title {
+      font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .wt-detail-title .count-tag {
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+      background: #ecfdf5; color: #059669;
+    }
+
+    .stu-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .stu-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px 4px 4px; border-radius: 16px;
+      background: #fff; border: 1px solid #e2e8f0;
+      font-size: 11px; font-weight: 600; color: #0f172a; transition: all .15s;
+    }
+    .stu-chip:hover { border-color: #059669; background: #ecfdf5; }
+    .stu-chip .chip-avatar {
+      width: 20px; height: 20px; border-radius: 50%; background: #e2e8f0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700; color: #475569;
+    }
+    .stu-chip .chip-group { font-size: 8px; font-weight: 700; color: #94a3b8; margin-left: 2px; }
+
+    .wt-detail-divider { margin: 10px 0; border: none; border-top: 1px dashed #e2e8f0; }
+    .wt-detail-subtitle { font-size: 10px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+    .stu-chip.dimmed { opacity: .4; border-color: #f1f5f9; }
+    .stu-chip.dimmed:hover { opacity: .65; border-color: #e2e8f0; background: #fff; }
+
+    /* ── Empty state ── */
+    .detail-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: #cbd5e1; text-align: center; padding: 40px;
+    }
+    .detail-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+    .detail-empty-text { font-size: 14px; font-weight: 600; color: #94a3b8; }
+    .detail-empty-sub { font-size: 12px; color: #cbd5e1; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item" title="Dashboard" onclick="location.href='demo-dashboard-v5.html'">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" title="Students" onclick="location.href='demo-students-v4.html'">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>Students</span>
+    </div>
+    <div class="sidebar-item active" title="Insights">
+      <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+      <span>Insights</span>
+      <span class="sidebar-badge">2</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <!-- ── Master-Detail ── -->
+    <div class="master-detail">
+
+      <!-- LEFT: Inbox -->
+      <div class="inbox-panel">
+        <div class="inbox-panel-header">
+          <div class="inbox-panel-title">Insight Inbox</div>
+          <div class="inbox-panel-sub">Click a session to view word tap details</div>
+          <div class="inbox-filter">
+            <button class="inbox-filter-tab active" onclick="filterSessions('all',this)">All</button>
+            <button class="inbox-filter-tab" onclick="filterSessions('unread',this)">Unread</button>
+            <button class="inbox-filter-tab" onclick="filterSessions('read',this)">Read</button>
+          </div>
+        </div>
+        <div class="inbox-scroll" id="inbox-scroll"></div>
+      </div>
+
+      <!-- RIGHT: Detail -->
+      <div class="detail-panel">
+        <div class="detail-header" id="detail-header" style="display:none;">
+          <div class="detail-title-row">
+            <div class="detail-title" id="detail-title"></div>
+            <div class="detail-actions">
+            </div>
+          </div>
+          <div class="detail-meta" id="detail-meta"></div>
+        </div>
+        <div class="detail-scroll" id="detail-scroll">
+          <div class="detail-empty" id="detail-empty">
+            <div class="detail-empty-icon">←</div>
+            <div class="detail-empty-text">Select a session from the inbox</div>
+            <div class="detail-empty-sub">Click any session to see which words students tapped</div>
+          </div>
+          <div id="detail-content" style="display:none;">
+            <div class="word-table-wrap">
+              <div class="word-table-head">
+                <span class="wth-title">Words Tapped by Students</span>
+                <span class="wth-count" id="wth-count"></span>
+              </div>
+              <table class="wt">
+                <thead>
+                  <tr>
+                    <th style="width:32px;">#</th>
+                    <th>Word</th>
+                    <th>
+                      <span class="wt-tip">
+                        Save Rate
+                        <svg class="wt-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="wt-tip-popup">
+                          <div class="wt-tip-glow"></div>
+                          <div class="wt-tip-body">
+                            <div class="wt-tip-head">
+                              <div class="wt-tip-dot"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></div>
+                              <span class="wt-tip-label">Save Rate</span>
+                            </div>
+                            <div class="wt-tip-desc">Percentage of students who saved this word to their word bank. Each student can save a word only once.</div>
+                            <div class="wt-tip-footer">
+                              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                              <span>1 save per student per word</span>
+                            </div>
+                          </div>
+                        </div>
+                      </span>
+                    </th>
+                    <th class="center">
+                      <span class="wt-tip">
+                        Tapped
+                        <svg class="wt-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="wt-tip-popup">
+                          <div class="wt-tip-glow"></div>
+                          <div class="wt-tip-body">
+                            <div class="wt-tip-head">
+                              <div class="wt-tip-dot"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></div>
+                              <span class="wt-tip-label">Tapped</span>
+                            </div>
+                            <div class="wt-tip-desc">Total number of taps on this word during the session. The same student may tap a word multiple times.</div>
+                            <div class="wt-tip-footer">
+                              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                              <span>Includes repeated taps by same student</span>
+                            </div>
+                          </div>
+                        </div>
+                      </span>
+                    </th>
+                    <th style="width:28px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="word-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /master-detail -->
+  </div><!-- /app-main -->
+
+</div><!-- /app-frame -->
+
+<script>
+/* ── Students ── */
+var students = [
+  { id:'EL', name:'Emily Lin',    group:'A' },
+  { id:'KC', name:'Kevin Chen',   group:'A' },
+  { id:'SW', name:'Sophie Wang',  group:'A' },
+  { id:'DH', name:'David Huang',  group:'A' },
+  { id:'AL', name:'Amy Liu',      group:'A' },
+  { id:'JZ', name:'Jason Zhang',  group:'A' },
+  { id:'LX', name:'Lisa Xu',      group:'A' },
+  { id:'TY', name:'Tom Yang',     group:'A' },
+  { id:'MC', name:'Mia Chang',    group:'B' },
+  { id:'RW', name:'Ryan Wu',      group:'B' },
+  { id:'OL', name:'Olivia Lee',   group:'B' },
+  { id:'EZ', name:'Ethan Zhou',   group:'B' },
+  { id:'NC', name:'Nancy Cai',    group:'C' },
+  { id:'PH', name:'Peter He',     group:'C' }
+];
+
+/* ── Word Level Lookup (WIDA / ELPAC / CEFR) ── */
+var wordLevels = {
+  // Science — Cell Biology
+  photosynthesis: { wida:'4', elpac:'3', cefr:'B2' },
+  chlorophyll:    { wida:'5', elpac:'3', cefr:'B2' },
+  mitochondria:   { wida:'5', elpac:'4', cefr:'C1' },
+  membrane:       { wida:'4', elpac:'3', cefr:'B2' },
+  organelle:      { wida:'5', elpac:'4', cefr:'C1' },
+  respiration:    { wida:'4', elpac:'3', cefr:'B2' },
+  cytoplasm:      { wida:'5', elpac:'3', cefr:'B2' },
+  nucleus:        { wida:'3', elpac:'2', cefr:'B1' },
+  equation:       { wida:'3', elpac:'2', cefr:'B1' },
+  osmosis:        { wida:'5', elpac:'4', cefr:'C1' },
+  ribosome:       { wida:'5', elpac:'3', cefr:'B2' },
+  chromosome:     { wida:'4', elpac:'3', cefr:'B2' },
+  vacuole:        { wida:'5', elpac:'3', cefr:'B2' },
+  enzyme:         { wida:'4', elpac:'3', cefr:'B2' },
+  diffusion:      { wida:'4', elpac:'3', cefr:'B2' },
+  cellulose:      { wida:'5', elpac:'4', cefr:'C1' },
+  prokaryote:     { wida:'5', elpac:'4', cefr:'C1' },
+  eukaryote:      { wida:'5', elpac:'4', cefr:'C1' },
+  metabolism:     { wida:'4', elpac:'3', cefr:'B2' },
+  homeostasis:    { wida:'5', elpac:'4', cefr:'C1' },
+  // Math — Fractions
+  denominator:    { wida:'4', elpac:'3', cefr:'B2' },
+  numerator:      { wida:'4', elpac:'3', cefr:'B2' },
+  equivalent:     { wida:'3', elpac:'2', cefr:'B1' },
+  simplify:       { wida:'3', elpac:'2', cefr:'B1' },
+  fraction:       { wida:'2', elpac:'2', cefr:'A2' },
+  decimal:        { wida:'2', elpac:'2', cefr:'A2' },
+  percentage:     { wida:'3', elpac:'2', cefr:'B1' },
+  ratio:          { wida:'3', elpac:'2', cefr:'B1' },
+  quotient:       { wida:'4', elpac:'3', cefr:'B2' },
+  reciprocal:     { wida:'5', elpac:'4', cefr:'C1' },
+  divisor:        { wida:'3', elpac:'2', cefr:'B1' },
+  integer:        { wida:'3', elpac:'2', cefr:'B1' },
+  proportion:     { wida:'3', elpac:'2', cefr:'B1' },
+  remainder:      { wida:'3', elpac:'2', cefr:'B1' },
+  // History — The Great Wall
+  dynasty:        { wida:'4', elpac:'3', cefr:'B2' },
+  fortification:  { wida:'5', elpac:'4', cefr:'C1' },
+  emperor:        { wida:'3', elpac:'2', cefr:'B1' },
+  architect:      { wida:'4', elpac:'3', cefr:'B2' },
+  garrison:       { wida:'5', elpac:'4', cefr:'C1' },
+  heritage:       { wida:'4', elpac:'3', cefr:'B2' },
+  terracotta:     { wida:'4', elpac:'3', cefr:'B2' },
+  watchtower:     { wida:'3', elpac:'2', cefr:'B1' },
+  rampart:        { wida:'5', elpac:'4', cefr:'C1' },
+  cavalry:        { wida:'4', elpac:'3', cefr:'B2' },
+  nomadic:        { wida:'4', elpac:'3', cefr:'B2' },
+  sovereignty:    { wida:'5', elpac:'4', cefr:'C1' },
+  tribute:        { wida:'4', elpac:'3', cefr:'B2' },
+  excavation:     { wida:'4', elpac:'3', cefr:'B2' },
+  // Science — Ecosystems
+  ecosystem:      { wida:'3', elpac:'2', cefr:'B1' },
+  predator:       { wida:'3', elpac:'2', cefr:'B1' },
+  herbivore:      { wida:'4', elpac:'3', cefr:'B2' },
+  biodiversity:   { wida:'5', elpac:'4', cefr:'C1' },
+  decomposer:     { wida:'4', elpac:'3', cefr:'B2' },
+  habitat:        { wida:'2', elpac:'2', cefr:'A2' },
+  symbiosis:      { wida:'5', elpac:'4', cefr:'C1' },
+  extinction:     { wida:'4', elpac:'3', cefr:'B2' },
+  carnivore:      { wida:'3', elpac:'2', cefr:'B1' },
+  omnivore:       { wida:'3', elpac:'2', cefr:'B1' },
+  phototropism:   { wida:'5', elpac:'4', cefr:'C1' },
+  pollination:    { wida:'3', elpac:'2', cefr:'B1' },
+  migration:      { wida:'3', elpac:'2', cefr:'B1' },
+  adaptation:     { wida:'3', elpac:'2', cefr:'B1' },
+  biome:          { wida:'4', elpac:'3', cefr:'B2' },
+  trophic:        { wida:'5', elpac:'4', cefr:'C1' },
+  // Social Studies — Water Cycle
+  evaporation:    { wida:'3', elpac:'2', cefr:'B1' },
+  condensation:   { wida:'4', elpac:'3', cefr:'B2' },
+  precipitation:  { wida:'4', elpac:'3', cefr:'B2' },
+  groundwater:    { wida:'3', elpac:'2', cefr:'B1' },
+  aquifer:        { wida:'5', elpac:'4', cefr:'C1' },
+  watershed:      { wida:'4', elpac:'3', cefr:'B2' },
+  transpiration:  { wida:'4', elpac:'3', cefr:'B2' },
+  infiltration:   { wida:'4', elpac:'3', cefr:'B2' },
+  reservoir:      { wida:'3', elpac:'2', cefr:'B1' },
+  runoff:         { wida:'3', elpac:'2', cefr:'B1' },
+  desalination:   { wida:'5', elpac:'4', cefr:'C1' },
+  glacier:        { wida:'3', elpac:'2', cefr:'B1' },
+  tributary:      { wida:'4', elpac:'3', cefr:'B2' },
+  permeable:      { wida:'4', elpac:'3', cefr:'B2' },
+  // Math — Geometry
+  perpendicular:  { wida:'4', elpac:'3', cefr:'B2' },
+  parallelogram:  { wida:'4', elpac:'3', cefr:'B2' },
+  circumference:  { wida:'4', elpac:'3', cefr:'B2' },
+  diameter:       { wida:'3', elpac:'2', cefr:'B1' },
+  symmetry:       { wida:'3', elpac:'2', cefr:'B1' },
+  congruent:      { wida:'5', elpac:'4', cefr:'C1' },
+  hypotenuse:     { wida:'5', elpac:'4', cefr:'C1' },
+  tangent:        { wida:'4', elpac:'3', cefr:'B2' },
+  polygon:        { wida:'3', elpac:'2', cefr:'B1' },
+  vertices:       { wida:'4', elpac:'3', cefr:'B2' },
+  isosceles:      { wida:'5', elpac:'4', cefr:'C1' },
+  quadrilateral:  { wida:'4', elpac:'3', cefr:'B2' },
+  trapezoid:      { wida:'4', elpac:'3', cefr:'B2' },
+  tessellation:   { wida:'5', elpac:'4', cefr:'C1' }
+};
+
+/* ── Sessions ── */
+var sessions = [
+  {
+    id: 'sci-cell', subject: 'Science', topic: 'Cell Biology', color: '#10b981',
+    teacher: 'Mr. Thompson', date: 'Mar 21', time: '09:00–10:30', studentCount: 14,
+    unread: true, assignTag: null, timeAgo: 'Yesterday',
+    words: [
+      { word:'photosynthesis', saved:['EL','KC','SW','DH','AL','JZ','LX','TY','MC','RW','OL'], taps:38 },
+      { word:'chlorophyll',    saved:['EL','KC','SW','DH','AL','JZ','LX','MC','RW','OL'], taps:29 },
+      { word:'mitochondria',   saved:['EL','KC','SW','DH','AL','JZ','MC','RW','OL'], taps:25 },
+      { word:'membrane',       saved:['EL','KC','SW','DH','AL','JZ','MC','RW'], taps:18 },
+      { word:'organelle',      saved:['EL','KC','SW','DH','AL','MC','RW'], taps:21 },
+      { word:'respiration',    saved:['EL','KC','SW','DH','AL'], taps:12 },
+      { word:'cytoplasm',      saved:['EL','KC','SW','DH'], taps:14 },
+      { word:'nucleus',        saved:['EL','KC','NC'], taps:7 },
+      { word:'equation',       saved:['EL','KC','SW','DH','AL','MC'], taps:16 },
+      { word:'osmosis',        saved:['EL','KC'], taps:5 },
+      { word:'ribosome',       saved:['EL','KC','SW','DH','AL','JZ','LX','TY'], taps:22 },
+      { word:'chromosome',     saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:19 },
+      { word:'vacuole',        saved:['EL','KC','SW','DH','AL','JZ'], taps:16 },
+      { word:'enzyme',         saved:['EL','KC','SW','DH','AL'], taps:13 },
+      { word:'diffusion',      saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'cellulose',      saved:['EL','KC','SW'], taps:8 },
+      { word:'prokaryote',     saved:['EL','KC','SW','DH','AL','JZ','LX'], taps:20 },
+      { word:'eukaryote',      saved:['EL','KC','SW','DH','AL','JZ'], taps:17 },
+      { word:'metabolism',     saved:['EL','KC','SW','DH','AL','MC','RW','OL'], taps:24 },
+      { word:'homeostasis',    saved:['EL','KC','SW','DH'], taps:11 }
+    ]
+  },
+  {
+    id: 'math-frac', subject: 'Math', topic: 'Fractions & Decimals', color: '#6366f1',
+    teacher: 'Ms. Rodriguez', date: 'Mar 20', time: '11:00–12:00', studentCount: 11,
+    unread: true, assignTag: null, timeAgo: '2 days ago',
+    words: [
+      { word:'denominator',   saved:['EL','KC','SW','DH','AL','JZ','MC','RW'], taps:22 },
+      { word:'numerator',     saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:19 },
+      { word:'equivalent',    saved:['EL','KC','SW','DH','AL','MC'], taps:15 },
+      { word:'simplify',      saved:['EL','KC','SW','DH','AL'], taps:11 },
+      { word:'fraction',      saved:['EL','KC','SW'], taps:8 },
+      { word:'decimal',       saved:['EL','KC'], taps:4 },
+      { word:'percentage',    saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'ratio',         saved:['EL'], taps:3 },
+      { word:'quotient',      saved:['EL','KC','SW','DH','AL','JZ'], taps:16 },
+      { word:'reciprocal',    saved:['EL','KC','SW','DH','AL'], taps:13 },
+      { word:'divisor',       saved:['EL','KC','SW','DH'], taps:9 },
+      { word:'integer',       saved:['EL','KC','SW'], taps:7 },
+      { word:'proportion',    saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:18 },
+      { word:'remainder',     saved:['EL','KC'], taps:5 }
+    ]
+  },
+  {
+    id: 'hist-wall', subject: 'History', topic: 'The Great Wall', color: '#f59e0b',
+    teacher: 'Mr. Anderson', date: 'Mar 19', time: '14:00–15:30', studentCount: 13,
+    unread: false, assignTag: '1 assignment', timeAgo: '3 days ago',
+    words: [
+      { word:'dynasty',       saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:20 },
+      { word:'fortification', saved:['EL','KC','SW','DH','AL'], taps:14 },
+      { word:'emperor',       saved:['EL','KC','SW','DH'], taps:9 },
+      { word:'architect',     saved:['EL','KC','SW'], taps:7 },
+      { word:'garrison',      saved:['EL','KC'], taps:6 },
+      { word:'heritage',      saved:['EL','KC','SW','DH','AL','JZ'], taps:16 },
+      { word:'terracotta',    saved:['EL','KC','SW','DH','AL','JZ','LX','MC'], taps:23 },
+      { word:'watchtower',    saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:18 },
+      { word:'rampart',       saved:['EL','KC','SW','DH','AL'], taps:12 },
+      { word:'cavalry',       saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'nomadic',       saved:['EL','KC','SW'], taps:8 },
+      { word:'sovereignty',   saved:['EL','KC','SW','DH','AL','JZ'], taps:15 },
+      { word:'tribute',       saved:['EL','KC'], taps:5 },
+      { word:'excavation',    saved:['EL','KC','SW','DH','AL','MC','RW'], taps:19 }
+    ]
+  },
+  {
+    id: 'sci-eco', subject: 'Science', topic: 'Ecosystems & Food Chains', color: '#10b981',
+    teacher: 'Mr. Thompson', date: 'Mar 18', time: '09:00–10:30', studentCount: 14,
+    unread: false, assignTag: '2 assignments', timeAgo: '4 days ago',
+    words: [
+      { word:'ecosystem',     saved:['EL','KC','SW','DH','AL','JZ','LX','TY','MC','RW'], taps:31 },
+      { word:'predator',      saved:['EL','KC','SW','DH','AL','JZ','LX','MC'], taps:23 },
+      { word:'herbivore',     saved:['EL','KC','SW','DH','AL','JZ'], taps:15 },
+      { word:'biodiversity',  saved:['EL','KC','SW','DH','AL'], taps:13 },
+      { word:'decomposer',    saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'habitat',       saved:['EL','KC','NC'], taps:8 },
+      { word:'symbiosis',     saved:['EL','KC'], taps:6 },
+      { word:'extinction',    saved:['EL','KC','SW','DH','MC','RW','OL'], taps:24 },
+      { word:'carnivore',     saved:['EL','KC','SW','DH','AL','JZ','LX'], taps:20 },
+      { word:'omnivore',      saved:['EL','KC','SW','DH','AL'], taps:14 },
+      { word:'phototropism',  saved:['EL','KC','SW','DH'], taps:11 },
+      { word:'pollination',   saved:['EL','KC','SW','DH','AL','JZ','MC','RW'], taps:22 },
+      { word:'migration',     saved:['EL','KC','SW'], taps:9 },
+      { word:'adaptation',    saved:['EL','KC','SW','DH','AL','JZ'], taps:17 },
+      { word:'biome',         saved:['EL','KC','SW','DH','AL','MC'], taps:16 },
+      { word:'trophic',       saved:['EL','KC'], taps:5 }
+    ]
+  },
+  {
+    id: 'ss-water', subject: 'Social Studies', topic: 'Water Cycle', color: '#0ea5e9',
+    teacher: 'Ms. Rodriguez', date: 'Mar 17', time: '13:00–14:30', studentCount: 13,
+    unread: false, assignTag: '1 assignment', timeAgo: '5 days ago',
+    words: [
+      { word:'evaporation',   saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:18 },
+      { word:'condensation',  saved:['EL','KC','SW','DH','AL'], taps:13 },
+      { word:'precipitation', saved:['EL','KC','SW','DH'], taps:11 },
+      { word:'groundwater',   saved:['EL','KC','SW'], taps:7 },
+      { word:'aquifer',       saved:['EL','KC'], taps:5 },
+      { word:'watershed',     saved:['EL','KC','DH','MC'], taps:9 },
+      { word:'transpiration', saved:['EL','KC','SW','DH','AL','JZ','MC','RW'], taps:21 },
+      { word:'infiltration',  saved:['EL','KC','SW','DH','AL','JZ'], taps:16 },
+      { word:'reservoir',     saved:['EL','KC','SW','DH','AL'], taps:12 },
+      { word:'runoff',        saved:['EL','KC','SW'], taps:8 },
+      { word:'desalination',  saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:19 },
+      { word:'glacier',       saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'tributary',     saved:['EL','KC'], taps:6 },
+      { word:'permeable',     saved:['EL','KC','SW','DH','AL'], taps:14 }
+    ]
+  },
+  {
+    id: 'math-geo', subject: 'Math', topic: 'Geometry Basics', color: '#6366f1',
+    teacher: 'Ms. Rodriguez', date: 'Mar 14', time: '11:00–12:00', studentCount: 11,
+    unread: false, assignTag: '1 assignment', timeAgo: 'Mar 14',
+    words: [
+      { word:'perpendicular', saved:['EL','KC','SW','DH','AL','JZ','MC','RW','OL'], taps:27 },
+      { word:'parallelogram', saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:19 },
+      { word:'circumference', saved:['EL','KC','SW','DH','AL'], taps:14 },
+      { word:'diameter',      saved:['EL','KC','SW'], taps:8 },
+      { word:'symmetry',      saved:['EL','KC'], taps:5 },
+      { word:'congruent',     saved:['EL'], taps:3 },
+      { word:'hypotenuse',    saved:['EL','KC','SW','DH','AL','JZ','MC','RW'], taps:24 },
+      { word:'tangent',       saved:['EL','KC','SW','DH','AL','JZ'], taps:17 },
+      { word:'polygon',       saved:['EL','KC','SW','DH','AL'], taps:13 },
+      { word:'vertices',      saved:['EL','KC','SW','DH'], taps:10 },
+      { word:'isosceles',     saved:['EL','KC','SW'], taps:7 },
+      { word:'quadrilateral', saved:['EL','KC','SW','DH','AL','JZ','MC'], taps:20 },
+      { word:'trapezoid',     saved:['EL','KC'], taps:6 },
+      { word:'tessellation',  saved:['EL','KC','SW','DH','AL','JZ'], taps:15 }
+    ]
+  }
+];
+
+var currentFilter = 'all';
+var activeSessionId = null;
+
+/* ── Build Inbox ── */
+function buildInbox() {
+  var html = '';
+  for (var i = 0; i < sessions.length; i++) {
+    var s = sessions[i];
+    var readClass = s.unread ? ' unread' : '';
+    var activeClass = s.id === activeSessionId ? ' active' : '';
+    var filterMatch = currentFilter === 'all'
+      || (currentFilter === 'unread' && s.unread)
+      || (currentFilter === 'read' && !s.unread);
+    var display = filterMatch ? '' : ' style="display:none;"';
+
+    // Compute avg save rate
+    var totalSaved = 0;
+    for (var w = 0; w < s.words.length; w++) totalSaved += s.words[w].saved.length;
+    var avgRate = s.words.length > 0 ? Math.round((totalSaved / (s.words.length * s.studentCount)) * 100) : 0;
+
+    html += '<div class="session-card' + readClass + activeClass + '" data-id="' + s.id + '" data-unread="' + s.unread + '" onclick="selectSession(\'' + s.id + '\')"' + display + '>'
+      + '<div class="sc-top">'
+      + '<div class="sc-title">' + s.subject + ' · ' + s.topic + '</div>'
+      + '<div class="sc-time">' + s.timeAgo + '</div>'
+      + '</div>'
+      + '<div class="sc-meta"><span class="teacher">' + s.teacher + '</span> · ' + s.date + ' · ' + s.time + '</div>'
+      + '<div class="sc-bottom">'
+      + '<span class="sc-wc">' + s.words.length + ' words</span>'
+      + '</div>'
+      + '</div>';
+  }
+  document.getElementById('inbox-scroll').innerHTML = html;
+}
+
+/* ── Select Session ── */
+function selectSession(id) {
+  activeSessionId = id;
+  var s = sessions.find(function(x) { return x.id === id; });
+
+  // Update inbox active states
+  document.querySelectorAll('.session-card').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.id === id);
+  });
+
+  // Show detail header
+  document.getElementById('detail-header').style.display = '';
+  document.getElementById('detail-empty').style.display = 'none';
+  document.getElementById('detail-content').style.display = '';
+
+  document.getElementById('detail-title').textContent = s.subject + ' · ' + s.topic;
+
+  var metaHtml = '<span class="dm-pill">' + s.date + ' · ' + s.time + '</span>'
+    + '<span class="dm-sep">·</span>'
+    + '<span class="dm-pill">' + s.teacher + '</span>'
+    + '<span class="dm-sep">·</span>'
+    + '<span class="dm-pill green">' + s.studentCount + ' students</span>';
+  document.getElementById('detail-meta').innerHTML = metaHtml;
+
+  document.getElementById('wth-count').textContent = s.words.length + ' words extracted';
+
+  // Build word table — sort by save rate (descending)
+  var total = s.studentCount;
+  var sortedWords = s.words.slice().sort(function(a, b) {
+    return (b.saved.length / total) - (a.saved.length / total);
+  });
+  var tbody = document.getElementById('word-tbody');
+  var html = '';
+
+  for (var i = 0; i < sortedWords.length; i++) {
+    var w = sortedWords[i];
+    var saveRate = Math.round((w.saved.length / total) * 100);
+
+    html += '<tr class="wt-row" onclick="toggleDetail(' + i + ',this)">'
+      + '<td class="wt-rank">' + (i + 1) + '</td>'
+      + '<td><span class="wt-word">' + w.word + '</span></td>'
+      + '<td class="wt-bar-cell"><div class="wt-bar-wrap">'
+      + '<div class="wt-bar-bg"><div class="wt-bar" style="width:' + saveRate + '%;"></div></div>'
+      + '<span class="wt-bar-pct">' + saveRate + '%</span>'
+      + '</div></td>'
+      + '<td class="wt-count-cell"><span class="wt-count">' + w.taps + '</span></td>'
+      + '<td class="wt-expand-cell"><span class="wt-expand"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg></span></td>'
+      + '</tr>';
+
+    // Student chips (based on who saved)
+    var savedSet = {};
+    for (var t = 0; t < w.saved.length; t++) savedSet[w.saved[t]] = true;
+    var chipsYes = '', chipsNo = '';
+    for (var j = 0; j < students.length; j++) {
+      var stu = students[j];
+      var chip = '<div class="stu-chip' + (savedSet[stu.id] ? '' : ' dimmed') + '">'
+        + '<span class="chip-avatar">' + stu.id + '</span>' + stu.name
+        + '<span class="chip-group">G' + stu.group + '</span></div>';
+      if (savedSet[stu.id]) chipsYes += chip; else chipsNo += chip;
+    }
+
+    html += '<tr class="wt-detail" id="detail-' + i + '"><td colspan="5">'
+      + '<div class="wt-detail-inner">'
+      + '<div class="wt-detail-title">Saved <strong>' + w.word + '</strong> <span class="count-tag">' + w.saved.length + ' students</span></div>'
+      + '<div class="stu-chips">' + chipsYes + '</div>';
+    if (chipsNo) {
+      html += '<hr class="wt-detail-divider">'
+        + '<div class="wt-detail-subtitle">Did not save (' + (total - w.saved.length) + ')</div>'
+        + '<div class="stu-chips">' + chipsNo + '</div>';
+    }
+    html += '</div></td></tr>';
+  }
+
+  tbody.innerHTML = html;
+
+  // Scroll detail to top
+  document.getElementById('detail-scroll').scrollTop = 0;
+}
+
+function toggleDetail(idx, row) {
+  var detail = document.getElementById('detail-' + idx);
+  var isOpen = detail.classList.contains('show');
+  document.querySelectorAll('.wt-detail.show').forEach(function(d) { d.classList.remove('show'); });
+  document.querySelectorAll('.wt-row.active').forEach(function(r) { r.classList.remove('active'); });
+  if (!isOpen) { detail.classList.add('show'); row.classList.add('active'); }
+}
+
+
+function filterSessions(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.inbox-filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.session-card').forEach(function(c) {
+    var isUnread = c.dataset.unread === 'true';
+    var show = filter === 'all' || (filter === 'unread' && isUnread) || (filter === 'read' && !isUnread);
+    c.style.display = show ? '' : 'none';
+  });
+}
+
+/* ── Init ── */
+buildInbox();
+// Auto-select first session
+selectSession(sessions[0].id);
+
+// Preview mode: auto-show Level tooltip for iframe snapshot
+if (location.search.indexOf('preview=1') !== -1) {
+  setTimeout(function() {
+    var tips = document.querySelectorAll('.wt-tip');
+    if (tips.length > 0) tips[0].classList.add('show');
+  }, 300);
+}
+</script>
+
+</body>
+</html>

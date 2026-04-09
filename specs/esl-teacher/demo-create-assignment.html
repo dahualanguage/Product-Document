@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Create Assignment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8faf9; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Overlay ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(2px);
+    }
+
+    /* ── Modal ── */
+    .modal {
+      background: #fff; border-radius: 16px;
+      width: 680px; max-height: 88vh;
+      box-shadow: 0 25px 60px rgba(0,0,0,.18);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* ── Modal Header ── */
+    .modal-header {
+      padding: 24px 28px 0; flex-shrink: 0;
+    }
+    .modal-title-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
+    }
+    .modal-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .modal-close {
+      margin-left: auto; width: 32px; height: 32px; border-radius: 8px;
+      border: none; background: none; cursor: pointer; color: #94a3b8;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s; font-size: 18px;
+    }
+    .modal-close:hover { background: #f1f5f9; color: #475569; }
+    .modal-sub {
+      font-size: 13px; color: #64748b; margin-bottom: 20px;
+    }
+    .modal-sub .session-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-weight: 600; color: #0f172a;
+    }
+    .modal-sub .dot {
+      width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+    }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex; align-items: center; gap: 0; padding: 0 28px 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .step-item {
+      display: flex; align-items: center; gap: 8px; cursor: default;
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      background: #f1f5f9; color: #94a3b8;
+      transition: all .2s; flex-shrink: 0;
+    }
+    .step-item.active .step-num { background: #059669; color: #fff; }
+    .step-item.done .step-num { background: #d1fae5; color: #059669; }
+    .step-label {
+      font-size: 12px; font-weight: 600; color: #94a3b8;
+      transition: color .2s; white-space: nowrap;
+    }
+    .step-item.active .step-label { color: #0f172a; }
+    .step-item.done .step-label { color: #059669; }
+    .step-line {
+      flex: 1; height: 2px; background: #e2e8f0; margin: 0 12px;
+      min-width: 20px;
+    }
+    .step-line.done { background: #6ee7b7; }
+
+    /* ── Modal Body ── */
+    .modal-body {
+      flex: 1; overflow-y: auto; padding: 24px 28px;
+    }
+
+    /* ── Modal Footer ── */
+    .modal-footer {
+      padding: 16px 28px; border-top: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .modal-footer .summary {
+      font-size: 12px; color: #64748b; flex: 1;
+    }
+    .modal-footer .summary strong { color: #0f172a; }
+    .btn {
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      padding: 10px 20px; border-radius: 10px; cursor: pointer;
+      transition: all .15s; border: none;
+    }
+    .btn-ghost {
+      background: none; color: #64748b; border: 1px solid #e2e8f0;
+    }
+    .btn-ghost:hover { background: #f8fafc; color: #334155; }
+    .btn-primary {
+      background: #059669; color: #fff;
+    }
+    .btn-primary:hover { background: #047857; }
+    .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+    /* ════════ Step 1: Select Words ════════ */
+    .word-select-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .word-select-title { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .word-count-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      background: #ecfdf5; color: #059669;
+    }
+    .select-all-btn {
+      margin-left: auto; font-family: inherit;
+      font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      border: 1px solid #e2e8f0; background: #fff; color: #64748b;
+      cursor: pointer; transition: all .15s;
+    }
+    .select-all-btn:hover { border-color: #cbd5e1; color: #334155; }
+
+    .word-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    }
+    .word-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; transition: all .15s;
+    }
+    .word-chip:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .word-chip.selected { border-color: #059669; background: #ecfdf5; }
+    .word-chip .check {
+      width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+      border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .word-chip.selected .check {
+      background: #059669; border-color: #059669;
+    }
+    .word-chip .check svg { width: 12px; height: 12px; fill: #fff; opacity: 0; }
+    .word-chip.selected .check svg { opacity: 1; }
+    .word-chip-info { flex: 1; min-width: 0; }
+    .word-chip-word { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .word-chip-meta {
+      font-size: 10px; color: #94a3b8; display: flex; gap: 8px; margin-top: 2px;
+    }
+    .word-chip-levels { display: flex; gap: 3px; flex-shrink: 0; }
+    .wl-tag {
+      font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+      line-height: 1.4;
+    }
+    .wl-tag.w { background: #f3e8ff; color: #7c3aed; }
+    .wl-tag.e { background: #dbeafe; color: #2563eb; }
+    .wl-tag.c { background: #fef9c3; color: #a16207; }
+
+    /* ════════ Step 2: Practice Type ════════ */
+    .type-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .type-card {
+      padding: 20px; border-radius: 12px;
+      border: 2px solid #e2e8f0; background: #fff;
+      cursor: pointer; transition: all .15s;
+    }
+    .type-card:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .type-card.selected { border-color: #059669; background: #ecfdf5; }
+    .type-card-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .type-card-icon svg { width: 28px; height: 28px; }
+    .type-card-icon.spell { background: #ecfdf5; }
+    .type-card-icon.mc { background: #ecfdf5; }
+    .type-card-icon.mirror { background: #ecfdf5; }
+    .type-card-icon.all { background: #ecfdf5; }
+    .type-card-name { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .type-card-desc { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .type-card.selected .type-card-name { color: #065f46; }
+    .type-card-timer {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      margin-top: 8px; padding: 2px 8px; border-radius: 4px;
+      background: #f8fafc;
+    }
+    .type-card.selected .type-card-timer { background: #d1fae5; color: #065f46; }
+
+    /* ════════ Step 3: Assign Target ════════ */
+    .assign-section { margin-bottom: 20px; }
+    .assign-section-title {
+      font-size: 12px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 10px;
+    }
+    .class-info-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; border-radius: 10px;
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    .class-info-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .class-info-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .class-info-meta { font-size: 11px; color: #94a3b8; }
+    .class-info-count {
+      margin-left: auto; font-size: 12px; font-weight: 700; color: #059669;
+      background: #ecfdf5; padding: 3px 10px; border-radius: 6px;
+    }
+    .student-filter {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .student-filter-label {
+      font-size: 11px; font-weight: 600; color: #94a3b8; margin-right: 4px;
+    }
+    .sf-tab {
+      font-family: inherit; font-size: 10px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid #e2e8f0; background: #fff; color: #64748b;
+      cursor: pointer; transition: all .15s;
+    }
+    .sf-tab:hover { border-color: #cbd5e1; color: #334155; }
+    .sf-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .student-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    }
+    .stu-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 8px;
+      border: 1.5px solid #e2e8f0; background: #fff;
+      cursor: pointer; transition: all .12s; font-size: 12px;
+    }
+    .stu-chip:hover { border-color: #cbd5e1; }
+    .stu-chip.selected { border-color: #059669; background: #ecfdf5; }
+    .stu-check {
+      width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+      border: 1.5px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+      transition: all .12s;
+    }
+    .stu-chip.selected .stu-check { background: #059669; border-color: #059669; }
+    .stu-check svg { width: 10px; height: 10px; fill: #fff; opacity: 0; }
+    .stu-chip.selected .stu-check svg { opacity: 1; }
+    .stu-name { font-weight: 600; color: #0f172a; flex: 1; }
+    .stu-level {
+      font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .stu-level.l1 { background: #fee2e2; color: #991b1b; }
+    .stu-level.l2 { background: #fef3c7; color: #92400e; }
+    .stu-level.l3 { background: #dbeafe; color: #1e40af; }
+    .stu-level.l4 { background: #d1fae5; color: #065f46; }
+    .stu-level.l5 { background: #ede9fe; color: #5b21b6; }
+    .student-select-all {
+      font-family: inherit; font-size: 10px; font-weight: 600;
+      padding: 3px 10px; border-radius: 5px; margin-left: auto;
+      border: 1px solid #e2e8f0; background: #fff; color: #64748b;
+      cursor: pointer; transition: all .12s;
+    }
+    .student-select-all:hover { color: #334155; border-color: #cbd5e1; }
+
+    .due-date-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .due-date-input {
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 10px 14px; border-radius: 10px;
+      border: 2px solid #e2e8f0; background: #fff; color: #0f172a;
+      transition: border-color .15s; width: 200px;
+    }
+    .due-date-input:focus { outline: none; border-color: #059669; }
+    .due-date-label { font-size: 12px; color: #94a3b8; font-style: italic; }
+
+    /* ════════ Step 4: Confirm ════════ */
+    .confirm-card {
+      background: #f8fafc; border-radius: 12px;
+      border: 1px solid #e2e8f0; padding: 20px 24px;
+      margin-bottom: 12px;
+    }
+    .confirm-card-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 10px;
+    }
+    .confirm-row {
+      display: flex; align-items: baseline; gap: 10px;
+      padding: 5px 0; font-size: 13px;
+    }
+    .confirm-label { color: #64748b; font-weight: 500; width: 110px; flex-shrink: 0; }
+    .confirm-value { color: #0f172a; font-weight: 700; flex: 1; }
+    .confirm-words-list {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
+    }
+    .confirm-word-tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px;
+      background: #ecfdf5; color: #059669;
+    }
+    .confirm-type-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 8px;
+      background: #ede9fe; color: #7c3aed;
+    }
+    .confirm-class-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 8px;
+      background: #dbeafe; color: #2563eb;
+    }
+
+    /* ════════ Success ════════ */
+    .success-view {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 40px; text-align: center;
+    }
+    .success-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #d1fae5; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .success-icon svg { width: 32px; height: 32px; fill: #059669; }
+    .success-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .success-sub { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+    .success-sub strong { color: #0f172a; }
+  </style>
+</head>
+<body>
+
+<div class="overlay">
+  <div class="modal">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title-row">
+        <div class="modal-title">Create Assignment</div>
+        <button class="modal-close" title="Close" onclick="location.href='demo-session-insights.html'">&times;</button>
+      </div>
+      <div class="modal-sub">
+        From session: <span class="session-tag"><span class="dot" style="background:#10b981;"></span> Science · Cell Biology</span> &nbsp;·&nbsp; Mar 21 · 14 students
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper">
+        <div class="step-item active" data-step="1">
+          <div class="step-num">1</div>
+          <div class="step-label">Words</div>
+        </div>
+        <div class="step-line" data-line="1"></div>
+        <div class="step-item" data-step="2">
+          <div class="step-num">2</div>
+          <div class="step-label">Type</div>
+        </div>
+        <div class="step-line" data-line="2"></div>
+        <div class="step-item" data-step="3">
+          <div class="step-num">3</div>
+          <div class="step-label">Assign</div>
+        </div>
+        <div class="step-line" data-line="3"></div>
+        <div class="step-item" data-step="4">
+          <div class="step-num">4</div>
+          <div class="step-label">Confirm</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body" id="modal-body">
+
+      <!-- ── Step 1: Select Words ── -->
+      <div class="step-panel" id="panel-1">
+        <div class="word-select-header">
+          <div class="word-select-title">Select words to assign</div>
+          <div class="word-count-badge" id="word-count">10 / 10 selected</div>
+          <button class="select-all-btn" id="toggle-all-btn" onclick="toggleAll()">Deselect All</button>
+        </div>
+        <div class="word-grid" id="word-grid"></div>
+      </div>
+
+      <!-- ── Step 2: Practice Type ── -->
+      <div class="step-panel" id="panel-2" style="display:none;">
+        <div class="type-grid">
+          <div class="type-card" onclick="selectType(this,'all')">
+            <div class="type-card-icon all"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path fill="#6EE7B7" fill-rule="evenodd" d="M10.21 0.334 7.565 5.626a0.603 0.603 0 0 0 0.54 0.874h5.29c0.45 0 0.741 -0.472 0.54 -0.874L11.29 0.334a0.604 0.604 0 0 0 -1.08 0ZM0 1A0.5 0.5 0 0 1 0.5 0.5h5A0.5 0.5 0 0 1 6 1v5a0.5 0.5 0 0 1 -0.5 0.5h-5A0.5 0.5 0 0 1 0 6V1Zm3 13a3 3 0 1 0 0 -6 3 3 0 0 0 0 6Z" clip-rule="evenodd" stroke-width="1"/><path fill="#059669" fill-rule="evenodd" d="M8.5 8a0.75 0.75 0 0 0 0 1.5H13A0.75 0.75 0 0 0 13 8H8.5Zm-0.75 3a0.75 0.75 0 0 1 0.75 -0.75H13a0.75 0.75 0 0 1 0 1.5H8.5a0.75 0.75 0 0 1 -0.75 -0.75Zm0 2.25a0.75 0.75 0 0 1 0.75 -0.75H13a0.75 0.75 0 0 1 0 1.5H8.5a0.75 0.75 0 0 1 -0.75 -0.75Z" clip-rule="evenodd" stroke-width="1"/></svg></div>
+            <div class="type-card-name">Practice All</div>
+            <div class="type-card-desc">Random type per word (equal distribution). Helps fill missing type gaps toward mastery.</div>
+            <div class="type-card-timer">Mixed timers</div>
+          </div>
+          <div class="type-card" onclick="selectType(this,'spelling')">
+            <div class="type-card-icon spell"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path fill="#6EE7B7" d="M0 1.5A1.5 1.5 0 0 1 1.5 0h11A1.5 1.5 0 0 1 14 1.5v11a1.5 1.5 0 0 1 -1.5 1.5h-11A1.5 1.5 0 0 1 0 12.5v-11Z" stroke-width="1"/><path fill="#059669" fill-rule="evenodd" d="M7 3.875a0.242 0.242 0 0 0 -0.23 0.166L5.575 7.625h2.85L7.23 4.041A0.242 0.242 0 0 0 7 3.875Zm2.88 4.164L8.416 3.645a1.492 1.492 0 0 0 -2.832 0L4.12 8.04a0.624 0.624 0 0 0 -0.01 0.027l-0.828 2.486a0.625 0.625 0 1 0 1.186 0.396l0.69 -2.073h3.683l0.691 2.073a0.625 0.625 0 1 0 1.186 -0.396l-0.829 -2.486a0.626 0.626 0 0 0 -0.009 -0.027Z" clip-rule="evenodd" stroke-width="1"/></svg></div>
+            <div class="type-card-name">Spelling</div>
+            <div class="type-card-desc">Type the missing word in context sentence. 3-strike progressive hints.</div>
+            <div class="type-card-timer">60s per word</div>
+          </div>
+          <div class="type-card" onclick="selectType(this,'mc')">
+            <div class="type-card-icon mc"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path fill="#059669" fill-rule="evenodd" d="M1 3.5a1 1 0 1 0 0 -2 1 1 0 0 0 0 2ZM2 7a1 1 0 1 1 -2 0 1 1 0 0 1 2 0Zm0 4.5a1 1 0 1 1 -2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd" stroke-width="1"/><path fill="#6EE7B7" fill-rule="evenodd" d="M4 2.5a0.75 0.75 0 0 1 0.75 -0.75h8.5a0.75 0.75 0 0 1 0 1.5h-8.5A0.75 0.75 0 0 1 4 2.5ZM4 7a0.75 0.75 0 0 1 0.75 -0.75h8.5a0.75 0.75 0 0 1 0 1.5h-8.5A0.75 0.75 0 0 1 4 7Zm0.75 3.75a0.75 0.75 0 0 0 0 1.5h8.5a0.75 0.75 0 0 0 0 -1.5h-8.5Z" clip-rule="evenodd" stroke-width="1"/></svg></div>
+            <div class="type-card-name">Multiple Choice</div>
+            <div class="type-card-desc">Select correct answer from 4 options. Progressive hint system.</div>
+            <div class="type-card-timer">20s per word</div>
+          </div>
+          <div class="type-card" onclick="selectType(this,'mirroring')">
+            <div class="type-card-icon mirror"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path fill="#6EE7B7" fill-rule="evenodd" d="M6.75 0a2.946 2.946 0 0 0 -2.946 2.946v3.425a2.946 2.946 0 1 0 5.892 0V2.946A2.946 2.946 0 0 0 6.75 0Z" clip-rule="evenodd" stroke-width="1"/><path fill="#059669" fill-rule="evenodd" d="M2.5 6.763a0.75 0.75 0 1 0 -1.5 0 5.25 5.25 0 0 0 5 5.245v1.212a0.75 0.75 0 0 0 1.5 0v-1.213a5.25 5.25 0 0 0 5 -5.244 0.75 0.75 0 0 0 -1.5 0 3.75 3.75 0 0 1 -3.75 3.75h-0.486l-0.014 0 -0.014 0H6.25a3.75 3.75 0 0 1 -3.75 -3.75Z" clip-rule="evenodd" stroke-width="1"/></svg></div>
+            <div class="type-card-name">Mirroring</div>
+            <div class="type-card-desc">Say the word + example sentence. AI pronunciation scoring (≥3★ pass).</div>
+            <div class="type-card-timer">10s word + 20s sentence</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Assign Target ── -->
+      <div class="step-panel" id="panel-3" style="display:none;">
+        <div class="assign-section">
+          <div class="assign-section-title">Session Class</div>
+          <div class="class-info-bar">
+            <div class="class-info-dot" style="background:#10b981;"></div>
+            <div>
+              <div class="class-info-name">ESL Level 3 — Period 2</div>
+              <div class="class-info-meta">Mr. Chen · Science · MWF 09:00</div>
+            </div>
+            <div class="class-info-count" id="stu-count-badge">14/14 students</div>
+          </div>
+        </div>
+
+        <div class="assign-section">
+          <div class="assign-section-title">Select Students</div>
+          <div class="student-filter" id="stu-filter"></div>
+          <div class="student-grid" id="stu-grid"></div>
+        </div>
+
+        <div class="assign-section">
+          <div class="assign-section-title">Due Date (Optional)</div>
+          <div class="due-date-row">
+            <input type="date" class="due-date-input" id="due-date" value="2026-03-28" />
+            <div class="due-date-label">Students can still practice after due date</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Step 4: Confirm ── -->
+      <div class="step-panel" id="panel-4" style="display:none;">
+        <div class="confirm-card">
+          <div class="confirm-card-title">Assignment Summary</div>
+          <div class="confirm-row">
+            <div class="confirm-label">Source</div>
+            <div class="confirm-value" id="confirm-source"></div>
+          </div>
+          <div class="confirm-row">
+            <div class="confirm-label">Practice Type</div>
+            <div class="confirm-value" id="confirm-type"></div>
+          </div>
+          <div class="confirm-row">
+            <div class="confirm-label">Assign to</div>
+            <div class="confirm-value" id="confirm-classes"></div>
+          </div>
+          <div class="confirm-row">
+            <div class="confirm-label">Due Date</div>
+            <div class="confirm-value" id="confirm-due"></div>
+          </div>
+          <div class="confirm-row">
+            <div class="confirm-label">Words</div>
+            <div class="confirm-value">
+              <span id="confirm-word-count"></span>
+              <div class="confirm-words-list" id="confirm-words"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Success ── -->
+      <div class="success-view" id="success-view">
+        <div class="success-icon">
+          <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+        </div>
+        <div class="success-title">Assignment Created!</div>
+        <div class="success-sub" id="success-sub"></div>
+        <button class="btn btn-primary" onclick="location.href='demo-session-insights.html'">Back to Insight Inbox</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer" id="modal-footer">
+      <div class="summary" id="footer-summary"></div>
+      <button class="btn btn-ghost" id="btn-back" onclick="prevStep()" style="display:none;">Back</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Data ── */
+var wordLevels = {
+  photosynthesis: { wida:'4', elpac:'3', cefr:'B2' },
+  chlorophyll:    { wida:'5', elpac:'4', cefr:'C1' },
+  mitochondria:   { wida:'5', elpac:'4', cefr:'C1' },
+  membrane:       { wida:'4', elpac:'3', cefr:'B2' },
+  organelle:      { wida:'5', elpac:'4', cefr:'C1' },
+  respiration:    { wida:'4', elpac:'3', cefr:'B2' },
+  cytoplasm:      { wida:'4', elpac:'3', cefr:'B2' },
+  nucleus:        { wida:'3', elpac:'2', cefr:'B1' },
+  equation:       { wida:'3', elpac:'2', cefr:'B1' },
+  osmosis:        { wida:'4', elpac:'3', cefr:'B2' },
+  denominator:    { wida:'3', elpac:'2', cefr:'B1' },
+  numerator:      { wida:'3', elpac:'2', cefr:'B1' },
+  equivalent:     { wida:'3', elpac:'2', cefr:'B1' },
+  simplify:       { wida:'3', elpac:'2', cefr:'B1' },
+  fraction:       { wida:'2', elpac:'1', cefr:'A2' },
+  decimal:        { wida:'3', elpac:'2', cefr:'B1' },
+  percentage:     { wida:'3', elpac:'2', cefr:'B1' },
+  ratio:          { wida:'3', elpac:'2', cefr:'B1' },
+  dynasty:        { wida:'4', elpac:'3', cefr:'B2' },
+  fortification:  { wida:'5', elpac:'4', cefr:'C1' },
+  emperor:        { wida:'3', elpac:'2', cefr:'B1' },
+  architect:      { wida:'4', elpac:'3', cefr:'B2' },
+  garrison:       { wida:'5', elpac:'4', cefr:'C1' },
+  heritage:       { wida:'4', elpac:'3', cefr:'B2' },
+  ecosystem:      { wida:'4', elpac:'3', cefr:'B2' },
+  predator:       { wida:'3', elpac:'2', cefr:'B1' },
+  herbivore:      { wida:'4', elpac:'3', cefr:'B2' },
+  biodiversity:   { wida:'5', elpac:'4', cefr:'C1' },
+  decomposer:     { wida:'4', elpac:'3', cefr:'B2' },
+  habitat:        { wida:'3', elpac:'2', cefr:'B1' },
+  symbiosis:      { wida:'5', elpac:'4', cefr:'C1' },
+  extinction:     { wida:'4', elpac:'3', cefr:'B2' },
+  evaporation:    { wida:'4', elpac:'3', cefr:'B2' },
+  condensation:   { wida:'4', elpac:'3', cefr:'B2' },
+  precipitation:  { wida:'4', elpac:'3', cefr:'B2' },
+  groundwater:    { wida:'3', elpac:'2', cefr:'B1' },
+  aquifer:        { wida:'5', elpac:'4', cefr:'C1' },
+  watershed:      { wida:'4', elpac:'3', cefr:'B2' },
+  perpendicular:  { wida:'4', elpac:'3', cefr:'B2' },
+  parallelogram:  { wida:'4', elpac:'3', cefr:'B2' },
+  circumference:  { wida:'4', elpac:'3', cefr:'B2' },
+  diameter:       { wida:'3', elpac:'2', cefr:'B1' },
+  symmetry:       { wida:'3', elpac:'2', cefr:'B1' },
+  congruent:      { wida:'5', elpac:'4', cefr:'C1' }
+};
+
+/* ── Session data (mirrors Insight Inbox) ── */
+var sessionsDB = {
+  'sci-cell': {
+    subject:'Science', topic:'Cell Biology', color:'#10b981',
+    teacher:'Mr. Chen', date:'Mar 21', time:'09:00–10:30', studentCount:14,
+    className:'ESL Level 3 — Period 2', classMeta:'Mr. Chen · Science · MWF 09:00',
+    words: [
+      { word:'photosynthesis', saved:11, taps:38 },
+      { word:'chlorophyll',    saved:10, taps:29 },
+      { word:'mitochondria',   saved:9,  taps:25 },
+      { word:'membrane',       saved:8,  taps:18 },
+      { word:'organelle',      saved:7,  taps:21 },
+      { word:'equation',       saved:6,  taps:16 },
+      { word:'respiration',    saved:5,  taps:12 },
+      { word:'cytoplasm',      saved:4,  taps:14 },
+      { word:'nucleus',        saved:3,  taps:7 },
+      { word:'osmosis',        saved:2,  taps:5 }
+    ]
+  },
+  'math-frac': {
+    subject:'Math', topic:'Fractions & Decimals', color:'#6366f1',
+    teacher:'Ms. Lin', date:'Mar 20', time:'11:00–12:00', studentCount:11,
+    className:'ESL Level 3 — Period 5', classMeta:'Ms. Lin · Math · TTh 11:00',
+    words: [
+      { word:'denominator', saved:8, taps:22 },
+      { word:'numerator',   saved:7, taps:19 },
+      { word:'equivalent',  saved:6, taps:15 },
+      { word:'simplify',    saved:5, taps:11 },
+      { word:'fraction',    saved:3, taps:8 },
+      { word:'decimal',     saved:2, taps:4 },
+      { word:'percentage',  saved:4, taps:10 },
+      { word:'ratio',       saved:1, taps:3 }
+    ]
+  },
+  'hist-wall': {
+    subject:'History', topic:'The Great Wall', color:'#f59e0b',
+    teacher:'Mr. Wang', date:'Mar 19', time:'14:00–15:30', studentCount:13,
+    className:'ESL Level 3 — Period 2', classMeta:'Mr. Wang · History · TTh 14:00',
+    words: [
+      { word:'dynasty',       saved:7, taps:20 },
+      { word:'fortification', saved:5, taps:14 },
+      { word:'emperor',       saved:4, taps:9 },
+      { word:'architect',     saved:3, taps:7 },
+      { word:'garrison',      saved:2, taps:6 },
+      { word:'heritage',      saved:6, taps:16 }
+    ]
+  },
+  'sci-eco': {
+    subject:'Science', topic:'Ecosystems & Food Chains', color:'#10b981',
+    teacher:'Mr. Chen', date:'Mar 18', time:'09:00–10:30', studentCount:14,
+    className:'ESL Level 3 — Period 2', classMeta:'Mr. Chen · Science · MWF 09:00',
+    words: [
+      { word:'ecosystem',    saved:10, taps:31 },
+      { word:'predator',     saved:8,  taps:23 },
+      { word:'herbivore',    saved:6,  taps:15 },
+      { word:'biodiversity', saved:5,  taps:13 },
+      { word:'decomposer',   saved:4,  taps:10 },
+      { word:'habitat',      saved:3,  taps:8 },
+      { word:'symbiosis',    saved:2,  taps:6 },
+      { word:'extinction',   saved:7,  taps:24 }
+    ]
+  },
+  'ss-water': {
+    subject:'Social Studies', topic:'Water Cycle', color:'#0ea5e9',
+    teacher:'Ms. Lin', date:'Mar 17', time:'13:00–14:30', studentCount:13,
+    className:'ESL Level 2 — Period 3', classMeta:'Ms. Lin · Social Studies · MWF 13:00',
+    words: [
+      { word:'evaporation',   saved:7, taps:18 },
+      { word:'condensation',  saved:5, taps:13 },
+      { word:'precipitation', saved:4, taps:11 },
+      { word:'groundwater',   saved:3, taps:7 },
+      { word:'aquifer',       saved:2, taps:5 },
+      { word:'watershed',     saved:4, taps:9 }
+    ]
+  },
+  'math-geo': {
+    subject:'Math', topic:'Geometry Basics', color:'#6366f1',
+    teacher:'Ms. Lin', date:'Mar 14', time:'11:00–12:00', studentCount:11,
+    className:'ESL Level 3 — Period 5', classMeta:'Ms. Lin · Math · TTh 11:00',
+    words: [
+      { word:'perpendicular', saved:9, taps:27 },
+      { word:'parallelogram', saved:7, taps:19 },
+      { word:'circumference', saved:5, taps:14 },
+      { word:'diameter',      saved:3, taps:8 },
+      { word:'symmetry',      saved:2, taps:5 },
+      { word:'congruent',     saved:1, taps:3 }
+    ]
+  }
+};
+
+/* ── Resolve session from URL ── */
+var params = new URLSearchParams(window.location.search);
+var sessionId = params.get('session') || 'sci-cell';
+var session = sessionsDB[sessionId] || sessionsDB['sci-cell'];
+
+var words = session.words.map(function(w) {
+  return { word: w.word, saveRate: Math.round((w.saved / session.studentCount) * 100), taps: w.taps };
+}).sort(function(a, b) { return b.saveRate - a.saveRate; });
+
+/* ── Populate header from session ── */
+document.querySelector('.modal-sub').innerHTML =
+  'From session: <span class="session-tag"><span class="dot" style="background:' + session.color + ';"></span> '
+  + session.subject + ' · ' + session.topic + '</span> &nbsp;·&nbsp; '
+  + session.date + ' · ' + session.studentCount + ' students';
+
+/* ── Populate Step 3 class info ── */
+document.querySelector('.class-info-dot').style.background = session.color;
+document.querySelector('.class-info-name').textContent = session.className;
+document.querySelector('.class-info-meta').textContent = session.classMeta;
+
+var currentStep = 1;
+var selectedWords = {};
+var selectedType = null;
+var typeNames = {
+  spelling: 'Spelling',
+  mc: 'Multiple Choice',
+  mirroring: 'Vocabs Mirroring',
+  all: 'Practice All'
+};
+
+/* ── Init word grid ── */
+function initWordGrid() {
+  var grid = document.getElementById('word-grid');
+  var html = '';
+  for (var i = 0; i < words.length; i++) {
+    var w = words[i];
+    var lv = wordLevels[w.word] || { wida:'-', elpac:'-', cefr:'-' };
+    selectedWords[w.word] = true;
+    html += '<div class="word-chip selected" data-word="' + w.word + '" onclick="toggleWord(this)">'
+      + '<div class="check"><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>'
+      + '<div class="word-chip-info">'
+      + '<div class="word-chip-word">' + w.word + '</div>'
+      + '<div class="word-chip-meta">'
+      + '<span>Save ' + w.saveRate + '%</span>'
+      + '<span>' + w.taps + ' taps</span>'
+      + '</div>'
+      + '</div>'
+      + '<div class="word-chip-levels">'
+      + '<span class="wl-tag w">W' + lv.wida + '</span>'
+      + '<span class="wl-tag e">E' + lv.elpac + '</span>'
+      + '<span class="wl-tag c">' + lv.cefr + '</span>'
+      + '</div>'
+      + '</div>';
+  }
+  grid.innerHTML = html;
+  updateWordCount();
+}
+
+function toggleWord(el) {
+  var word = el.dataset.word;
+  selectedWords[word] = !selectedWords[word];
+  el.classList.toggle('selected', selectedWords[word]);
+  updateWordCount();
+}
+
+function toggleAll() {
+  var count = getSelectedCount();
+  var selectAll = count < words.length;
+  for (var key in selectedWords) selectedWords[key] = selectAll;
+  document.querySelectorAll('.word-chip').forEach(function(el) {
+    el.classList.toggle('selected', selectAll);
+  });
+  updateWordCount();
+}
+
+function getSelectedCount() {
+  var c = 0;
+  for (var key in selectedWords) if (selectedWords[key]) c++;
+  return c;
+}
+
+function getSelectedWords() {
+  var arr = [];
+  for (var key in selectedWords) if (selectedWords[key]) arr.push(key);
+  return arr;
+}
+
+function updateWordCount() {
+  var c = getSelectedCount();
+  document.getElementById('word-count').textContent = c + ' / ' + words.length + ' selected';
+  document.getElementById('toggle-all-btn').textContent = c === words.length ? 'Deselect All' : 'Select All';
+  updateFooter();
+}
+
+/* ── Step 2: Practice Type ── */
+function selectType(el, type) {
+  document.querySelectorAll('.type-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  selectedType = type;
+  updateFooter();
+}
+
+/* ── Step 3: Students ── */
+var students = [
+  { id:'EL', name:'Emily Lin',      level:3, selected:true },
+  { id:'KC', name:'Kevin Chen',     level:3, selected:true },
+  { id:'SW', name:'Sophia Wang',    level:3, selected:true },
+  { id:'DH', name:'David Huang',    level:3, selected:true },
+  { id:'AL', name:'Amy Liu',        level:2, selected:true },
+  { id:'JZ', name:'Jason Zhang',    level:3, selected:true },
+  { id:'LX', name:'Lily Xu',        level:4, selected:true },
+  { id:'TY', name:'Tony Yang',      level:2, selected:true },
+  { id:'MC', name:'Mia Chang',      level:3, selected:true },
+  { id:'RW', name:'Ryan Wu',        level:2, selected:true },
+  { id:'OL', name:'Olivia Lee',     level:4, selected:true },
+  { id:'NC', name:'Nathan Chou',    level:2, selected:true },
+  { id:'HT', name:'Hannah Tsai',    level:3, selected:true },
+  { id:'EW', name:'Ethan Wei',      level:3, selected:true }
+];
+
+function initStudentList() {
+  // Filter bar
+  var filterHtml = '<span class="student-filter-label">ESL Level:</span>'
+    + '<button class="sf-tab active" onclick="filterStudents(\'all\',this)">All</button>'
+    + '<button class="sf-tab" onclick="filterStudents(2,this)">Level 2</button>'
+    + '<button class="sf-tab" onclick="filterStudents(3,this)">Level 3</button>'
+    + '<button class="sf-tab" onclick="filterStudents(4,this)">Level 4</button>'
+    + '<button class="student-select-all" onclick="toggleAllStudents()">Deselect All</button>';
+  document.getElementById('stu-filter').innerHTML = filterHtml;
+
+  // Student grid
+  var grid = document.getElementById('stu-grid');
+  var html = '';
+  for (var i = 0; i < students.length; i++) {
+    var s = students[i];
+    html += '<div class="stu-chip selected" data-idx="' + i + '" data-level="' + s.level + '" onclick="toggleStudent(' + i + ',this)">'
+      + '<div class="stu-check"><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>'
+      + '<div class="stu-name">' + s.name + '</div>'
+      + '<span class="stu-level l' + s.level + '">WIDA ' + s.level + '</span>'
+      + '</div>';
+  }
+  grid.innerHTML = html;
+  updateStudentCount();
+}
+
+function toggleStudent(idx, el) {
+  students[idx].selected = !students[idx].selected;
+  el.classList.toggle('selected', students[idx].selected);
+  updateStudentCount();
+  updateFooter();
+}
+
+function toggleAllStudents() {
+  var allSelected = students.every(function(s) { return s.selected; });
+  var newState = !allSelected;
+  for (var i = 0; i < students.length; i++) students[i].selected = newState;
+  document.querySelectorAll('#stu-grid .stu-chip').forEach(function(el) {
+    el.classList.toggle('selected', newState);
+  });
+  document.querySelector('.student-select-all').textContent = newState ? 'Deselect All' : 'Select All';
+  updateStudentCount();
+  updateFooter();
+}
+
+function filterStudents(level, btn) {
+  btn.parentElement.querySelectorAll('.sf-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('#stu-grid .stu-chip').forEach(function(el) {
+    if (level === 'all') { el.style.display = ''; }
+    else { el.style.display = el.dataset.level == level ? '' : 'none'; }
+  });
+}
+
+function updateStudentCount() {
+  var sel = students.filter(function(s) { return s.selected; }).length;
+  document.getElementById('stu-count-badge').textContent = sel + '/' + students.length + ' students';
+}
+
+function getSelectedClasses() {
+  return [session.className];
+}
+
+function getSelectedStudentCount() {
+  return students.filter(function(s) { return s.selected; }).length;
+}
+
+/* ── Navigation ── */
+function goToStep(step) {
+  currentStep = step;
+
+  // Update stepper
+  document.querySelectorAll('.step-item').forEach(function(el) {
+    var s = parseInt(el.dataset.step);
+    el.classList.remove('active', 'done');
+    if (s === step) el.classList.add('active');
+    else if (s < step) el.classList.add('done');
+  });
+  document.querySelectorAll('.step-line').forEach(function(el) {
+    var l = parseInt(el.dataset.line);
+    el.classList.toggle('done', l < step);
+  });
+
+  // Show panel
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('panel-' + i).style.display = i === step ? '' : 'none';
+  }
+
+  // Buttons
+  document.getElementById('btn-back').style.display = step > 1 ? '' : 'none';
+  document.getElementById('btn-next').textContent = step === 4 ? 'Send Assignment' : 'Next';
+
+  // Build confirm
+  if (step === 4) buildConfirm();
+
+  updateFooter();
+}
+
+function nextStep() {
+  if (currentStep === 4) {
+    sendAssignment();
+    return;
+  }
+  // Validation
+  if (currentStep === 1 && getSelectedCount() === 0) return;
+  if (currentStep === 2 && !selectedType) return;
+  if (currentStep === 3 && getSelectedStudentCount() === 0) return;
+  goToStep(currentStep + 1);
+}
+
+function prevStep() {
+  if (currentStep > 1) goToStep(currentStep - 1);
+}
+
+function updateFooter() {
+  var summary = document.getElementById('footer-summary');
+  var wc = getSelectedCount();
+  if (currentStep === 1) {
+    summary.innerHTML = '<strong>' + wc + ' words</strong> selected';
+  } else if (currentStep === 2) {
+    summary.innerHTML = '<strong>' + wc + ' words</strong>' + (selectedType ? ' · ' + typeNames[selectedType] : '');
+  } else if (currentStep === 3) {
+    var classes = getSelectedClasses();
+    var sc = getSelectedStudentCount();
+    summary.innerHTML = '<strong>' + wc + ' words</strong> · ' + typeNames[selectedType] + (classes.length ? ' · ' + sc + ' students' : '');
+  } else {
+    summary.innerHTML = '';
+  }
+
+  // Disable next if invalid
+  var btn = document.getElementById('btn-next');
+  if (currentStep === 1) btn.disabled = wc === 0;
+  else if (currentStep === 2) btn.disabled = !selectedType;
+  else if (currentStep === 3) btn.disabled = getSelectedClasses().length === 0;
+  else btn.disabled = false;
+}
+
+function buildConfirm() {
+  // Source
+  document.getElementById('confirm-source').textContent = session.subject + ' · ' + session.topic + ' — ' + session.date;
+
+  // Type
+  document.getElementById('confirm-type').innerHTML = '<span class="confirm-type-tag">' + typeNames[selectedType] + '</span>';
+
+  // Classes
+  var classes = getSelectedClasses();
+  var sc = getSelectedStudentCount();
+  var classHtml = '';
+  for (var i = 0; i < classes.length; i++) {
+    classHtml += '<span class="confirm-class-tag">' + classes[i] + '</span> ';
+  }
+  classHtml += '<span style="font-weight:500;color:#64748b;">(' + sc + ' students)</span>';
+  document.getElementById('confirm-classes').innerHTML = classHtml;
+
+  // Due
+  var dueVal = document.getElementById('due-date').value;
+  document.getElementById('confirm-due').textContent = dueVal || 'No due date';
+
+  // Words
+  var sw = getSelectedWords();
+  document.getElementById('confirm-word-count').textContent = sw.length + ' words';
+  var wHtml = '';
+  for (var j = 0; j < sw.length; j++) {
+    wHtml += '<span class="confirm-word-tag">' + sw[j] + '</span>';
+  }
+  document.getElementById('confirm-words').innerHTML = wHtml;
+}
+
+function sendAssignment() {
+  var sw = getSelectedWords();
+  var classes = getSelectedClasses();
+  var sc = getSelectedStudentCount();
+
+  document.getElementById('success-sub').innerHTML =
+    '<strong>' + sw.length + ' words</strong> assigned as <strong>' + typeNames[selectedType] + '</strong> practice<br/>'
+    + 'to <strong>' + sc + ' students</strong> across ' + classes.length + ' class' + (classes.length > 1 ? 'es' : '') + '.<br/>'
+    + 'Words added to students\' Word Bank (source: Teacher Assignment).';
+
+  // Hide panels and footer, show success
+  for (var i = 1; i <= 4; i++) document.getElementById('panel-' + i).style.display = 'none';
+  document.getElementById('success-view').style.display = 'flex';
+  document.getElementById('modal-footer').style.display = 'none';
+  document.querySelector('.stepper').style.display = 'none';
+}
+
+/* ── Init ── */
+initWordGrid();
+initStudentList();
+updateFooter();
+</script>
+</body>
+</html>

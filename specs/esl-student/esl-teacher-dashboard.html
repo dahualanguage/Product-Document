@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — ESL Teacher Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #ec4899; font-weight: 700; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #ec4899; border-left-color: #ec4899; font-weight: 700; background: #fdf2f8; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
+      .main-content { padding: 24px 20px 60px; }
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #ec4899;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 16px; font-weight: 700; color: #334155; margin: 28px 0 10px; }
+    h4 { font-size: 14px; font-weight: 700; color: #475569; margin: 18px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; color: #0f172a; }
+
+    /* ── Two-col cards ── */
+    .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 860px) { .card-row { grid-template-columns: 1fr; } }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fdf2f8; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info  { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn  { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-goal  { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text { font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5; }
+    .callout-question .q-context { font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500; }
+
+    /* ── Status tags ── */
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tag-mvp    { background: #dbeafe; color: #1e40af; }
+    .tag-future { background: #f1f5f9; color: #64748b; }
+
+    /* ── Section label pill ── */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fdf2f8; border: 1px solid #fbcfe8;
+      color: #9d174d; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+      letter-spacing: .3px; text-transform: uppercase;
+    }
+
+    /* ── Formula / code ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Demo link ── */
+    .demo-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fdf2f8; border: 1px solid #fbcfe8; color: #9d174d;
+      font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 8px;
+      text-decoration: none; transition: all .15s; margin: 8px 0 16px;
+    }
+    .demo-link:hover { background: #fce7f3; border-color: #f9a8d4; }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="index.html">ESL Student — Product Specs</a>
+  <span class="sep">/</span>
+  <span class="current">ESL Teacher Dashboard</span>
+</div>
+
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#goal" class="active">1. Feature Goal</a></li>
+      <li><a href="#layout">2. Dashboard Layout</a></li>
+      <li>
+        <a href="#practice-activity">3. Practice Activity</a>
+        <ol>
+          <li><a href="#activity-goals">3.1 Goal Setting</a></li>
+          <li><a href="#activity-achievement">3.2 Achievement Rate</a></li>
+          <li><a href="#activity-below">3.3 Below-Target Students</a></li>
+          <li><a href="#activity-filter">3.4 Group Filter</a></li>
+          <li><a href="#activity-types">3.5 Type Breakdown</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#practice-outcomes">4. Practice Outcomes</a>
+        <ol>
+          <li><a href="#mastery-ring">4.1 Word Mastery Ring</a></li>
+          <li><a href="#missed-words">4.2 Most Missed Words</a></li>
+        </ol>
+      </li>
+      <li><a href="#tapped-words">5. Most Tapped Words</a></li>
+      <li><a href="#data-model">6. Data Model</a></li>
+      <li><a href="#interactions">7. Filter Interactions</a></li>
+      <li><a href="#questions">8. Open Questions</a></li>
+    </ol>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+  <div class="doc-header">
+    <h1>ESL Teacher Dashboard</h1>
+    <p class="subtitle">Practice activity monitoring, mastery tracking, and vocabulary insights — everything an ESL teacher needs at a glance.</p>
+    <div class="meta">
+      <span>Flow 6 — Live Classroom</span>
+      <span>Version: v5</span>
+      <span>Status: Design</span>
+      <span>Last updated: March 2026</span>
+    </div>
+  </div>
+
+  <a class="demo-link" href="../esl-teacher/demo-dashboard-v5.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Open Live Demo (v5)
+  </a>
+
+  <!-- ════════════════ 1. FEATURE GOAL ════════════════ -->
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How does an ESL teacher quickly assess whether students are practicing, how they're performing, and which words need attention?</div>
+    <div class="q-context">Teachers manage multiple ESL groups (A–D) with varying proficiency levels. Without a centralized dashboard, they must navigate between individual student records to gather insights — losing time that could be spent on targeted instruction.</div>
+  </div>
+
+  <div class="callout callout-goal">
+    <strong>Goal:</strong> Provide a single-screen dashboard that answers three questions: (1) Are students practicing? (2) Are they improving? (3) What vocabulary needs more work? — filterable by group and time period.
+  </div>
+
+  <p>The dashboard is organized into three rows:</p>
+  <ol>
+    <li><strong>Row 1</strong> — Insight Inbox (left) + Practice Activity (right)</li>
+    <li><strong>Row 2</strong> — Practice Outcomes (full width): mastery progress + most missed words</li>
+    <li><strong>Row 3</strong> — Most Tapped Words (full width): cross-subject vocabulary frequency from live sessions</li>
+  </ol>
+
+  <!-- ════════════════ 2. DASHBOARD LAYOUT ════════════════ -->
+  <h2 id="layout"><span class="num">2</span> Dashboard Layout</h2>
+
+  <p>The dashboard uses a 3-row grid layout inside the main app frame (88px app sidebar + content area):</p>
+
+  <table>
+    <thead>
+      <tr><th>Row</th><th>Left</th><th>Right</th><th>Width</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Insight Inbox Preview</td><td>Practice Activity</td><td>50% / 50%</td></tr>
+      <tr><td>2</td><td colspan="2">Practice Outcomes (mastery ring + missed words)</td><td>100%</td></tr>
+      <tr><td>3</td><td colspan="2">Most Tapped Words</td><td>100%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>App frame:</strong> The dashboard sits inside the standard DAHUA app shell — 88px icon sidebar (left) + top header bar (56px) with teacher name, role badge, and version link.
+  </div>
+
+  <!-- ════════════════ 3. PRACTICE ACTIVITY ════════════════ -->
+  <h2 id="practice-activity"><span class="num">3</span> Practice Activity</h2>
+
+  <p>The Practice Activity card lets the teacher <strong>set weekly practice goals</strong> and monitor which students are meeting them. It combines goal-based achievement tracking with a per-type breakdown, all filterable by group and time period.</p>
+
+  <h3 id="activity-goals">3.1 Goal Setting</h3>
+
+  <p>The card header includes a <strong>gear icon (⚙)</strong> that opens a settings popover where the teacher sets two independent weekly goals:</p>
+
+  <table>
+    <thead>
+      <tr><th>Goal</th><th>Unit</th><th>Description</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Practice times target</td><td>times / week</td><td>Minimum number of practice sessions expected per student per week</td><td>10</td></tr>
+      <tr><td>Practice duration target</td><td>mins / week</td><td>Minimum total practice minutes expected per student per week</td><td>60</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Independent goals:</strong> The two targets are tracked separately — each has its own achievement rate and below-target list. A student can meet the times goal but miss the duration goal, or vice versa.
+  </div>
+
+  <div class="card">
+    <h4>Settings Popover</h4>
+    <ul>
+      <li>Triggered by clicking the ⚙ gear icon in the card header (next to the period selector)</li>
+      <li>Two input fields: "times / week" and "mins / week" with number stepper</li>
+      <li>Default values: 10 times, 60 mins (configurable)</li>
+      <li>Settings persist per teacher and apply to all groups</li>
+    </ul>
+  </div>
+
+  <h3 id="activity-achievement">3.2 Achievement Rate</h3>
+
+  <p>Two side-by-side stat blocks replace the old summary stats, each showing:</p>
+
+  <table>
+    <thead>
+      <tr><th>Element</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Achievement %</strong></td><td>Percentage of students in the selected group(s) who met or exceeded the target</td></tr>
+      <tr><td><strong>Actual avg</strong></td><td>Average value across selected students (e.g., "avg 8.4 times")</td></tr>
+      <tr><td><strong>Target reference</strong></td><td>Shows the goal (e.g., "target: 10 times/week")</td></tr>
+      <tr><td><strong>Below-target count</strong></td><td>Clickable label: "3 students below target ▾"</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="activity-below">3.3 Below-Target Students</h3>
+
+  <p>Clicking the "N students below target" label <strong>expands an inline list</strong> directly below the stat block, showing each below-target student:</p>
+
+  <table>
+    <thead>
+      <tr><th>Column</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Student name</strong></td><td>Student's display name</td></tr>
+      <tr><td><strong>Group</strong></td><td>ESL group badge (A / B / C / D)</td></tr>
+      <tr><td><strong>Actual</strong></td><td>Their actual value this week</td></tr>
+      <tr><td><strong>Gap</strong></td><td>How far below target (e.g., "−4 times" or "−22 mins")</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Interaction:</strong> The list is collapsed by default. Click to expand, click again to collapse. Each goal (times / mins) has its own independent expandable list. Students are sorted by gap (largest gap first).
+  </div>
+
+  <h3 id="activity-filter">3.4 Group Filter</h3>
+
+  <p>Multi-select checkbox row allowing the teacher to filter by ESL group:</p>
+
+  <div class="card">
+    <h4>Filter Controls</h4>
+    <table>
+      <thead>
+        <tr><th>Checkbox</th><th>Behavior</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>All</strong></td><td>Selects/deselects all groups (A, B, C, D). Uses pre-computed aggregate data for accuracy.</td></tr>
+        <tr><td><strong>A / B / C / D</strong></td><td>Individual group toggles. Multiple groups can be selected simultaneously.</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;margin-bottom:0;"><strong>Multi-group logic:</strong> When multiple individual groups are selected (but not "All"), the summary stats display <strong>averaged values</strong> across the selected groups. The "All" checkbox auto-checks when all 4 groups are checked, and unchecks if any single group is deselected.</p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Styling:</strong> Checkboxes use <code>:has(input:checked)</code> to apply a filled state — checked labels get a <code>#ecfdf5</code> background with <code>#059669</code> border and text color.
+  </div>
+
+  <h3 id="activity-types">3.5 Practice Type Breakdown</h3>
+
+  <p>Horizontal stacked-bar chart showing the distribution of practice sessions by type:</p>
+
+  <table>
+    <thead>
+      <tr><th>Practice Type</th><th>Color</th><th>Icon</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Spelling</td><td><code>#F59E0B</code> (amber)</td><td>A</td></tr>
+      <tr><td>Multiple Choice (MC)</td><td><code>#3B82F6</code> (blue)</td><td>?</td></tr>
+      <tr><td>Mirroring</td><td><code>#8B5CF6</code> (purple)</td><td>🎤</td></tr>
+      <tr><td>Mixed</td><td><code>#10B981</code> (green)</td><td>⚡</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each bar row shows the type name, icon, a proportional bar (width = percentage of total), and the percentage label. The breakdown updates when group or period filters change.</p>
+
+  <!-- ════════════════ 4. PRACTICE OUTCOMES ════════════════ -->
+  <h2 id="practice-outcomes"><span class="num">4</span> Practice Outcomes</h2>
+
+  <p>Full-width card (Row 2) split into two halves: <strong>Word Mastery</strong> (left) and <strong>Most Missed Words</strong> (right). Has its own time period selector (7 / 14 / 30 days).</p>
+
+  <h3 id="mastery-ring">4.1 Word Mastery Ring</h3>
+
+  <div class="card">
+    <h4>Mastery Ring Chart</h4>
+    <p>An SVG donut ring showing the percentage of words mastered. The ring uses:</p>
+    <ul>
+      <li><strong>Circumference:</strong> <code>2π × 52 = 327</code> (radius = 52px in a 120×120 viewBox)</li>
+      <li><strong>Mastered arc:</strong> <code>stroke-dashoffset = 327 × (1 − pct/100)</code></li>
+      <li><strong>Color:</strong> <code>#22C55E</code> (green) on a <code>#f1f5f9</code> background track</li>
+    </ul>
+    <p>Center text displays the mastery percentage and "mastered" label.</p>
+  </div>
+
+  <p>Below the ring, a three-row legend with counts:</p>
+
+  <table>
+    <thead>
+      <tr><th>Status</th><th>Color</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Mastered</td><td><code>#22C55E</code> (green dot)</td><td>Words the student consistently answers correctly</td></tr>
+      <tr><td>Learning</td><td><code>#F59E0B</code> (amber dot)</td><td>Words with partial success, still in active practice</td></tr>
+      <tr><td>Newly added</td><td><code>#3B82F6</code> (blue dot)</td><td>Words recently added to word bank, not yet practiced enough</td></tr>
+    </tbody>
+  </table>
+
+  <p>A total word count is displayed below the legend.</p>
+
+  <h3 id="missed-words">4.2 Most Missed Words</h3>
+
+  <p>A ranked table showing the top 8 words students most frequently get wrong in practice sessions:</p>
+
+  <table>
+    <thead>
+      <tr><th>Column</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>#</strong></td><td>Rank (1–8)</td></tr>
+      <tr><td><strong>Word</strong></td><td>The vocabulary word</td></tr>
+      <tr><td><strong>Wrong in</strong></td><td>Practice type pills showing which practice modes the word was missed in (Spelling, MC, Mirroring)</td></tr>
+      <tr><td><strong>Miss rate</strong></td><td>Horizontal bar + percentage showing error frequency</td></tr>
+    </tbody>
+  </table>
+
+  <p>Practice type pills use the same color scheme as the type breakdown:</p>
+  <ul>
+    <li><strong>Spelling</strong> — amber background (<code>#FEF3C7</code>, text <code>#92400E</code>)</li>
+    <li><strong>MC</strong> — blue background (<code>#DBEAFE</code>, text <code>#1E40AF</code>)</li>
+    <li><strong>Mirroring</strong> — purple background (<code>#EDE9FE</code>, text <code>#5B21B6</code>)</li>
+  </ul>
+
+  <!-- ════════════════ 5. MOST TAPPED WORDS ════════════════ -->
+  <h2 id="tapped-words"><span class="num">5</span> Most Tapped Words</h2>
+
+  <p>Full-width card (Row 3) retained from v4. Shows the top 10 words students tapped during live classroom sessions, aggregated across all content-area classes.</p>
+
+  <table>
+    <thead>
+      <tr><th>Column</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>#</strong></td><td>Rank (1–10)</td></tr>
+      <tr><td><strong>Word</strong></td><td>The tapped vocabulary word</td></tr>
+      <tr><td><strong>Appeared in</strong></td><td>Subject pills with session count (e.g., "Science ×2", "Math ×1")</td></tr>
+      <tr><td><strong>Tapped</strong></td><td>Total tap count across all sessions</td></tr>
+    </tbody>
+  </table>
+
+  <p>Subject color scheme:</p>
+  <table>
+    <thead>
+      <tr><th>Subject</th><th>Background</th><th>Text</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Science</td><td><code>#ECFDF5</code></td><td><code>#065F46</code></td></tr>
+      <tr><td>Math</td><td><code>#EFF6FF</code></td><td><code>#1E40AF</code></td></tr>
+      <tr><td>History</td><td><code>#FEF3C7</code></td><td><code>#92400E</code></td></tr>
+      <tr><td>Social Studies</td><td><code>#FDF2F8</code></td><td><code>#9D174D</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Action:</strong> A "View details →" link in the card header navigates to the Session Insights page for deeper analysis.
+  </div>
+
+  <!-- ════════════════ 6. DATA MODEL ════════════════ -->
+  <h2 id="data-model"><span class="num">6</span> Data Model</h2>
+
+  <h3>6.1 Practice Activity Data</h3>
+
+  <p>Data is structured per-group (A, B, C, D, All) and per-period (7, 14, 30 days):</p>
+
+  <div class="formula">// Teacher-set goals (persisted)
+goalSettings = {
+  timesPerWeek:    number,   // e.g. 10
+  minsPerWeek:     number    // e.g. 60
+}
+
+// Per-group, per-period activity data
+activityData[group][period] = {
+  // Times goal
+  timesAvg:        number,   // avg practice sessions across students
+  timesAchievePct: number,   // % of students meeting times goal
+  timesBelowCount: number,   // count of students below target
+  timesBelowList:  [         // students below target, sorted by gap desc
+    { name: string, group: string, actual: number, gap: number }
+  ],
+  // Duration goal
+  durationAvg:        number,
+  durationAchievePct: number,
+  durationBelowCount: number,
+  durationBelowList:  [
+    { name: string, group: string, actual: number, gap: number }
+  ],
+  // Type breakdown (unchanged)
+  types: [
+    { name: string, pct: number, color: string, icon: string }
+  ]
+}</div>
+
+  <p>Groups: <code>all</code>, <code>a</code>, <code>b</code>, <code>c</code>, <code>d</code>. The <code>all</code> group contains pre-computed aggregates (not simply averaged from A–D).</p>
+
+  <h3>6.2 Practice Outcomes Data</h3>
+
+  <p>Outcomes data is per-period only (not per-group in current design):</p>
+
+  <div class="formula">outcomesData[period] = {
+  mastered:  number,   // count of mastered words
+  learning:  number,   // count of learning words
+  newWords:  number,   // count of newly added words
+  total:     number,   // sum of all
+  pct:       number    // mastered percentage (0–100)
+}</div>
+
+  <h3>6.3 Most Tapped Words Data</h3>
+
+  <p>Static ranked list (top 10) with per-word subject breakdown. Currently not filterable by group — shows all-student aggregate. Has its own period selector.</p>
+
+  <!-- ════════════════ 7. FILTER INTERACTIONS ════════════════ -->
+  <h2 id="interactions"><span class="num">7</span> Filter Interactions</h2>
+
+  <div class="card">
+    <h4>Period Selector</h4>
+    <p>A <code>&lt;select&gt;</code> dropdown with options: <strong>7 Days</strong>, <strong>14 Days</strong>, <strong>30 Days</strong>. Each card (Practice Activity, Practice Outcomes, Most Tapped Words) has its own independent period selector.</p>
+  </div>
+
+  <div class="card">
+    <h4>Group Checkboxes (Practice Activity only)</h4>
+    <p>Multi-select behavior:</p>
+    <ul>
+      <li>Checking "All" → checks A, B, C, D and uses <code>activityData['all']</code></li>
+      <li>Unchecking "All" → unchecks all groups</li>
+      <li>Checking all 4 individual groups → auto-checks "All"</li>
+      <li>Unchecking any individual group → unchecks "All" and averages remaining</li>
+      <li>If no groups are checked, the card shows <code>activityData['all']</code> as fallback</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h4>Multi-Group Achievement</h4>
+    <p>When multiple groups are selected, achievement rate is recalculated across <strong>all students in the selected groups combined</strong> (not averaged across group-level percentages). The below-target list merges students from all selected groups, sorted by gap.</p>
+  </div>
+
+  <div class="card">
+    <h4>Goal Settings Popover</h4>
+    <p>The ⚙ gear icon opens a small popover anchored to the card header. Changing a goal value immediately recalculates achievement rates and below-target lists for the current view. Goals are saved per teacher and persist across sessions.</p>
+  </div>
+
+  <!-- ════════════════ 8. OPEN QUESTIONS ════════════════ -->
+  <h2 id="questions"><span class="num">8</span> Open Questions</h2>
+
+  <div class="callout-question">
+    <div class="q-text">Should Practice Outcomes also be filterable by group?</div>
+    <div class="q-context">Currently mastery data is shown as an all-student aggregate. Group-level mastery could help teachers identify which groups need more vocabulary support, but adds data complexity.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">Should Most Tapped Words be filterable by group?</div>
+    <div class="q-context">Different proficiency groups may tap different words. However, since tapping happens during live sessions where all groups are present, per-group filtering may not reflect the shared classroom context.</div>
+  </div>
+
+  <div class="callout-question">
+    <div class="q-text">What defines "mastered" vs "learning"?</div>
+    <div class="q-context">The current demo uses placeholder thresholds. The engineering team needs to define: how many correct answers in a row? Across which practice types? Over what time window?</div>
+  </div>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; Flow 6 — Live Classroom &middot; March 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+</body>
+</html>

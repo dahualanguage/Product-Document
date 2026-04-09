@@ -184,7 +184,7 @@
   <!-- ═══════════ FLOW A: Project Teacher Flow ═══════════ -->
   <h3 class="section-title">
     <span class="badge">A</span> Project Teacher Flow
-    <a class="spec-link" href="../specs/flow-6-live-classroom/live-transcription.html" title="Open product spec">
+    <a class="spec-link" href="../specs/live-classroom/live-transcription.html" title="Open product spec">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
       Product Spec
     </a>
@@ -207,7 +207,7 @@
   <!-- ═══════════ FLOW B: Student Flow ═══════════ -->
   <h3 class="section-title">
     <span class="badge">B</span> Student Flow
-    <a class="spec-link" href="../specs/flow-6-live-classroom/clickable-transcript.html" title="Open product spec">
+    <a class="spec-link" href="../specs/live-classroom/clickable-transcript.html" title="Open product spec">
       <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill="#fff" d="M8 11h4M8 9h4M8 13h2" stroke="currentColor" stroke-width=".5"/></svg>
       Product Spec
     </a>
@@ -275,7 +275,108 @@ flowchart TD
     </div>
   </div>
 
-  <footer>DAHUA AI &middot; Flow Diagrams &middot; February 2026</footer>
+  <!-- ═══════════ FLOW D: Teacher Assignment Flow ═══════════ -->
+  <h3 class="section-title"><span class="badge">D</span> Teacher Assignment Flow (Insight Inbox &rarr; Student Practice)</h3>
+  <div class="flow-section">
+    <div class="zoom-toolbar" data-for="flowD">
+      <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+      <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+      <div class="zoom-level" data-label>100%</div>
+      <button class="zoom-btn" data-action="fit" title="Fit to view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      </button>
+      <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+    </div>
+    <div class="diagram-viewport" id="flowD">
+      <pre class="mermaid">
+flowchart TD
+    START([ESL Teacher opens Insight Inbox]):::start
+    START --> SELECT_SESSION["Select a Live Class session<br/>e.g. Science · Cell Biology"]
+
+    SELECT_SESSION --> VIEW_WORDS["View Words Tapped by Students<br/>Sorted by Save Rate ↓<br/>with Level tags (WIDA / ELPAC / CEFR)"]
+
+    VIEW_WORDS --> TRANSCRIPT{"View Transcript?"}:::decision
+    TRANSCRIPT -->|Yes| VIEW_TRANSCRIPT["Open Live Class transcript<br/>(read-only playback)"]
+    VIEW_TRANSCRIPT --> CLICK_CREATE
+    TRANSCRIPT -->|No| CLICK_CREATE
+
+    CLICK_CREATE["Click 'Create Assignment'"] --> STEP1
+
+    subgraph STEP1 [Step 1 — Select Words]
+      S1_DEFAULT["All tapped words pre-selected ✓"] --> S1_EDIT{"Teacher edits<br/>selection?"}:::decision
+      S1_EDIT -->|Yes| S1_TOGGLE["Toggle words on / off<br/>Reference: Save Rate + Level"]
+      S1_EDIT -->|No| S1_KEEP["Keep all words"]
+      S1_TOGGLE --> S1_DONE["Word list confirmed"]
+      S1_KEEP --> S1_DONE
+    end
+
+    S1_DONE --> STEP2
+
+    subgraph STEP2 [Step 2 — Practice Type]
+      S2_CHOOSE{"Select practice type"}:::decision
+      S2_CHOOSE -->|Spelling| S2_SPELL["60s timer · Type missing word<br/>3-strike hints"]
+      S2_CHOOSE -->|Multiple Choice| S2_MC["20s timer · Select 1 of 4<br/>Progressive hints"]
+      S2_CHOOSE -->|Vocabs Mirroring| S2_MIR["Say word + sentence<br/>AI pronunciation scoring"]
+      S2_CHOOSE -->|Practice All| S2_MIX["Random type per word<br/>Equal distribution across 3 types"]
+      S2_SPELL --> S2_DONE["Practice type set"]
+      S2_MC --> S2_DONE
+      S2_MIR --> S2_DONE
+      S2_MIX --> S2_DONE
+    end
+
+    S2_DONE --> STEP3
+
+    subgraph STEP3 [Step 3 — Assign Target]
+      S3_CLASS["Select class(es)"] --> S3_STUDENTS["Select students<br/>(all or individual)"]
+      S3_STUDENTS --> S3_DUE["Set due date<br/>(optional)"]
+    end
+
+    S3_DUE --> STEP4
+
+    subgraph STEP4 [Step 4 — Confirm & Send]
+      S4_REVIEW["Review summary:<br/>Words · Type · Class · Due date"] --> S4_SEND["Confirm → Send assignment"]
+    end
+
+    S4_SEND --> SYSTEM
+
+    subgraph SYSTEM [System Processing]
+      SYS_WB["Add words to students' Word Bank<br/>Source: Teacher Assignment"]
+      SYS_TASK["Create practice task in<br/>students' My Practice list"]
+      SYS_WB --> SYS_NOTIFY
+      SYS_TASK --> SYS_NOTIFY
+      SYS_NOTIFY["Notify students"]
+    end
+
+    SYS_NOTIFY --> STUDENT
+
+    subgraph STUDENT [Student Side]
+      STU_LIST["View 'My Practice'<br/>Assignment card appears"] --> STU_OPEN["Open assignment"]
+      STU_OPEN --> STU_PRACTICE["Complete practice<br/>(Spelling / MC / Mirroring)"]
+      STU_PRACTICE --> STU_AI["AI evaluates response"]:::ai
+      STU_AI --> STU_MASTERY{"Mastery check:<br/>5 attempts +<br/>all 3 types?"}:::decision
+      STU_MASTERY -->|Not yet| STU_LEARNING["Word stays 'Learning'<br/>in Word Bank"]
+      STU_MASTERY -->|Yes| STU_MASTERED["Word → 'Mastered'"]:::done
+    end
+
+    STU_LEARNING --> TEACHER_TRACK
+    STU_MASTERED --> TEACHER_TRACK
+
+    TEACHER_TRACK["ESL Teacher Dashboard<br/>Track completion rate &<br/>student mastery progress"]
+    TEACHER_TRACK --> DONE([Data-driven instruction]):::endnode
+
+    classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3
+    classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e
+    classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+    classDef done fill:#f0fdf4,stroke:#86efac,color:#166534,stroke-width:2px
+    classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46,stroke-width:1.5px
+    classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1
+    classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d
+      </pre>
+    </div>
+  </div>
+
+  <footer>DAHUA AI &middot; Flow Diagrams &middot; March 2026</footer>
 </div>
 </div><!-- /page-layout -->
 
@@ -464,7 +565,7 @@ flowchart TD
   const diagrams = {};
 
   function initDiagrams() {
-    ['teacherFlow', 'studentFlow', 'flowC'].forEach((id) => {
+    ['teacherFlow', 'studentFlow', 'flowC', 'flowD'].forEach((id) => {
       const vp = document.getElementById(id);
       if (!vp || !vp.querySelector('svg')) return;
       const d = new DiagramPanZoom(id);
@@ -476,7 +577,7 @@ flowchart TD
   let attempts = 0;
   const waitForMermaid = setInterval(() => {
     attempts++;
-    const allReady = ['teacherFlow', 'studentFlow', 'flowC'].every(
+    const allReady = ['teacherFlow', 'studentFlow', 'flowC', 'flowD'].every(
       (id) => document.getElementById(id)?.querySelector('svg')
     );
     if (allReady || attempts > 30) {
