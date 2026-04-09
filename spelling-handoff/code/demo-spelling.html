@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Spelling Practice v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      width: 1440px; height: 100vh; overflow: hidden;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 1440px; height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-logo span { font-size: 22px; font-weight: 900; color: #059669; font-family: Georgia, serif; }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #10b981; }
+    .sidebar-item.active span { color: #10b981; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px; gap: 12px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: #64748b;
+      text-decoration: none; padding: 6px 10px; border-radius: 6px;
+      transition: all .15s;
+    }
+    .back-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .back-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .header-divider { width: 1px; height: 24px; background: #e2e8f0; }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-badge {
+      font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+      background: #dbeafe; color: #1e40af;
+    }
+
+    .app-content { flex: 1; background: #EFF5FF; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+
+    /* ── Progress bar (top) ── */
+    .progress-bar-wrap {
+      padding: 0; flex-shrink: 0;
+    }
+    .progress-bar {
+      height: 4px; background: #e2e8f0; width: 100%;
+    }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width .4s ease; border-radius: 0 2px 2px 0;
+    }
+
+    /* ── Practice area ── */
+    .practice-area {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 120px 36px 120px;
+      max-width: 680px; margin: 0 auto; width: 100%;
+    }
+
+    /* Question counter (inside card) */
+    .q-counter {
+      font-size: 14px; font-weight: 600; color: #94a3b8;
+      letter-spacing: .3px;
+      padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;
+    }
+    .q-counter strong { color: #0f172a; font-weight: 800; font-size: 16px; }
+
+    /* ── Question card ── */
+    .q-card {
+      background: #fff; border-radius: 16px; width: 100%;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      padding: 36px 40px; display: flex; flex-direction: column; gap: 24px;
+    }
+
+    @keyframes hintReveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .hint-play {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      color: #065f46; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: all .15s;
+      font-family: inherit;
+    }
+    .hint-play:hover { background: #d1fae5; }
+    .hint-play svg { width: 16px; height: 16px; fill: #10b981; }
+
+    /* Hint 2: first-letter (shown on 2nd wrong) */
+    .hint-letter { display: none; }
+    .hint-letter.revealed {
+      display: flex; align-items: center; gap: 8px;
+      animation: hintReveal .3s ease;
+      font-size: 13px; color: #2563eb; font-weight: 600;
+      background: #eff6ff; padding: 10px 16px; border-radius: 10px;
+      border: 1.5px solid #bfdbfe;
+    }
+    .hint-letter strong { font-size: 16px; font-weight: 800; color: #1e40af; }
+
+    /* Hint 3: 1/3/5 letter pattern (shown on 3rd wrong) */
+    .hint-pattern { display: none; }
+    .hint-pattern.revealed {
+      display: flex; align-items: center; gap: 8px;
+      animation: hintReveal .3s ease;
+      font-size: 13px; color: #7c3aed; font-weight: 600;
+      background: #f5f3ff; padding: 10px 16px; border-radius: 10px;
+      border: 1.5px solid #ddd6fe;
+    }
+    .hint-pattern strong {
+      font-size: 18px; font-weight: 800; color: #5b21b6;
+      letter-spacing: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    /* Word definition */
+    .word-def {
+      font-size: 15px; color: #334155; line-height: 1.7;
+      padding: 16px 20px; background: #f8fafc; border-radius: 10px;
+      border-left: 3px solid #10b981;
+    }
+    .word-def-label {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+
+    /* Input area */
+    .input-area { display: flex; flex-direction: column; gap: 12px; }
+    .input-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+    .input-row { display: flex; gap: 10px; }
+    .spell-input {
+      flex: 1; font-size: 18px; font-weight: 600; padding: 14px 18px;
+      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      outline: none; transition: all .2s;
+      font-family: inherit; color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .spell-input:focus { border-color: #10b981; }
+    .spell-input.correct { border-color: #10b981; background: #f0fdf4; color: #166534; }
+    .spell-input.wrong { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+    .submit-btn {
+      padding: 14px 28px; border-radius: 12px; border: none;
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+      font-family: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .submit-btn:hover { background: #059669; }
+    .submit-btn:disabled { background: #cbd5e1; cursor: default; }
+
+    /* ── Feedback ── */
+    .feedback { display: none; padding: 16px 20px; border-radius: 10px; gap: 8px; flex-direction: column; }
+    .feedback.show { display: flex; }
+    .feedback.correct { background: #f0fdf4; border: 1px solid #86efac; }
+    .feedback.wrong { background: #fef2f2; border: 1px solid #fca5a5; }
+    .feedback-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .feedback.correct .feedback-title { color: #166534; }
+    .feedback.wrong .feedback-title { color: #991b1b; }
+    .feedback-icon { font-size: 18px; }
+    .feedback-answer { font-size: 13px; color: #475569; }
+    .feedback-answer strong { font-weight: 700; }
+    .next-btn {
+      align-self: flex-end; padding: 10px 20px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
+      font-family: inherit; margin-top: 4px;
+    }
+    .feedback.correct .next-btn { background: #10b981; color: #fff; }
+    .feedback.correct .next-btn:hover { background: #059669; }
+    .feedback.wrong .next-btn { background: #ef4444; color: #fff; }
+    .feedback.wrong .next-btn:hover { background: #dc2626; }
+
+    /* ── Bottom stats ── */
+    .bottom-stats {
+      display: flex; gap: 24px; justify-content: center;
+      padding: 16px 36px; flex-shrink: 0;
+    }
+    .stat-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: #64748b;
+    }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .stat-dot.green { background: #10b981; }
+    .stat-dot.red { background: #ef4444; }
+    .stat-dot.gray { background: #cbd5e1; }
+    .stat-num { font-weight: 800; color: #0f172a; }
+
+    /* ══════════ Practice Setup Page ══════════ */
+    .setup-page {
+      flex: 1; display: flex; align-items: flex-start; justify-content: center;
+      padding: 120px 36px 120px; overflow-y: auto;
+    }
+    .setup-page.hidden { display: none; }
+
+    .setup-card {
+      background: #fff; border-radius: 18px; width: 620px; max-width: 100%;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      display: flex; flex-direction: column;
+      overflow: hidden; flex-shrink: 0;
+    }
+
+    /* Header */
+    .setup-header {
+      padding: 28px 32px 20px; position: relative; text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .setup-title-row { display: flex; align-items: center; gap: 10px; }
+    .setup-title-icon {
+      width: 24px; height: 24px; color: #3b82f6;
+    }
+    .setup-title { font-size: 20px; font-weight: 700; color: #0f172a; line-height: 33px; }
+    .setup-subtitle { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .setup-cancel-btn {
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; color: #94a3b8; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .setup-cancel-btn:hover { color: #475569; }
+
+    /* (stepper removed — single page layout) */
+
+    /* Body */
+    .setup-body { padding: 0 32px 24px; flex: 1; overflow-y: auto; }
+    .setup-section-tag {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      color: #64748b; background: #eff6ff; display: inline-block;
+      padding: 4px 10px; border-radius: 6px; margin-bottom: 16px;
+    }
+    .setup-section-tag strong { color: #2563eb; font-weight: 700; }
+    .setup-section-title {
+      font-size: 13px; font-weight: 500; color: #64748b; line-height: 24px;
+      text-align: left; margin-bottom: 14px; margin-top: 28px;
+    }
+
+    /* Option cards grid */
+    .option-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    .option-card {
+      padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .option-card:hover { border-color: #cbd5e1; background: #f8fafb; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .option-card.selected { border-color: #10b981; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.12); }
+    .option-card-title { font-size: 13px; font-weight: 600; color: #334155; }
+    .option-card.selected .option-card-title { color: #059669; }
+
+    /* Count options */
+    .count-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    .count-card {
+      padding: 12px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; transition: all .2s ease; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .count-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .count-card.selected { border-color: #10b981; background: #f0fdf4; box-shadow: 0 2px 8px rgba(16,185,129,.12); }
+    .count-card-num { font-size: 20px; font-weight: 400; color: #334155; }
+    .count-card.selected .count-card-num { color: #059669; }
+    .count-card-label { font-size: 11px; color: #94a3b8; margin-top: 2px; font-weight: 500; }
+    .count-card.selected .count-card-label { color: #6ee7b7; }
+
+    /* Divider */
+    .setup-divider { height: 1px; background: #e2e8f0; margin: 0; }
+
+    /* Footer */
+    .setup-footer {
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .setup-pills { display: flex; align-items: center; gap: 8px; }
+    .setup-pill {
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px;
+      background: #eff6ff; color: #2563eb;
+    }
+    .setup-pill.done { background: #ecfdf5; color: #059669; }
+    .setup-pill.empty { background: #f1f5f9; color: #94a3b8; }
+    .setup-pill-arrow { font-size: 12px; color: #cbd5e1; }
+    .setup-start-btn {
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; color: #10b981; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .setup-start-btn:hover { color: #059669; }
+    .setup-start-btn:disabled { color: #cbd5e1; cursor: default; }
+    .setup-start-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* (step panels removed — single page layout) */
+
+    /* ══════════ Quick Vocab Preview Page ══════════ */
+    .preview-page {
+      flex: 1; display: none; align-items: flex-start; justify-content: center;
+      padding: 60px 36px 120px; overflow-y: auto;
+    }
+    .preview-page.visible { display: flex; }
+
+    .preview-card {
+      background: #fff; border-radius: 18px; width: 620px; max-width: 100%;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      display: flex; flex-direction: column;
+      overflow: hidden; flex-shrink: 0;
+    }
+
+    .preview-header {
+      padding: 28px 32px 20px; border-bottom: 1px solid #e2e8f0;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    }
+    .preview-title { font-size: 20px; font-weight: 700; color: #0f172a; flex: 1; }
+    .preview-badge {
+      font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+      background: #ecfdf5; color: #059669;
+    }
+    .preview-subtitle {
+      font-size: 12px; color: #94a3b8; width: 100%; margin-top: 0;
+    }
+
+    .preview-list {
+      flex: 1; overflow-y: auto; padding: 8px 32px 16px;
+    }
+    .preview-item {
+      padding: 14px 0; border-bottom: 1px solid #f1f5f9;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .preview-item:last-child { border-bottom: none; }
+    .preview-item-top {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .preview-word { font-size: 15px; font-weight: 700; color: #059669; }
+    .preview-tl { font-size: 14px; color: #64748b; font-weight: 600; }
+    .preview-play {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: #ecfdf5; border: 1.5px solid #a7f3d0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; margin-left: auto;
+    }
+    .preview-play:hover { background: #d1fae5; }
+    .preview-play svg { width: 13px; height: 13px; fill: #10b981; }
+    .preview-def { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+
+    .preview-footer {
+      padding: 16px 32px; border-top: 1px solid #e2e8f0;
+      display: flex; align-items: center;
+    }
+    .preview-back-btn {
+      flex: 1; padding: 12px 0; border: none; background: transparent;
+      color: #94a3b8; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s; text-align: left;
+    }
+    .preview-back-btn:hover { color: #475569; }
+    .preview-start-btn {
+      flex: 1; padding: 12px 0; border: none; background: transparent;
+      color: #10b981; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+      display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+    }
+    .preview-start-btn:hover { color: #059669; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item" title="Dashboard">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" title="Live Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Live Class</span>
+    </div>
+    <div class="sidebar-item active" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word Bank</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <a class="back-btn" href="demo-word-bank.html">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Word Bank
+      </a>
+      <div class="header-divider"></div>
+      <span class="app-header-title">Spelling Practice</span>
+      <span class="header-badge" id="header-badge" style="display:none;">All Random · 10 words</span>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none;">
+      <div class="progress-bar">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 30%"></div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ══════════ Practice Setup Page ══════════ -->
+      <div class="setup-page" id="setup-page">
+        <div class="setup-card">
+          <div class="setup-header">
+            <div class="setup-title-row">
+              <span class="setup-title">Practice Spelling</span>
+            </div>
+          </div>
+          <div class="setup-body">
+            <div class="setup-section-title">Select word category</div>
+            <div class="option-grid">
+              <div class="option-card" data-cat="newest" onclick="selectCategory(this)"><div class="option-card-title">Newest</div></div>
+              <div class="option-card selected" data-cat="all-random" onclick="selectCategory(this)"><div class="option-card-title">All Random</div></div>
+              <div class="option-card" data-cat="untested" onclick="selectCategory(this)"><div class="option-card-title">Untested</div></div>
+              <div class="option-card" data-cat="most-errors" onclick="selectCategory(this)"><div class="option-card-title">Most Errors</div></div>
+            </div>
+            <div class="setup-section-title">How long do you want to practice today?</div>
+            <div class="count-grid">
+              <div class="count-card" data-count="3" onclick="selectCount(this)"><div class="count-card-num">3</div><div class="count-card-label">mins</div></div>
+              <div class="count-card selected" data-count="5" onclick="selectCount(this)"><div class="count-card-num">5</div><div class="count-card-label">mins</div></div>
+              <div class="count-card" data-count="10" onclick="selectCount(this)"><div class="count-card-num">10</div><div class="count-card-label">mins</div></div>
+              <div class="count-card" data-count="15" onclick="selectCount(this)"><div class="count-card-num">15</div><div class="count-card-label">mins</div></div>
+            </div>
+          </div>
+          <div class="setup-divider"></div>
+          <div class="setup-footer">
+            <button class="setup-cancel-btn" id="setup-close">Cancel</button>
+            <button class="setup-start-btn" id="setup-next-btn" onclick="setupNext()">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ Quick Vocab Preview Page ══════════ -->
+      <div class="preview-page" id="preview-page">
+        <div class="preview-card">
+          <div class="preview-header">
+            <span class="preview-title">Quick Vocab Preview</span>
+            <span class="preview-badge" id="preview-count">5 words</span>
+            <div class="preview-subtitle">Review these words before you start</div>
+          </div>
+          <div class="preview-list" id="preview-list"></div>
+          <div class="preview-footer">
+            <button class="preview-back-btn" id="preview-back">Back</button>
+            <button class="preview-start-btn" id="preview-start">Start</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-area" id="practice-page" style="display:none;">
+
+        <!-- Question card -->
+        <div class="q-card">
+
+          <!-- Question counter (as card title) -->
+          <div class="q-counter">Question <strong id="q-current">3</strong> of <strong>10</strong></div>
+
+          <!-- Audio play button (always visible) -->
+          <div>
+            <button class="hint-play" id="hint-play-btn" title="Play pronunciation" type="button">
+              <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg>
+              <span>Play word</span>
+            </button>
+          </div>
+
+          <!-- Word definition -->
+          <div class="word-def">
+            <div class="word-def-label">Definition</div>
+            <div id="word-def-text">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</div>
+          </div>
+
+          <!-- Hint 1: first letter (hidden until 1st wrong) -->
+          <div class="hint-letter" id="hint-letter">💡 Starts with <strong id="hint-letter-char">h</strong></div>
+
+          <!-- Hint 2: 1/3/5 letter pattern (hidden until 2nd wrong) -->
+          <div class="hint-pattern" id="hint-pattern">💡 Pattern <strong id="hint-pattern-text">h _ p _ t _ _ _ _ _</strong></div>
+
+          <!-- Input -->
+          <div class="input-area">
+            <div class="input-label">Type the correct word</div>
+            <div class="input-row">
+              <input class="spell-input" id="spell-input" type="text" placeholder="Type your answer..." autocomplete="off" spellcheck="false" />
+              <button class="submit-btn" id="submit-btn">Check</button>
+            </div>
+          </div>
+
+          <!-- Feedback (hidden by default) -->
+          <div class="feedback" id="feedback">
+            <div class="feedback-title">
+              <span class="feedback-icon" id="feedback-icon"></span>
+              <span id="feedback-text"></span>
+            </div>
+            <div class="feedback-answer" id="feedback-answer"></div>
+            <button class="next-btn" id="next-btn">Next Word →</button>
+          </div>
+
+        </div><!-- /q-card -->
+
+      </div><!-- /practice-area -->
+
+      <!-- Bottom stats -->
+      <div class="bottom-stats" id="bottom-stats" style="display:none;">
+        <div class="stat-item"><span class="stat-dot green"></span> Correct <span class="stat-num" id="stat-correct">2</span></div>
+        <div class="stat-item"><span class="stat-dot red"></span> Wrong <span class="stat-num" id="stat-wrong">0</span></div>
+        <div class="stat-item"><span class="stat-dot gray"></span> Remaining <span class="stat-num" id="stat-remaining">8</span></div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<script>
+/* ══════════ Setup Wizard Logic ══════════ */
+var setupState = { category: 'All Random', count: 5 };
+
+function selectCategory(el) {
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  setupState.category = el.querySelector('.option-card-title').textContent;
+}
+
+function selectCount(el) {
+  document.querySelectorAll('.count-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  setupState.count = parseInt(el.dataset.count);
+}
+
+function setupNext() {
+  if (!document.querySelector('.option-card.selected')) return;
+  if (!document.querySelector('.count-card.selected')) return;
+  showPreview();
+}
+
+function showPreview() {
+  // Hide setup page
+  document.getElementById('setup-page').classList.add('hidden');
+
+  // Prepare preview words (shuffle + pick)
+  var allWords = window._allWords;
+  var shuffled = allWords.slice().sort(function() { return Math.random() - 0.5; });
+  window._previewWords = shuffled.slice(0, Math.min(setupState.count, allWords.length));
+
+  // Populate preview list
+  var list = document.getElementById('preview-list');
+  list.innerHTML = '';
+  window._previewWords.forEach(function(w) {
+    var item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML =
+      '<div class="preview-item-top">' +
+        '<span class="preview-word">' + w.word + '</span>' +
+        '<span class="preview-tl">' + w.tl + '</span>' +
+        '<span class="preview-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>' +
+      '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+  document.getElementById('preview-count').textContent = window._previewWords.length + ' words';
+
+  // Show preview page
+  document.getElementById('preview-page').classList.add('visible');
+}
+
+function startPractice() {
+  var badge = document.getElementById('header-badge');
+  badge.textContent = setupState.category + ' · ' + window._previewWords.length + ' words';
+  badge.style.display = '';
+  // Hide preview, show practice
+  document.getElementById('preview-page').classList.remove('visible');
+  document.getElementById('practice-page').style.display = '';
+  document.getElementById('progress-wrap').style.display = '';
+  initPractice(window._previewWords);
+}
+
+// Preview: Start Practice
+document.getElementById('preview-start').addEventListener('click', function() {
+  startPractice();
+});
+
+// Preview: Back → return to setup
+document.getElementById('preview-back').addEventListener('click', function() {
+  document.getElementById('preview-page').classList.remove('visible');
+  document.getElementById('setup-page').classList.remove('hidden');
+});
+
+document.getElementById('setup-close').addEventListener('click', function() {
+  window.location.href = 'demo-word-bank.html';
+});
+
+/* ══════════ Practice Logic ══════════ */
+// Expose words for preview
+window._allWords = [
+  { word: 'hypothesis', tl: '假說', def: 'A proposed explanation made on the basis of limited evidence as a starting point for further investigation.', sentence: 'We need to test our <blank> before drawing any conclusions.' },
+  { word: 'photosynthesis', tl: '光合作用', def: 'The process by which green plants use sunlight to synthesize foods from carbon dioxide and water.', sentence: 'During <blank>, plants convert sunlight into energy.' },
+  { word: 'equation', tl: '方程式', def: 'A statement that the values of two expressions are equal.', sentence: 'Solve the <blank> to find the value of x.' },
+  { word: 'revolution', tl: '革命', def: 'A forcible overthrow of a government or social order, in favor of a new system.', sentence: 'The French <blank> changed the course of European history.' },
+  { word: 'latitude', tl: '緯度', def: 'The angular distance of a place north or south of the earth\'s equator.', sentence: 'Cities near the equator have a low <blank> value.' },
+  { word: 'democracy', tl: '民主', def: 'A system of government by the whole population, typically through elected representatives.', sentence: 'In a <blank>, citizens have the right to vote for their leaders.' },
+  { word: 'ecosystem', tl: '生態系統', def: 'A biological community of interacting organisms and their physical environment.', sentence: 'Pollution can destroy an entire <blank> if left unchecked.' },
+  { word: 'molecule', tl: '分子', def: 'A group of atoms bonded together, representing the smallest unit of a chemical compound.', sentence: 'A water <blank> is made up of two hydrogen atoms and one oxygen atom.' },
+  { word: 'peninsula', tl: '半島', def: 'A piece of land almost surrounded by water or projecting out into a body of water.', sentence: 'Italy is shaped like a <blank> extending into the Mediterranean Sea.' },
+  { word: 'gravity', tl: '重力', def: 'The force that attracts a body toward the center of the earth.', sentence: 'Without <blank>, objects would float away into space.' },
+];
+
+(function () {
+  const words = window._allWords;
+
+  let current = 0;
+  let correct = 0;
+  let wrong = 0;
+  let total = words.length;
+  let activeWords = words;
+  let attempts = 0; // 0 = fresh, 1 = 1st wrong, 2 = 2nd wrong, 3 = failed
+
+  const input = document.getElementById('spell-input');
+  const submitBtn = document.getElementById('submit-btn');
+  const feedback = document.getElementById('feedback');
+  const feedbackIcon = document.getElementById('feedback-icon');
+  const feedbackText = document.getElementById('feedback-text');
+  const feedbackAnswer = document.getElementById('feedback-answer');
+  const nextBtn = document.getElementById('next-btn');
+  const progressFill = document.getElementById('progress-fill');
+  const qCurrent = document.getElementById('q-current');
+  const statCorrect = document.getElementById('stat-correct');
+  const statWrong = document.getElementById('stat-wrong');
+  const statRemaining = document.getElementById('stat-remaining');
+
+  const hintLetter = document.getElementById('hint-letter');
+  const hintLetterChar = document.getElementById('hint-letter-char');
+  const hintPattern = document.getElementById('hint-pattern');
+  const hintPatternText = document.getElementById('hint-pattern-text');
+  const hintPlayBtn = document.getElementById('hint-play-btn');
+  const wordDefText = document.getElementById('word-def-text');
+
+  function getPatternString(word) {
+    var out = [];
+    for (var i = 0; i < word.length; i++) {
+      out.push((i % 2 === 0) ? word.charAt(i) : '_');
+    }
+    return out.join(' ');
+  }
+
+  hintPlayBtn.addEventListener('click', function() {
+    var w = activeWords[current];
+    if (w) speakWord(w.word);
+  });
+
+  function speakWord(text) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function loadWord(idx) {
+    const w = activeWords[idx];
+    attempts = 0;
+    speakWord(w.word);
+    hintLetterChar.textContent = w.word.charAt(0).toUpperCase();
+    hintPatternText.textContent = getPatternString(w.word);
+    hintLetter.classList.remove('revealed');
+    hintPattern.classList.remove('revealed');
+    wordDefText.textContent = w.def;
+    input.value = '';
+    input.className = 'spell-input';
+    input.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Check';
+    feedback.className = 'feedback';
+    qCurrent.textContent = idx + 1;
+    document.querySelector('.q-counter strong:last-child').textContent = total;
+    progressFill.style.width = ((idx) / total * 100) + '%';
+    input.focus();
+  }
+
+  function handleAnswer(word) {
+    const answer = input.value.trim().toLowerCase();
+    if (!answer) return;
+    const isCorrect = answer === word.word.toLowerCase();
+
+    if (isCorrect) {
+      input.disabled = true;
+      submitBtn.disabled = true;
+      input.className = 'spell-input correct';
+      feedback.className = 'feedback correct show';
+      feedbackIcon.textContent = '✓';
+
+      if (attempts === 0) {
+        // First try correct → Correct
+        correct++;
+        feedbackText.textContent = 'Correct!';
+      } else {
+        // Needed hints → Wrong
+        wrong++;
+        feedbackText.textContent = 'Correct, but with hints';
+      }
+      feedbackAnswer.innerHTML = '<strong>' + word.word + '</strong> — ' + word.tl;
+      statCorrect.textContent = correct;
+      statWrong.textContent = wrong;
+      statRemaining.textContent = total - (current + 1);
+      progressFill.style.width = ((current + 1) / total * 100) + '%';
+    } else {
+      attempts++;
+
+      if (attempts === 1) {
+        // 1st wrong → reveal first letter + replay audio
+        hintLetter.classList.add('revealed');
+        speakWord(word.word);
+        input.className = 'spell-input wrong';
+        input.value = '';
+        input.focus();
+        setTimeout(function() { input.className = 'spell-input'; }, 800);
+      } else if (attempts === 2) {
+        // 2nd wrong → reveal letter pattern + replay audio (hide first-letter hint)
+        hintLetter.classList.remove('revealed');
+        hintPattern.classList.add('revealed');
+        speakWord(word.word);
+        input.className = 'spell-input wrong';
+        input.value = '';
+        input.focus();
+        setTimeout(function() { input.className = 'spell-input'; }, 800);
+      } else {
+        // 3rd wrong → show answer in input, change button to Next
+        wrong++;
+        input.disabled = true;
+        input.value = word.word;
+        input.className = 'spell-input wrong';
+        submitBtn.textContent = 'Next Word →';
+        submitBtn.disabled = false;
+        submitBtn.onclick = function() {
+          submitBtn.onclick = null;
+          submitBtn.textContent = 'Check';
+          nextBtn.click();
+        };
+        statWrong.textContent = wrong;
+        statRemaining.textContent = total - (current + 1);
+        progressFill.style.width = ((current + 1) / total * 100) + '%';
+      }
+    }
+  }
+
+  submitBtn.addEventListener('click', () => {
+    handleAnswer(activeWords[current]);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (input.disabled) {
+        nextBtn.click();
+      } else {
+        submitBtn.click();
+      }
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    current++;
+    if (current < total) {
+      loadWord(current);
+    } else {
+      // Show completion
+      document.querySelector('.practice-area').innerHTML = `
+        <div class="q-card" style="text-align:center;padding:48px 40px;">
+          <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+          <div style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:6px;">Practice Complete!</div>
+          <div style="font-size:14px;color:#64748b;margin-bottom:24px;">You finished all ${total} words</div>
+          <div style="display:flex;justify-content:center;gap:32px;margin-bottom:28px;">
+            <div><div style="font-size:28px;font-weight:800;color:#10b981;">${correct}</div><div style="font-size:11px;color:#94a3b8;font-weight:600;">CORRECT</div></div>
+            <div><div style="font-size:28px;font-weight:800;color:#ef4444;">${wrong}</div><div style="font-size:11px;color:#94a3b8;font-weight:600;">WRONG</div></div>
+            <div><div style="font-size:28px;font-weight:800;color:#0f172a;">${Math.round(correct/total*100)}%</div><div style="font-size:11px;color:#94a3b8;font-weight:600;">ACCURACY</div></div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            <a href="demo-word-bank.html" style="padding:12px 24px;border-radius:10px;background:#f1f5f9;color:#475569;font-weight:700;font-size:13px;text-decoration:none;transition:all .15s;">Back to Word Bank</a>
+            <button onclick="location.reload()" style="padding:12px 24px;border-radius:10px;background:#10b981;color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;">Practice Again</button>
+          </div>
+        </div>
+      `;
+      progressFill.style.width = '100%';
+    }
+  });
+
+  // Expose init for setup wizard (accepts pre-selected words array)
+  window.initPractice = function(selectedWords) {
+    activeWords = selectedWords;
+    total = activeWords.length;
+    current = 0;
+    correct = 0;
+    wrong = 0;
+    loadWord(0);
+    statCorrect.textContent = 0;
+    statWrong.textContent = 0;
+    statRemaining.textContent = total;
+    progressFill.style.width = '0%';
+  };
+})();
+
+// Auto-skip in-demo setup → go straight to Quick Vocab Preview
+showPreview();
+</script>
+
+</body>
+</html>
