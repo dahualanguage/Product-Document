@@ -23,18 +23,23 @@ Product-Document/
 │   ├── flow-5-platform-admin.html     ← Legacy swimlane (pending Mermaid conversion)
 │   └── flow-6-live-classroom.html     ← Mermaid.js format
 └── specs/
-    ├── flow-1-authentication/         ← (empty — coming soon)
-    ├── flow-2-content-creation/       ← (empty — coming soon)
-    ├── flow-3-student-practice/       ← (empty — coming soon)
-    ├── flow-4-school-management/
-    │   ├── index.html                ← Spec index (landing page for all Flow 4 specs)
+    ├── school-management/
+    │   ├── index.html                ← Spec index (landing page for School Management specs)
     │   ├── data-dashboard.html        ← Data Dashboard for School Admin spec
-    │   └── data-dashboard-ux.html     ← Data Dashboard UX Specification (wireframes, navigation, edge states)
-    ├── flow-5-platform-admin/         ← (empty — coming soon)
-    └── flow-6-live-classroom/
-        ├── index.html                ← Spec index (landing page for all Flow 6 specs)
-        ├── live-transcription.html    ← Live Transcription spec
-        └── clickable-transcript.html  ← ClickableTranscript spec
+    │   └── data-dashboard-ux.html     ← Data Dashboard UX Specification
+    ├── live-classroom/
+    │   ├── index.html                ← Spec index (landing page for Live Classroom specs)
+    │   ├── live-transcription.html    ← Live Transcription spec
+    │   └── clickable-transcript.html  ← ClickableTranscript spec
+    ├── esl-teacher/
+    │   ├── esl-teacher.html           ← ESL Teacher product spec (wireframes)
+    │   ├── demo-dashboard-v5.html     ← Latest dashboard demo
+    │   ├── demo-session-insights.html ← Session insights demo
+    │   ├── demo-students-v4.html      ← Students page demo
+    │   ├── demo-insight-inbox.html    ← Insight inbox demo
+    │   └── versions/                  ← Version history index
+    ├── esl-student/                   ← ESL Student demos & specs
+    └── build-with-ai/                 ← Build with AI specs
 ```
 
 ## Global CSS Conventions
@@ -104,7 +109,8 @@ No CSS custom properties — all colors are hard-coded hex. Reference palette:
 
 ## Naming Convention
 
-- **Spec folders must match flowchart filenames** (e.g., `flow-4-school-management/` matches `flow-4-school-management.html`)
+- **Spec folders are named by feature** (e.g., `school-management/`, `live-classroom/`, `esl-teacher/`, `esl-student/`)
+- Flowchart files retain `flow-N-` prefix (e.g., `flow-4-school-management.html`) — only spec folders dropped it
 - Spec files inside each folder are named by feature (e.g., `data-dashboard.html`)
 - All documentation is HTML (not markdown) so it renders in the browser with consistent styling
 

@@ -110,30 +110,22 @@
       padding: 36px 40px; display: flex; flex-direction: column; gap: 24px;
     }
 
-    /* Hint row: translation + audio (hidden until wrong) */
+    /* Hint 1: play audio button (hidden until 1st wrong) */
     .hint-section { display: none; }
     .hint-section.revealed { display: block; animation: hintReveal .3s ease; }
     @keyframes hintReveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-    .hint-row {
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    }
-    .hint-translation {
-      font-size: 20px; font-weight: 700; color: #0f172a;
-    }
     .hint-play {
-      width: 36px; height: 36px; border-radius: 50%;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px;
       background: #ecfdf5; border: 1.5px solid #a7f3d0;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all .15s; flex-shrink: 0;
+      color: #065f46; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: all .15s;
+      font-family: inherit;
     }
     .hint-play:hover { background: #d1fae5; }
     .hint-play svg { width: 16px; height: 16px; fill: #10b981; }
-    .hint-def {
-      font-size: 13px; color: #64748b; line-height: 1.6;
-      width: 100%;
-    }
 
-    /* First-letter hint (shown on 2nd wrong) */
+    /* Hint 2: first-letter (shown on 2nd wrong) */
     .hint-letter { display: none; }
     .hint-letter.revealed {
       display: flex; align-items: center; gap: 8px;
@@ -142,6 +134,20 @@
       padding: 2px 0;
     }
     .hint-letter strong { font-size: 16px; font-weight: 800; color: #00B8D9; }
+
+    /* Hint 3: 1/3/5 letter pattern (shown on 3rd wrong) */
+    .hint-pattern { display: none; }
+    .hint-pattern.revealed {
+      display: flex; align-items: center; gap: 8px;
+      animation: hintReveal .3s ease;
+      font-size: 13px; color: #7c3aed; font-weight: 600;
+      background: #f5f3ff; padding: 10px 16px; border-radius: 10px;
+      border: 1.5px solid #ddd6fe;
+    }
+    .hint-pattern strong {
+      font-size: 18px; font-weight: 800; color: #5b21b6;
+      letter-spacing: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
 
     /* Context sentence */
     .context-sentence {
@@ -345,7 +351,7 @@
       padding: 14px 0; border-bottom: 1px solid #f1f5f9;
       display: flex; flex-direction: column; gap: 4px;
     }
-    .preview-item:last-child { border-bottom: none; }
+    .preview-item:last-child { border-bottom: 1px solid #f1f5f9; }
     .preview-item-top {
       display: flex; align-items: center; gap: 10px;
     }
@@ -364,6 +370,7 @@
     /* Pagination */
     .preview-pagination {
       display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 20px 32px;
     }
     .preview-pagination button {
       width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #e2e8f0;
@@ -379,19 +386,19 @@
 
     .preview-footer {
       padding: 16px 32px; border-top: 1px solid #e2e8f0;
-      display: flex; align-items: center;
+      display: flex; align-items: center; justify-content: space-between;
     }
     .preview-back-btn {
-      flex: 1; padding: 12px 0; border: none; background: transparent;
+      padding: 12px 0; border: none; background: transparent;
       color: #94a3b8; font-size: 14px; font-weight: 600;
-      cursor: pointer; font-family: inherit; transition: all .15s; text-align: left;
+      cursor: pointer; font-family: inherit; transition: all .15s;
     }
     .preview-back-btn:hover { color: #475569; }
     .preview-start-btn {
-      flex: 1; padding: 12px 0; border: none; background: transparent;
+      padding: 12px 0; border: none; background: transparent;
       color: #22C55E; font-size: 16px; font-weight: 700;
       cursor: pointer; font-family: inherit; transition: all .15s;
-      display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+      display: flex; align-items: center; gap: 8px;
     }
     .preview-start-btn:hover { color: #1aab4e; }
   </style>
@@ -479,10 +486,10 @@
             <div class="preview-subtitle">Review these words before you start</div>
           </div>
           <div class="preview-list" id="preview-list"></div>
+          <div class="preview-pagination" id="preview-pagination" style="display:none;"></div>
           <div class="preview-footer">
             <button class="preview-back-btn" id="preview-back">Back</button>
-            <div class="preview-pagination" id="preview-pagination" style="display:none;"></div>
-            <button class="preview-start-btn" id="preview-start">Start</button>
+            <button class="preview-start-btn" id="preview-start">Start Practice →</button>
           </div>
         </div>
       </div>
@@ -501,19 +508,19 @@
             </span>
           </div>
 
-          <!-- Hint: translation + pronunciation + definition (hidden until first wrong) -->
+          <!-- Hint 1: play audio (hidden until 1st wrong) -->
           <div class="hint-section" id="hint-section">
-            <div class="hint-row">
-              <span class="hint-translation">hipótesis</span>
-              <span class="hint-play" title="Play pronunciation">
-                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg>
-              </span>
-            </div>
-            <p class="hint-def">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</p>
+            <button class="hint-play" id="hint-play-btn" title="Play pronunciation" type="button">
+              <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg>
+              <span>Play word</span>
+            </button>
           </div>
 
-          <!-- First-letter hint (hidden until 2nd wrong) -->
+          <!-- Hint 2: first letter (hidden until 2nd wrong) -->
           <div class="hint-letter" id="hint-letter">💡 Starts with <strong id="hint-letter-char">h</strong></div>
+
+          <!-- Hint 3: 1st/3rd/5th letter pattern (hidden until 3rd wrong) -->
+          <div class="hint-pattern" id="hint-pattern">💡 Pattern <strong id="hint-pattern-text">h _ p _ t _ _ _ _ _</strong></div>
 
           <!-- Context sentence with blank -->
           <div class="context-sentence">
@@ -590,7 +597,6 @@ function renderPreviewPage(page) {
         '<span class="preview-word">' + w.word + '</span>' +
         '<span class="preview-tl">' + w.tl + '</span>' +
         '<span class="preview-play" title="Play pronunciation"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.5v7a4.49 4.49 0 0 0 2.5-3.5zM14 3.23v2.06a6.51 6.51 0 0 1 0 13.42v2.06A8.51 8.51 0 0 0 14 3.23z"/></svg></span>' +
-      '</div>' +
       '</div>';
     list.appendChild(item);
   });
@@ -698,6 +704,22 @@ window._allWords = [
   const hintSection = document.getElementById('hint-section');
   const hintLetter = document.getElementById('hint-letter');
   const hintLetterChar = document.getElementById('hint-letter-char');
+  const hintPattern = document.getElementById('hint-pattern');
+  const hintPatternText = document.getElementById('hint-pattern-text');
+  const hintPlayBtn = document.getElementById('hint-play-btn');
+
+  function getPatternString(word) {
+    var out = [];
+    for (var i = 0; i < word.length; i++) {
+      out.push((i % 2 === 0) ? word.charAt(i) : '_');
+    }
+    return out.join(' ');
+  }
+
+  hintPlayBtn.addEventListener('click', function() {
+    var w = activeWords[current];
+    if (w) speakWord(w.word);
+  });
   const timerDisplay = document.getElementById('timer-display');
   const timerEl = document.getElementById('q-timer');
   let timerInterval = null;
@@ -748,14 +770,26 @@ window._allWords = [
     timerDisplay.textContent = m + ':' + (s < 10 ? '0' : '') + s;
   }
 
+  function speakWord(text) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
   function loadWord(idx) {
     const w = activeWords[idx];
     attempts = 0;
-    document.querySelector('.hint-translation').textContent = w.tl;
-    document.querySelector('.hint-def').textContent = w.def;
+    speakWord(w.word);
     hintLetterChar.textContent = w.word.charAt(0).toUpperCase();
-    hintSection.classList.remove('revealed');
+    hintPatternText.textContent = getPatternString(w.word);
+    hintSection.classList.add('revealed');
     hintLetter.classList.remove('revealed');
+    hintPattern.classList.remove('revealed');
     document.querySelector('.context-sentence').innerHTML =
       w.sentence.replace('<blank>', '<span class="blank">' + w.word + '</span>');
     input.value = '';
@@ -803,15 +837,18 @@ window._allWords = [
       attempts++;
 
       if (attempts === 1) {
-        // 1st wrong → reveal translation + definition
-        hintSection.classList.add('revealed');
+        // 1st wrong → reveal first letter + replay
+        hintLetter.classList.add('revealed');
+        speakWord(word.word);
         input.className = 'spell-input wrong';
         input.value = '';
         input.focus();
         setTimeout(function() { input.className = 'spell-input'; }, 800);
       } else if (attempts === 2) {
-        // 2nd wrong → reveal first letter
-        hintLetter.classList.add('revealed');
+        // 2nd wrong → reveal 1/3/5 letter pattern + replay (hide first-letter hint)
+        hintLetter.classList.remove('revealed');
+        hintPattern.classList.add('revealed');
+        speakWord(word.word);
         input.className = 'spell-input wrong';
         input.value = '';
         input.focus();
