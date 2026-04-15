@@ -3,17 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Demo — ESL Teacher Dashboard v5</title>
+  <title>Demo — ESL Teacher Dashboard v6</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
       min-height: 100vh;
     }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dashboard-grid { animation: fadeSlideIn .4s ease .15s both; }
 
     /* ── App Frame ── */
     .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
@@ -42,12 +54,15 @@
       justify-content: center; border: 2px solid #fff;
     }
     .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
     .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
     .sidebar-item:hover { background: #f1f5f9; }
     .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
     .sidebar-item:hover span { color: #64748b; }
     .sidebar-item.active { background: #ecfdf5; }
     .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
     .sidebar-item.active span { color: #059669; }
 
     /* ── Main ── */
@@ -83,7 +98,7 @@
 
     /* ── Page header ── */
     .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
-    .page-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .page-title { font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; }
     .page-sub { font-size: 14px; color: #94a3b8; margin-top: 6px; }
     .page-badge {
       font-size: 12px; font-weight: 700; color: #059669; background: #ecfdf5;
@@ -414,10 +429,18 @@
       border-bottom: 1px solid #f1f5f9;
     }
     .kpi-tracker-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .kpi-manage-btn {
+      font-size: 14px; font-weight: 500; color: #059669; background: #fff;
+      border: 1px solid #059669; border-radius: 20px; padding: 10px 24px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; height: 40px;
+      font-family: inherit; letter-spacing: .1px; transition: all .15s;
+    }
+    .kpi-manage-btn:hover { background: #ecfdf5; }
     .kpi-setup-btn {
-      font-size: 11px; font-weight: 700; color: #fff; background: #059669;
-      border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer;
-      display: flex; align-items: center; gap: 5px; transition: background .15s;
+      font-size: 14px; font-weight: 500; color: #fff; background: #059669;
+      border: none; border-radius: 20px; padding: 10px 24px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; height: 40px;
+      font-family: inherit; letter-spacing: .1px; transition: background .15s;
     }
     .kpi-setup-btn:hover { background: #047857; }
     .kpi-tracker-body {
@@ -427,12 +450,20 @@
       background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;
       transition: border-color .15s;
     }
-    .kpi-rule:hover { border-color: #cbd5e1; }
+    .kpi-rule:hover, .kpi-rule.linked-highlight {
+      border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.18); background: #ecfdf5;
+    }
+    .kpi-rule:hover .kpi-rule-header,
+    .kpi-rule.linked-highlight .kpi-rule-header,
+    .kpi-rule:hover .kpi-rule-students-inner,
+    .kpi-rule.linked-highlight .kpi-rule-students-inner { background: transparent; }
+    .barrier-card.linked-highlight { border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.18); background: #ecfdf5; }
     .kpi-rule-header {
       display: flex; align-items: center; gap: 10px; padding: 12px 14px;
       cursor: pointer; transition: background .15s;
     }
     .kpi-rule-header:hover { background: #f8fafc; }
+    .kpi-rule:hover .kpi-rule-header:hover { background: transparent; }
     .kpi-rule-arrow {
       font-size: 10px; color: #cbd5e1; transition: transform .2s; flex-shrink: 0;
     }
@@ -494,8 +525,12 @@
       overflow: hidden; position: relative;
     }
     .kpi-stu-bar {
-      height: 100%; border-radius: 4px; transition: width .4s ease;
+      height: 100%; border-radius: 4px;
       position: absolute; top: 0; left: 0;
+      animation: barGrow .6s ease both;
+    }
+    @keyframes barGrow {
+      from { width: 0 !important; }
     }
     .kpi-stu-bar.met { background: linear-gradient(90deg, rgba(110,231,183,0.5), #059669); }
     .kpi-stu-bar.below { background: linear-gradient(90deg, rgba(252,211,77,0.5), #F59E0B); }
@@ -522,7 +557,7 @@
     .kpi-modal-overlay.open { display: flex; }
     .kpi-modal {
       background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
-      width: 420px; max-height: 90vh; overflow-y: auto; padding: 28px;
+      width: 540px; padding: 28px; overflow: visible;
     }
     .kpi-modal h3 { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 20px; }
     .kpi-modal-field { margin-bottom: 16px; }
@@ -576,49 +611,17 @@
     .kpi-ms-option input:checked + .kpi-ms-box svg { display: block; }
     .kpi-ms-option input:checked ~ span { color: #059669; font-weight: 600; }
     .kpi-ms-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* shadcn-style radio */
-    .radio-group { display: flex; flex-direction: row; gap: 20px; }
-    .kpi-modal-field .radio-item {
-      display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
-      margin-bottom: 0; font-size: 13px; font-weight: 600; color: #334155;
-      text-transform: none; letter-spacing: normal;
-    }
-    .radio-item input[type="radio"] {
-      width: 16px !important; height: 16px !important;
-      padding: 0 !important; background-image: none !important;
-      appearance: none; -webkit-appearance: none;
-      width: 16px; height: 16px; border-radius: 50%;
-      border: 1px solid #cbd5e1; background: #fff;
-      display: grid; place-content: center;
-      cursor: pointer; transition: border-color .15s, box-shadow .15s;
-      margin: 0; flex-shrink: 0;
-    }
-    .radio-item input[type="radio"]:hover { border-color: #94a3b8; }
-    .radio-item input[type="radio"]:focus-visible {
-      outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.2);
-      border-color: #10b981;
-    }
-    .radio-item input[type="radio"]::before {
-      content: ''; width: 8px; height: 8px; border-radius: 50%;
-      background: #10b981; transform: scale(0); transition: transform .12s ease;
-    }
-    .radio-item input[type="radio"]:checked { border-color: #10b981; }
-    .radio-item input[type="radio"]:checked::before { transform: scale(1); }
-    .radio-item > span {
-      font-size: 13px; font-weight: 600; color: #334155; cursor: pointer;
-    }
-
     .kpi-modal-actions { display: flex; gap: 10px; margin-top: 24px; }
     .kpi-modal-cancel {
-      flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;
-      background: #fff; font-size: 13px; font-weight: 700; color: #64748b;
-      cursor: pointer; font-family: inherit; transition: all .15s;
+      flex: 1; height: 40px; border: 1px solid #e2e8f0; border-radius: 20px;
+      background: #fff; font-size: 14px; font-weight: 500; color: #64748b;
+      cursor: pointer; font-family: inherit; letter-spacing: .1px; transition: all .15s;
     }
     .kpi-modal-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
     .kpi-modal-save {
-      flex: 1; padding: 10px; border: none; border-radius: 8px;
-      background: #059669; font-size: 13px; font-weight: 700; color: #fff;
-      cursor: pointer; font-family: inherit; transition: background .15s;
+      flex: 1; height: 40px; border: none; border-radius: 20px;
+      background: #059669; font-size: 14px; font-weight: 500; color: #fff;
+      cursor: pointer; font-family: inherit; letter-spacing: .1px; transition: background .15s;
     }
     .kpi-modal-save:hover { background: #047857; }
 
@@ -677,7 +680,7 @@
       background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
       transition: all .15s; cursor: pointer; overflow: hidden;
     }
-    .barrier-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+    .barrier-card:hover { border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.18); background: #ecfdf5; }
     .barrier-card-summary { padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
     .barrier-card-main { flex: 1; }
     .barrier-card-arrow {
@@ -877,56 +880,6 @@
     }
     .gear-save:hover { background: #047857; }
 
-    /* ── Practice Outcomes ── */
-    .outcomes-grid {
-      display: grid; grid-template-columns: 280px 1fr; min-height: 0;
-    }
-    .outcomes-mastery {
-      padding: 20px 24px; border-right: 1px solid #f1f5f9;
-    }
-    .outcomes-missed { padding: 0; overflow: hidden; }
-    .outcomes-section-title {
-      font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
-      letter-spacing: .5px; margin-bottom: 16px;
-    }
-    .outcomes-mastery-stats { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .mastery-ring-wrap { position: relative; width: 120px; height: 120px; }
-    .mastery-ring { width: 120px; height: 120px; }
-    .mastery-ring-text {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      text-align: center;
-    }
-    .mastery-ring-num { font-size: 22px; font-weight: 800; color: #0f172a; }
-    .mastery-ring-label { font-size: 10px; font-weight: 600; color: #94a3b8; }
-    .mastery-detail { width: 100%; }
-    .mastery-row {
-      display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: #475569;
-    }
-    .mastery-row strong { margin-left: auto; font-weight: 700; color: #0f172a; }
-    .mastery-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-    }
-    .mastery-dot.mastered { background: #22C55E; }
-    .mastery-dot.learning { background: #F59E0B; }
-    .mastery-dot.new-word { background: #93c5fd; }
-    .mastery-row-label { font-weight: 500; }
-    .mastery-row-total {
-      margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9;
-      font-size: 12px; color: #94a3b8; display: flex; align-items: center;
-    }
-    .mastery-row-total strong { margin-left: auto; color: #0f172a; }
-
-    /* ── Miss rate bar ── */
-    .miss-rate { display: flex; align-items: center; gap: 8px; }
-    .miss-bar { width: 60px; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
-    .miss-fill { height: 100%; background: #ef4444; border-radius: 3px; }
-    .miss-rate span { font-size: 11px; font-weight: 700; color: #ef4444; }
-
-    /* Practice type pills for outcomes */
-    .tt-subject.spell { background: #fef3c7; color: #92400e; }
-    .tt-subject.mc { background: #dbeafe; color: #1e40af; }
-    .tt-subject.mirror { background: #ede9fe; color: #5b21b6; }
-
     /* ── Tracker List Items ── */
     .tracker-list-item {
       display: flex; align-items: center; gap: 10px;
@@ -934,6 +887,14 @@
       border-radius: 10px; transition: all .15s;
     }
     .tracker-list-item:hover { border-color: #cbd5e1; }
+    .tracker-list-handle {
+      flex-shrink: 0; cursor: grab; color: #cbd5e1; display: flex; align-items: center;
+      padding: 0 2px; transition: color .15s;
+    }
+    .tracker-list-handle:active { cursor: grabbing; }
+    .tracker-list-handle:hover { color: #94a3b8; }
+    .tracker-list-item.dragging { opacity: .4; }
+    .tracker-list-item.drag-over { border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.15); }
     .tracker-list-info { flex: 1; min-width: 0; }
     .tracker-list-name { font-size: 13px; font-weight: 700; color: #0f172a; }
     .tracker-list-desc { font-size: 11px; color: #64748b; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
@@ -957,15 +918,15 @@
   <nav class="app-sidebar">
     <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
     <div class="sidebar-item active" title="Dashboard">
-      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span class="material-icons-round">dashboard</span>
       <span>Dashboard</span>
     </div>
-    <div class="sidebar-item" title="Students" onclick="location.href='demo-students-v4.html'">
-      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+    <div class="sidebar-item" title="Students" onclick="location.href='demo-students-v6.html'">
+      <span class="material-icons-round">group</span>
       <span>Students</span>
     </div>
-    <div class="sidebar-item" title="Insights" onclick="location.href='demo-session-insights.html'">
-      <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+    <div class="sidebar-item" title="Insights" onclick="location.href='demo-session-insights-v6.html'">
+      <span class="material-icons-round">lightbulb</span>
       <span>Insights</span>
       <span class="sidebar-badge">2</span>
     </div>
@@ -977,7 +938,7 @@
       <span class="app-header-title">ESL Teacher</span>
       <div class="header-right">
         <a class="version-link" href="versions/index.html" title="Version history">
-          <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+          <span class="material-icons-round" style="font-size:14px;">schedule</span>
           Versions
         </a>
         <div class="header-user">
@@ -994,10 +955,16 @@
           <div class="page-title">Dashboard</div>
           <div class="page-sub">Overview of classroom KPIs &amp; language insights</div>
         </div>
-        <button class="kpi-setup-btn" onclick="openTrackerList()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + New Tracker
-        </button>
+        <div style="display:flex;gap:8px;">
+          <button class="kpi-manage-btn" onclick="openTrackerList()">
+            <span class="material-icons-round" style="font-size:18px;">tune</span>
+            Manage Trackers
+          </button>
+          <button class="kpi-setup-btn" onclick="openTrackerModal()">
+            <span class="material-icons-round" style="font-size:18px;">add</span>
+            New Tracker
+          </button>
+        </div>
       </div>
 
       <div class="dashboard-grid">
@@ -1113,8 +1080,8 @@
             <!-- rendered by JS -->
           </div>
           <button class="kpi-modal-save" onclick="closeTrackerList();openTrackerModal()" style="width:100%;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:inline;vertical-align:-1px;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add New Tracker
+            <span class="material-icons-round" style="font-size:14px;vertical-align:-2px;margin-right:4px;">add</span>
+            New Tracker
           </button>
         </div>
       </div>
@@ -1128,7 +1095,7 @@
             <input type="text" id="kpi-name" placeholder="e.g. WIDA 1 Weekly Practice">
           </div>
           <div style="display:flex;gap:12px;">
-            <div class="kpi-modal-field" style="flex:2;">
+            <div class="kpi-modal-field" style="flex:3;">
               <label>Metric</label>
               <select id="kpi-metric">
                 <option value="times">Number of Practices</option>
@@ -1140,23 +1107,10 @@
               <label>Target</label>
               <input type="number" id="kpi-target" value="10" min="1">
             </div>
-          </div>
-          <div class="kpi-modal-field">
-            <label>Schedule</label>
-            <div class="radio-group">
-              <label class="radio-item">
-                <input type="radio" name="kpi-schedule" value="recurring" checked onchange="toggleKpiRepeat()">
-                <span>Recurring</span>
-              </label>
-              <label class="radio-item">
-                <input type="radio" name="kpi-schedule" value="one-time" onchange="toggleKpiRepeat()">
-                <span>One-time</span>
-              </label>
+            <div class="kpi-modal-field" id="kpi-cycle-field" style="flex:1;">
+              <label>Cycle (days)</label>
+              <input type="number" id="kpi-cycle" value="7" min="1" max="365">
             </div>
-          </div>
-          <div class="kpi-modal-field" id="kpi-cycle-field">
-            <label>Cycle (days)</label>
-            <input type="number" id="kpi-cycle" value="7" min="1" max="365">
           </div>
           <div style="display:flex;gap:12px;">
             <div class="kpi-modal-field" style="flex:1;">
@@ -1164,7 +1118,7 @@
               <div class="cal-wrapper" id="cal-wrapper">
                 <button type="button" class="cal-trigger" id="cal-trigger" onclick="toggleCal()">
                   <span id="cal-display">Select date</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span class="material-icons-round" style="font-size:16px;color:#94a3b8;vertical-align:-3px;">calendar_today</span>
                 </button>
                 <div class="cal-panel" id="cal-panel">
                   <div class="cal-nav">
@@ -1181,7 +1135,7 @@
               <div class="cal-wrapper" id="cal-end-wrapper">
                 <button type="button" class="cal-trigger" id="cal-end-trigger" onclick="toggleCalEnd()">
                   <span id="cal-end-display">Select date</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span class="material-icons-round" style="font-size:16px;color:#94a3b8;vertical-align:-3px;">calendar_today</span>
                 </button>
                 <div class="cal-panel" id="cal-end-panel">
                   <div class="cal-nav">
@@ -1286,12 +1240,6 @@ var trackerNextId = 7;
 
 function getKpiDaysLeft(rule) {
   var today = new Date(); today.setHours(0,0,0,0);
-  if (rule.repeat === false) {
-    if (!rule.end) return null;
-    var endD = new Date(rule.end); endD.setHours(0,0,0,0);
-    var diff = Math.ceil((endD - today) / 86400000);
-    return diff >= 0 ? diff : null;
-  }
   // recurring: days until next cycle end
   if (!rule.start || !rule.cycle) return null;
   var start = new Date(rule.start); start.setHours(0,0,0,0);
@@ -1331,9 +1279,7 @@ function renderKpiTracker() {
     html += '<div class="kpi-rule-info">';
     html += '<div class="kpi-rule-name">' + rule.name + '</div>';
     html += '<div class="kpi-rule-desc">';
-    var periodText = rule.repeat === false
-      ? rule.target + ' ' + metricUnits[rule.metric] + ' · ' + rule.start + ' → ' + (rule.end || rule.start)
-      : rule.target + ' ' + metricUnits[rule.metric] + ' / ' + rule.cycle + 'd';
+    var periodText = rule.target + ' ' + metricUnits[rule.metric] + ' / ' + rule.cycle + 'd';
     html += '<span class="kpi-rule-tag metric">' + periodText + '</span>';
     var daysLeft = getKpiDaysLeft(rule);
     if (daysLeft != null) {
@@ -1377,6 +1323,7 @@ function renderKpiTracker() {
     html += '</div>';
   });
   body.innerHTML = html;
+  if (typeof bindLinkedHover === 'function') bindLinkedHover();
 }
 
 function toggleKpiRule(id) {
@@ -1408,10 +1355,6 @@ function editTracker(id) {
   document.getElementById('kpi-metric').value = rule.metric;
   document.getElementById('kpi-target').value = rule.target;
   document.getElementById('kpi-cycle').value = rule.cycle || 7;
-  var radioVal = rule.repeat === false ? 'one-time' : 'recurring';
-  var r = document.querySelector('input[name="kpi-schedule"][value="' + radioVal + '"]');
-  if (r) r.checked = true;
-  toggleKpiRepeat();
   var d = rule.start ? new Date(rule.start) : new Date();
   calSelectedDate = d;
   document.getElementById('kpi-start').value = rule.start || d.toISOString().slice(0, 10);
@@ -1697,6 +1640,8 @@ function openTrackerList() {
 function closeTrackerList() {
   document.getElementById('tracker-list-overlay').classList.remove('open');
 }
+var dragSrcIdx = null;
+
 function renderTrackerList() {
   var body = document.getElementById('tracker-list-body');
   if (trackers.length === 0) {
@@ -1704,9 +1649,10 @@ function renderTrackerList() {
     return;
   }
   var html = '';
-  trackers.forEach(function(w) {
+  trackers.forEach(function(w, i) {
     var stuCount = (w.students || []).length;
-    html += '<div class="tracker-list-item">';
+    html += '<div class="tracker-list-item" draggable="true" data-idx="' + i + '">';
+    html += '<div class="tracker-list-handle"><span class="material-icons-round" style="font-size:20px;">drag_indicator</span></div>';
     html += '<div class="tracker-list-info">';
     html += '<div class="tracker-list-name">' + w.name + '</div>';
     html += '<div class="tracker-list-desc">';
@@ -1715,11 +1661,42 @@ function renderTrackerList() {
     html += '<span class="tracker-list-tag">' + stuCount + ' student' + (stuCount !== 1 ? 's' : '') + '</span>';
     html += '</div></div>';
     html += '<div class="tracker-list-actions">';
-    html += '<button class="tracker-list-btn" onclick="closeTrackerList();editTracker(' + w.id + ')" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>';
-    html += '<button class="tracker-list-btn danger" onclick="deleteTracker(' + w.id + ');renderTrackerList()" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+    html += '<button class="tracker-list-btn" onclick="closeTrackerList();editTracker(' + w.id + ')" title="Edit"><span class="material-icons-round" style="font-size:14px;">edit</span></button>';
+    html += '<button class="tracker-list-btn danger" onclick="deleteTracker(' + w.id + ');renderTrackerList()" title="Delete"><span class="material-icons-round" style="font-size:14px;">close</span></button>';
     html += '</div></div>';
   });
   body.innerHTML = html;
+
+  // Drag-and-drop reorder
+  var items = body.querySelectorAll('.tracker-list-item');
+  items.forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+      dragSrcIdx = parseInt(el.dataset.idx);
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', function() {
+      el.classList.remove('dragging');
+      items.forEach(function(x) { x.classList.remove('drag-over'); });
+    });
+    el.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      items.forEach(function(x) { x.classList.remove('drag-over'); });
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', function() { el.classList.remove('drag-over'); });
+    el.addEventListener('drop', function(e) {
+      e.preventDefault();
+      var toIdx = parseInt(el.dataset.idx);
+      if (dragSrcIdx === null || dragSrcIdx === toIdx) return;
+      var moved = trackers.splice(dragSrcIdx, 1)[0];
+      trackers.splice(toIdx, 0, moved);
+      renderTrackerList();
+      renderKpiTracker();
+      renderBarrier();
+    });
+  });
 }
 
 /* Tracker Modal */
@@ -1733,9 +1710,6 @@ function openTrackerModal() {
   document.getElementById('kpi-metric').value = 'times';
   document.getElementById('kpi-target').value = '10';
   document.getElementById('kpi-cycle').value = 7;
-  var recurRadio = document.querySelector('input[name="kpi-schedule"][value="recurring"]');
-  if (recurRadio) recurRadio.checked = true;
-  toggleKpiRepeat();
   var today = new Date();
   calSelectedDate = today;
   document.getElementById('kpi-start').value = today.toISOString().slice(0, 10);
@@ -1750,12 +1724,6 @@ function openTrackerModal() {
   document.getElementById('kpi-modal-overlay').classList.add('open');
 }
 
-function toggleKpiRepeat() {
-  var sel = document.querySelector('input[name="kpi-schedule"]:checked');
-  var repeat = !sel || sel.value === 'recurring';
-  document.getElementById('kpi-cycle-field').style.display = repeat ? '' : 'none';
-}
-
 function closeTrackerModal() {
   document.getElementById('kpi-modal-overlay').classList.remove('open');
 }
@@ -1765,9 +1733,8 @@ function saveTracker() {
   var metric = document.getElementById('kpi-metric').value;
   var target = parseInt(document.getElementById('kpi-target').value) || 10;
   var cycle = String(parseInt(document.getElementById('kpi-cycle').value) || 7);
-  var repeat = (document.querySelector('input[name="kpi-schedule"]:checked') || {}).value !== 'one-time';
   var start = document.getElementById('kpi-start').value || new Date().toISOString().slice(0, 10);
-  var end = repeat ? null : (document.getElementById('kpi-end').value || start);
+  var end = document.getElementById('kpi-end').value || null;
   var selectedStudents = collectTargets('kpi-target-list');
   if (selectedStudents.length === 0) {
     alert('Please select at least one student.');
@@ -1782,12 +1749,11 @@ function saveTracker() {
       existing.cycle = cycle;
       existing.start = start;
       existing.end = end;
-      existing.repeat = repeat;
       existing.students = selectedStudents;
     }
   } else {
     var ruleName = name || ('Custom ' + metricLabels[metric]);
-    trackers.push({ id: trackerNextId++, name: ruleName, metric: metric, target: target, cycle: cycle, start: start, end: end, repeat: repeat, students: selectedStudents });
+    trackers.unshift({ id: trackerNextId++, name: ruleName, metric: metric, target: target, cycle: cycle, start: start, end: end, students: selectedStudents });
   }
   closeTrackerModal();
   renderKpiTracker();
@@ -1886,6 +1852,7 @@ function renderBarrier() {
     html += '</div>';
   });
   grid.innerHTML = html;
+  if (typeof bindLinkedHover === 'function') bindLinkedHover();
 }
 
 function toggleBarrierCard(id) {
@@ -1894,6 +1861,20 @@ function toggleBarrierCard(id) {
 }
 
 renderBarrier();
+
+/* ══════════ Linked Hover ══════════ */
+function bindLinkedHover() {
+  trackers.forEach(function(w) {
+    var kpi = document.getElementById('kpi-rule-' + w.id);
+    var barrier = document.getElementById('barrier-card-' + w.id);
+    if (!kpi || !barrier) return;
+    kpi.addEventListener('mouseenter', function() { barrier.classList.add('linked-highlight'); });
+    kpi.addEventListener('mouseleave', function() { barrier.classList.remove('linked-highlight'); });
+    barrier.addEventListener('mouseenter', function() { kpi.classList.add('linked-highlight'); });
+    barrier.addEventListener('mouseleave', function() { kpi.classList.remove('linked-highlight'); });
+  });
+}
+bindLinkedHover();
 
 /* ══════════ Top N filter for word tables ══════════ */
 function filterRows(selectId, tbodyId) {
@@ -1972,6 +1953,7 @@ document.getElementById('tapped-tracker').addEventListener('change', function() 
   });
   filterRows('tapped-count', 'tapped-tbody');
 });
+
 </script>
 
 </body>

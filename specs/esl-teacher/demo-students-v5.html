@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — ESL Teacher · Students</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer; position: relative;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item span.sidebar-badge {
+      position: absolute; top: 4px; right: 8px; min-width: 16px; height: 16px;
+      padding: 0 4px; border-radius: 8px; background: #ef4444; color: #fff;
+      font-size: 10px; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; border: 2px solid #fff;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active span { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      background: #ecfdf5; color: #059669; border: 1px solid #6EE7B7;
+    }
+    .version-link {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+      transition: all .15s;
+    }
+    .version-link:hover { color: #475569; border-color: #cbd5e1; background: #f8fafc; }
+    .app-content { flex: 1; background: #f8faf9; overflow-y: auto; padding: 28px 36px 60px; }
+
+    /* ── Page header ── */
+    .page-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .page-sub { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .page-count {
+      font-size: 12px; font-weight: 700; color: #059669; background: #ecfdf5;
+      padding: 4px 12px; border-radius: 20px; border: 1px solid #6EE7B7;
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .filter-select {
+      font-size: 12px; font-weight: 600; padding: 7px 30px 7px 12px;
+      border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+      color: #334155; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      transition: all .15s;
+    }
+    .filter-select:hover { border-color: #cbd5e1; }
+    .filter-select:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.15); }
+    .filter-search {
+      font-size: 12px; padding: 7px 12px 7px 32px;
+      border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+      color: #334155; width: 220px; transition: all .15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: 10px center;
+    }
+    .filter-search:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.15); }
+
+    /* ── Student Table ── */
+    .stu-table-wrap {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden; padding: 10px;
+    }
+    .stu-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .stu-table th {
+      font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
+      letter-spacing: .4px; padding: 12px 16px; text-align: left;
+      border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    .stu-table td {
+      padding: 14px 16px; vertical-align: middle;
+      border-bottom: 1px solid #f1f5f9; font-size: 13px;
+    }
+    .stu-table tr:last-child td { border-bottom: none; }
+    .stu-table tr:hover td { background: #f8faf9; }
+
+    .stu-cell-name { display: flex; align-items: center; gap: 10px; }
+    .stu-cell-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #475569; flex-shrink: 0;
+    }
+    .stu-cell-fullname { font-weight: 600; color: #0f172a; }
+
+    /* WIDA level tag */
+    .level-tag {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      display: inline-block;
+    }
+    .level-tag.wida-1 { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+    .level-tag.wida-2 { background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
+    .level-tag.wida-3 { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+    .level-tag.wida-4 { background: #ecfdf5; color: #065f46; border: 1px solid #6EE7B7; }
+    .level-tag.wida-5 { background: #eff6ff; color: #1e40af; border: 1px solid #93c5fd; }
+    .level-tag.wida-6 { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+
+    /* Native language */
+    .lang-text { font-size: 13px; color: #475569; }
+
+    /* Subject pills */
+    .subject-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+    .subject-pill {
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    }
+    .subject-pill.sci { background: #ecfdf5; color: #065f46; }
+    .subject-pill.math { background: #eef2ff; color: #4338ca; }
+    .subject-pill.hist { background: #fef3c7; color: #92400e; }
+    .subject-pill.ss { background: #e0f2fe; color: #0369a1; }
+    .subject-pill.ela { background: #fdf2f8; color: #9d174d; }
+
+    /* Group select */
+    .group-select {
+      font-size: 12px; font-weight: 600; padding: 4px 26px 4px 8px;
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #fff;
+      color: #334155; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+      transition: all .15s;
+    }
+    .group-select:hover { border-color: #cbd5e1; }
+    .group-select:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.15); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #0f172a; color: #fff; font-size: 13px; font-weight: 600;
+      padding: 10px 20px; border-radius: 8px; opacity: 0;
+      transition: all .3s ease; pointer-events: none; z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item" title="Dashboard" onclick="location.href='demo-dashboard-v5.html'">
+      <svg viewBox="0 0 24 24"><path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm-1-20v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item active" title="Students">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>Students</span>
+    </div>
+    <div class="sidebar-item" title="Insights" onclick="location.href='demo-session-insights.html'">
+      <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+      <span>Insights</span>
+      <span class="sidebar-badge">2</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">ESL Teacher</span>
+      <div class="header-right">
+        <span class="header-badge">ESL Teacher</span>
+        <a class="version-link" href="versions/index.html" title="Version history">
+          <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+          Versions
+        </a>
+        <div class="header-user">
+          <div class="header-avatar">MC</div>
+          Ms. Chen
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <div class="page-top">
+        <div>
+          <div class="page-title">Students</div>
+          <div class="page-sub">View and manage all ESL students</div>
+        </div>
+        <span class="page-count" id="student-count">23 students</span>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <input class="filter-search" type="text" placeholder="Search by name..." id="search-input" oninput="filterStudents()">
+        <select class="filter-select" id="filter-group" onchange="filterStudents()">
+          <option value="all">All Groups</option>
+          <option value="3rd Grade · WIDA 1">3rd Grade · WIDA 1</option>
+          <option value="4th Grade · WIDA 2">4th Grade · WIDA 2</option>
+          <option value="5th Grade · WIDA 3">5th Grade · WIDA 3</option>
+          <option value="6th Grade · WIDA 4">6th Grade · WIDA 4</option>
+          <option value="7th Grade · WIDA 5">7th Grade · WIDA 5</option>
+          <option value="8th Grade · WIDA 6">8th Grade · WIDA 6</option>
+        </select>
+        <select class="filter-select" id="filter-level" onchange="filterStudents()">
+          <option value="all">All WIDA Levels</option>
+          <option value="1">WIDA 1</option>
+          <option value="2">WIDA 2</option>
+          <option value="3">WIDA 3</option>
+          <option value="4">WIDA 4</option>
+          <option value="5">WIDA 5</option>
+          <option value="6">WIDA 6</option>
+        </select>
+        <select class="filter-select" id="filter-lang" onchange="filterStudents()">
+          <option value="all">All Languages</option>
+          <option value="Mandarin">Mandarin</option>
+          <option value="Spanish">Spanish</option>
+          <option value="Vietnamese">Vietnamese</option>
+          <option value="Arabic">Arabic</option>
+          <option value="Korean">Korean</option>
+          <option value="Japanese">Japanese</option>
+          <option value="Portuguese">Portuguese</option>
+        </select>
+      </div>
+
+      <!-- Student Table -->
+      <div class="stu-table-wrap">
+        <table class="stu-table">
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>WIDA Level</th>
+              <th>Native Language</th>
+              <th>Subjects</th>
+              <th>Group</th>
+            </tr>
+          </thead>
+          <tbody id="stu-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+
+</div><!-- /app-frame -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+var trackerGroups = [
+  '3rd Grade · WIDA 1',
+  '4th Grade · WIDA 2',
+  '5th Grade · WIDA 3',
+  '6th Grade · WIDA 4',
+  '7th Grade · WIDA 5',
+  '8th Grade · WIDA 6'
+];
+
+var students = [
+  // 3rd Grade · WIDA 1
+  { name:'Emily Lin',     initials:'EL', level:1, lang:'Mandarin',    subjects:['Science','Math'],             group:'3rd Grade · WIDA 1' },
+  { name:'Kevin Chen',    initials:'KC', level:1, lang:'Mandarin',    subjects:['Science','History'],          group:'3rd Grade · WIDA 1' },
+  { name:'David Huang',   initials:'DH', level:1, lang:'Mandarin',    subjects:['Science'],                   group:'3rd Grade · WIDA 1' },
+  { name:'Lisa Xu',       initials:'LX', level:1, lang:'Vietnamese',  subjects:['Science','Social Studies'],   group:'3rd Grade · WIDA 1' },
+
+  // 4th Grade · WIDA 2
+  { name:'Sophie Wang',   initials:'SW', level:2, lang:'Mandarin',    subjects:['Math','Social Studies'],      group:'4th Grade · WIDA 2' },
+  { name:'Amy Liu',       initials:'AL', level:2, lang:'Mandarin',    subjects:['Science','Math','History'],   group:'4th Grade · WIDA 2' },
+  { name:'Jason Zhang',   initials:'JZ', level:2, lang:'Mandarin',    subjects:['Math'],                      group:'4th Grade · WIDA 2' },
+  { name:'Tom Yang',      initials:'TY', level:2, lang:'Korean',      subjects:['Science','Math'],             group:'4th Grade · WIDA 2' },
+
+  // 5th Grade · WIDA 3
+  { name:'Mia Chang',     initials:'MC', level:3, lang:'Mandarin',    subjects:['Science','Math'],             group:'5th Grade · WIDA 3' },
+  { name:'Ryan Wu',       initials:'RW', level:3, lang:'Mandarin',    subjects:['History','Social Studies'],   group:'5th Grade · WIDA 3' },
+  { name:'Olivia Lee',    initials:'OL', level:3, lang:'Korean',      subjects:['Science','ELA'],              group:'5th Grade · WIDA 3' },
+  { name:'Grace Sun',     initials:'GS', level:3, lang:'Japanese',    subjects:['Science','History'],          group:'5th Grade · WIDA 3' },
+  { name:'Nancy Cai',     initials:'NC', level:3, lang:'Mandarin',    subjects:['Science','History'],          group:'5th Grade · WIDA 3' },
+  { name:'Zoe Feng',      initials:'ZF', level:3, lang:'Vietnamese',  subjects:['Science','ELA'],              group:'5th Grade · WIDA 3' },
+
+  // 6th Grade · WIDA 4
+  { name:'Ethan Zhou',    initials:'EZ', level:4, lang:'Mandarin',    subjects:['Math','Science'],             group:'6th Grade · WIDA 4' },
+  { name:'Henry Li',      initials:'HL', level:4, lang:'Mandarin',    subjects:['Math','ELA'],                 group:'6th Grade · WIDA 4' },
+  { name:'Peter He',      initials:'PH', level:4, lang:'Mandarin',    subjects:['Math','Social Studies'],      group:'6th Grade · WIDA 4' },
+  { name:'William Tan',   initials:'WT', level:4, lang:'Mandarin',    subjects:['Science','Math','History'],   group:'6th Grade · WIDA 4' },
+  { name:'Iris Gao',      initials:'IG', level:4, lang:'Mandarin',    subjects:['Math'],                       group:'6th Grade · WIDA 4' },
+
+  // 7th Grade · WIDA 5
+  { name:'Leo Wu',        initials:'LW', level:5, lang:'Mandarin',    subjects:['Science','ELA','History'],    group:'7th Grade · WIDA 5' },
+  { name:'Sophia Zhao',   initials:'SZ', level:5, lang:'Mandarin',    subjects:['Math','Science'],             group:'7th Grade · WIDA 5' },
+  { name:'Chloe Xu',      initials:'CX', level:5, lang:'Mandarin',    subjects:['Math','History','ELA'],       group:'7th Grade · WIDA 5' },
+
+  // 8th Grade · WIDA 6
+  { name:'Daniel Lin',    initials:'DL', level:6, lang:'Spanish',     subjects:['Science','Social Studies','ELA'], group:'8th Grade · WIDA 6' }
+];
+
+var subjectClass = { Science:'sci', Math:'math', History:'hist', 'Social Studies':'ss', ELA:'ela' };
+
+function levelClass(lvl) {
+  return 'wida-' + lvl;
+}
+function levelLabel(lvl) {
+  return 'WIDA ' + lvl;
+}
+
+function renderStudents(list) {
+  var tbody = document.getElementById('stu-tbody');
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:40px 16px;">No students match the current filters.</td></tr>';
+    document.getElementById('student-count').textContent = '0 students';
+    return;
+  }
+  document.getElementById('student-count').textContent = list.length + ' student' + (list.length !== 1 ? 's' : '');
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var pills = '';
+    for (var j = 0; j < s.subjects.length; j++) {
+      pills += '<span class="subject-pill ' + (subjectClass[s.subjects[j]] || '') + '">' + s.subjects[j] + '</span>';
+    }
+    html += '<tr>'
+      + '<td><div class="stu-cell-name"><span class="stu-cell-avatar">' + s.initials + '</span><span class="stu-cell-fullname">' + s.name + '</span></div></td>'
+      + '<td><span class="level-tag ' + levelClass(s.level) + '">' + levelLabel(s.level) + '</span></td>'
+      + '<td><span class="lang-text">' + s.lang + '</span></td>'
+      + '<td><div class="subject-pills">' + pills + '</div></td>'
+      + '<td><select class="group-select" data-idx="' + i + '" onchange="changeGroup(this)">'
+      + trackerGroups.map(function(g) { return '<option value="' + g + '"' + (s.group === g ? ' selected' : '') + '>' + g + '</option>'; }).join('')
+      + '</select></td>'
+      + '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function filterStudents() {
+  var q = document.getElementById('search-input').value.toLowerCase();
+  var fg = document.getElementById('filter-group').value;
+  var fl = document.getElementById('filter-level').value;
+  var fLang = document.getElementById('filter-lang').value;
+  var list = students.filter(function(s) {
+    if (q && s.name.toLowerCase().indexOf(q) === -1) return false;
+    if (fg !== 'all' && s.group !== fg) return false;
+    if (fl !== 'all' && s.level !== parseInt(fl)) return false;
+    if (fLang !== 'all' && s.lang !== fLang) return false;
+    return true;
+  });
+  renderStudents(list);
+}
+
+function changeGroup(sel) {
+  var idx = parseInt(sel.dataset.idx);
+  var oldGroup = students[idx].group;
+  var newGroup = sel.value;
+  students[idx].group = newGroup;
+  showToast(students[idx].name + ' moved to ' + newGroup);
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+renderStudents(students);
+</script>
+
+</body>
+</html>
