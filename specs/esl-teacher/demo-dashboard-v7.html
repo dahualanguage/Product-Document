@@ -469,6 +469,9 @@
     }
     .kpi-rule.open .kpi-rule-arrow { transform: rotate(90deg); }
     .kpi-rule-info { flex: 1; min-width: 0; }
+    .kpi-rule-urgent {
+      font-size: 18px !important; color: #f59e0b; flex-shrink: 0;
+    }
     .kpi-rule-name { font-size: 13px; font-weight: 700; color: #0f172a; }
     .kpi-rule-desc { font-size: 12px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .kpi-rule-tag {
@@ -499,30 +502,37 @@
     .kpi-rule-tag.countdown.warn { background: #fef3c7; color: #92400e; }
     .kpi-rule-tag.countdown.danger { background: #fee2e2; color: #991b1b; }
     .kpi-rule-summary {
-      font-size: 12px; font-weight: 800; flex-shrink: 0; text-align: right; min-width: 48px;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 100px;
     }
-    .kpi-rule-summary.good { color: #059669; }
-    .kpi-rule-summary.warn { color: #F59E0B; }
-    .kpi-rule-summary.danger { color: #EF4444; }
+    .kpi-summary-bar-track {
+      flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+    }
+    .kpi-summary-bar-fill {
+      height: 100%; border-radius: 3px; transition: width .4s ease;
+      background: #059669;
+    }
+    .kpi-summary-pct {
+      font-size: 11px; font-weight: 700; color: #64748b; min-width: 28px; text-align: right;
+    }
     .kpi-rule-students {
       max-height: 0; overflow: hidden; transition: max-height .3s ease;
     }
     .kpi-rule.open .kpi-rule-students { max-height: 800px; }
     .kpi-rule-students-inner {
-      padding: 0 14px 12px; display: flex; flex-direction: column; gap: 6px;
+      padding: 42px 14px 12px; display: flex; flex-direction: column; gap: 6px;
       border-top: 1px solid #f1f5f9;
     }
     .kpi-stu-row {
       display: flex; align-items: center; gap: 8px; padding: 5px 0;
     }
-    .kpi-stu-row:first-child { padding-top: 10px; }
+    .kpi-stu-row:first-child { padding-top: 0; }
     .kpi-stu-name {
       font-size: 12px; font-weight: 600; color: #334155; width: 80px; flex-shrink: 0;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .kpi-stu-bar-wrap {
-      flex: 1; height: 16px; background: #f1f5f9; border-radius: 4px;
-      overflow: hidden; position: relative;
+      flex: 1; height: 12px; background: #f1f5f9; border-radius: 4px;
+      overflow: visible; position: relative;
     }
     .kpi-stu-bar {
       height: 100%; border-radius: 4px;
@@ -536,8 +546,17 @@
     .kpi-stu-bar.below { background: linear-gradient(90deg, rgba(252,211,77,0.5), #F59E0B); }
     .kpi-stu-bar.far { background: linear-gradient(90deg, rgba(252,165,165,0.5), #EF4444); }
     .kpi-stu-target-line {
-      position: absolute; top: -2px; bottom: -2px; width: 2px; background: #0f172a;
-      border-radius: 1px; z-index: 2;
+      position: absolute; top: -4px; bottom: -5px; width: 2px; z-index: 3;
+      background: repeating-linear-gradient(
+        to bottom, #94a3b8 0px, #94a3b8 4px, transparent 4px, transparent 8px
+      );
+    }
+    .kpi-stu-target-line[data-target]:not([data-target=""])::before {
+      content: attr(data-target);
+      position: absolute; top: -26px; left: 50%; transform: translateX(-50%);
+      background: #34d399; color: #fff; font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 8px; white-space: nowrap;
+      line-height: 1.4;
     }
     .kpi-stu-val {
       font-size: 11px; font-weight: 700; color: #475569; width: 52px; text-align: right; flex-shrink: 0;
@@ -921,11 +940,11 @@
       <span class="material-icons-round">dashboard</span>
       <span>Dashboard</span>
     </div>
-    <div class="sidebar-item" title="Students" onclick="location.href='demo-students-v6.html'">
+    <div class="sidebar-item" title="Students" onclick="location.href='demo-students-v7.html'">
       <span class="material-icons-round">group</span>
       <span>Students</span>
     </div>
-    <div class="sidebar-item" title="Insights" onclick="location.href='demo-session-insights-v6.html'">
+    <div class="sidebar-item" title="Insights" onclick="location.href='demo-session-insights-v7.html'">
       <span class="material-icons-round">lightbulb</span>
       <span>Insights</span>
       <span class="sidebar-badge">2</span>
@@ -1170,35 +1189,35 @@
 var langLabels = { zh: 'Chinese', es: 'Spanish' };
 var widaLevels = [1, 2, 3, 4, 5, 6];
 var allStudents = [
-  // WIDA 1 — high barrier reliance
-  { name: 'Emily Chen',      lang: 'zh', wida: 1, times: {'7':2,'14':5,'30':10},  mins: {'7':10,'14':22,'30':45},  words: {'7':3,'14':6,'30':12},  taps: {'7':24,'14':45,'30':88},  hover: {'7':90,'14':170,'30':330} },
-  { name: 'Carlos Garcia',   lang: 'es', wida: 1, times: {'7':3,'14':6,'30':12},  mins: {'7':14,'14':28,'30':55},  words: {'7':4,'14':8,'30':14},  taps: {'7':20,'14':38,'30':75},  hover: {'7':80,'14':155,'30':300} },
-  { name: 'Lucia Torres',    lang: 'es', wida: 1, times: {'7':4,'14':8,'30':16},  mins: {'7':18,'14':36,'30':72},  words: {'7':5,'14':10,'30':18}, taps: {'7':22,'14':42,'30':82},  hover: {'7':85,'14':162,'30':315} },
-  // WIDA 2
-  { name: 'Kevin Liu',       lang: 'zh', wida: 2, times: {'7':5,'14':10,'30':20}, mins: {'7':24,'14':48,'30':95},  words: {'7':6,'14':13,'30':24}, taps: {'7':16,'14':30,'30':58},  hover: {'7':62,'14':118,'30':230} },
-  { name: 'Sofia Martinez',  lang: 'es', wida: 2, times: {'7':6,'14':12,'30':23}, mins: {'7':28,'14':56,'30':110}, words: {'7':8,'14':16,'30':28}, taps: {'7':15,'14':28,'30':55},  hover: {'7':58,'14':110,'30':215} },
-  { name: 'James Lin',       lang: 'zh', wida: 2, times: {'7':5,'14':11,'30':21}, mins: {'7':26,'14':52,'30':100}, words: {'7':7,'14':14,'30':26}, taps: {'7':17,'14':32,'30':62},  hover: {'7':65,'14':124,'30':240} },
-  // WIDA 3
-  { name: 'Maria Lopez',     lang: 'es', wida: 3, times: {'7':7,'14':14,'30':28}, mins: {'7':35,'14':68,'30':135}, words: {'7':10,'14':20,'30':36}, taps: {'7':11,'14':20,'30':40}, hover: {'7':42,'14':80,'30':155} },
-  { name: 'Lily Huang',      lang: 'zh', wida: 3, times: {'7':8,'14':15,'30':30}, mins: {'7':38,'14':74,'30':145}, words: {'7':11,'14':22,'30':40}, taps: {'7':10,'14':19,'30':37}, hover: {'7':40,'14':76,'30':148} },
-  { name: 'Chloe Wu',        lang: 'zh', wida: 3, times: {'7':6,'14':13,'30':26}, mins: {'7':32,'14':64,'30':125}, words: {'7':9,'14':18,'30':32},  taps: {'7':12,'14':22,'30':43}, hover: {'7':45,'14':86,'30':168} },
-  // WIDA 4
-  { name: 'Emma Tsai',       lang: 'zh', wida: 4, times: {'7':9,'14':18,'30':36}, mins: {'7':45,'14':88,'30':175}, words: {'7':14,'14':27,'30':50}, taps: {'7':7,'14':13,'30':26},  hover: {'7':28,'14':52,'30':102} },
-  { name: 'Diego Rivera',    lang: 'es', wida: 4, times: {'7':10,'14':19,'30':38},mins: {'7':48,'14':94,'30':185}, words: {'7':15,'14':29,'30':54}, taps: {'7':6,'14':12,'30':24},  hover: {'7':25,'14':48,'30':94} },
-  { name: 'Olivia Xu',       lang: 'zh', wida: 4, times: {'7':9,'14':17,'30':34}, mins: {'7':44,'14':86,'30':170}, words: {'7':13,'14':25,'30':46}, taps: {'7':8,'14':15,'30':28},  hover: {'7':30,'14':56,'30':108} },
-  // WIDA 5
-  { name: 'Lucas Yang',      lang: 'zh', wida: 5, times: {'7':11,'14':21,'30':42},mins: {'7':54,'14':105,'30':210},words: {'7':17,'14':32,'30':58}, taps: {'7':4,'14':8,'30':15},   hover: {'7':16,'14':30,'30':58} },
-  { name: 'Valentina Cruz',  lang: 'es', wida: 5, times: {'7':12,'14':22,'30':44},mins: {'7':56,'14':110,'30':220},words: {'7':18,'14':34,'30':62}, taps: {'7':3,'14':7,'30':13},   hover: {'7':14,'14':26,'30':50} },
-  { name: 'Ava Liao',        lang: 'zh', wida: 5, times: {'7':11,'14':22,'30':43},mins: {'7':55,'14':108,'30':215},words: {'7':18,'14':33,'30':60}, taps: {'7':4,'14':7,'30':14},   hover: {'7':15,'14':28,'30':54} },
-  // WIDA 6 — low barrier reliance
-  { name: 'Ethan Ho',        lang: 'zh', wida: 6, times: {'7':14,'14':26,'30':52},mins: {'7':68,'14':130,'30':260},words: {'7':22,'14':40,'30':72}, taps: {'7':2,'14':4,'30':8},    hover: {'7':8,'14':15,'30':30} },
-  { name: 'Ana Morales',     lang: 'es', wida: 6, times: {'7':13,'14':25,'30':50},mins: {'7':65,'14':125,'30':250},words: {'7':20,'14':38,'30':68}, taps: {'7':2,'14':3,'30':7},    hover: {'7':7,'14':13,'30':26} },
-  { name: 'Sophia Hsu',      lang: 'zh', wida: 6, times: {'7':15,'14':28,'30':55},mins: {'7':72,'14':140,'30':275},words: {'7':23,'14':42,'30':76}, taps: {'7':1,'14':3,'30':6},    hover: {'7':6,'14':12,'30':24} },
+  // WIDA 1 — 3rd Grade
+  { name: 'Emily Chen',      lang: 'zh', wida: 1, grade: 3, times: {'7':2,'14':5,'30':10},  mins: {'7':10,'14':22,'30':45},  words: {'7':3,'14':6,'30':12},  taps: {'7':24,'14':45,'30':88},  hover: {'7':90,'14':170,'30':330} },
+  { name: 'Carlos Garcia',   lang: 'es', wida: 1, grade: 3, times: {'7':3,'14':6,'30':12},  mins: {'7':14,'14':28,'30':55},  words: {'7':4,'14':8,'30':14},  taps: {'7':20,'14':38,'30':75},  hover: {'7':80,'14':155,'30':300} },
+  { name: 'Lucia Torres',    lang: 'es', wida: 1, grade: 3, times: {'7':4,'14':8,'30':16},  mins: {'7':18,'14':36,'30':72},  words: {'7':5,'14':10,'30':18}, taps: {'7':22,'14':42,'30':82},  hover: {'7':85,'14':162,'30':315} },
+  // WIDA 2 — 4th Grade
+  { name: 'Kevin Liu',       lang: 'zh', wida: 2, grade: 4, times: {'7':5,'14':10,'30':20}, mins: {'7':24,'14':48,'30':95},  words: {'7':6,'14':13,'30':24}, taps: {'7':16,'14':30,'30':58},  hover: {'7':62,'14':118,'30':230} },
+  { name: 'Sofia Martinez',  lang: 'es', wida: 2, grade: 4, times: {'7':6,'14':12,'30':23}, mins: {'7':28,'14':56,'30':110}, words: {'7':8,'14':16,'30':28}, taps: {'7':15,'14':28,'30':55},  hover: {'7':58,'14':110,'30':215} },
+  { name: 'James Lin',       lang: 'zh', wida: 2, grade: 4, times: {'7':5,'14':11,'30':21}, mins: {'7':26,'14':52,'30':100}, words: {'7':7,'14':14,'30':26}, taps: {'7':17,'14':32,'30':62},  hover: {'7':65,'14':124,'30':240} },
+  // WIDA 3 — 5th Grade
+  { name: 'Maria Lopez',     lang: 'es', wida: 3, grade: 5, times: {'7':7,'14':14,'30':28}, mins: {'7':35,'14':68,'30':135}, words: {'7':10,'14':20,'30':36}, taps: {'7':11,'14':20,'30':40}, hover: {'7':42,'14':80,'30':155} },
+  { name: 'Lily Huang',      lang: 'zh', wida: 3, grade: 5, times: {'7':8,'14':15,'30':30}, mins: {'7':38,'14':74,'30':145}, words: {'7':11,'14':22,'30':40}, taps: {'7':10,'14':19,'30':37}, hover: {'7':40,'14':76,'30':148} },
+  { name: 'Chloe Wu',        lang: 'zh', wida: 3, grade: 5, times: {'7':6,'14':13,'30':26}, mins: {'7':32,'14':64,'30':125}, words: {'7':9,'14':18,'30':32},  taps: {'7':12,'14':22,'30':43}, hover: {'7':45,'14':86,'30':168} },
+  // WIDA 4 — 6th Grade
+  { name: 'Emma Tsai',       lang: 'zh', wida: 4, grade: 6, times: {'7':9,'14':18,'30':36}, mins: {'7':45,'14':88,'30':175}, words: {'7':14,'14':27,'30':50}, taps: {'7':7,'14':13,'30':26},  hover: {'7':28,'14':52,'30':102} },
+  { name: 'Diego Rivera',    lang: 'es', wida: 4, grade: 6, times: {'7':10,'14':19,'30':38},mins: {'7':48,'14':94,'30':185}, words: {'7':15,'14':29,'30':54}, taps: {'7':6,'14':12,'30':24},  hover: {'7':25,'14':48,'30':94} },
+  { name: 'Olivia Xu',       lang: 'zh', wida: 4, grade: 6, times: {'7':9,'14':17,'30':34}, mins: {'7':44,'14':86,'30':170}, words: {'7':13,'14':25,'30':46}, taps: {'7':8,'14':15,'30':28},  hover: {'7':30,'14':56,'30':108} },
+  // WIDA 5 — 7th Grade
+  { name: 'Lucas Yang',      lang: 'zh', wida: 5, grade: 7, times: {'7':11,'14':21,'30':42},mins: {'7':54,'14':105,'30':210},words: {'7':17,'14':32,'30':58}, taps: {'7':4,'14':8,'30':15},   hover: {'7':16,'14':30,'30':58} },
+  { name: 'Valentina Cruz',  lang: 'es', wida: 5, grade: 7, times: {'7':12,'14':22,'30':44},mins: {'7':56,'14':110,'30':220},words: {'7':18,'14':34,'30':62}, taps: {'7':3,'14':7,'30':13},   hover: {'7':14,'14':26,'30':50} },
+  { name: 'Ava Liao',        lang: 'zh', wida: 5, grade: 7, times: {'7':11,'14':22,'30':43},mins: {'7':55,'14':108,'30':215},words: {'7':18,'14':33,'30':60}, taps: {'7':4,'14':7,'30':14},   hover: {'7':15,'14':28,'30':54} },
+  // WIDA 6 — 8th Grade
+  { name: 'Ethan Ho',        lang: 'zh', wida: 6, grade: 8, times: {'7':14,'14':26,'30':52},mins: {'7':68,'14':130,'30':260},words: {'7':22,'14':40,'30':72}, taps: {'7':2,'14':4,'30':8},    hover: {'7':8,'14':15,'30':30} },
+  { name: 'Ana Morales',     lang: 'es', wida: 6, grade: 8, times: {'7':13,'14':25,'30':50},mins: {'7':65,'14':125,'30':250},words: {'7':20,'14':38,'30':68}, taps: {'7':2,'14':3,'30':7},    hover: {'7':7,'14':13,'30':26} },
+  { name: 'Sophia Hsu',      lang: 'zh', wida: 6, grade: 8, times: {'7':15,'14':28,'30':55},mins: {'7':72,'14':140,'30':275},words: {'7':23,'14':42,'30':76}, taps: {'7':1,'14':3,'30':6},    hover: {'7':6,'14':12,'30':24} },
 ];
 function findStudent(name) { return allStudents.find(function(s) { return s.name === name; }); }
-function filterStudents(lang, wida) {
+function filterStudents(grade, wida) {
   return allStudents.filter(function(s) {
-    if (lang && lang !== 'all' && s.lang !== lang) return false;
+    if (grade && grade !== 'all' && s.grade !== parseInt(grade.replace('g',''))) return false;
     if (wida && wida !== 'all' && s.wida !== parseInt(wida)) return false;
     return true;
   });
@@ -1229,12 +1248,12 @@ function getStudentVal(student, metric, cycleDays) {
 }
 
 var trackers = [
-  { id: 1, name: '3rd Grade · WIDA 1', metric: 'times', target: 5, cycle: '7', start: '2026-03-26', students: ['Emily Chen','Carlos Garcia','Lucia Torres'] },
-  { id: 2, name: '4th Grade · WIDA 2', metric: 'mins', target: 40, cycle: '7', start: '2026-03-26', students: ['Kevin Liu','Sofia Martinez','James Lin'] },
-  { id: 3, name: '5th Grade · WIDA 3', metric: 'words', target: 30, cycle: '14', start: '2026-03-19', students: ['Maria Lopez','Lily Huang','Chloe Wu'] },
-  { id: 4, name: '6th Grade · WIDA 4', metric: 'times', target: 20, cycle: '14', start: '2026-03-19', students: ['Emma Tsai','Diego Rivera','Olivia Xu'] },
-  { id: 5, name: '7th Grade · WIDA 5', metric: 'mins', target: 60, cycle: '14', start: '2026-03-12', students: ['Lucas Yang','Valentina Cruz','Ava Liao'] },
-  { id: 6, name: '8th Grade · WIDA 6', metric: 'words', target: 40, cycle: '30', start: '2026-03-02', students: ['Ethan Ho','Ana Morales','Sophia Hsu'] },
+  { id: 1, name: '3rd Grade · WIDA 1', metric: 'times',  target: 6,  cycle: '7',  start: '2026-04-11', students: ['Emily Chen','Carlos Garcia','Lucia Torres'] },   // 0%, ends tomorrow → urgent
+  { id: 2, name: '4th Grade · WIDA 2', metric: 'mins',   target: 27, cycle: '7',  start: '2026-04-09', students: ['Kevin Liu','Sofia Martinez','James Lin'] },       // 33% — Sofia(28) meets, Kevin(24) & James(26) don't
+  { id: 3, name: '5th Grade · WIDA 3', metric: 'words',  target: 19, cycle: '14', start: '2026-04-02', students: ['Maria Lopez','Lily Huang','Chloe Wu'] },          // 67% — Maria(20)✓ Lily(22)✓ Chloe(18)✗
+  { id: 4, name: '6th Grade · WIDA 4', metric: 'times',  target: 16, cycle: '14', start: '2026-04-02', students: ['Emma Tsai','Diego Rivera','Olivia Xu'] },         // 100% — Emma(18) Diego(19) Olivia(17) all ≥ 16
+  { id: 5, name: '7th Grade · WIDA 5', metric: 'mins',   target: 60, cycle: '14', start: '2026-03-19', students: ['Lucas Yang','Valentina Cruz','Ava Liao'] },
+  { id: 6, name: '8th Grade · WIDA 6', metric: 'words',  target: 40, cycle: '30', start: '2026-03-02', students: ['Ethan Ho','Ana Morales','Sophia Hsu'] },
 ];
 var trackerNextId = 7;
 
@@ -1275,11 +1294,10 @@ function renderKpiTracker() {
 
     html += '<div class="kpi-rule" id="kpi-rule-' + rule.id + '">';
     html += '<div class="kpi-rule-header" onclick="toggleKpiRule(' + rule.id + ')">';
-    html += '<span class="kpi-rule-arrow">&#9654;</span>';
     html += '<div class="kpi-rule-info">';
     html += '<div class="kpi-rule-name">' + rule.name + '</div>';
     html += '<div class="kpi-rule-desc">';
-    var periodText = rule.target + ' ' + metricUnits[rule.metric] + ' / ' + rule.cycle + 'd';
+    var periodText = rule.target + ' ' + metricUnits[rule.metric] + ' in ' + rule.cycle + ' days';
     html += '<span class="kpi-rule-tag metric">' + periodText + '</span>';
     var daysLeft = getKpiDaysLeft(rule);
     if (daysLeft != null) {
@@ -1299,13 +1317,21 @@ function renderKpiTracker() {
       html += '<span class="kpi-rule-tag countdown ' + ctClass + '" data-date="Ends ' + endDateStr + '">' + ctText + '</span>';
     }
     html += '</div></div>';
-    html += '<span class="kpi-rule-summary ' + summaryClass + '">' + met + '/' + total + '</span>';
+    var isUrgent = daysLeft != null && daysLeft <= 2 && met < total;
+    html += '<div class="kpi-rule-summary">';
+    if (isUrgent) {
+      html += '<span class="material-icons-round kpi-rule-urgent">warning</span>';
+    }
+    html += '<div class="kpi-summary-bar-track"><div class="kpi-summary-bar-fill" style="width:' + pct + '%"></div></div>';
+    html += '<span class="kpi-summary-pct">' + pct + '%</span>';
+    html += '</div>';
+    html += '<span class="kpi-rule-arrow">&#9654;</span>';
     html += '</div>';
 
     // Expandable student progress bars
     html += '<div class="kpi-rule-students"><div class="kpi-rule-students-inner">';
     var maxVal = rule.target * 1.5; // scale for bar width
-    students.forEach(function(s) {
+    students.forEach(function(s, si) {
       var val = getStudentVal(s, rule.metric, rule.cycle);
       var barPct = Math.min(val / maxVal * 100, 100);
       var targetPct = Math.min(rule.target / maxVal * 100, 100);
@@ -1314,7 +1340,8 @@ function renderKpiTracker() {
       html += '<span class="kpi-stu-name">' + s.name + '</span>';
       html += '<div class="kpi-stu-bar-wrap">';
       html += '<div class="kpi-stu-bar ' + barClass + '" style="width:' + barPct + '%"></div>';
-      html += '<div class="kpi-stu-target-line" style="left:' + targetPct + '%"></div>';
+      var targetLabel = si === 0 ? 'Goal ' + rule.target + ' ' + metricUnits[rule.metric] : '';
+      html += '<div class="kpi-stu-target-line" style="left:' + targetPct + '%" data-target="' + targetLabel + '"></div>';
       html += '</div>';
       html += '<span class="kpi-stu-val">' + val + ' <span class="kpi-unit">' + metricUnits[rule.metric] + '</span></span>';
       html += '</div>';
@@ -1537,9 +1564,8 @@ function renderTargetPicker(containerId, selectedNames) {
   // Filter row
   html += '<div class="target-filters">';
   html += '<select id="' + pfx + '_lang" onchange="updateTargetList(\'' + containerId + '\')">';
-  html += '<option value="all">All Languages</option>';
-  html += '<option value="zh">Chinese</option>';
-  html += '<option value="es">Spanish</option>';
+  html += '<option value="all">All Grades</option>';
+  [3,4,5,6,7,8].forEach(function(g) { html += '<option value="g' + g + '">' + g + 'th Grade</option>'; });
   html += '</select>';
   html += '<select id="' + pfx + '_wida" onchange="updateTargetList(\'' + containerId + '\')">';
   html += '<option value="all">All WIDA Levels</option>';
@@ -1579,7 +1605,7 @@ function updateTargetList(containerId) {
     html += '<label class="check-item">';
     html += '<input type="checkbox" data-name="' + s.name + '" ' + checked + ' onchange="onTargetCheck(\'' + containerId + '\')">';
     html += ' ' + s.name;
-    html += ' <span class="target-tag lang-' + s.lang + '">' + langLabels[s.lang] + '</span>';
+    html += ' <span class="target-tag wida">' + s.grade + 'th Grade</span>';
     html += ' <span class="target-tag wida">WIDA ' + s.wida + '</span>';
     html += '</label>';
   });
@@ -1830,7 +1856,7 @@ function renderBarrier() {
     html += '<div class="barrier-group-name">' + (w.name || targetLabel) + '</div>';
     html += '</div>';
     html += '<div class="barrier-value ' + valClass + '"><span class="barrier-every">Every </span>' + valDisplay + '<span class="barrier-unit">' + unitDisplay + '</span></div>';
-    html += '<div class="barrier-trend ' + trendClass + '">' + trendIcon + ' ' + trendText + '</div>';
+    html += '<div class="barrier-trend ' + trendClass + '">' + trendText + '</div>';
     html += '</div>';
     html += '<span class="barrier-card-arrow">&#9654;</span>';
     html += '</div>';
