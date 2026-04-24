@@ -323,45 +323,6 @@
     .state-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; border: 1px solid transparent; }
     .state-badge.learning { color: #b45309; background: #FEF9C3; border-color: #FDE68A; }
     .state-badge.mastered { color: #059669; background: #ECFDF5; border-color: #6EE7B7; }
-    .retry-btn {
-      display: none; align-items: center; justify-content: center; gap: 6px;
-      width: 100%;
-      font-size: 12px; font-weight: 700; color: #64748b;
-      background: #f8fafc; border: 1px solid #e2e8f0;
-      padding: 8px 12px; border-radius: 8px; cursor: pointer;
-      transition: all .15s;
-    }
-    .retry-btn:hover { color: #0f172a; background: #f1f5f9; border-color: #cbd5e1; }
-    .retry-btn svg { width: 14px; height: 14px; }
-    .retry-btn.show { display: inline-flex; }
-
-    /* Confirm popup */
-    .confirm-overlay {
-      position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .2s ease;
-    }
-    .confirm-overlay.show { opacity: 1; pointer-events: auto; }
-    .confirm-panel {
-      background: #fff; border-radius: 16px; width: 360px; padding: 28px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.18); text-align: center;
-      transform: translateY(12px) scale(.97);
-      transition: transform .25s cubic-bezier(.34,1.2,.64,1);
-    }
-    .confirm-overlay.show .confirm-panel { transform: translateY(0) scale(1); }
-    .confirm-icon { font-size: 36px; margin-bottom: 12px; }
-    .confirm-title { font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
-    .confirm-desc { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
-    .confirm-desc strong { color: #0f172a; }
-    .confirm-actions { display: flex; gap: 10px; }
-    .confirm-actions button {
-      flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700;
-      cursor: pointer; transition: all .15s; border: none;
-    }
-    .confirm-cancel { background: #f1f5f9; color: #475569; }
-    .confirm-cancel:hover { background: #e2e8f0; }
-    .confirm-yes { background: #f59e0b; color: #fff; }
-    .confirm-yes:hover { background: #d97706; }
     /* Practice setup modal */
     .practice-setup-overlay {
       position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.35);
@@ -1179,18 +1140,6 @@
   </div>
 </div>
 
-<!-- ═══════════════════ CONFIRM RESET POPUP ═══════════════════ -->
-<div class="confirm-overlay" id="confirm-overlay" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="confirm-panel">
-    <div class="confirm-icon">🔄</div>
-    <div class="confirm-title">Move Back to Learning?</div>
-    <div class="confirm-desc" id="confirm-desc">This will reset all progress for <strong id="confirm-word"></strong>. You'll need to complete 5 practices again to master it.</div>
-    <div class="confirm-actions">
-      <button class="confirm-cancel" onclick="document.getElementById('confirm-overlay').classList.remove('show')">Cancel</button>
-      <button class="confirm-yes" id="confirm-yes">Yes, Reset</button>
-    </div>
-  </div>
-</div>
 
 <!-- Practice Setup Modal -->
 <div class="practice-setup-overlay" id="ps-overlay" onclick="if(event.target===this)closePracticeSetup()">
@@ -1548,9 +1497,6 @@ function updateFramework(fw) {
         cardState.className = 'state-badge ' + state;
         cardState.innerHTML = state === 'mastered' ? 'Mastered' : 'Learning';
       }
-      var retryBtn = document.getElementById('retry-btn');
-      if (retryBtn) retryBtn.className = 'retry-btn' + (state === 'mastered' ? ' show' : '');
-
       // Update word level tags (only active framework)
       renderLevelTags(item);
 
@@ -1591,37 +1537,6 @@ function updateFramework(fw) {
       updateTlDisplay();
     });
   });
-
-  /* ── Retry button: show confirm popup ── */
-  var retryBtn = document.getElementById('retry-btn');
-  var confirmOverlay = document.getElementById('confirm-overlay');
-  var confirmWord = document.getElementById('confirm-word');
-  var confirmYes = document.getElementById('confirm-yes');
-  if (retryBtn) {
-    retryBtn.addEventListener('click', function() {
-      var selected = document.querySelector('.wl-item.selected');
-      if (!selected || selected.dataset.state !== 'mastered') return;
-      var word = selected.querySelector('.wl-word')?.textContent || '';
-      if (confirmWord) confirmWord.textContent = word;
-      if (confirmOverlay) confirmOverlay.classList.add('show');
-    });
-  }
-  if (confirmYes) {
-    confirmYes.addEventListener('click', function() {
-      var selected = document.querySelector('.wl-item.selected');
-      if (selected) {
-        selected.dataset.state = 'learning';
-        selected.dataset.mastery = '0';
-        selected.dataset.spell = '0';
-        selected.dataset.mc = '0';
-        selected.dataset.mirror = '0';
-        var stateEl = selected.querySelector('.wl-state');
-        if (stateEl) { stateEl.className = 'wl-state learning'; stateEl.textContent = 'Learning'; }
-        selected.click();
-      }
-      if (confirmOverlay) confirmOverlay.classList.remove('show');
-    });
-  }
 
   /* ── Collapse toggle ── */
   const collapseBtn = document.getElementById('collapse-toggle');
@@ -1680,6 +1595,13 @@ function updateFramework(fw) {
       updateTlDisplay();
     });
   }
+})();
+
+/* ── Auto-open panels via URL hash (for iframe embedding) ── */
+(function() {
+  var h = window.location.hash.replace('#', '');
+  if (h === 'practice') setTimeout(function(){ openPracticeSetup('Challenge of the Day', true); }, 300);
+  if (h === 'mastery')  setTimeout(function(){ document.getElementById('mastery-overlay').classList.add('show'); }, 300);
 })();
 </script>
 
