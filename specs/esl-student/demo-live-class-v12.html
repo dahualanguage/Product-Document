@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Live Class v12</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; flex-shrink: 0; }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
+    .sidebar-item span:not(.material-icons-round) { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
+    .sidebar-item:hover span:not(.material-icons-round) { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
+    .sidebar-item.active span:not(.material-icons-round) { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-left { flex: 1; }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .app-header-sub { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 700; color: #ef4444;
+    }
+    .live-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,.4); } 50% { opacity: .8; box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+    .app-body { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── Transcript Area ── */
+    .transcript-area {
+      flex: 1; display: flex; flex-direction: column; background: #f8faf9;
+      border-right: 1px solid #e2e8f0;
+    }
+    .transcript-scroll {
+      flex: 1; padding: 32px 40px; overflow-y: auto;
+      font-size: 15px; line-height: 1.9; color: #334155;
+    }
+    .transcript-scroll p { margin-bottom: 16px; }
+    .transcript-word {
+      color: #0d9488; font-weight: 600; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s; position: relative;
+      border-radius: 2px;
+    }
+    .transcript-word:hover { border-bottom-color: #0d9488; background: #f0fdfa; }
+    .transcript-word.saved { color: #0d9488; }
+    .transcript-word.dimmed { color: #94a3b8; font-weight: 400; border-bottom: none; cursor: default; }
+
+    /* Word tooltip */
+    .word-tooltip {
+      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      background: #0d9488; color: #fff; padding: 6px 14px;
+      border-radius: 8px; font-size: 14px; font-weight: 700;
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity .2s;
+      z-index: 10;
+    }
+    .word-tooltip::after {
+      content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #0d9488;
+    }
+    .word-tooltip.show { opacity: 1; }
+
+    /* Live speech bar */
+    .live-speech-bar {
+      background: #0f172a; color: #fff; padding: 24px 40px;
+      font-size: 17px; font-weight: 500; line-height: 1.5;
+      border-radius: 16px 16px 0 0; margin: 0 16px;
+      min-height: 72px; display: flex; align-items: center;
+    }
+    .live-speech-bar .highlight { color: #2dd4bf; font-weight: 700; }
+
+    /* ── Saved Vocabs Panel ── */
+    .vocab-panel {
+      width: 280px; flex-shrink: 0; background: #fff;
+      display: flex; flex-direction: column;
+    }
+    .vocab-panel-title {
+      padding: 20px 20px 16px; font-size: 14px; font-weight: 600; color: #64748b;
+    }
+    .vocab-list { flex: 1; overflow-y: auto; padding: 0 16px; }
+    .vocab-card {
+      display: flex; align-items: center; padding: 14px 16px;
+      background: #f8fafc; border-radius: 10px; margin-bottom: 8px;
+      border: 1px solid #e2e8f0; transition: all .3s;
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .vocab-card-text { flex: 1; }
+    .vocab-card-en { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .vocab-card-zh { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .vocab-card-bookmark {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-radius: 6px; transition: all .15s;
+    }
+    .vocab-card-bookmark:hover { background: #f1f5f9; }
+    .vocab-card-bookmark svg { width: 18px; height: 18px; fill: #cbd5e1; }
+    .vocab-card-bookmark.saved svg { fill: #0d9488; }
+    .vocab-empty {
+      padding: 40px 24px; text-align: center;
+      font-size: 13px; color: #94a3b8; line-height: 1.6;
+    }
+
+    /* ── Class Complete Overlay ── */
+    .complete-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: #e8f0f4;
+      display: none; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .4s;
+    }
+    .complete-overlay.show { display: flex; opacity: 1; }
+    .complete-overlay::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(5,150,105,.06) 0%, transparent 50%),
+        radial-gradient(circle at 85% 80%, rgba(14,165,233,.04) 0%, transparent 50%);
+    }
+    .complete-card {
+      position: relative; background: #fff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.08);
+      padding: 40px 36px 32px; max-width: 560px; width: 90%;
+      text-align: center;
+      transform: translateY(20px); transition: transform .4s cubic-bezier(.34,1.2,.64,1);
+    }
+    .complete-overlay.show .complete-card { transform: translateY(0); }
+    .complete-title {
+      font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px;
+    }
+    .complete-sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+    .complete-label {
+      font-size: 13px; font-weight: 700; color: #475569;
+      text-align: left; margin-bottom: 12px;
+    }
+    .complete-words {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      text-align: left; margin-bottom: 24px;
+    }
+    .complete-word {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px;
+      cursor: pointer; transition: all .15s;
+    }
+    .complete-word:hover { border-color: #cbd5e1; }
+    .complete-word.unchecked { opacity: .4; }
+    .complete-word-text { flex: 1; }
+    .complete-word-en { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .complete-word-zh { font-size: 11px; color: #64748b; }
+    .complete-check {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: #10b981; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .complete-check svg { width: 14px; height: 14px; fill: #fff; }
+    .complete-word.unchecked .complete-check { background: #e2e8f0; }
+    .complete-word.unchecked .complete-check svg { fill: #94a3b8; }
+    .complete-cta {
+      display: block; width: 100%; padding: 14px;
+      background: #10b981; color: #fff; border: none;
+      border-radius: 12px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background .15s;
+      font-family: inherit;
+    }
+    .complete-cta:hover { background: #059669; }
+    .complete-footer {
+      margin-top: 12px; font-size: 11px; color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item active" title="Live Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>Live Class</span>
+    </div>
+    <a class="sidebar-item" href="demo-word-bank-v11.html" title="Word Bank" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word bank</span>
+    </a>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-title">Science</div>
+        <div class="app-header-sub">Mr. Chen</div>
+      </div>
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        LIVE NOW
+      </div>
+    </div>
+
+    <div class="app-body">
+
+      <!-- Transcript -->
+      <div class="transcript-area">
+        <div class="transcript-scroll" id="transcriptScroll">
+          <p>Good morning class. Today we're going to learn about <span class="transcript-word" data-word="photosynthesis" data-zh="光合作用">photosynthesis</span> and how plants make their food.</p>
+          <p>First, let's talk about <span class="transcript-word" data-word="chlorophyll" data-zh="葉綠素">chlorophyll</span>. It's the green pigment found in the leaves of plants.</p>
+          <p><span class="transcript-word" data-word="chlorophyll" data-zh="葉綠素" class="transcript-word dimmed">Chlorophyll</span> absorbs sunlight and uses it to convert carbon dioxide and water into glucose.</p>
+          <p>This process also produces oxygen, which is released into the atmosphere. That's what we breathe!</p>
+          <p>Now, the equation for <span class="transcript-word" data-word="photosynthesis" data-zh="光合作用">photosynthesis</span> is very important. Let me write it on the board for you.</p>
+          <p>Six molecules of carbon dioxide plus six molecules of water produces glucose and six molecules of oxygen.</p>
+          <p>The <span class="transcript-word" data-word="stomata" data-zh="氣孔">stomata</span> on the surface of the leaf allow carbon dioxide to enter the plant.</p>
+          <p>Plants also need minerals from the soil. The roots absorb water and nutrients through the ground.</p>
+          <p>Without sunlight, <span class="transcript-word" data-word="photosynthesis" data-zh="光合作用" class="transcript-word dimmed">photosynthesis</span> cannot occur. That's why plants grow toward light sources.</p>
+        </div>
+        <div class="live-speech-bar">
+          The <span class="highlight">chloroplast</span> is the organelle where this all happens...
+        </div>
+      </div>
+
+      <!-- Saved Vocabs Panel -->
+      <div class="vocab-panel">
+        <div class="vocab-panel-title">Saved Vocabs</div>
+        <div class="vocab-list" id="vocabList">
+          <div class="vocab-empty" id="vocabEmpty">Click on any word from the lesson to save and review later.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Class Complete Overlay -->
+<div class="complete-overlay" id="completeOverlay">
+  <div class="complete-card">
+    <div class="complete-title">Class Complete</div>
+    <div class="complete-sub">Uncheck any words you don't want to save</div>
+    <div class="complete-label">Saved Words</div>
+    <div class="complete-words" id="completeWords"></div>
+    <button class="complete-cta" onclick="saveToWordBank()">Save to Word Bank</button>
+    <div class="complete-footer">Words will be saved automatically if you leave this page</div>
+  </div>
+</div>
+
+<script>
+/* ── Word Data ── */
+var VOCAB_DB = {
+  photosynthesis: { en: 'photosynthesis', zh: '光合作用' },
+  chlorophyll: { en: 'chlorophyll', zh: '葉綠素' },
+  chloroplast: { en: 'chloroplast', zh: '葉綠體' },
+  stomata: { en: 'stomata', zh: '氣孔' },
+  ribosome: { en: 'ribosome', zh: '核糖體' },
+  mitochondria: { en: 'mitochondria', zh: '粒線體' },
+  nucleus: { en: 'nucleus', zh: '細胞核' },
+  'cell membrane': { en: 'cell membrane', zh: '細胞膜' },
+  cytoplasm: { en: 'cytoplasm', zh: '細胞質' },
+  enzymes: { en: 'enzymes', zh: '酶' },
+  chromosome: { en: 'chromosome', zh: '染色體' },
+  DNA: { en: 'DNA', zh: '脫氧核糖核酸' },
+  protein: { en: 'protein', zh: '蛋白質' }
+};
+
+var savedWords = [];
+
+/* ── Word Click ── */
+document.querySelectorAll('.transcript-word:not(.dimmed)').forEach(function(el) {
+  el.addEventListener('click', function(e) {
+    var word = this.dataset.word;
+    var zh = this.dataset.zh;
+    if (!word) return;
+
+    /* Show tooltip */
+    var existing = this.querySelector('.word-tooltip');
+    if (!existing) {
+      var tip = document.createElement('span');
+      tip.className = 'word-tooltip';
+      tip.textContent = zh;
+      this.style.position = 'relative';
+      this.appendChild(tip);
+      requestAnimationFrame(function() { tip.classList.add('show'); });
+      setTimeout(function() { tip.classList.remove('show'); setTimeout(function() { tip.remove(); }, 200); }, 2000);
+    }
+
+    /* Save word */
+    if (savedWords.indexOf(word) === -1) {
+      savedWords.push(word);
+      this.classList.add('saved');
+      renderVocabPanel();
+      /* Mark all same-word instances as saved */
+      document.querySelectorAll('.transcript-word[data-word="' + word + '"]').forEach(function(w) {
+        w.classList.add('saved');
+      });
+    }
+  });
+});
+
+/* ── Render Vocab Panel ── */
+function renderVocabPanel() {
+  var list = document.getElementById('vocabList');
+  var empty = document.getElementById('vocabEmpty');
+  if (savedWords.length > 0 && empty) empty.style.display = 'none';
+
+  /* Only add the newest */
+  var word = savedWords[savedWords.length - 1];
+  var data = VOCAB_DB[word];
+  if (!data) return;
+
+  var card = document.createElement('div');
+  card.className = 'vocab-card';
+  card.innerHTML =
+    '<div class="vocab-card-text">' +
+      '<div class="vocab-card-en">' + data.en + '</div>' +
+      '<div class="vocab-card-zh">' + data.zh + '</div>' +
+    '</div>' +
+    '<div class="vocab-card-bookmark saved">' +
+      '<svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>' +
+    '</div>';
+  list.insertBefore(card, list.firstChild);
+}
+
+/* ── End Class ── */
+function endClass() {
+  /* Add demo words that were "auto-saved" during the session */
+  var demoWords = ['photosynthesis', 'chloroplast', 'chlorophyll', 'ribosome', 'mitochondria', 'nucleus', 'cell membrane', 'cytoplasm', 'enzymes', 'chromosome', 'DNA', 'protein'];
+  var allWords = savedWords.slice();
+  demoWords.forEach(function(w) { if (allWords.indexOf(w) === -1) allWords.push(w); });
+
+  var container = document.getElementById('completeWords');
+  container.innerHTML = '';
+  allWords.forEach(function(w) {
+    var data = VOCAB_DB[w];
+    if (!data) return;
+    var div = document.createElement('div');
+    div.className = 'complete-word';
+    div.dataset.word = w;
+    div.innerHTML =
+      '<div class="complete-word-text">' +
+        '<div class="complete-word-en">' + data.en + '</div>' +
+        '<div class="complete-word-zh">' + data.zh + '</div>' +
+      '</div>' +
+      '<div class="complete-check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>';
+    div.addEventListener('click', function() { this.classList.toggle('unchecked'); });
+    container.appendChild(div);
+  });
+
+  var overlay = document.getElementById('completeOverlay');
+  overlay.classList.add('show');
+}
+
+function saveToWordBank() {
+  document.getElementById('completeOverlay').classList.remove('show');
+  alert('Words saved to Word Bank!');
+}
+
+/* ── Auto end class via URL hash ── */
+(function() {
+  var h = window.location.hash.replace('#', '');
+  if (h === 'complete') setTimeout(endClass, 500);
+})();
+
+/* ── Simulate: end class after 30s for demo, or click header ── */
+document.querySelector('.app-header-title').style.cursor = 'pointer';
+document.querySelector('.app-header-title').title = 'Click to end class (demo)';
+document.querySelector('.app-header-title').addEventListener('click', endClass);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Subject Teacher v1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    @keyframes listening-dot {
+      0%, 100% { opacity: .4; }
+      50% { opacity: 1; }
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer; position: relative;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
+    .sidebar-item.active span { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-content { flex: 1; background: #f8faf9; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+
+    /* ── Screen containers ── */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ===========================
+       SCREEN 1: MIC TEST
+       =========================== */
+    .mic-test-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px;
+    }
+    .mic-test-card {
+      background: #fff; border-radius: 20px; padding: 48px 40px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+      max-width: 600px; width: 100%; text-align: center;
+    }
+    .mic-test-card h1 {
+      font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 8px;
+    }
+    .mic-test-card .subtitle {
+      font-size: 14px; color: #94a3b8; margin-bottom: 36px;
+    }
+
+    /* Mic icon area */
+    .mic-icon-area {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-bottom: 20px;
+    }
+    .waveform-bars {
+      display: flex; gap: 3px; align-items: center; height: 48px;
+    }
+    .waveform-bars .bar {
+      width: 4px; border-radius: 2px; background: #14b8a6; opacity: .35;
+      transition: all .3s;
+    }
+    .waveform-bars.animating .bar {
+      animation: pulse 0.8s ease-in-out infinite;
+      opacity: .7;
+    }
+    .waveform-bars .bar:nth-child(1) { height: 16px; animation-delay: 0s; }
+    .waveform-bars .bar:nth-child(2) { height: 28px; animation-delay: .1s; }
+    .waveform-bars .bar:nth-child(3) { height: 40px; animation-delay: .2s; }
+    .waveform-bars .bar:nth-child(4) { height: 32px; animation-delay: .3s; }
+    .waveform-bars .bar:nth-child(5) { height: 20px; animation-delay: .15s; }
+    .mic-circle {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid #14b8a6; background: #f0fdfa;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mic-circle .material-icons-round { font-size: 36px; color: #14b8a6; }
+
+    .speak-text {
+      font-size: 14px; color: #64748b; margin-bottom: 20px;
+    }
+    .speak-text strong { color: #0f172a; }
+
+    /* Dark listening bar */
+    .listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 28px; min-height: 44px;
+    }
+    .listening-bar.hidden { visibility: hidden; }
+    .listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .listening-bar span {
+      font-size: 13px; font-weight: 600; color: #e2e8f0;
+    }
+
+    /* Mic selector dropdown */
+    .mic-selector {
+      display: flex; align-items: center; gap: 8px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 24px; cursor: default;
+    }
+    .mic-selector .material-icons-round { font-size: 18px; color: #64748b; }
+    .mic-selector-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    .mic-selector-value { font-size: 13px; color: #334155; font-weight: 500; }
+
+    /* Buttons */
+    .btn-row { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 12px; font-family: inherit;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      padding: 14px 32px; transition: all .2s; min-width: 220px;
+    }
+    .btn .material-icons-round { font-size: 20px; }
+    .btn-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .btn-green:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .btn-orange {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,.3);
+    }
+    .btn-orange:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245,158,11,.4); }
+    .btn-outline {
+      background: transparent; color: #14b8a6;
+      border: 2px solid #14b8a6; padding: 12px 28px;
+    }
+    .btn-outline:hover { background: #f0fdfa; }
+    .btn-red {
+      background: #ef4444; color: #fff;
+      box-shadow: 0 4px 14px rgba(239,68,68,.25);
+    }
+    .btn-red:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,.35); }
+
+    /* Start class button (hidden initially) */
+    .btn-start-class { display: none; }
+
+    /* ===========================
+       SCREEN 2: LIVE CLASS
+       =========================== */
+    .live-class-screen { flex: 1; display: flex; flex-direction: column; }
+    .live-topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .live-timer {
+      font-size: 28px; font-weight: 800; color: #10b981;
+      font-family: 'DM Sans', monospace; letter-spacing: 1px;
+    }
+    .live-class-info {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: #475569;
+    }
+    .live-class-info .class-name { font-weight: 700; color: #0f172a; }
+    .live-class-info .class-sep { color: #cbd5e1; }
+    .live-class-info .student-count { color: #64748b; font-weight: 500; }
+    .mic-status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #10b981;
+      background: #ecfdf5; padding: 4px 10px; border-radius: 6px;
+    }
+    .mic-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+    .live-topbar .btn-red { padding: 10px 20px; font-size: 13px; min-width: auto; border-radius: 10px; }
+
+    .transcript-area {
+      flex: 1; display: flex; flex-direction: column; padding: 24px 36px;
+      overflow: hidden; position: relative;
+    }
+    .transcript-card {
+      flex: 1; background: #fff; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+      padding: 28px 32px; overflow-y: auto; font-size: 16px;
+      line-height: 1.8; color: #334155; position: relative;
+    }
+    .transcript-card .line {
+      animation: fadeSlideIn .3s ease both;
+      margin-bottom: 4px;
+    }
+
+    /* Bottom controls */
+    .live-bottom {
+      padding: 16px 36px 24px; display: flex; flex-direction: column;
+      align-items: center; gap: 16px; flex-shrink: 0;
+    }
+    .live-listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 10px 28px;
+      display: flex; align-items: center; gap: 8px; min-width: 200px;
+    }
+    .live-listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .live-listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .live-listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .live-listening-bar span {
+      font-size: 13px; font-weight: 600; color: #e2e8f0;
+    }
+    .live-listening-bar.paused { display: none; }
+    .live-bottom.is-paused .pause-btn { display: none; }
+
+    .pause-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .2s; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .pause-btn.is-playing {
+      background: #ef4444;
+    }
+    .pause-btn.is-paused {
+      background: #10b981;
+    }
+    .pause-btn .material-icons-round { font-size: 28px; color: #fff; }
+
+    /* Paused overlay — covers entire live-class-screen */
+    .paused-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,23,42,.55);
+      backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .paused-overlay.show { display: flex; }
+    .paused-overlay .paused-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(255,255,255,.15); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .paused-overlay .paused-icon .material-icons-round { font-size: 32px; color: #fff; }
+    .paused-overlay .paused-label {
+      font-size: 20px; font-weight: 800; color: #fff; letter-spacing: .5px;
+    }
+    .paused-overlay .paused-hint {
+      font-size: 13px; color: rgba(255,255,255,.6);
+    }
+
+    /* ===========================
+       SCREEN 3: SAVE MODAL
+       =========================== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      z-index: 1000; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-card {
+      background: #fff; border-radius: 16px; padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.15);
+      width: 400px; max-width: 90vw;
+      animation: fadeSlideIn .25s ease;
+    }
+    .modal-card h2 {
+      font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 24px;
+    }
+    .modal-field { margin-bottom: 24px; }
+    .modal-field label {
+      display: block; font-size: 12px; font-weight: 600; color: #64748b;
+      margin-bottom: 6px;
+    }
+    .modal-field input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      color: #1e293b; outline: none; transition: border-color .15s;
+    }
+    .modal-field input:focus { border-color: #94a3b8; }
+    .modal-actions {
+      display: flex; justify-content: flex-end; gap: 12px;
+    }
+    .modal-actions .btn-text {
+      background: none; border: none; padding: 10px 20px; font-family: inherit;
+      font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer;
+      border-radius: 8px;
+    }
+    .modal-actions .btn-text:hover { background: #f1f5f9; }
+    .modal-actions .btn-save {
+      background: #ef4444; color: #fff; border: none; padding: 10px 24px;
+      font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 10px;
+      cursor: pointer; transition: all .15s;
+    }
+    .modal-actions .btn-save:hover { background: #dc2626; }
+
+    /* ===========================
+       SCREEN 4: BROADCAST HISTORY
+       =========================== */
+    .history-screen { flex: 1; padding: 32px 36px; overflow-y: auto; }
+    .history-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .history-header h1 { font-size: 22px; font-weight: 800; color: #0f172a; }
+    .history-header .subtitle { font-size: 14px; color: #94a3b8; margin-top: 4px; }
+    .refresh-btn {
+      width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; transition: all .15s;
+    }
+    .refresh-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .refresh-btn .material-icons-round { font-size: 20px; color: #64748b; }
+
+    .history-stats {
+      display: flex; align-items: center; gap: 16px;
+      margin: 20px 0 20px; font-size: 13px; color: #64748b; font-weight: 500;
+    }
+    .history-stats .completed {
+      display: flex; align-items: center; gap: 4px; color: #10b981; font-weight: 600;
+    }
+    .history-stats .completed .material-icons-round { font-size: 16px; }
+
+    .session-list { display: flex; flex-direction: column; gap: 10px; }
+    .session-card {
+      background: #fff; border-radius: 14px; padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer; transition: all .15s; border: 1px solid transparent;
+    }
+    .session-card:hover { border-color: #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .session-info { flex: 1; min-width: 0; }
+    .session-name-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+    }
+    .session-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .session-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+      background: #1e293b; color: #e2e8f0; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .session-meta {
+      font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px;
+    }
+    .session-meta .sep { color: #cbd5e1; }
+    .session-arrow {
+      font-size: 22px; color: #cbd5e1; flex-shrink: 0;
+    }
+
+    /* ===========================
+       SCREEN 0: DASHBOARD
+       =========================== */
+    .dashboard-screen { flex: 1; padding: 28px 36px 60px; overflow-y: auto; background: #f8faf9; }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .page-title { font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; }
+    .page-sub { font-size: 14px; color: #94a3b8; margin-top: 6px; }
+    .dashboard-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      margin-top: 0; animation: fadeSlideIn .4s ease .15s both;
+    }
+    .dashboard-grid .full-width { grid-column: 1 / -1; }
+    .dash-card {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden;
+    }
+    .dash-card.span-2-rows { grid-row: span 2; }
+    .dash-card-header {
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .dash-card-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .dash-card-body { padding: 16px 20px; }
+    .dash-card-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .dash-filter {
+      font-family: inherit; font-size: 12px; font-weight: 600; color: #475569;
+      border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px;
+      background: #f8fafc; cursor: pointer; outline: none;
+    }
+    .dash-filter:hover { border-color: #cbd5e1; }
+
+    /* Class cards */
+    .class-card { border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; margin-bottom: 10px; transition: all .15s; overflow: hidden; }
+    .class-card:last-child { margin-bottom: 0; }
+    .class-card:hover { border-color: #6EE7B7; box-shadow: 0 2px 8px rgba(5,150,105,.1); }
+    .class-card-header { padding: 14px 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background .15s; }
+    .class-card-header:hover { background: #f8fafc; }
+    .class-card-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .class-card-icon.sci { background: #dcfce7; }
+    .class-card-icon.sci .material-icons-round { color: #166534; font-size: 20px; }
+    .class-card-icon.math { background: #dbeafe; }
+    .class-card-icon.math .material-icons-round { color: #1e40af; font-size: 20px; }
+    .class-card-icon.hist { background: #fef9c3; }
+    .class-card-icon.hist .material-icons-round { color: #854d0e; font-size: 20px; }
+    .class-card-info { flex: 1; }
+    .class-card-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .class-card-meta { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+    .class-card-actions { display: flex; gap: 6px; align-items: center; }
+    .class-card-btn { font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; gap: 4px; }
+    .class-card-btn.start { background: #10b981; color: #fff; }
+    .class-card-btn.start:hover { background: #059669; }
+    .class-card-btn .material-icons-round { font-size: 15px; }
+    .class-card-expand { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+    .class-card-expand:hover { background: #f1f5f9; }
+    .class-card-expand .material-icons-round { font-size: 18px; color: #94a3b8; transition: transform .2s; }
+    .class-card.open .class-card-expand .material-icons-round { transform: rotate(180deg); }
+    .class-roster { display: none; border-top: 1px solid #f0f2f5; padding: 14px 18px; background: #fafbfc; }
+    .class-card.open .class-roster { display: block; }
+    .roster-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .roster-list { display: flex; flex-direction: column; gap: 4px; }
+    .roster-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .roster-avatar { width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #64748b; flex-shrink: 0; }
+    .roster-name { font-size: 12px; font-weight: 600; color: #0f172a; flex: 1; }
+    .roster-tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: #64748b; }
+
+    /* Tapped words table — matches ESL Teacher */
+    .tapped-table { width: 100%; border-collapse: collapse; background: #fff; }
+    .tapped-table th {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .4px; padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+    }
+    .tapped-table th.center { text-align: center; }
+    .tapped-table td {
+      padding: 10px 12px; vertical-align: middle;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .tapped-table tr:last-child td { border-bottom: none; }
+    .tapped-table tr:hover td { background: #f8faf9; }
+    .tapped-table .tt-rank { font-size: 10px; font-weight: 700; color: #cbd5e1; width: 28px; text-align: left; padding-left: 20px; }
+    .tt-word { font-size: 14px; font-weight: 500; color: #0f172a; }
+    .tt-subjects { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tt-subject {
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .tt-subject.sci { background: #ecfdf5; color: #065f46; }
+    .tt-subject.math { background: #eef2ff; color: #4338ca; }
+    .tt-subject.hist { background: #fef3c7; color: #92400e; }
+    .tt-taps { font-size: 14px; font-weight: 700; color: #0f172a; text-align: right; }
+
+    /* Stat row */
+    .stat-row {
+      display: flex; gap: 24px; padding: 16px; background: #f8fafc;
+      border-radius: 10px; margin-bottom: 20px;
+    }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-value { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .stat-label { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+    /* Bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-name { width: 100px; font-size: 12px; color: #475569; text-align: right; flex-shrink: 0; }
+    .bar-fill { height: 24px; background: #10b981; border-radius: 6px; transition: width .4s ease; }
+    .bar-count { font-size: 12px; font-weight: 600; color: #64748b; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="../esl-teacher/assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item active" id="nav-dashboard" title="Dashboard" onclick="sidebarNav('dashboard')">
+      <span class="material-icons-round">dashboard</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" id="nav-classes" title="Classes" onclick="sidebarNav('classes')">
+      <span class="material-icons-round">class</span>
+      <span>Classes</span>
+    </div>
+    <div class="sidebar-item" id="nav-history" title="History" onclick="showScreen('history')">
+      <span class="material-icons-round">history</span>
+      <span>History</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">Subject Teacher</span>
+      <div class="header-right">
+        <a href="versions/index.html" title="Version history" style="font-size:12px;font-weight:600;color:#94a3b8;text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;transition:all .15s;" onmouseover="this.style.color='#475569';this.style.borderColor='#cbd5e1'" onmouseout="this.style.color='#94a3b8';this.style.borderColor='#e2e8f0'">
+          <span class="material-icons-round" style="font-size:14px;">schedule</span>
+          Versions
+        </a>
+        <div class="header-user">
+          <div class="header-avatar">SS</div>
+          Mr. Shen
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ===== SCREEN 0: Dashboard ===== -->
+      <div class="screen active" id="screen-dashboard">
+        <div class="dashboard-screen">
+          <div class="page-head">
+            <div>
+              <div class="page-title">Dashboard</div>
+              <div class="page-sub">Overview of your classes and student word taps</div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <!-- Left: My Classes (spans 2 rows) -->
+            <div class="dash-card span-2-rows">
+              <div class="dash-card-header">
+                <div>
+                  <div class="dash-card-title">My Classes</div>
+                  <div class="dash-card-sub">Select a class to start live session</div>
+                </div>
+              </div>
+
+              <div class="dash-card-body">
+
+              <!-- 1st Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">1st Grade Math</div>
+                    <div class="class-card-meta">3 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (3)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">EC</div><span class="roster-name">Emily Chen</span><span class="roster-tag">WIDA 1</span></div>
+                    <div class="roster-item"><div class="roster-avatar">CG</div><span class="roster-name">Carlos Garcia</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">YK</div><span class="roster-name">Yuki Kobayashi</span><span class="roster-tag">WIDA 1</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2nd Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">2nd Grade Math</div>
+                    <div class="class-card-meta">4 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (4)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">LT</div><span class="roster-name">Lucia Torres</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">KL</div><span class="roster-name">Kevin Liu</span><span class="roster-tag">WIDA 1</span></div>
+                    <div class="roster-item"><div class="roster-avatar">SM</div><span class="roster-name">Sofia Martinez</span><span class="roster-tag">WIDA 3</span></div>
+                    <div class="roster-item"><div class="roster-avatar">AH</div><span class="roster-name">Amir Hassan</span><span class="roster-tag">WIDA 2</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3rd Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">3rd Grade Math</div>
+                    <div class="class-card-meta">5 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (5)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">JL</div><span class="roster-name">James Lin</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">MR</div><span class="roster-name">Maria Rodriguez</span><span class="roster-tag">WIDA 1</span></div>
+                    <div class="roster-item"><div class="roster-avatar">TN</div><span class="roster-name">Thanh Nguyen</span><span class="roster-tag">WIDA 3</span></div>
+                    <div class="roster-item"><div class="roster-avatar">AW</div><span class="roster-name">Amy Wang</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">DR</div><span class="roster-name">Daniel Rivera</span><span class="roster-tag">WIDA 1</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4th Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">4th Grade Math</div>
+                    <div class="class-card-meta">3 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (3)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">MH</div><span class="roster-name">Mei Huang</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">OJ</div><span class="roster-name">Oscar Jimenez</span><span class="roster-tag">WIDA 1</span></div>
+                    <div class="roster-item"><div class="roster-avatar">HK</div><span class="roster-name">Hana Kim</span><span class="roster-tag">WIDA 3</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5th Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">5th Grade Math</div>
+                    <div class="class-card-meta">4 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (4)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">IP</div><span class="roster-name">Isabella Perez</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">YZ</div><span class="roster-name">Yuki Zhang</span><span class="roster-tag">WIDA 1</span></div>
+                    <div class="roster-item"><div class="roster-avatar">RG</div><span class="roster-name">Raj Gupta</span><span class="roster-tag">WIDA 3</span></div>
+                    <div class="roster-item"><div class="roster-avatar">LC</div><span class="roster-name">Lily Cho</span><span class="roster-tag">WIDA 2</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6th Grade Math -->
+              <div class="class-card" onclick="toggleRoster(this)">
+                <div class="class-card-header">
+                  <div class="class-card-info">
+                    <div class="class-card-name">6th Grade Math</div>
+                    <div class="class-card-meta">3 ESL students</div>
+                  </div>
+                  <div class="class-card-actions">
+                    <button class="class-card-btn start" onclick="event.stopPropagation();showScreen('mic-test')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <div class="class-card-expand"><span class="material-icons-round">expand_more</span></div>
+                  </div>
+                </div>
+                <div class="class-roster">
+                  <div class="roster-title">ESL Students (3)</div>
+                  <div class="roster-list">
+                    <div class="roster-item"><div class="roster-avatar">PL</div><span class="roster-name">Pedro Lopez</span><span class="roster-tag">WIDA 2</span></div>
+                    <div class="roster-item"><div class="roster-avatar">SW</div><span class="roster-name">Suki Wu</span><span class="roster-tag">WIDA 3</span></div>
+                    <div class="roster-item"><div class="roster-avatar">NK</div><span class="roster-name">Nadia Kouri</span><span class="roster-tag">WIDA 1</span></div>
+                  </div>
+                </div>
+              </div>
+
+              </div><!-- /dash-card-body -->
+            </div>
+
+            <!-- Right top: Most Tapped Words -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div>
+                  <div class="dash-card-title">Most Tapped Words</div>
+                  <div class="dash-card-sub">Words students looked up most across your classes</div>
+                </div>
+                <select class="dash-filter">
+                  <option>7 Days</option>
+                  <option>14 Days</option>
+                  <option>30 Days</option>
+                </select>
+              </div>
+              <div class="dash-card-body" style="padding:0;overflow-y:auto;">
+              <table class="tapped-table">
+                <thead>
+                  <tr><th style="width:28px;padding-left:20px;">#</th><th>Word</th><th>Appeared in</th><th class="center">Tapped</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="tt-rank">1</td><td class="tt-word">denominator</td><td><div class="tt-subjects"><span class="tt-subject math">3rd</span><span class="tt-subject math">4th</span></div></td><td class="tt-taps">48</td></tr>
+                  <tr><td class="tt-rank">2</td><td class="tt-word">equation</td><td><div class="tt-subjects"><span class="tt-subject math">4th</span><span class="tt-subject math">5th</span><span class="tt-subject math">6th</span></div></td><td class="tt-taps">43</td></tr>
+                  <tr><td class="tt-rank">3</td><td class="tt-word">proportion</td><td><div class="tt-subjects"><span class="tt-subject math">5th</span><span class="tt-subject math">6th</span></div></td><td class="tt-taps">39</td></tr>
+                  <tr><td class="tt-rank">4</td><td class="tt-word">perimeter</td><td><div class="tt-subjects"><span class="tt-subject math">3rd</span></div></td><td class="tt-taps">36</td></tr>
+                  <tr><td class="tt-rank">5</td><td class="tt-word">multiplication</td><td><div class="tt-subjects"><span class="tt-subject math">2nd</span><span class="tt-subject math">3rd</span></div></td><td class="tt-taps">34</td></tr>
+                  <tr><td class="tt-rank">6</td><td class="tt-word">fraction</td><td><div class="tt-subjects"><span class="tt-subject math">3rd</span><span class="tt-subject math">4th</span><span class="tt-subject math">5th</span></div></td><td class="tt-taps">31</td></tr>
+                  <tr><td class="tt-rank">7</td><td class="tt-word">symmetry</td><td><div class="tt-subjects"><span class="tt-subject math">4th</span></div></td><td class="tt-taps">28</td></tr>
+                  <tr><td class="tt-rank">8</td><td class="tt-word">circumference</td><td><div class="tt-subjects"><span class="tt-subject math">6th</span></div></td><td class="tt-taps">25</td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+
+            <!-- Right bottom: Student Activity -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div>
+                  <div class="dash-card-title">Student Activity</div>
+                  <div class="dash-card-sub">Word tap frequency this week</div>
+                </div>
+              </div>
+              <div class="dash-card-body">
+              <div class="stat-row">
+                <div class="stat-item">
+                  <div class="stat-value">22</div>
+                  <div class="stat-label">ESL students</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">284</div>
+                  <div class="stat-label">total taps</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">12.9</div>
+                  <div class="stat-label">avg per student</div>
+                </div>
+              </div>
+              <div class="bar-chart">
+                <div class="bar-row">
+                  <span class="bar-name">Maria Rodriguez</span>
+                  <div class="bar-fill" style="width:100%;"></div>
+                  <span class="bar-count">24</span>
+                </div>
+                <div class="bar-row">
+                  <span class="bar-name">Kevin Liu</span>
+                  <div class="bar-fill" style="width:88%;"></div>
+                  <span class="bar-count">21</span>
+                </div>
+                <div class="bar-row">
+                  <span class="bar-name">Yuki Zhang</span>
+                  <div class="bar-fill" style="width:79%;"></div>
+                  <span class="bar-count">19</span>
+                </div>
+                <div class="bar-row">
+                  <span class="bar-name">Carlos Garcia</span>
+                  <div class="bar-fill" style="width:71%;"></div>
+                  <span class="bar-count">17</span>
+                </div>
+                <div class="bar-row">
+                  <span class="bar-name">Emily Chen</span>
+                  <div class="bar-fill" style="width:63%;"></div>
+                  <span class="bar-count">15</span>
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 1: Mic Test ===== -->
+      <div class="screen" id="screen-mic-test">
+        <div class="mic-test-screen">
+          <div class="mic-test-card">
+            <h1>Test Your Microphone</h1>
+            <p class="subtitle">Make sure your audio is working before starting class</p>
+
+            <div class="mic-icon-area">
+              <div class="waveform-bars" id="waveL">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+              <div class="mic-circle">
+                <span class="material-icons-round">mic</span>
+              </div>
+              <div class="waveform-bars" id="waveR">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+            </div>
+
+            <p class="speak-text">Speak to test: <strong>"Test 1, 2, 3"</strong></p>
+
+            <div class="listening-bar hidden" id="micTestBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span>Listening...</span>
+            </div>
+
+            <div class="mic-selector">
+              <span class="material-icons-round">mic</span>
+              <div style="text-align:left;flex:1;">
+                <div class="mic-selector-label">Microphone</div>
+                <div class="mic-selector-value">MacBook Pro&#30340;&#40613;&#20811;&#39080; (Built-in)</div>
+              </div>
+              <span class="material-icons-round" style="font-size:18px;color:#cbd5e1;">expand_more</span>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnStartTest" onclick="startMicTest()">
+                <span class="material-icons-round">mic</span>
+                Start Test
+              </button>
+              <button class="btn btn-green btn-start-class" id="btnStartClass" onclick="showScreen('live-class')">
+                <span class="material-icons-round">play_arrow</span>
+                Start Class
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 2: Live Class ===== -->
+      <div class="screen" id="screen-live-class">
+        <div class="live-class-screen">
+          <div class="live-topbar">
+            <div class="live-timer" id="liveTimer">00:00</div>
+            <div class="live-class-info">
+              <span class="class-name">3rd Grade Math</span>
+              <span class="class-sep">&middot;</span>
+              <span class="student-count">5 students connected</span>
+              <div class="mic-status"><span class="dot"></span> Mic on</div>
+            </div>
+            <button class="btn btn-red" onclick="endClass()">
+              <span class="material-icons-round">stop</span>
+              End Class
+            </button>
+          </div>
+
+          <div class="transcript-area">
+            <div class="transcript-card" id="transcriptCard">
+              <!-- Lines appear here dynamically -->
+            </div>
+          </div>
+
+          <div class="live-bottom">
+            <div class="live-listening-bar" id="liveBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span id="liveBarText">Listening...</span>
+            </div>
+            <button class="pause-btn is-playing" id="pauseBtn" onclick="togglePause()">
+              <span class="material-icons-round" id="pauseIcon">pause</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 4: Broadcast History ===== -->
+      <div class="screen" id="screen-history">
+        <div class="history-screen">
+          <div class="history-header">
+            <div>
+              <h1>Broadcast History</h1>
+              <p class="subtitle">View past broadcast records and transcripts</p>
+            </div>
+            <button class="refresh-btn" title="Refresh">
+              <span class="material-icons-round">refresh</span>
+            </button>
+          </div>
+
+          <div class="history-stats">
+            <span>Total 21 broadcasts</span>
+            <span class="completed">
+              <span class="material-icons-round">check_circle</span>
+              21 completed
+            </span>
+          </div>
+
+          <div class="session-list">
+            <div class="session-card">
+              <div class="session-info">
+                <div class="session-name-row">
+                  <span class="session-name">3rd Grade Math 04/29/2026 10:00 AM</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+                <div class="session-meta">
+                  <span>04/29/2026</span><span class="sep">&middot;</span>
+                  <span>10:00 AM</span><span class="sep">&middot;</span>
+                  <span>38 min</span>
+                </div>
+              </div>
+              <span class="material-icons-round session-arrow">chevron_right</span>
+            </div>
+            <div class="session-card">
+              <div class="session-info">
+                <div class="session-name-row">
+                  <span class="session-name">5th Grade Math 04/28/2026 2:00 PM</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+                <div class="session-meta">
+                  <span>04/28/2026</span><span class="sep">&middot;</span>
+                  <span>2:00 PM</span><span class="sep">&middot;</span>
+                  <span>42 min</span>
+                </div>
+              </div>
+              <span class="material-icons-round session-arrow">chevron_right</span>
+            </div>
+            <div class="session-card">
+              <div class="session-info">
+                <div class="session-name-row">
+                  <span class="session-name">1st Grade Math 04/28/2026 9:00 AM</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+                <div class="session-meta">
+                  <span>04/28/2026</span><span class="sep">&middot;</span>
+                  <span>9:00 AM</span><span class="sep">&middot;</span>
+                  <span>35 min</span>
+                </div>
+              </div>
+              <span class="material-icons-round session-arrow">chevron_right</span>
+            </div>
+            <div class="session-card">
+              <div class="session-info">
+                <div class="session-name-row">
+                  <span class="session-name">6th Grade Math 04/25/2026 1:30 PM</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+                <div class="session-meta">
+                  <span>04/25/2026</span><span class="sep">&middot;</span>
+                  <span>1:30 PM</span><span class="sep">&middot;</span>
+                  <span>40 min</span>
+                </div>
+              </div>
+              <span class="material-icons-round session-arrow">chevron_right</span>
+            </div>
+            <div class="session-card">
+              <div class="session-info">
+                <div class="session-name-row">
+                  <span class="session-name">2nd Grade Math 04/25/2026 10:00 AM</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+                <div class="session-meta">
+                  <span>04/24/2026</span><span class="sep">&middot;</span>
+                  <span>03:17 PM</span><span class="sep">&middot;</span>
+                  <span>1 min</span>
+                </div>
+              </div>
+              <span class="material-icons-round session-arrow">chevron_right</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<!-- ===== Paused Overlay ===== -->
+<div class="paused-overlay" id="pausedOverlay">
+  <div class="paused-icon"><span class="material-icons-round">pause</span></div>
+  <div class="paused-label">Class Paused</div>
+  <div class="paused-hint">Press play to resume recording</div>
+  <button class="pause-btn is-paused" onclick="togglePause()" style="margin-top:12px;">
+    <span class="material-icons-round">play_arrow</span>
+  </button>
+</div>
+
+<!-- ===== Save Class Modal ===== -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal-card">
+    <h2>Save Class</h2>
+    <div class="modal-field">
+      <label>Session Name</label>
+      <input type="text" id="sessionNameInput" value="" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-text" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn-save" onclick="saveClass()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── State ── */
+  let currentScreen = 'dashboard';
+  let timerInterval = null;
+  let timerSeconds = 0;
+  let isPaused = false;
+  let transcriptLines = [
+    'good morning everyone',
+    'today we\'re going to learn about fractions',
+    'so a fraction represents a part of a whole',
+    'the top number is called the numerator',
+    'and the bottom number is the denominator',
+    'for example one half means one out of two equal parts',
+    'now let\'s look at equivalent fractions',
+    'two fourths is the same as one half',
+    'can anyone tell me what three sixths equals'
+  ];
+  let currentLineIndex = 0;
+  let transcriptInterval = null;
+
+  /* ── Screen navigation ── */
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    if (target) target.classList.add('active');
+    currentScreen = name;
+
+    if (name === 'live-class') {
+      startLiveClass();
+    } else {
+      stopLiveClass();
+    }
+    if (name === 'mic-test') {
+      resetMicTest();
+    }
+
+    /* Update sidebar active state */
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    if (name === 'dashboard') {
+      var d = document.getElementById('nav-dashboard');
+      if (d) d.classList.add('active');
+    } else if (name === 'history') {
+      var h = document.getElementById('nav-history');
+      if (h) h.classList.add('active');
+    } else {
+      var c = document.getElementById('nav-classes');
+      if (c) c.classList.add('active');
+    }
+  }
+
+  function sidebarNav(page) {
+    if (page === 'dashboard') {
+      showScreen('dashboard');
+    } else if (page === 'classes') {
+      showScreen('mic-test');
+    }
+  }
+
+  /* ── Mic test ── */
+  function startMicTest() {
+    const bar = document.getElementById('micTestBar');
+    bar.classList.remove('hidden');
+    document.getElementById('waveL').classList.add('animating');
+    document.getElementById('waveR').classList.add('animating');
+    document.getElementById('btnStartTest').style.display = 'none';
+
+    setTimeout(() => {
+      document.getElementById('btnStartClass').style.display = 'inline-flex';
+    }, 3000);
+  }
+
+  function resetMicTest() {
+    const bar = document.getElementById('micTestBar');
+    bar.classList.add('hidden');
+    document.getElementById('waveL').classList.remove('animating');
+    document.getElementById('waveR').classList.remove('animating');
+    document.getElementById('btnStartTest').style.display = 'inline-flex';
+    document.getElementById('btnStartClass').style.display = 'none';
+  }
+
+  /* ── Live class ── */
+  function startLiveClass() {
+    timerSeconds = 0;
+    isPaused = false;
+    currentLineIndex = 0;
+    updateTimer();
+    updatePauseState();
+
+    document.getElementById('transcriptCard').innerHTML = '';
+
+    timerInterval = setInterval(() => {
+      if (!isPaused) {
+        timerSeconds++;
+        updateTimer();
+      }
+    }, 1000);
+
+    // Add transcript lines periodically
+    addTranscriptLine();
+    transcriptInterval = setInterval(() => {
+      if (!isPaused) addTranscriptLine();
+    }, 4000);
+  }
+
+  function stopLiveClass() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (transcriptInterval) { clearInterval(transcriptInterval); transcriptInterval = null; }
+  }
+
+  function updateTimer() {
+    const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    const s = String(timerSeconds % 60).padStart(2, '0');
+    document.getElementById('liveTimer').textContent = m + ':' + s;
+  }
+
+  function addTranscriptLine() {
+    if (currentLineIndex >= transcriptLines.length) return;
+    const card = document.getElementById('transcriptCard');
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.textContent = transcriptLines[currentLineIndex];
+    card.appendChild(div);
+    card.scrollTop = card.scrollHeight;
+    currentLineIndex++;
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    updatePauseState();
+  }
+
+  function updatePauseState() {
+    const btn = document.getElementById('pauseBtn');
+    const icon = document.getElementById('pauseIcon');
+    const bar = document.getElementById('liveBar');
+    const barText = document.getElementById('liveBarText');
+
+    var overlay = document.getElementById('pausedOverlay');
+    var bottom = document.querySelector('.live-bottom');
+    if (isPaused) {
+      btn.className = 'pause-btn is-paused';
+      icon.textContent = 'play_arrow';
+      bar.className = 'live-listening-bar paused';
+      barText.textContent = 'Paused';
+      if (overlay) overlay.classList.add('show');
+      if (bottom) bottom.classList.add('is-paused');
+    } else {
+      btn.className = 'pause-btn is-playing';
+      icon.textContent = 'pause';
+      bar.className = 'live-listening-bar';
+      barText.textContent = 'Listening...';
+      if (overlay) overlay.classList.remove('show');
+      if (bottom) bottom.classList.remove('is-paused');
+    }
+  }
+
+  /* ── End class / Save modal ── */
+  function endClass() {
+    var now = new Date();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    var y = now.getFullYear();
+    var h = now.getHours();
+    var min = String(now.getMinutes()).padStart(2, '0');
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    var className = document.querySelector('.class-name') ? document.querySelector('.class-name').textContent : '3rd Grade Math';
+    var defaultName = className + ' ' + m + '/' + d + '/' + y + ' ' + h + ':' + min + ' ' + ampm;
+    document.getElementById('sessionNameInput').value = defaultName;
+    document.getElementById('saveModal').classList.add('show');
+  }
+
+  function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('show');
+  }
+
+  function saveClass() {
+    document.getElementById('saveModal').classList.remove('show');
+    stopLiveClass();
+    showScreen('history');
+  }
+
+  /* ── Toggle class roster ── */
+  function toggleRoster(card) {
+    card.classList.toggle('open');
+  }
+
+  /* ── Hash auto-open ── */
+  (function() {
+    var h = window.location.hash.replace('#', '');
+    if (h) setTimeout(function() { showScreen(h); }, 100);
+  })();
+</script>
+
+</body>
+</html>

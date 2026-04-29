@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Subject Teacher</title>
+  <script src="../../shared/diagrams-flow6.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #14b8a6; font-weight: 700; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #14b8a6; border-left-color: #14b8a6; font-weight: 700; background: #f0fdfa; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Responsive: collapse sidebar ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; position: static; height: auto;
+        border-right: none; border-bottom: 1px solid #e2e8f0;
+        padding: 16px 0;
+      }
+      .main-content { padding: 24px 20px 60px; }
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #14b8a6;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #f0fdfa; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-goal { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 17px; font-weight: 700; color: #854d0e; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Code / Schema blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Collapsible flow diagram ── */
+    .flow-collapse { margin: 16px 0 20px; }
+    .flow-collapse summary {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px;
+      cursor: pointer; font-size: 13px; font-weight: 600; color: #0f766e;
+      list-style: none; transition: all .15s; user-select: none;
+    }
+    .flow-collapse summary::-webkit-details-marker { display: none; }
+    .flow-collapse summary:hover { background: #ccfbf1; border-color: #5eead4; }
+    .flow-collapse summary .arrow { width: 16px; height: 16px; transition: transform .2s; flex-shrink: 0; }
+    .flow-collapse[open] summary .arrow { transform: rotate(90deg); }
+    .flow-collapse[open] summary { border-radius: 8px 8px 0 0; border-bottom-color: #e2e8f0; }
+
+    /* ── Flow section (pan/zoom diagram) ── */
+    .flow-section {
+      background: #fff; border: 1px solid #e2e8f0; border-top: none;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+      position: relative;
+    }
+    .diagram-viewport {
+      width: 100%; height: 480px; overflow: hidden;
+      border-radius: 12px; position: relative;
+      cursor: grab; background: #fafbfc;
+    }
+    .diagram-viewport:active { cursor: grabbing; }
+    .diagram-viewport .mermaid,
+    .diagram-viewport .mermaid-lazy {
+      transform-origin: 0 0;
+      position: absolute; top: 0; left: 0;
+    }
+    .diagram-viewport .mermaid-lazy {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; color: #94a3b8; font-size: 13px;
+    }
+
+    /* ── Zoom toolbar ── */
+    .zoom-toolbar {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      display: flex; flex-direction: column; gap: 0;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08); overflow: hidden;
+    }
+    .zoom-btn {
+      width: 36px; height: 36px; border: none; border-bottom: 1px solid #f1f5f9;
+      background: #fff; color: #475569; font-size: 18px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .12s; line-height: 1;
+    }
+    .zoom-btn:last-child { border-bottom: none; }
+    .zoom-btn:hover { background: #f1f5f9; color: #1e293b; }
+    .zoom-btn:active { background: #e2e8f0; }
+    .zoom-btn svg { width: 16px; height: 16px; }
+    .zoom-btn.text-btn { font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+    .zoom-level {
+      width: 36px; height: 28px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #94a3b8; user-select: none;
+      border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+    }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <span class="current">Subject Teacher</span>
+</div>
+
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <nav class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#goal">1. Feature Goal</a></li>
+      <li><a href="#roles">2. Roles &amp; Permissions</a></li>
+      <li>
+        <a href="#live-class">3. Live Class</a>
+        <ol>
+          <li><a href="#mic-test">3.1 Pre-class Mic Test</a></li>
+          <li><a href="#during-class">3.2 During Class</a></li>
+          <li><a href="#pause-resume">3.3 Pause &amp; Resume</a></li>
+          <li><a href="#end-class">3.4 End Class</a></li>
+          <li><a href="#save-name">3.5 Save &amp; Name Lesson</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#roster">4. Student Roster</a>
+        <ol>
+          <li><a href="#roster-view">4.1 Roster View</a></li>
+          <li><a href="#student-detail">4.2 Student Detail</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#word-tap">5. Word Tap Insights</a>
+        <ol>
+          <li><a href="#insight-inbox">5.1 Insight Inbox</a></li>
+          <li><a href="#session-detail-insights">5.2 Session Detail</a></li>
+          <li><a href="#aggregated-view">5.3 Aggregated View</a></li>
+        </ol>
+      </li>
+      <li>
+        <a href="#history">6. Session History</a>
+        <ol>
+          <li><a href="#session-list">6.1 Session List</a></li>
+          <li><a href="#session-detail-history">6.2 Session Detail</a></li>
+          <li><a href="#transcript-view">6.3 Transcript View</a></li>
+        </ol>
+      </li>
+      <li><a href="#data-schema">7. Data Schema</a></li>
+      <li><a href="#open-questions">8. Open Questions</a></li>
+    </ol>
+  </nav>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+  <!-- ── Header ── -->
+  <div class="doc-header">
+    <h1>Subject Teacher</h1>
+    <p class="subtitle">Content class ESL support &mdash; live transcription, student roster, word tap insights, and session history.</p>
+    <div class="meta">
+      <span>ESL Module &mdash; 3.4</span>
+      <span>Status: Planning</span>
+      <span>Updated: April 2026</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ 1. FEATURE GOAL ════════════════ -->
+  <h2 id="goal"><span class="num">1</span> Feature Goal</h2>
+
+  <div class="callout-question">
+    <div class="q-text">How does a content-class teacher who teaches science/math in English support ESL students in real-time, without disrupting the teaching flow?</div>
+  </div>
+
+  <div class="callout callout-goal">
+    <strong>Goal:</strong> During a live content class, capture the teacher&rsquo;s speech in real time, convert it to text, and deliver it to students as an interactive transcript. After class, provide the teacher with insights into which vocabulary students found difficult.
+  </div>
+
+  <p>The Subject Teacher module provides four core capabilities:</p>
+  <ul>
+    <li><strong>Live Class</strong> &mdash; Start a live transcription session, manage mic test, pause/resume, and end class with automatic save.</li>
+    <li><strong>Student Roster</strong> &mdash; View enrolled students with grade, English level, native language, and attendance data.</li>
+    <li><strong>Word Tap Insights</strong> &mdash; Review which words students tapped during live sessions, with per-student breakdowns and cross-session trends.</li>
+    <li><strong>Session History</strong> &mdash; Browse past sessions, view metadata, word tap summaries, and full transcripts.</li>
+  </ul>
+
+  <!-- ════════════════ 2. ROLES & PERMISSIONS ════════════════ -->
+  <h2 id="roles"><span class="num">2</span> Roles &amp; Permissions</h2>
+
+  <div class="callout callout-info">
+    <strong>Role mapping:</strong> The Subject Teacher role maps to <code>SCHOOL_TEACHER</code> in the platform role system. They manage their own live sessions and can view insights for their own classes only.
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Capability</th><th>Subject Teacher</th><th>ESL Teacher</th><th>Student</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Start live class</td><td>&check;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>View own student roster</td><td>&check;</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td>View word tap insights</td><td>Own sessions only</td><td>All sessions</td><td>&mdash;</td></tr>
+      <tr><td>View session history</td><td>Own</td><td>All</td><td>Own</td></tr>
+      <tr><td>Manage trackers &amp; assignments</td><td>&mdash;</td><td>&check;</td><td>&mdash;</td></tr>
+      <tr><td>Practice vocabulary</td><td>&mdash;</td><td>&mdash;</td><td>&check;</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 3. LIVE CLASS ════════════════ -->
+  <h2 id="live-class"><span class="num">3</span> Live Class</h2>
+
+  <!-- 3.1 -->
+  <h3 id="mic-test">3.1 Pre-class Mic Test</h3>
+
+  <p>Before starting a live session the teacher must complete a microphone voice test. The flow diagram below illustrates the full Subject Teacher session lifecycle.</p>
+
+  <details class="flow-collapse" data-diagram="teacherFlow">
+    <summary>
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      View Flow Diagram &mdash; Subject Teacher
+    </summary>
+    <div class="flow-section">
+      <div class="zoom-toolbar" data-for="teacherFlow">
+        <button class="zoom-btn" data-action="in" title="Zoom in">+</button>
+        <button class="zoom-btn" data-action="out" title="Zoom out">&minus;</button>
+        <div class="zoom-level" data-label>100%</div>
+        <button class="zoom-btn" data-action="fit" title="Fit to view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+        <button class="zoom-btn text-btn" data-action="reset" title="Reset to 100%">1:1</button>
+      </div>
+      <div class="diagram-viewport" id="teacherFlow">
+        <pre class="mermaid-lazy" data-key="teacherFlow"></pre>
+      </div>
+    </div>
+  </details>
+
+  <p>The following scenarios describe each state the microphone test can reach.</p>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Screen</th><th>Text</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Microphone Unconnected (no device)</strong></td>
+        <td>No microphone hardware detected</td>
+        <td>&ldquo;Microphone unconnected &mdash; Please allow Microphone access in your browser, or check that your device is connected.&rdquo;</td>
+        <td>Voice test cannot proceed. Block session start.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Permission Denied (Browser settings)</strong></td>
+        <td>Browser mic permission dialog was dismissed or rejected</td>
+        <td>&ldquo;Microphone permission is required. Please enable it in your browser settings.&rdquo;</td>
+        <td>The system cannot detect any audio input. The teacher must enable microphone permission in their browser settings before proceeding.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Connected &mdash; Ready to Test</strong></td>
+        <td>Microphone Connected</td>
+        <td>&ldquo;Speak to test&rdquo; &mdash; <em>&ldquo;Test 1, 2, 3&rdquo;</em></td>
+        <td>Display test phrase prompt. Await teacher voice input.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Connected &mdash; Voice Test Active</strong></td>
+        <td>Teacher is speaking; transcribed words enlarge in the transcription box</td>
+        <td>Each correctly transcribed word becomes enlarged in the transcription box.</td>
+        <td>Confirms: (a) audio is being recorded, (b) speech-to-text is functioning, (c) the transcription pipeline is working end-to-end.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Voice Test Passed &mdash; Ready to Start</strong></td>
+        <td>Test phrase successfully transcribed</td>
+        <td>Test phrase remains visible as confirmation.</td>
+        <td>The &ldquo;Start Class&rdquo; button appears. Teacher can begin the live session.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Voice Test Failed &mdash; Low Volume</strong></td>
+        <td>Microphone input volume too low to transcribe accurately</td>
+        <td>&ldquo;Volume too low &mdash; please move closer to the microphone or increase input volume.&rdquo;</td>
+        <td>Prompt the teacher to adjust microphone position or volume level before retrying.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Voice Test Failed &mdash; Mismatch</strong></td>
+        <td>Transcribed output is significantly different from the expected test phrase</td>
+        <td>&ldquo;Voice test did not match. Please try again in a quieter environment.&rdquo;</td>
+        <td>The microphone is recording and text is appearing, but the words do not match the expected phrase. Prompt the teacher to retry or check mic input source.</td>
+      </tr>
+      <tr>
+        <td><strong>8. STT Service Unavailable</strong></td>
+        <td>Microphone is working but Speech-to-Text service is down or unreachable</td>
+        <td>&ldquo;Transcription service is currently unavailable. Please try again later.&rdquo;</td>
+        <td>Falls back to Scenario 1 behaviour &mdash; voice test cannot proceed, block session start. Retry button available.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Shared spec:</strong> These scenarios are shared with the Live Classroom spec. The mic test is identical for all teachers.
+  </div>
+
+  <!-- 3.2 -->
+  <h3 id="during-class">3.2 During Class</h3>
+
+  <p>Once the mic test passes and the teacher clicks &ldquo;Start Class&rdquo;, the session enters the active state. The teacher&rsquo;s speech is captured, transcribed in real time, and pushed to all connected students via the real-time channel.</p>
+
+  <table>
+    <thead><tr><th>UI Element</th><th>Description</th><th>State Changes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Live transcript panel</strong></td><td>Real-time scrolling text of the teacher&rsquo;s speech</td><td>Continuously appends new transcript chunks</td></tr>
+      <tr><td><strong>Student count indicator</strong></td><td>X students connected</td><td>Updates as students join or leave</td></tr>
+      <tr><td><strong>Elapsed time</strong></td><td>HH:MM:SS timer</td><td>Starts on class begin, pauses when paused</td></tr>
+      <tr><td><strong>Pause button</strong></td><td>Pauses transcription</td><td>Toggles to Resume button when active</td></tr>
+      <tr><td><strong>End Class button</strong></td><td>Ends the session</td><td>Triggers save &amp; name flow</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-question">
+    <div class="q-text">Should the Subject Teacher see a live count of student word taps during class, or only after class ends?</div>
+    <div class="q-context">Showing a live tap count could help the teacher gauge comprehension in real time, but it may also be distracting during active teaching.</div>
+  </div>
+
+  <!-- 3.3 -->
+  <h3 id="pause-resume">3.3 Pause &amp; Resume</h3>
+
+  <table>
+    <thead><tr><th>Trigger</th><th>System Response</th><th>Student Impact</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Teacher clicks Pause</strong></td><td>Stop transcript; timer pauses</td><td>Students see &ldquo;Class Paused&rdquo; indicator</td></tr>
+      <tr><td><strong>Teacher clicks Resume</strong></td><td>Resume transcript; timer resumes</td><td>Students resume receiving live text</td></tr>
+      <tr><td><strong>Pause &gt; 3 min</strong></td><td>Reminder popup: &ldquo;Class is still paused&rdquo;</td><td>No change for students</td></tr>
+      <tr><td><strong>Pause &gt; 5 min</strong></td><td>Auto-save &mdash; endClass triggered</td><td>Students see Summary Modal</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3.4 -->
+  <h3 id="end-class">3.4 End Class</h3>
+
+  <table>
+    <thead><tr><th>Scenario</th><th>Role</th><th>Event</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2"><strong>1. Teacher clicks &ldquo;End Class&rdquo;</strong></td><td>Teacher</td><td>clicks &ldquo;End Class&rdquo;</td><td>Send status to student&rsquo;s system</td></tr>
+      <tr><td>Student</td><td>receives signal</td><td>Show Class End Summary Modal</td></tr>
+      <tr><td rowspan="3"><strong>2. Teacher clicks &ldquo;Pause&rdquo; (NOT end)</strong></td><td>Teacher</td><td>click &ldquo;Pause&rdquo;</td><td>Stop transcript</td></tr>
+      <tr><td></td><td>clicks &ldquo;Resume&rdquo;</td><td>Keep recording transcript</td></tr>
+      <tr><td>Student</td><td>N/A</td><td></td></tr>
+      <tr><td rowspan="4"><strong>3. Teacher clicks &ldquo;Pause&rdquo; and forgets to resume</strong></td><td>Teacher</td><td>Forget to resume for over 3 mins</td><td>First reminder: Popup &ldquo;Class is still paused&rdquo;</td></tr>
+      <tr><td></td><td>Forget to resume for over 5 mins</td><td>Auto Saved &mdash; endClass</td></tr>
+      <tr><td></td><td>Closes browser while paused</td><td>Triggers Scenario 4 logic</td></tr>
+      <tr><td>Student</td><td>over 5 mins</td><td>System show Summary Modal</td></tr>
+      <tr><td rowspan="2"><strong>4. Teacher closes browser / disconnects</strong></td><td>Teacher</td><td>returns within 5 mins</td><td>Popup: Resume Previous Class?</td></tr>
+      <tr><td></td><td>over 5 min not returns</td><td>Auto Saved &mdash; endClass</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-question">
+    <div class="q-text">Should the auto-end timeout (5 min) be configurable by school admin?</div>
+    <div class="q-context">Some schools may want shorter timeouts to save resources; others may prefer longer windows for teachers who take extended breaks.</div>
+  </div>
+
+  <!-- 3.5 -->
+  <h3 id="save-name">3.5 Save &amp; Name Lesson</h3>
+
+  <p>After ending class, the teacher is prompted to name the lesson. A default name is pre-filled based on the subject and date.</p>
+
+  <table>
+    <thead><tr><th>Field</th><th>Default Value</th><th>Editable</th><th>Validation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Lesson name</strong></td><td>Subject + Date</td><td>Yes</td><td>Required, max 80 chars</td></tr>
+      <tr><td><strong>Subject tag</strong></td><td>From class settings</td><td>No</td><td>Auto-filled</td></tr>
+      <tr><td><strong>Date</strong></td><td>Today</td><td>No</td><td>Auto-filled</td></tr>
+      <tr><td><strong>Duration</strong></td><td>Calculated</td><td>No</td><td>Auto-filled</td></tr>
+    </tbody>
+  </table>
+
+  <p>After save: a notification is sent to the ESL Teacher, and the session is added to each student&rsquo;s session history.</p>
+
+  <!-- ════════════════ 4. STUDENT ROSTER ════════════════ -->
+  <h2 id="roster"><span class="num">4</span> Student Roster</h2>
+
+  <!-- 4.1 -->
+  <h3 id="roster-view">4.1 Roster View</h3>
+
+  <div class="callout callout-info">
+    <strong>Auto-populated:</strong> The roster is automatically populated from School Management enrollment. The Subject Teacher cannot add or remove students.
+  </div>
+
+  <table>
+    <thead><tr><th>Column</th><th>Data</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Name</strong></td><td>Student full name</td><td>Sortable</td></tr>
+      <tr><td><strong>Grade</strong></td><td>3rd&ndash;8th</td><td>Filterable</td></tr>
+      <tr><td><strong>English Level</strong></td><td>WIDA 1&ndash;6</td><td>Filterable</td></tr>
+      <tr><td><strong>Native Language</strong></td><td>Chinese, Spanish, etc.</td><td>Display only</td></tr>
+      <tr><td><strong>Sessions Attended</strong></td><td>Count</td><td>From session history</td></tr>
+      <tr><td><strong>Last Active</strong></td><td>Date</td><td>Most recent session</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4.2 -->
+  <h3 id="student-detail">4.2 Student Detail</h3>
+
+  <p>Clicking a student row opens a detail panel with the following information:</p>
+  <ul>
+    <li><strong>Profile fields</strong> &mdash; name, grade, English level, native language</li>
+    <li><strong>Recent sessions participated in</strong> &mdash; list of sessions with dates and lesson names</li>
+    <li><strong>Words tapped across sessions</strong> &mdash; with tap counts per word</li>
+    <li><strong>Word bank size</strong> &mdash; total saved words</li>
+  </ul>
+
+  <div class="callout-question">
+    <div class="q-text">Should the Subject Teacher see the student&rsquo;s full word bank, or only words tapped in their own sessions?</div>
+    <div class="q-context">Full visibility helps the teacher understand the student&rsquo;s overall vocabulary level. Scoped visibility protects student privacy and keeps the view focused.</div>
+  </div>
+
+  <!-- ════════════════ 5. WORD TAP INSIGHTS ════════════════ -->
+  <h2 id="word-tap"><span class="num">5</span> Word Tap Insights</h2>
+
+  <!-- 5.1 -->
+  <h3 id="insight-inbox">5.1 Insight Inbox</h3>
+
+  <p>A list of session cards showing word tap data from live classes. The Subject Teacher sees only their own sessions.</p>
+
+  <table>
+    <thead><tr><th>Data Point</th><th>Description</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Session date</strong></td><td>When the class happened</td><td><code>LiveSession.startTime</code></td></tr>
+      <tr><td><strong>Lesson name</strong></td><td>Teacher-assigned name</td><td><code>LiveSession.lessonName</code></td></tr>
+      <tr><td><strong>Student count</strong></td><td>Students present</td><td><code>LiveSession.connectedStudents</code></td></tr>
+      <tr><td><strong>Total word taps</strong></td><td>Sum of tap events</td><td><code>WordTapEvent</code> count</td></tr>
+      <tr><td><strong>Top 5 words</strong></td><td>Most frequently tapped words</td><td>Aggregated from <code>WordTapEvents</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Visibility rule:</strong> The ESL Teacher sees insights from ALL Subject Teachers. The Subject Teacher sees only their own sessions.
+  </div>
+
+  <!-- 5.2 -->
+  <h3 id="session-detail-insights">5.2 Session Detail</h3>
+
+  <p>Clicking a session card shows detailed word tap analysis:</p>
+  <ul>
+    <li><strong>Word list sorted by tap frequency</strong> &mdash; most-tapped words at the top</li>
+    <li><strong>Per-student breakdown</strong> &mdash; which students tapped which words</li>
+    <li><strong>Transcript excerpt</strong> &mdash; showing where each word appeared in context</li>
+  </ul>
+
+  <div class="callout-question">
+    <div class="q-text">Should the per-student breakdown show student names, or anonymized identifiers (Student A, B, C)?</div>
+    <div class="q-context">Named breakdowns help the teacher provide targeted support. Anonymized breakdowns protect student privacy and reduce potential bias.</div>
+  </div>
+
+  <!-- 5.3 -->
+  <h3 id="aggregated-view">5.3 Aggregated View</h3>
+
+  <p>Cross-session trends provide a broader picture of vocabulary difficulty patterns:</p>
+  <ul>
+    <li><strong>Most-tapped words across all sessions</strong> &mdash; cumulative ranking showing persistent vocabulary challenges</li>
+    <li><strong>Students who tap most frequently</strong> &mdash; may indicate lower English proficiency and a need for additional support</li>
+    <li><strong>Vocabulary trends over time</strong> &mdash; new difficult words vs. recurring ones, helping identify whether students are progressing</li>
+  </ul>
+
+  <div class="callout-question">
+    <div class="q-text">Is the aggregated view a Subject Teacher feature, or ESL Teacher-only?</div>
+    <div class="q-context">Subject Teachers may benefit from seeing trends in their own sessions. However, cross-teacher aggregation is likely ESL Teacher-only to avoid data leakage between classrooms.</div>
+  </div>
+
+  <!-- ════════════════ 6. SESSION HISTORY ════════════════ -->
+  <h2 id="history"><span class="num">6</span> Session History</h2>
+
+  <!-- 6.1 -->
+  <h3 id="session-list">6.1 Session List</h3>
+
+  <table>
+    <thead><tr><th>Column</th><th>Data</th><th>Sortable / Filterable</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Date</strong></td><td>Session date</td><td>Sortable</td></tr>
+      <tr><td><strong>Lesson Name</strong></td><td>Teacher-assigned</td><td>Searchable</td></tr>
+      <tr><td><strong>Duration</strong></td><td>Length in minutes</td><td>Sortable</td></tr>
+      <tr><td><strong>Students</strong></td><td>Count present</td><td>&mdash;</td></tr>
+      <tr><td><strong>Word Taps</strong></td><td>Total tap events</td><td>Sortable</td></tr>
+      <tr><td><strong>Status</strong></td><td>Completed, Auto-saved</td><td>Filterable</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 6.2 -->
+  <h3 id="session-detail-history">6.2 Session Detail</h3>
+
+  <p>Selecting a session from the list opens a detail view containing:</p>
+  <ul>
+    <li><strong>Lesson metadata</strong> &mdash; name, date, duration, student count</li>
+    <li><strong>Word tap summary</strong> &mdash; same breakdown as Section 5.2 (word list, per-student, transcript context)</li>
+    <li><strong>Link to full transcript</strong> &mdash; opens the transcript view (Section 6.3)</li>
+  </ul>
+
+  <!-- 6.3 -->
+  <h3 id="transcript-view">6.3 Transcript View</h3>
+
+  <p>A read-only scrollable transcript with timestamp markers. Words that students tapped are highlighted with a distinct background color and a tap count badge, making it easy to see which parts of the lesson caused difficulty.</p>
+
+  <div class="callout-question">
+    <div class="q-text">Should the transcript support audio playback sync, or text-only for MVP?</div>
+    <div class="q-context">Audio playback would let teachers hear the exact moment a word was spoken, which is useful for reviewing pronunciation and context. Text-only is simpler to implement and still provides value.</div>
+  </div>
+
+  <!-- ════════════════ 7. DATA SCHEMA ════════════════ -->
+  <h2 id="data-schema"><span class="num">7</span> Data Schema</h2>
+
+  <h3>7.1 LiveSession</h3>
+
+  <div class="formula">{
+  sessionId: string,
+  teacherId: string,
+  subject: string,
+  lessonName: string,
+  startTime: ISO 8601,
+  endTime: ISO 8601,
+  status: "completed" | "auto-saved",
+  studentCount: number,
+  transcript: TranscriptSegment[]
+}</div>
+
+  <h3>7.2 WordTapEvent</h3>
+
+  <div class="formula">{
+  eventId: string,
+  sessionId: string,
+  studentId: string,
+  word: string,
+  timestamp: ISO 8601,
+  sentenceContext: string,
+  translation: string
+}</div>
+
+  <h3>7.3 Data Flow</h3>
+
+  <table>
+    <thead><tr><th>Event</th><th>Storage</th><th>Visible To</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Teacher starts class</strong></td><td>LiveSession created</td><td>Subject Teacher, ESL Teacher</td><td>Immediately</td></tr>
+      <tr><td><strong>Student taps word</strong></td><td>WordTapEvent stored</td><td>Subject Teacher after class, ESL Teacher anytime</td><td>After session</td></tr>
+      <tr><td><strong>Class ends</strong></td><td>Session finalized</td><td>All roles</td><td>Immediately</td></tr>
+      <tr><td><strong>Insights generated</strong></td><td>Aggregated in dashboard</td><td>ESL Teacher</td><td>Post-session batch</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════ 8. OPEN QUESTIONS ════════════════ -->
+  <h2 id="open-questions"><span class="num">8</span> Open Questions</h2>
+
+  <p>All open design questions collected from this spec:</p>
+
+  <ol>
+    <li><strong>Live word tap count during class</strong> &mdash; Should the Subject Teacher see a live count of student word taps during class, or only after class ends?</li>
+    <li><strong>Auto-end timeout configuration</strong> &mdash; Should the auto-end timeout (5 min) be configurable by school admin?</li>
+    <li><strong>Student word bank visibility</strong> &mdash; Should the Subject Teacher see the student&rsquo;s full word bank, or only words tapped in their own sessions?</li>
+    <li><strong>Per-student anonymization</strong> &mdash; Should the per-student breakdown show student names, or anonymized identifiers (Student A, B, C)?</li>
+    <li><strong>Aggregated view scope</strong> &mdash; Is the aggregated view a Subject Teacher feature, or ESL Teacher-only?</li>
+    <li><strong>Transcript audio playback</strong> &mdash; Should the transcript support audio playback sync, or text-only for MVP?</li>
+  </ol>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; ESL Module 3.4 &mdash; Subject Teacher &middot; April 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<!-- ── Mermaid ── -->
+<script>
+  // ── Mermaid init (startOnLoad: false — we render lazily) ──
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e40af',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#94a3b8',
+      secondaryColor: '#fef9c3',
+      tertiaryColor: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '13px',
+      nodeBorder: '#93c5fd',
+      mainBkg: '#dbeafe',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#e2e8f0',
+      edgeLabelBackground: '#ffffff',
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 16,
+      nodeSpacing: 40,
+      rankSpacing: 50,
+      useMaxWidth: false,
+    },
+  });
+
+  // ── Pan & Zoom ──
+  class DiagramPanZoom {
+    constructor(viewportId) {
+      this.viewport = document.getElementById(viewportId);
+      this.scale = 1;
+      this.panX = 0;
+      this.panY = 0;
+      this.minScale = 0.15;
+      this.maxScale = 3;
+      this.dragging = false;
+      this.startX = 0;
+      this.startY = 0;
+      this.svg = null;
+      this.svgW = 0;
+      this.svgH = 0;
+      this.label = this.viewport.closest('.flow-section').querySelector('[data-label]');
+      this._bindEvents();
+    }
+
+    init() {
+      this.svg = this.viewport.querySelector('svg');
+      if (!this.svg) return;
+      this.svg.style.maxWidth = 'none';
+      this.svg.removeAttribute('width');
+      this.svgW = this.svg.getBoundingClientRect().width;
+      this.svgH = this.svg.getBoundingClientRect().height;
+      this.fitToView();
+    }
+
+    apply() {
+      if (!this.svg) return;
+      this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.scale})`;
+      this.svg.style.transformOrigin = '0 0';
+      if (this.label) this.label.textContent = Math.round(this.scale * 100) + '%';
+    }
+
+    fitToView() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.svg.style.transform = 'scale(1)';
+      this.svg.style.transformOrigin = '0 0';
+      this.svgW = this.svg.scrollWidth;
+      this.svgH = this.svg.scrollHeight;
+      this.scale = Math.min(vw / this.svgW, vh / this.svgH) * 0.92;
+      this.scale = Math.max(this.minScale, Math.min(this.maxScale, this.scale));
+      this.panX = (vw - this.svgW * this.scale) / 2;
+      this.panY = Math.max((vh - this.svgH * this.scale) / 2, 10);
+      this.apply();
+    }
+
+    resetZoom() {
+      const vw = this.viewport.clientWidth;
+      this.scale = 1;
+      this.panX = Math.max((vw - this.svgW) / 2, 0);
+      this.panY = 10;
+      this.apply();
+    }
+
+    zoomTo(newScale, cx, cy) {
+      newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
+      const ratio = newScale / this.scale;
+      this.panX = cx - (cx - this.panX) * ratio;
+      this.panY = cy - (cy - this.panY) * ratio;
+      this.scale = newScale;
+      this.apply();
+    }
+
+    zoomIn() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.zoomTo(this.scale * 1.25, vw / 2, vh / 2);
+    }
+
+    zoomOut() {
+      const vw = this.viewport.clientWidth;
+      const vh = this.viewport.clientHeight;
+      this.zoomTo(this.scale / 1.25, vw / 2, vh / 2);
+    }
+
+    _bindEvents() {
+      this.viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = this.viewport.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.12 : 0.88;
+        this.zoomTo(this.scale * factor, cx, cy);
+      }, { passive: false });
+
+      this.viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        this.dragging = true;
+        this.startX = e.clientX - this.panX;
+        this.startY = e.clientY - this.panY;
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!this.dragging) return;
+        this.panX = e.clientX - this.startX;
+        this.panY = e.clientY - this.startY;
+        this.apply();
+      });
+      window.addEventListener('mouseup', () => { this.dragging = false; });
+
+      let lastTouchDist = 0;
+      let lastTouchMid = { x: 0, y: 0 };
+      this.viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          this.dragging = true;
+          this.startX = e.touches[0].clientX - this.panX;
+          this.startY = e.touches[0].clientY - this.panY;
+        } else if (e.touches.length === 2) {
+          this.dragging = false;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+          const rect = this.viewport.getBoundingClientRect();
+          lastTouchMid = {
+            x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
+            y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top,
+          };
+        }
+        e.preventDefault();
+      }, { passive: false });
+      this.viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && this.dragging) {
+          this.panX = e.touches[0].clientX - this.startX;
+          this.panY = e.touches[0].clientY - this.startY;
+          this.apply();
+        } else if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const factor = dist / lastTouchDist;
+          lastTouchDist = dist;
+          this.zoomTo(this.scale * factor, lastTouchMid.x, lastTouchMid.y);
+        }
+        e.preventDefault();
+      }, { passive: false });
+      this.viewport.addEventListener('touchend', () => { this.dragging = false; });
+    }
+  }
+
+  // ── Lazy rendering: render Mermaid only when <details> opens ──
+  const diagrams = {};
+
+  document.querySelectorAll('.flow-collapse').forEach((details) => {
+    details.addEventListener('toggle', async function handler() {
+      if (!details.open) return;
+
+      const key = details.dataset.diagram;
+      const pre = details.querySelector('.mermaid-lazy');
+      if (!pre || !key || !window.FLOW6 || !window.FLOW6[key]) return;
+
+      // Inject diagram text from shared JS and render
+      pre.textContent = window.FLOW6[key];
+      pre.classList.remove('mermaid-lazy');
+      pre.classList.add('mermaid');
+
+      await mermaid.run({ nodes: [pre] });
+
+      // Wait a frame for SVG to be in DOM, then init pan/zoom
+      requestAnimationFrame(() => {
+        const viewportId = details.querySelector('.diagram-viewport')?.id;
+        if (viewportId && !diagrams[viewportId]) {
+          const d = new DiagramPanZoom(viewportId);
+          d.init();
+          diagrams[viewportId] = d;
+        }
+      });
+
+      // Only render once — remove handler
+      details.removeEventListener('toggle', handler);
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    Object.values(diagrams).forEach((d) => d.fitToView());
+  });
+
+  // ── Toolbar button handlers ──
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.zoom-btn');
+    if (!btn) return;
+    const toolbar = btn.closest('.zoom-toolbar');
+    const id = toolbar?.dataset.for;
+    const d = diagrams[id];
+    if (!d) return;
+    const action = btn.dataset.action;
+    if (action === 'in') d.zoomIn();
+    else if (action === 'out') d.zoomOut();
+    else if (action === 'fit') d.fitToView();
+    else if (action === 'reset') d.resetZoom();
+  });
+</script>
+
+<!-- ── Scroll-spy: highlight active sidebar link ── -->
+<script>
+(function(){
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const ids = Array.from(links).map(a => a.getAttribute('href').slice(1));
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  function onScroll() {
+    let current = ids[0];
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= 80) current = ids[i];
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

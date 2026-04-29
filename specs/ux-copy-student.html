@@ -85,7 +85,7 @@
     .sidebar a.active { color: #10b981; border-left-color: #10b981; font-weight: 700; background: #ecfdf5; }
 
     /* ── Main content ── */
-    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 0 48px 80px; }
+    .main-content { flex: 1; min-width: 0; padding: 0 48px 80px; }
 
     /* ── Doc Header ── */
     .doc-header { margin: 40px 0 32px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
@@ -161,7 +161,23 @@
       letter-spacing: .3px;
     }
     .status-tag.current { background: var(--shared-bg); color: var(--shared); }
+    .status-tag.in-review { background: var(--accent-bg); color: var(--accent); }
     .status-tag.suggested { background: var(--suggest-bg); color: var(--suggest); }
+    .status-tag.approved { background: #ecfdf5; color: #059669; }
+
+    /* Adopt button */
+    .adopt-btn {
+      display: none; position: absolute; top: 4px; right: 4px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #10b981; color: #fff; border: none;
+      font-size: 12px; cursor: pointer; z-index: 5;
+      align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.15);
+      transition: background .15s;
+    }
+    .adopt-btn:hover { background: #059669; }
+    body.edit-mode td[data-editable]:hover .adopt-btn { display: flex; }
+    td.adopted { background: #ecfdf5 !important; outline-color: #6ee7b7 !important; }
     .status-tag.issue { background: var(--warn-bg); color: var(--warn); }
 
     /* ── Callouts ── */
@@ -286,6 +302,7 @@
     }
     .review-toggle:hover { border-color: var(--faint); color: var(--text); }
     .review-toggle.active { background: #fff3bf; border-color: #fcc419; color: #e67700; }
+    .review-toggle.edit-toggle.active { background: #ecfdf5; border-color: #6ee7b7; color: #059669; }
     .review-toggle .material-icons-round { font-size: 15px; }
 
     body.review-mode td[data-editable] {
@@ -329,6 +346,8 @@
     .review-bar .btn-import:hover { background: #1c7ed6; }
     .review-bar .btn-reset:hover { color: #fff; border-color: rgba(255,255,255,.3); }
     .review-bar .btn-copy-done { background: #51cf66; color: #fff; }
+    .review-bar .btn-save-approved { background: #10b981; color: #fff; animation: slideUp .3s ease; }
+    .review-bar .btn-save-approved:hover { background: #059669; }
     .import-result { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 12px; line-height: 1.6; display: none; }
     .import-result.success { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
     .import-result.error { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
@@ -388,10 +407,16 @@
   <a href="ux-copy-management.html">UX Copy Management</a>
   <span class="sep">/</span>
   <span class="current">ESL Student</span>
-  <button class="review-toggle" onclick="toggleReviewMode()" title="Let reviewers edit copy directly on this page">
-    <span class="material-icons-round">rate_review</span>
-    <span class="review-toggle-label">Review Mode</span>
-  </button>
+  <div style="display:flex;gap:6px;margin-left:auto;">
+    <button class="review-toggle" onclick="toggleReviewMode()" title="Let reviewers edit copy directly on this page">
+      <span class="material-icons-round">rate_review</span>
+      <span class="review-toggle-label">Review Mode</span>
+    </button>
+    <button class="review-toggle edit-toggle" onclick="toggleEditMode()" title="PM mode: adopt suggestions into Text column">
+      <span class="material-icons-round">done_all</span>
+      <span class="edit-toggle-label">Edit Mode</span>
+    </button>
+  </div>
 </div>
 
 <!-- ── Page Layout ── -->
@@ -438,6 +463,16 @@
   </div>
 </div>
 
+<div class="callout tip" style="margin-top:24px;">
+  <strong>How to use</strong>
+  <ol style="margin:8px 0 0 18px;font-size:13px;line-height:1.8;">
+    <li><strong>Review Mode</strong> (top right) &mdash; Reviewers click to edit the <strong>Caroline / Hope / Dara</strong> columns directly. Changes auto-save to Google Drive.</li>
+    <li><strong>Edit Mode</strong> (top right) &mdash; PM clicks to see <strong>&check;</strong> buttons on reviewer suggestions. Click <strong>&check;</strong> to adopt a suggestion into the Text column.</li>
+    <li><strong>Save Approved</strong> &mdash; After adopting, click the green button at the bottom to save finalized copy to Drive.</li>
+    <li><strong>Export</strong> &mdash; Download all changes as Readable / JSON / Markdown for sharing.</li>
+  </ol>
+</div>
+
 <div class="callout tip">
   <strong>How to read this sheet</strong> &mdash; Each page has an annotated wireframe with numbered markers. The table below maps each number to the exact text on screen. Includes static HTML, JS-generated, hover tooltips, and modal content.
 </div>
@@ -480,22 +515,22 @@
 </div>
 
 <table class="component-table" data-side="student">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Header title</td><td><span class="en">My Word Bank</span></td><td>Static</td><td>Brand title in app header</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Tab label</td><td><span class="en">Weekly Goal</span></td><td>Button</td><td>KPI progress ring tab. Subtitle: <code>Weekly Goal</code></td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Tab label + stat</td><td><span class="en">Mastered</span> / <span class="en">words mastered</span></td><td>Button + label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Tab label + stat</td><td><span class="en">Streak</span> / <span class="en">day streak</span></td><td>Button + label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>State badge</td><td><span class="en">Learning</span> / <span class="en">Mastered</span></td><td>JS dynamic</td><td>Per-word state indicator</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Collapse toggle</td><td><span class="en">Collapse</span> / <span class="en">Expand</span></td><td>JS toggle</td><td>Hides/shows word detail card</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Toggle label</td><td><span class="en">Translate</span></td><td>Static</td><td>Show/hide L1 translation</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Section label</td><td><span class="en">Example</span></td><td>Static</td><td>Example sentence area</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Meta label + value</td><td><span class="en">Source</span>: <span class="en">Live Classroom</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Meta label + value</td><td><span class="en">Subject</span>: <span class="en">[subject name]</span></td><td>Static / data</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Section title</td><td><span class="en">Mastery Progress</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Progress label</td><td><span class="en">[X] / 5</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Mastery hint</td><td><span class="en">[X] more practice(s) to master this word!</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Practice launcher</td><td><span class="en">Challenge of the Day</span></td><td>JS title</td><td>Opens practice setup panel</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Header title</td><td><span class="en">My Word Bank</span></td><td>Static</td><td>Brand title in app header</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Tab label</td><td><span class="en">Weekly Goal</span></td><td>Button</td><td>KPI progress ring tab. Subtitle: <code>Weekly Goal</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Tab label + stat</td><td><span class="en">Mastered</span> / <span class="en">words mastered</span></td><td>Button + label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Tab label + stat</td><td><span class="en">Streak</span> / <span class="en">day streak</span></td><td>Button + label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>State badge</td><td><span class="en">Learning</span> / <span class="en">Mastered</span></td><td>JS dynamic</td><td>Per-word state indicator</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Collapse toggle</td><td><span class="en">Collapse</span> / <span class="en">Expand</span></td><td>JS toggle</td><td>Hides/shows word detail card</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Toggle label</td><td><span class="en">Translate</span></td><td>Static</td><td>Show/hide L1 translation</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Section label</td><td><span class="en">Example</span></td><td>Static</td><td>Example sentence area</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Meta label + value</td><td><span class="en">Source</span>: <span class="en">Live Classroom</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Meta label + value</td><td><span class="en">Subject</span>: <span class="en">[subject name]</span></td><td>Static / data</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Section title</td><td><span class="en">Mastery Progress</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Progress label</td><td><span class="en">[X] / 5</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Mastery hint</td><td><span class="en">[X] more practice(s) to master this word!</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Practice launcher</td><td><span class="en">Challenge of the Day</span></td><td>JS title</td><td>Opens practice setup panel</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -535,17 +570,17 @@
 </div>
 
 <table class="component-table" data-side="student">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P1"></span></td><td>Panel title</td><td><span class="en">Challenge of the Day</span></td><td>JS dynamic</td><td>Changes to "[Mode] Practice" for specific modes</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P2"></span></td><td>Section title</td><td><span class="en">Select word category</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P3"></span></td><td>Category options</td><td><span class="en">Newest / All Random / Untested / Most Errors</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P4"></span></td><td>Section title</td><td><span class="en">Select subject</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P5"></span></td><td>Section title</td><td><span class="en">Select practice way</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P6"></span></td><td>Mode options</td><td><span class="en">Practice All / Spelling / Multiple Choice / Vocabs Mirroring</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P7"></span></td><td>Section title</td><td><span class="en">How long do you want to practice today?</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P8"></span></td><td>Cancel button</td><td><span class="en">Cancel</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P9"></span></td><td>Next button</td><td><span class="en">Next &rarr;</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P1"></span></td><td>Panel title</td><td><span class="en">Challenge of the Day</span></td><td>JS dynamic</td><td>Changes to "[Mode] Practice" for specific modes</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P2"></span></td><td>Section title</td><td><span class="en">Select word category</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P3"></span></td><td>Category options</td><td><span class="en">Newest / All Random / Untested / Most Errors</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P4"></span></td><td>Section title</td><td><span class="en">Select subject</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P5"></span></td><td>Section title</td><td><span class="en">Select practice way</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P6"></span></td><td>Mode options</td><td><span class="en">Practice All / Spelling / Multiple Choice / Vocabs Mirroring</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P7"></span></td><td>Section title</td><td><span class="en">How long do you want to practice today?</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P8"></span></td><td>Cancel button</td><td><span class="en">Cancel</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="P9"></span></td><td>Next button</td><td><span class="en">Next &rarr;</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -581,15 +616,15 @@
 </div>
 
 <table class="component-table" data-side="student">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I1"></span></td><td>Flow labels</td><td><span class="en">Learning &rarr; Mastered</span></td><td>Static</td><td>Visual flow in hero area</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I2"></span></td><td>Panel title</td><td><span class="en">Making a Word "Mastered"</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I3"></span></td><td>Rule 1 title</td><td><span class="en">The Power of 5</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I4"></span></td><td>Rule 1 body</td><td><span class="en">Each word needs 5 correct hits to move from your Learning list to the Mastered list!</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I5"></span></td><td>Rule 2 title</td><td><span class="en">Mix Your Practice</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I6"></span></td><td>Rule 2 body</td><td><span class="en">To master a word, you'll need to win at least once in every mode (Spelling, Multiple Choice, and Mirroring).</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I7"></span></td><td>Dismiss CTA</td><td><span class="en">Got it</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I1"></span></td><td>Flow labels</td><td><span class="en">Learning &rarr; Mastered</span></td><td>Static</td><td>Visual flow in hero area</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I2"></span></td><td>Panel title</td><td><span class="en">Making a Word "Mastered"</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I3"></span></td><td>Rule 1 title</td><td><span class="en">The Power of 5</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I4"></span></td><td>Rule 1 body</td><td><span class="en">Each word needs 5 correct hits to move from your Learning list to the Mastered list!</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I5"></span></td><td>Rule 2 title</td><td><span class="en">Mix Your Practice</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I6"></span></td><td>Rule 2 body</td><td><span class="en">To master a word, you'll need to win at least once in every mode (Spelling, Multiple Choice, and Mirroring).</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="I7"></span></td><td>Dismiss CTA</td><td><span class="en">Got it</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -647,9 +682,6 @@
   <span class="review-bar-text">Review Mode</span>
   <span class="change-count" id="changeCount">0</span>
   <span style="font-size:12px;color:rgba(255,255,255,.5);">changes</span>
-  <button class="btn-import" onclick="openImportModal()">
-    <span class="material-icons-round" style="font-size:14px;">file_upload</span> Import JSON
-  </button>
   <button class="btn-export" onclick="openExportModal()">
     <span class="material-icons-round" style="font-size:14px;">content_copy</span> Export
   </button>
@@ -657,6 +689,9 @@
     <span class="material-icons-round" style="font-size:14px;">cloud_upload</span> Save to Drive
   </button>
   <button class="btn-reset" onclick="resetAllChanges()">Reset</button>
+  <button class="btn-save-approved" id="btnSaveApproved" onclick="saveToDrive()" style="display:none;">
+    <span class="material-icons-round" style="font-size:14px;">check_circle</span> Save Approved
+  </button>
 </div>
 
 <!-- Review Mode: Export Modal -->
@@ -761,11 +796,13 @@ var _currentExportTab = 'readable';
 
 /* Which columns are editable, by table type */
 var EDITABLE_COLS = {
-  /* Component tables 7-col (#, Element, Text, Type, Notes, Suggested, Status): Text(2), Notes(4), Suggested(5) */
-  component7: [2, 4, 5]
+  /* Component tables 9-col (#, Element, Text, Type, Notes, Caroline, Hope, Dara, Status): Text(2), Notes(4), Caroline(5), Hope(6), Dara(7) */
+  component9: [2, 4, 5, 6, 7]
 };
 
 function toggleReviewMode() {
+  if (_editActive) toggleEditMode();
+
   _reviewActive = !_reviewActive;
   document.body.classList.toggle('review-mode', _reviewActive);
   document.querySelector('.review-toggle').classList.toggle('active', _reviewActive);
@@ -779,11 +816,36 @@ function toggleReviewMode() {
   }
 }
 
+var _editActive = false;
+function toggleEditMode() {
+  if (_reviewActive && !_editActive) {
+    _reviewActive = false;
+    document.body.classList.remove('review-mode');
+    document.querySelector('.review-toggle').classList.remove('active');
+    document.querySelector('.review-toggle-label').textContent = 'Review Mode';
+    disableEditing();
+  }
+
+  _editActive = !_editActive;
+  document.body.classList.toggle('edit-mode', _editActive);
+  document.querySelector('.edit-toggle').classList.toggle('active', _editActive);
+  document.querySelector('.edit-toggle-label').textContent = _editActive ? 'Edit Mode ON' : 'Edit Mode';
+  document.getElementById('reviewBar').classList.toggle('visible', _editActive);
+
+  if (_editActive) {
+    enableEditing();
+    addAdoptButtons();
+  } else {
+    disableEditing();
+    document.querySelectorAll('.adopt-btn').forEach(function(b) { b.remove(); });
+  }
+}
+
 function enableEditing() {
   /* Component tables */
   document.querySelectorAll('.component-table').forEach(function(table) {
     var colCount = table.querySelectorAll('thead th').length;
-    var colMap = EDITABLE_COLS.component7;
+    var colMap = EDITABLE_COLS.component9;
     table.querySelectorAll('tbody tr').forEach(function(row) {
       var cells = row.querySelectorAll('td');
       colMap.forEach(function(i) {
@@ -814,19 +876,78 @@ function disableEditing() {
   });
 }
 
+function getCellText(el) {
+  var clone = el.cloneNode(true);
+  clone.querySelectorAll('.adopt-btn').forEach(function(b) { b.remove(); });
+  return clone.textContent;
+}
+
 function onCellEdit(e) {
   var el = e.target.closest('[data-editable]');
   if (!el) return;
   var orig = _originals.get(el) || '';
-  var current = el.textContent;
+  var current = getCellText(el);
   el.classList.toggle('changed', current !== orig);
   updateChangeCount();
+  autoUpdateStatus(el);
+}
+
+var REVIEWER_COLS = [5, 6, 7];
+function autoUpdateStatus(editedCell) {
+  var row = editedCell.closest('tr');
+  if (!row) return;
+  var cells = row.querySelectorAll('td');
+  var statusCell = cells[cells.length - 1];
+  if (!statusCell) return;
+  var tag = statusCell.querySelector('.status-tag');
+  if (!tag || tag.classList.contains('approved')) return;
+  var hasAny = false;
+  REVIEWER_COLS.forEach(function(i) {
+    if (cells[i] && getCellText(cells[i]).trim() !== '' && getCellText(cells[i]).trim() !== '—') hasAny = true;
+  });
+  if (hasAny) { tag.className = 'status-tag in-review'; tag.textContent = 'In Review'; }
+  else { tag.className = 'status-tag current'; tag.textContent = 'Current'; }
+}
+
+function addAdoptButtons() {
+  document.querySelectorAll('.component-table tbody tr').forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    REVIEWER_COLS.forEach(function(colIdx) {
+      var cell = cells[colIdx];
+      if (!cell) return;
+      cell.style.position = 'relative';
+      var btn = document.createElement('button');
+      btn.className = 'adopt-btn';
+      btn.innerHTML = '✓';
+      btn.title = 'Adopt this suggestion';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var text = cell.textContent.replace('✓', '').trim();
+        if (!text || text === '—') return;
+        var textCell = cells[2];
+        if (!textCell) return;
+        if (!_originals.has(textCell)) _originals.set(textCell, textCell.textContent);
+        textCell.textContent = text;
+        textCell.classList.add('changed');
+        cell.classList.add('adopted');
+        var statusCell = cells[cells.length - 1];
+        if (statusCell) {
+          var tag = statusCell.querySelector('.status-tag');
+          if (tag) { tag.className = 'status-tag approved'; tag.textContent = 'Approved'; }
+        }
+        updateChangeCount();
+        var saveBtn = document.getElementById('btnSaveApproved');
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+      });
+      cell.appendChild(btn);
+    });
+  });
 }
 
 function updateChangeCount() {
   var count = 0;
   _originals.forEach(function(orig, el) {
-    if (el.textContent !== orig) count++;
+    if (getCellText(el) !== orig) count++;
   });
   document.getElementById('changeCount').textContent = count;
 }
@@ -843,7 +964,7 @@ function resetAllChanges() {
 function gatherChanges() {
   var changes = [];
   _originals.forEach(function(orig, el) {
-    var current = el.textContent;
+    var current = getCellText(el);
     if (current === orig) return;
 
     var section = '(unknown)';

@@ -85,7 +85,7 @@
     .sidebar a.active { color: #10b981; border-left-color: #10b981; font-weight: 700; background: #ecfdf5; }
 
     /* ── Main content ── */
-    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 0 48px 80px; }
+    .main-content { flex: 1; min-width: 0; padding: 0 48px 80px; }
 
     /* ── Doc Header ── */
     .doc-header { margin: 40px 0 32px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
@@ -161,8 +161,24 @@
       letter-spacing: .3px;
     }
     .status-tag.current { background: var(--shared-bg); color: var(--shared); }
+    .status-tag.in-review { background: var(--accent-bg); color: var(--accent); }
     .status-tag.suggested { background: var(--suggest-bg); color: var(--suggest); }
+    .status-tag.approved { background: #ecfdf5; color: #059669; }
     .status-tag.issue { background: var(--warn-bg); color: var(--warn); }
+
+    /* Adopt button */
+    .adopt-btn {
+      display: none; position: absolute; top: 4px; right: 4px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #10b981; color: #fff; border: none;
+      font-size: 12px; cursor: pointer; z-index: 5;
+      align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.15);
+      transition: background .15s;
+    }
+    .adopt-btn:hover { background: #059669; }
+    body.edit-mode td[data-editable]:hover .adopt-btn { display: flex; }
+    td.adopted { background: #ecfdf5 !important; outline-color: #6ee7b7 !important; }
 
     /* ── Callouts ── */
     .callout {
@@ -286,6 +302,7 @@
     }
     .review-toggle:hover { border-color: var(--faint); color: var(--text); }
     .review-toggle.active { background: #fff3bf; border-color: #fcc419; color: #e67700; }
+    .review-toggle.edit-toggle.active { background: #ecfdf5; border-color: #6ee7b7; color: #059669; }
     .review-toggle .material-icons-round { font-size: 15px; }
 
     body.review-mode td[data-editable] {
@@ -329,6 +346,8 @@
     .review-bar .btn-reset { background: transparent; color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.15); }
     .review-bar .btn-reset:hover { color: #fff; border-color: rgba(255,255,255,.3); }
     .review-bar .btn-copy-done { background: #51cf66; color: #fff; }
+    .review-bar .btn-save-approved { background: #10b981; color: #fff; animation: slideUp .3s ease; }
+    .review-bar .btn-save-approved:hover { background: #059669; }
     .import-result { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 12px; line-height: 1.6; display: none; }
     .import-result.success { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
     .import-result.error { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
@@ -388,10 +407,16 @@
   <span>UX Copy Management</span>
   <span class="sep">/</span>
   <span class="current">ESL Teacher</span>
-  <button class="review-toggle" onclick="toggleReviewMode()" title="Let reviewers edit copy directly on this page">
-    <span class="material-icons-round">rate_review</span>
-    <span class="review-toggle-label">Review Mode</span>
-  </button>
+  <div style="display:flex;gap:6px;margin-left:auto;">
+    <button class="review-toggle" onclick="toggleReviewMode()" title="Let reviewers edit copy directly on this page">
+      <span class="material-icons-round">rate_review</span>
+      <span class="review-toggle-label">Review Mode</span>
+    </button>
+    <button class="review-toggle edit-toggle" onclick="toggleEditMode()" title="PM mode: adopt suggestions into Text column">
+      <span class="material-icons-round">done_all</span>
+      <span class="edit-toggle-label">Edit Mode</span>
+    </button>
+  </div>
 </div>
 
 <!-- ── Page Layout ── -->
@@ -446,6 +471,16 @@
     <span>ESL Teacher v7</span>
     <span>Updated: April 2026</span>
   </div>
+</div>
+
+<div class="callout tip" style="margin-top:24px;">
+  <strong>How to use</strong>
+  <ol style="margin:8px 0 0 18px;font-size:13px;line-height:1.8;">
+    <li><strong>Review Mode</strong> (top right) &mdash; Reviewers click to edit the <strong>Caroline / Hope / Dara</strong> columns directly. Changes auto-save to Google Drive.</li>
+    <li><strong>Edit Mode</strong> (top right) &mdash; PM clicks to see <strong>&check;</strong> buttons on reviewer suggestions. Click <strong>&check;</strong> to adopt a suggestion into the Text column.</li>
+    <li><strong>Save Approved</strong> &mdash; After adopting, click the green button at the bottom to save finalized copy to Drive.</li>
+    <li><strong>Export</strong> &mdash; Download all changes as Readable / JSON / Markdown for sharing.</li>
+  </ol>
 </div>
 
 <div class="callout tip">
@@ -509,34 +544,34 @@
 </div>
 
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Sidebar nav (active)</td><td><span class="en">Dashboard</span></td><td>Label + title attr</td><td>Green active state</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Sidebar nav</td><td><span class="en">Students</span></td><td>Label + title attr</td><td>Links to Students page</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Sidebar nav + badge</td><td><span class="en">Insights</span> + <code>2</code></td><td>Label + title attr + badge</td><td>Badge shows unread count</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Header title</td><td><span class="en">ESL Teacher</span></td><td>Static</td><td>Brand title, all pages</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Page title</td><td><span class="en">Dashboard</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Page subtitle</td><td><span class="en">Track student practice goals and language progress</span></td><td>Static</td><td>&mdash;</td><td><span class="en">Track student practice goals and language progress</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Secondary CTA</td><td><span class="en">Manage Trackers</span></td><td>Button</td><td>Opens Manage modal (see 1c)</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Primary CTA</td><td><span class="en">New Tracker</span></td><td>Button</td><td>Opens Setup modal (see 1d)</td><td><span class="en">Add Tracker</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Card title</td><td><span class="en">KPI Tracker</span></td><td>Static</td><td>Left column, spans 2 rows</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Card subtitle</td><td><span class="en">Set practice targets per group and track who's on pace</span></td><td>Static</td><td>&mdash;</td><td><span class="en">Set practice targets per group and track who's on pace</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Tracker name</td><td><span class="en">[name]</span> e.g. "3rd Grade &middot; WIDA 1"</td><td>JS dynamic</td><td>From tracker config</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Metric tag</td><td><span class="en">[target] [unit] in [cycle] days</span></td><td>JS template</td><td>e.g. "6 times in 7 days"</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Countdown tag</td><td><span class="en">Ends today</span> / <span class="en">1 day left</span> / <span class="en">X days left</span></td><td>JS dynamic</td><td>Hover tooltip: <code>Ends [date]</code></td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Urgent tooltip</td><td><span class="en">[X] day(s) left &middot; [Y] of [Z] below goal</span></td><td>JS tooltip (hover)</td><td>Only when &le;2 days + unmet students</td><td><span class="en">[X] day(s) left &middot; [Y] of [Z] below goal</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="15"></span></td><td>Summary percentage</td><td><span class="en">[X]%</span></td><td>JS dynamic</td><td>% of students meeting target</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="16"></span></td><td>Student value</td><td><span class="en">[X] [unit]</span></td><td>JS dynamic</td><td>e.g. "2 times", "24 mins", "3 words"</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="17"></span></td><td>Target line label</td><td><span class="en">Goal [X] [unit]</span></td><td>JS (first row only)</td><td>Dashed line above progress bars</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="18"></span></td><td>Card title</td><td><span class="en">Translation Frequency</span></td><td>Static</td><td>&mdash;</td><td><span class="en">Translation Frequency</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="19"></span></td><td>Card subtitle</td><td><span class="en">How often students use translation &mdash; less tapping means more independence</span></td><td>Static</td><td>&mdash;</td><td><span class="en">How often students use translation &mdash; less tapping means more independence</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="20"></span></td><td>Time window select</td><td><span class="en">3 Days / 7 Days / 14 Days / 30 Days</span></td><td>Select options</td><td>Shared pattern</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="21"></span></td><td>Barrier value</td><td><span class="en">[X.X] min</span> or <span class="en">[XX] sec</span></td><td>JS dynamic</td><td>Translation interval per tap</td><td><span class="en">2.3 min / tap</span></td><td><span class="status-tag suggested">Suggested</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="22"></span></td><td>Barrier trend</td><td><span class="en">Improving +[X]%</span> / <span class="en">Declining -[X]%</span> / <span class="en">Stable</span></td><td>JS dynamic</td><td>Color: green / red / gray</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="23"></span></td><td>Card title</td><td><span class="en">Most Tapped Words in Class</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="24"></span></td><td>Table headers</td><td><span class="en"># / Word / Appeared in / Tapped</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="25"></span></td><td>Filter selects</td><td><span class="en">All Students</span> / <span class="en">7 Days</span> / <span class="en">Top 10</span></td><td>Select options</td><td>Student filter populates from trackers</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="26"></span></td><td>Subject tags</td><td><span class="en">Science / Math / History / Social Studies</span></td><td>Static data</td><td>Color-coded per subject</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Sidebar nav (active)</td><td><span class="en">Dashboard</span></td><td>Label + title attr</td><td>Green active state</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Sidebar nav</td><td><span class="en">Students</span></td><td>Label + title attr</td><td>Links to Students page</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Sidebar nav + badge</td><td><span class="en">Insights</span> + <code>2</code></td><td>Label + title attr + badge</td><td>Badge shows unread count</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Header title</td><td><span class="en">ESL Teacher</span></td><td>Static</td><td>Brand title, all pages</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Page title</td><td><span class="en">Dashboard</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Page subtitle</td><td><span class="en">Track student practice goals and language progress</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Secondary CTA</td><td><span class="en">Manage Trackers</span></td><td>Button</td><td>Opens Manage modal (see 1c)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Primary CTA</td><td><span class="en">New Tracker</span></td><td>Button</td><td>Opens Setup modal (see 1d)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Card title</td><td><span class="en">KPI Tracker</span></td><td>Static</td><td>Left column, spans 2 rows</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Card subtitle</td><td><span class="en">Set practice targets per group and track who's on pace</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Tracker name</td><td><span class="en">[name]</span> e.g. "3rd Grade &middot; WIDA 1"</td><td>JS dynamic</td><td>From tracker config</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Metric tag</td><td><span class="en">[target] [unit] in [cycle] days</span></td><td>JS template</td><td>e.g. "6 times in 7 days"</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Countdown tag</td><td><span class="en">Ends today</span> / <span class="en">1 day left</span> / <span class="en">X days left</span></td><td>JS dynamic</td><td>Hover tooltip: <code>Ends [date]</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Urgent tooltip</td><td><span class="en">[X] day(s) left &middot; [Y] of [Z] below goal</span></td><td>JS tooltip (hover)</td><td>Only when &le;2 days + unmet students</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="15"></span></td><td>Summary percentage</td><td><span class="en">[X]%</span></td><td>JS dynamic</td><td>% of students meeting target</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="16"></span></td><td>Student value</td><td><span class="en">[X] [unit]</span></td><td>JS dynamic</td><td>e.g. "2 times", "24 mins", "3 words"</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="17"></span></td><td>Target line label</td><td><span class="en">Goal [X] [unit]</span></td><td>JS (first row only)</td><td>Dashed line above progress bars</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="18"></span></td><td>Card title</td><td><span class="en">Translation Frequency</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="19"></span></td><td>Card subtitle</td><td><span class="en">How often students use translation &mdash; less tapping means more independence</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="20"></span></td><td>Time window select</td><td><span class="en">3 Days / 7 Days / 14 Days / 30 Days</span></td><td>Select options</td><td>Shared pattern</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="21"></span></td><td>Barrier value</td><td><span class="en">[X.X] min</span> or <span class="en">[XX] sec</span></td><td>JS dynamic</td><td>Translation interval per tap</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="22"></span></td><td>Barrier trend</td><td><span class="en">Improving +[X]%</span> / <span class="en">Declining -[X]%</span> / <span class="en">Stable</span></td><td>JS dynamic</td><td>Color: green / red / gray</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="23"></span></td><td>Card title</td><td><span class="en">Most Tapped Words in Class</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="24"></span></td><td>Table headers</td><td><span class="en"># / Word / Appeared in / Tapped</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="25"></span></td><td>Filter selects</td><td><span class="en">All Students</span> / <span class="en">7 Days</span> / <span class="en">Top 10</span></td><td>Select options</td><td>Student filter populates from trackers</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="26"></span></td><td>Subject tags</td><td><span class="en">Science / Math / History / Social Studies</span></td><td>Static data</td><td>Color-coded per subject</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -545,10 +580,10 @@
 <h2 id="t-empty"><span class="num">1b</span> Dashboard &mdash; Empty States</h2>
 <p class="section-desc">Messages shown when no trackers exist. These are the first thing a new teacher sees.</p>
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Component</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Component</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="E1"></span></td><td>KPI Tracker empty</td><td><span class="en">No trackers set up yet.<br>Click <strong>+ New Tracker</strong> to create one.</span></td><td>JS innerHTML</td><td>Shows when trackers array is empty</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="E2"></span></td><td>Barrier card empty</td><td><span class="en">No trackers yet. Click <strong>+ New Tracker</strong> to create one.</span></td><td>JS innerHTML</td><td>Translation Frequency card empty state</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="E1"></span></td><td>KPI Tracker empty</td><td><span class="en">No trackers set up yet.<br>Click <strong>+ New Tracker</strong> to create one.</span></td><td>JS innerHTML</td><td>Shows when trackers array is empty</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="E2"></span></td><td>Barrier card empty</td><td><span class="en">No trackers yet. Click <strong>+ New Tracker</strong> to create one.</span></td><td>JS innerHTML</td><td>Translation Frequency card empty state</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -582,15 +617,15 @@
 </div>
 
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M1"></span></td><td>Modal title</td><td><span class="en">Manage Trackers</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M2"></span></td><td>Tracker name</td><td><span class="en">[tracker name]</span></td><td>JS dynamic</td><td>From tracker config</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M3"></span></td><td>Tracker tags</td><td><span class="en">[metric label]</span> &middot; <span class="en">[X] [unit] / [cycle]d</span> &middot; <span class="en">[N] student(s)</span></td><td>JS template</td><td>e.g. "Practice count &middot; 6 times / 7d &middot; 3 students"</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M4"></span></td><td>Edit button</td><td>(icon only)</td><td>Icon + title <code>Edit</code></td><td>Opens Setup modal in edit mode</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M5"></span></td><td>Delete button</td><td>(icon only)</td><td>Icon + title <code>Delete</code></td><td>Removes tracker immediately</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M6"></span></td><td>Add button</td><td><span class="en">New Tracker</span></td><td>Button</td><td>Full-width CTA at bottom</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M7"></span></td><td>Empty state</td><td><span class="en">No trackers yet. Add one to start tracking.</span></td><td>JS innerHTML</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M1"></span></td><td>Modal title</td><td><span class="en">Manage Trackers</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M2"></span></td><td>Tracker name</td><td><span class="en">[tracker name]</span></td><td>JS dynamic</td><td>From tracker config</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M3"></span></td><td>Tracker tags</td><td><span class="en">[metric label]</span> &middot; <span class="en">[X] [unit] / [cycle]d</span> &middot; <span class="en">[N] student(s)</span></td><td>JS template</td><td>e.g. "Practice count &middot; 6 times / 7d &middot; 3 students"</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M4"></span></td><td>Edit button</td><td>(icon only)</td><td>Icon + title <code>Edit</code></td><td>Opens Setup modal in edit mode</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M5"></span></td><td>Delete button</td><td>(icon only)</td><td>Icon + title <code>Delete</code></td><td>Removes tracker immediately</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M6"></span></td><td>Add button</td><td><span class="en">New Tracker</span></td><td>Button</td><td>Full-width CTA at bottom</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="M7"></span></td><td>Empty state</td><td><span class="en">No trackers yet. Add one to start tracking.</span></td><td>JS innerHTML</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -650,28 +685,28 @@
 </div>
 
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S1"></span></td><td>Modal title (new)</td><td><span class="en">Setup New Tracker</span></td><td>Static / JS</td><td>JS sets to "Edit Tracker" in edit mode</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S2"></span></td><td>Label</td><td><span class="en">Tracker Name</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S3"></span></td><td>Placeholder</td><td><span class="en">e.g. WIDA 1 Weekly Practice</span></td><td>Placeholder</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S4"></span></td><td>Label</td><td><span class="en">What to measure</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S5"></span></td><td>Metric options</td><td><span class="en">Practice count / Practice minutes / Words learned</span></td><td>Select options</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S6"></span></td><td>Label</td><td><span class="en">Goal</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S7"></span></td><td>Label</td><td><span class="en">Repeat every (days)</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S8"></span></td><td>Label</td><td><span class="en">Start date</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S9"></span></td><td>Label</td><td><span class="en">End date</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S10"></span></td><td>Date placeholder</td><td><span class="en">Select date</span></td><td>Placeholder</td><td>Both start and end pickers</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S11"></span></td><td>Label</td><td><span class="en">Assign to students</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S12"></span></td><td>Grade filter</td><td><span class="en">All Grades / 3th Grade ... 8th Grade</span></td><td>Select options</td><td><span class="status-tag issue">Bug: "3th"</span></td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S13"></span></td><td>WIDA filter</td><td><span class="en">All WIDA Levels / WIDA 1 ... WIDA 6</span></td><td>Select options</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S14"></span></td><td>Select all</td><td><span class="en">Select All</span></td><td>Checkbox label</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S15"></span></td><td>Count label</td><td><span class="en">[X] / [Y] selected</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S16"></span></td><td>No results</td><td><span class="en">No students match filters</span></td><td>JS innerHTML</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S17"></span></td><td>Delete button</td><td><span class="en">Delete</span></td><td>Button (edit mode only)</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S18"></span></td><td>Cancel button</td><td><span class="en">Cancel</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S19"></span></td><td>Save button</td><td><span class="en">Save Tracker</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S20"></span></td><td>Validation alert</td><td><span class="en">Please select at least one student.</span></td><td>JS alert()</td><td>Fires on empty student list</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S1"></span></td><td>Modal title (new)</td><td><span class="en">Setup New Tracker</span></td><td>Static / JS</td><td>JS sets to "Edit Tracker" in edit mode</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S2"></span></td><td>Label</td><td><span class="en">Tracker Name</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S3"></span></td><td>Placeholder</td><td><span class="en">e.g. WIDA 1 Weekly Practice</span></td><td>Placeholder</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S4"></span></td><td>Label</td><td><span class="en">What to measure</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S5"></span></td><td>Metric options</td><td><span class="en">Practice count / Practice minutes / Words learned</span></td><td>Select options</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S6"></span></td><td>Label</td><td><span class="en">Goal</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S7"></span></td><td>Label</td><td><span class="en">Repeat every (days)</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S8"></span></td><td>Label</td><td><span class="en">Start date</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S9"></span></td><td>Label</td><td><span class="en">End date</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S10"></span></td><td>Date placeholder</td><td><span class="en">Select date</span></td><td>Placeholder</td><td>Both start and end pickers</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S11"></span></td><td>Label</td><td><span class="en">Assign to students</span></td><td>Label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S12"></span></td><td>Grade filter</td><td><span class="en">All Grades / 3th Grade ... 8th Grade</span></td><td>Select options</td><td><span class="status-tag issue">Bug: "3th"</span></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S13"></span></td><td>WIDA filter</td><td><span class="en">All WIDA Levels / WIDA 1 ... WIDA 6</span></td><td>Select options</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S14"></span></td><td>Select all</td><td><span class="en">Select All</span></td><td>Checkbox label</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S15"></span></td><td>Count label</td><td><span class="en">[X] / [Y] selected</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S16"></span></td><td>No results</td><td><span class="en">No students match filters</span></td><td>JS innerHTML</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S17"></span></td><td>Delete button</td><td><span class="en">Delete</span></td><td>Button (edit mode only)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S18"></span></td><td>Cancel button</td><td><span class="en">Cancel</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S19"></span></td><td>Save button</td><td><span class="en">Save Tracker</span></td><td>Button</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="S20"></span></td><td>Validation alert</td><td><span class="en">Please select at least one student.</span></td><td>JS alert()</td><td>Fires on empty student list</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -768,22 +803,22 @@
 </div>
 
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Panel title</td><td><span class="en">Students</span> <code>(18)</code></td><td>Static + JS count</td><td>Count updates on filter</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Panel subtitle</td><td><span class="en">Select a student to view details</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Button</td><td><span class="en">Manage</span></td><td>Button</td><td>Opens Manage Students modal</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Search placeholder</td><td><span class="en">Search by name...</span></td><td>Placeholder</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Filter selects</td><td><span class="en">All Groups / All Levels / All Grades</span></td><td>Select defaults</td><td>Options: WIDA 1-6, 3rd-8th Grade, group names</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Section title</td><td><span class="en">KPI Tracker</span></td><td>JS rendered</td><td>Detail panel section</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Section title</td><td><span class="en">KPI Cycle History</span></td><td>JS rendered</td><td>Historical cycle table</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Section title</td><td><span class="en">Practice History</span> + <code>[N] sessions</code></td><td>JS rendered</td><td>Badge shows session count</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Table headers</td><td><span class="en">Date / Type / Score</span></td><td>JS rendered</td><td>Practice history columns</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Section title</td><td><span class="en">Language Barrier &middot; Translation Frequency</span></td><td>JS rendered</td><td><span class="status-tag issue">Inconsistent with Dashboard</span></td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Section title</td><td><span class="en">Vocabulary</span> + <code>[N] words</code></td><td>JS rendered</td><td>Badge shows total word count</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Stat labels</td><td><span class="en">New This Week / Learning / Mastered</span></td><td>JS rendered</td><td>Three stat cards</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Empty state</td><td><span class="en">Select a student from the list</span></td><td>Static</td><td>Shown before any student is selected</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Edit button</td><td>(icon) title=<code>Edit student info</code></td><td>Title attr</td><td>Opens edit modal with Cancel / Save</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Panel title</td><td><span class="en">Students</span> <code>(18)</code></td><td>Static + JS count</td><td>Count updates on filter</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Panel subtitle</td><td><span class="en">Select a student to view details</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Button</td><td><span class="en">Manage</span></td><td>Button</td><td>Opens Manage Students modal</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Search placeholder</td><td><span class="en">Search by name...</span></td><td>Placeholder</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Filter selects</td><td><span class="en">All Groups / All Levels / All Grades</span></td><td>Select defaults</td><td>Options: WIDA 1-6, 3rd-8th Grade, group names</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Section title</td><td><span class="en">KPI Tracker</span></td><td>JS rendered</td><td>Detail panel section</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Section title</td><td><span class="en">KPI Cycle History</span></td><td>JS rendered</td><td>Historical cycle table</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Section title</td><td><span class="en">Practice History</span> + <code>[N] sessions</code></td><td>JS rendered</td><td>Badge shows session count</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Table headers</td><td><span class="en">Date / Type / Score</span></td><td>JS rendered</td><td>Practice history columns</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Section title</td><td><span class="en">Language Barrier &middot; Translation Frequency</span></td><td>JS rendered</td><td><span class="status-tag issue">Inconsistent with Dashboard</span></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Section title</td><td><span class="en">Vocabulary</span> + <code>[N] words</code></td><td>JS rendered</td><td>Badge shows total word count</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Stat labels</td><td><span class="en">New This Week / Learning / Mastered</span></td><td>JS rendered</td><td>Three stat cards</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="13"></span></td><td>Empty state</td><td><span class="en">Select a student from the list</span></td><td>Static</td><td>Shown before any student is selected</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="14"></span></td><td>Edit button</td><td>(icon) title=<code>Edit student info</code></td><td>Title attr</td><td>Opens edit modal with Cancel / Save</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -824,20 +859,20 @@
 </div>
 
 <table class="component-table" data-side="teacher">
-  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Suggested</th><th>Status</th></tr></thead>
+  <thead><tr><th style="width:36px">#</th><th>Element</th><th>Text</th><th>Type</th><th>Notes</th><th>Caroline</th><th>Hope</th><th>Dara</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Panel title</td><td><span class="en">Insight Inbox</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Panel subtitle</td><td><span class="en">Click a session to view word tap details</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Filter tabs</td><td><span class="en">All / Unread / Read</span></td><td>Buttons</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Session card title</td><td><span class="en">[Subject] &middot; [Topic]</span></td><td>JS dynamic</td><td>e.g. "Science &middot; Ecosystems"</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Detail title</td><td><span class="en">[Subject] &middot; [Topic]</span></td><td>JS dynamic</td><td>Matches selected session</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Section title</td><td><span class="en">Words Tapped by Students</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Count badge</td><td><span class="en">[X] words extracted</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Word row title</td><td><span class="en">Saved [word]</span></td><td>JS template</td><td>e.g. "Saved <strong>ecosystem</strong>"</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Count tag</td><td><span class="en">[X] students</span></td><td>JS dynamic</td><td>Students who saved the word</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Not-saved subtitle</td><td><span class="en">Did not save ([X])</span></td><td>JS template</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Empty state title</td><td><span class="en">Select a session from the inbox</span></td><td>Static</td><td>Before any selection</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
-    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Empty state subtitle</td><td><span class="en">Click any session to see which words students tapped</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="1"></span></td><td>Panel title</td><td><span class="en">Insight Inbox</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="2"></span></td><td>Panel subtitle</td><td><span class="en">Click a session to view word tap details</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="3"></span></td><td>Filter tabs</td><td><span class="en">All / Unread / Read</span></td><td>Buttons</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="4"></span></td><td>Session card title</td><td><span class="en">[Subject] &middot; [Topic]</span></td><td>JS dynamic</td><td>e.g. "Science &middot; Ecosystems"</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="5"></span></td><td>Detail title</td><td><span class="en">[Subject] &middot; [Topic]</span></td><td>JS dynamic</td><td>Matches selected session</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="6"></span></td><td>Section title</td><td><span class="en">Words Tapped by Students</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="7"></span></td><td>Count badge</td><td><span class="en">[X] words extracted</span></td><td>JS dynamic</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="8"></span></td><td>Word row title</td><td><span class="en">Saved [word]</span></td><td>JS template</td><td>e.g. "Saved <strong>ecosystem</strong>"</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="9"></span></td><td>Count tag</td><td><span class="en">[X] students</span></td><td>JS dynamic</td><td>Students who saved the word</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="10"></span></td><td>Not-saved subtitle</td><td><span class="en">Did not save ([X])</span></td><td>JS template</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="11"></span></td><td>Empty state title</td><td><span class="en">Select a session from the inbox</span></td><td>Static</td><td>Before any selection</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
+    <tr><td><span class="m" style="position:static;display:inline-flex;" data-n="12"></span></td><td>Empty state subtitle</td><td><span class="en">Click any session to see which words students tapped</span></td><td>Static</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><span class="status-tag current">Current</span></td></tr>
   </tbody>
 </table>
 
@@ -874,9 +909,6 @@
   <span class="review-bar-text">Review Mode</span>
   <span class="change-count" id="changeCount">0</span>
   <span style="font-size:12px;color:rgba(255,255,255,.5);">changes</span>
-  <button class="btn-import" onclick="openImportModal()">
-    <span class="material-icons-round" style="font-size:14px;">file_upload</span> Import JSON
-  </button>
   <button class="btn-export" onclick="openExportModal()">
     <span class="material-icons-round" style="font-size:14px;">content_copy</span> Export
   </button>
@@ -884,6 +916,9 @@
     <span class="material-icons-round" style="font-size:14px;">cloud_upload</span> Save to Drive
   </button>
   <button class="btn-reset" onclick="resetAllChanges()">Reset</button>
+  <button class="btn-save-approved" id="btnSaveApproved" onclick="saveToDrive()" style="display:none;">
+    <span class="material-icons-round" style="font-size:14px;">check_circle</span> Save Approved
+  </button>
 </div>
 
 <!-- Review Mode: Export Modal -->
@@ -989,11 +1024,14 @@ var _currentExportTab = 'readable';
 
 /* Which columns are editable, by table type */
 var EDITABLE_COLS = {
-  /* Component tables 7-col (#, Element, Text, Type, Notes, Suggested, Status): Text(2), Notes(4), Suggested(5) */
-  component7: [2, 4, 5]
+  /* Component tables 9-col (#, Element, Text, Type, Notes, Caroline, Hope, Dara, Status): Text(2), Notes(4), Caroline(5), Hope(6), Dara(7) */
+  component9: [2, 4, 5, 6, 7]
 };
 
 function toggleReviewMode() {
+  /* Turn off Edit Mode if on */
+  if (_editActive) toggleEditMode();
+
   _reviewActive = !_reviewActive;
   document.body.classList.toggle('review-mode', _reviewActive);
   document.querySelector('.review-toggle').classList.toggle('active', _reviewActive);
@@ -1007,11 +1045,38 @@ function toggleReviewMode() {
   }
 }
 
+/* ── Edit Mode (PM) ── */
+var _editActive = false;
+function toggleEditMode() {
+  /* Turn off Review Mode if on */
+  if (_reviewActive && !_editActive) {
+    _reviewActive = false;
+    document.body.classList.remove('review-mode');
+    document.querySelector('.review-toggle').classList.remove('active');
+    document.querySelector('.review-toggle-label').textContent = 'Review Mode';
+    disableEditing();
+  }
+
+  _editActive = !_editActive;
+  document.body.classList.toggle('edit-mode', _editActive);
+  document.querySelector('.edit-toggle').classList.toggle('active', _editActive);
+  document.querySelector('.edit-toggle-label').textContent = _editActive ? 'Edit Mode ON' : 'Edit Mode';
+  document.getElementById('reviewBar').classList.toggle('visible', _editActive);
+
+  if (_editActive) {
+    enableEditing();
+    addAdoptButtons();
+  } else {
+    disableEditing();
+    document.querySelectorAll('.adopt-btn').forEach(function(b) { b.remove(); });
+  }
+}
+
 function enableEditing() {
   /* Component tables */
   document.querySelectorAll('.component-table').forEach(function(table) {
     var colCount = table.querySelectorAll('thead th').length;
-    var colMap = EDITABLE_COLS.component7 || [2, 4, 5];
+    var colMap = EDITABLE_COLS.component9 || [2, 4, 5, 6, 7];
     table.querySelectorAll('tbody tr').forEach(function(row) {
       var cells = row.querySelectorAll('td');
       colMap.forEach(function(i) {
@@ -1042,19 +1107,89 @@ function disableEditing() {
   });
 }
 
+/* Get cell text ignoring adopt buttons */
+function getCellText(el) {
+  var clone = el.cloneNode(true);
+  clone.querySelectorAll('.adopt-btn').forEach(function(b) { b.remove(); });
+  return clone.textContent;
+}
+
 function onCellEdit(e) {
   var el = e.target.closest('[data-editable]');
   if (!el) return;
   var orig = _originals.get(el) || '';
-  var current = el.textContent;
+  var current = getCellText(el);
   el.classList.toggle('changed', current !== orig);
   updateChangeCount();
+  autoUpdateStatus(el);
+}
+
+/* ── Auto Status: Current → In Review when reviewer fills in ── */
+var REVIEWER_COLS = [5, 6, 7]; /* Caroline, Hope, Dara column indices (0-based) */
+function autoUpdateStatus(editedCell) {
+  var row = editedCell.closest('tr');
+  if (!row) return;
+  var cells = row.querySelectorAll('td');
+  var statusCell = cells[cells.length - 1]; /* last column = Status */
+  if (!statusCell) return;
+  var tag = statusCell.querySelector('.status-tag');
+  if (!tag || tag.classList.contains('approved')) return; /* don't downgrade approved */
+  var hasAny = false;
+  REVIEWER_COLS.forEach(function(i) {
+    if (cells[i] && getCellText(cells[i]).trim() !== '' && getCellText(cells[i]).trim() !== '—') hasAny = true;
+  });
+  if (hasAny) {
+    tag.className = 'status-tag in-review';
+    tag.textContent = 'In Review';
+  } else {
+    tag.className = 'status-tag current';
+    tag.textContent = 'Current';
+  }
+}
+
+/* ── Adopt: click ✓ to copy reviewer suggestion into Text column ── */
+function addAdoptButtons() {
+  document.querySelectorAll('.component-table tbody tr').forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    REVIEWER_COLS.forEach(function(colIdx) {
+      var cell = cells[colIdx];
+      if (!cell) return;
+      cell.style.position = 'relative';
+      var btn = document.createElement('button');
+      btn.className = 'adopt-btn';
+      btn.innerHTML = '✓';
+      btn.title = 'Adopt this suggestion';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var text = cell.textContent.replace('✓', '').trim();
+        if (!text || text === '—') return;
+        var textCell = cells[2]; /* Text column = index 2 */
+        if (!textCell) return;
+        if (!_originals.has(textCell)) _originals.set(textCell, textCell.textContent);
+        textCell.textContent = text;
+        textCell.classList.add('changed');
+        /* Mark adopted cell */
+        cell.classList.add('adopted');
+        /* Update status to Approved */
+        var statusCell = cells[cells.length - 1];
+        if (statusCell) {
+          var tag = statusCell.querySelector('.status-tag');
+          if (tag) { tag.className = 'status-tag approved'; tag.textContent = 'Approved'; }
+        }
+        updateChangeCount();
+        /* Show Save Approved button */
+        var saveBtn = document.getElementById('btnSaveApproved');
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+      });
+      cell.appendChild(btn);
+    });
+  });
 }
 
 function updateChangeCount() {
   var count = 0;
   _originals.forEach(function(orig, el) {
-    if (el.textContent !== orig) count++;
+    if (getCellText(el) !== orig) count++;
   });
   document.getElementById('changeCount').textContent = count;
 }
@@ -1071,7 +1206,7 @@ function resetAllChanges() {
 function gatherChanges() {
   var changes = [];
   _originals.forEach(function(orig, el) {
-    var current = el.textContent;
+    var current = getCellText(el);
     if (current === orig) return;
 
     var section = '(unknown)';
