@@ -98,6 +98,50 @@ No CSS custom properties — all colors are hard-coded hex. Reference palette:
 - **Spec doc pages**: use `tr:hover td { background: #fafbfc; }` (hover highlight)
 - **Platform overview**: uses `tr:nth-child(even) td { background: #fafbfc; }` (striped rows)
 
+### Demo App Design System
+
+Product demo pages (`specs/*/demo-*.html`) share a consistent app-shell layout with per-product color differentiation.
+
+#### App Shell (shared across all demos)
+
+| Element | CSS |
+|---------|-----|
+| `.app-frame` | `display: flex; min-height: 100vh; background: #fff;` |
+| `.app-sidebar` | `width: 88px; background: #fff; border-right: 1px solid #e2e8f0;` |
+| `.app-header` | `height: 56px; background: #fff; border-bottom: 1px solid #C4CDD5;` |
+| Sidebar active bg | `#ecfdf5` (all products) |
+
+#### Content Background by Product
+
+| Product | `app-content` background | Notes |
+|---------|--------------------------|-------|
+| ESL Teacher | `#f8faf9` | Warm neutral gray-green |
+| Subject Teacher | `#f8faf9` | Same as ESL Teacher |
+| ESL Student — Word Bank | `#f8faf9` | Same as above |
+| ESL Student — Dashboard | `#f8fafc` | Slightly cooler gray |
+| ESL Student — Practice modules (spelling, mixed, multiple-choice) | `#EFF5FF` | Light blue, distinct learning context |
+
+#### Sidebar Active State by Product
+
+All products use the same active background (`#ecfdf5`) but differ in icon/text color:
+
+| Product | Active icon/text color | Hex |
+|---------|----------------------|-----|
+| ESL Teacher | Emerald 600 | `#059669` |
+| Subject Teacher | Emerald 600 | `#059669` |
+| ESL Student | Emerald 500 | `#10b981` |
+
+#### Font Stack by Product
+
+| Product | Font |
+|---------|------|
+| All demo apps (ESL Teacher, Subject Teacher, ESL Student) | `Public Sans` (Google Fonts) |
+| Spec doc / overview pages | System stack (`-apple-system, BlinkMacSystemFont, ...`) |
+
+#### Icon System
+
+All demo apps use **Google Material Icons Round** via CDN (`fonts.googleapis.com/icon?family=Material+Icons+Round`). No inline SVGs for icons — see `feedback_icon_system.md` in memory.
+
 ### Responsive Breakpoints
 
 | Page type | Breakpoint |
