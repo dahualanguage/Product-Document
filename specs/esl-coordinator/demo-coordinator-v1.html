@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — ESL Coordinator v1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    @keyframes listening-dot {
+      0%, 100% { opacity: .4; }
+      50% { opacity: 1; }
+    }
+    @keyframes barGrow {
+      from { width: 0 !important; }
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer; position: relative;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
+    .sidebar-item span:not(.material-icons-round):not(.sidebar-badge) { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
+    .sidebar-item:hover span:not(.material-icons-round):not(.sidebar-badge) { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
+    .sidebar-item.active span:not(.material-icons-round):not(.sidebar-badge) { color: #059669; }
+    .sidebar-item span.sidebar-badge {
+      position: absolute; top: 4px; right: 8px; min-width: 16px; height: 16px;
+      padding: 0 4px; border-radius: 8px; background: #ef4444; color: #fff;
+      font-size: 10px; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; border: 2px solid #fff;
+    }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-content { flex: 1; background: #f8faf9; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+
+    /* ── Screen containers ── */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ===========================
+       SCREEN 0: DASHBOARD (KPI)
+       =========================== */
+    .dashboard-screen {
+      flex: 1; padding: 28px 36px 60px; overflow-y: auto; background: #f8faf9;
+    }
+    .dashboard-grid { animation: fadeSlideIn .4s ease .15s both; }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .page-title { font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; }
+    .page-sub { font-size: 14px; color: #94a3b8; margin-top: 6px; }
+
+    .dashboard-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .dashboard-grid .full-width { grid-column: 1 / -1; }
+
+    /* ── Card base ── */
+    .dash-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      overflow: hidden;
+    }
+    .dash-card-header {
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .dash-card-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .dash-card-body { padding: 16px 20px; }
+    .dash-card-body.word-table { padding: 0; overflow-y: auto; }
+
+    /* ── Stat Select ── */
+    .stat-select {
+      font-size: 12px; font-weight: 500; padding: 5px 28px 5px 10px;
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #fff;
+      color: #334155; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      transition: all .15s; font-family: inherit;
+    }
+    .stat-select:hover { border-color: #cbd5e1; }
+    .stat-select:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 2px rgba(5,150,105,.15); }
+
+    /* ── KPI Tracker ── */
+    .kpi-tracker {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07); display: flex; flex-direction: column;
+      grid-row: 1 / 3;
+    }
+    .kpi-tracker-header {
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .kpi-tracker-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .kpi-tracker-body {
+      padding: 12px 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+    }
+    .kpi-setup-btn {
+      font-size: 14px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none; border-radius: 10px; padding: 10px 24px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      font-family: inherit; transition: all .2s;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .kpi-setup-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .kpi-manage-btn {
+      font-size: 14px; font-weight: 600; color: #64748b; background: #fff;
+      border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 24px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      font-family: inherit; transition: all .15s;
+    }
+    .kpi-manage-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+    .kpi-rule {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: visible;
+      transition: border-color .15s;
+    }
+    .kpi-rule:hover { border-color: #cbd5e1; }
+    .kpi-rule-header {
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+      cursor: pointer; transition: background .15s;
+    }
+    .kpi-rule-header:hover { background: #f8fafc; }
+    .kpi-rule-arrow {
+      font-size: 10px; color: #cbd5e1; transition: transform .2s; flex-shrink: 0;
+    }
+    .kpi-rule.open .kpi-rule-arrow { transform: rotate(90deg); }
+    .kpi-rule-info { flex: 1; min-width: 0; }
+    .kpi-rule-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .kpi-rule-desc { font-size: 12px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kpi-rule-tag {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+      background: #f1f5f9; color: #64748b;
+    }
+    .kpi-rule-tag.metric { background: #ecfdf5; color: #059669; }
+    .kpi-rule-tag.teacher { background: #ecfdf5; color: #059669; }
+    .kpi-rule-tag.countdown { background: #f1f5f9; color: #64748b; }
+    .kpi-rule-tag.countdown.warn { background: #fef3c7; color: #92400e; }
+    .kpi-rule-tag.countdown.danger { background: #fee2e2; color: #991b1b; }
+    .kpi-rule-summary {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 100px;
+    }
+    .kpi-rule-urgent-wrap {
+      position: relative; flex-shrink: 0; cursor: default; display: flex; align-items: center;
+    }
+    .kpi-rule-urgent-wrap .material-icons-round { font-size: 18px !important; color: #f59e0b; }
+    .kpi-summary-bar-track {
+      flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+    }
+    .kpi-summary-bar-fill {
+      height: 100%; border-radius: 3px; transition: width .4s ease;
+      background: linear-gradient(90deg, #059669, #6EE7B7);
+    }
+    .kpi-summary-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .kpi-summary-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .kpi-summary-pct {
+      font-size: 11px; font-weight: 700; color: #64748b; min-width: 28px; text-align: right;
+    }
+    .kpi-rule-students {
+      max-height: 0; overflow: hidden; transition: max-height .3s ease;
+    }
+    .kpi-rule.open .kpi-rule-students { max-height: 800px; }
+    .kpi-rule-students-inner {
+      padding: 42px 14px 12px; display: flex; flex-direction: column; gap: 6px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .kpi-stu-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+    .kpi-stu-name {
+      font-size: 12px; font-weight: 600; color: #334155; width: 80px; flex-shrink: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .kpi-stu-bar-wrap {
+      flex: 1; height: 12px; background: #f1f5f9; border-radius: 4px;
+      overflow: visible; position: relative;
+    }
+    .kpi-stu-bar {
+      height: 100%; border-radius: 4px; position: absolute; top: 0; left: 0;
+      animation: barGrow .6s ease both;
+    }
+    .kpi-stu-bar.met { background: linear-gradient(90deg, rgba(110,231,183,0.5), #059669); }
+    .kpi-stu-bar.below { background: linear-gradient(90deg, rgba(252,211,77,0.5), #F59E0B); }
+    .kpi-stu-bar.far { background: linear-gradient(90deg, rgba(252,165,165,0.5), #EF4444); }
+    .kpi-stu-target-line {
+      position: absolute; top: -4px; bottom: -5px; width: 2px; z-index: 3;
+      background: repeating-linear-gradient(to bottom, #94a3b8 0px, #94a3b8 4px, transparent 4px, transparent 8px);
+    }
+    .kpi-stu-target-line[data-target]:not([data-target=""])::before {
+      content: attr(data-target);
+      position: absolute; top: -26px; left: 50%; transform: translateX(-50%);
+      background: #34d399; color: #fff; font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 8px; white-space: nowrap; line-height: 1.4;
+    }
+    .kpi-stu-val {
+      font-size: 11px; font-weight: 700; color: #475569; width: 52px; text-align: right; flex-shrink: 0;
+    }
+    .kpi-stu-val .kpi-unit { font-weight: 500; color: #94a3b8; font-size: 10px; }
+
+    /* ── Translation Frequency (Barrier) ── */
+    .barrier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .barrier-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      transition: all .15s; cursor: pointer; overflow: hidden;
+    }
+    .barrier-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .barrier-card-summary { padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .barrier-card-main { flex: 1; }
+    .barrier-card-arrow { font-size: 10px; color: #94a3b8; transition: transform .2s; flex-shrink: 0; }
+    .barrier-card.open .barrier-card-arrow { transform: rotate(90deg); }
+    .barrier-students { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+    .barrier-card.open .barrier-students { max-height: 600px; }
+    .barrier-students-inner {
+      padding: 0 16px 12px; display: flex; flex-direction: column; gap: 4px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .barrier-stu-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+    .barrier-stu-row:first-child { padding-top: 8px; }
+    .barrier-stu-name { font-size: 12px; font-weight: 600; color: #334155; }
+    .barrier-stu-val { font-size: 12px; font-weight: 700; }
+    .barrier-stu-val.good { color: #059669; }
+    .barrier-stu-val.ok { color: #F59E0B; }
+    .barrier-stu-val.bad { color: #EF4444; }
+    .barrier-group-name { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+    .barrier-value { font-size: 22px; font-weight: 800; line-height: 1.2; }
+    .barrier-value.good { color: #059669; }
+    .barrier-value.ok { color: #F59E0B; }
+    .barrier-value.bad { color: #EF4444; }
+    .barrier-unit { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .barrier-trend {
+      font-size: 11px; font-weight: 700; margin-top: 6px;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 6px;
+    }
+    .barrier-trend.improving { color: #059669; background: #ecfdf5; }
+    .barrier-trend.worsening { color: #EF4444; background: #fef2f2; }
+    .barrier-trend.stable { color: #94a3b8; background: #f1f5f9; }
+    .barrier-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+
+    /* ── Most Tapped Words ── */
+    .tapped-table { width: 100%; border-collapse: collapse; background: #fff; }
+    .tapped-table th {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .4px; padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+    }
+    .tapped-table th.center { text-align: center; }
+    .tapped-table td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid #f8fafc; }
+    .tapped-table tr:last-child td { border-bottom: none; }
+    .tapped-table tr:hover td { background: #f8faf9; }
+    .tapped-table .tt-rank { font-size: 10px; font-weight: 700; color: #cbd5e1; width: 28px; text-align: left; padding-left: 20px; }
+    .tt-word { font-size: 14px; font-weight: 500; color: #0f172a; }
+    .tt-subject {
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .tt-subject.sci { background: #ecfdf5; color: #065f46; }
+    .tt-subject.math { background: #eef2ff; color: #4338ca; }
+    .tt-subject.hist { background: #fef3c7; color: #92400e; }
+    .tt-subject.ss { background: #e0f2fe; color: #0369a1; }
+    .tt-subjects { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tt-taps { font-size: 13px; font-weight: 700; color: #0f172a; text-align: center; }
+
+    /* ===========================
+       SCREEN 1: LIVE CLASS (Classes)
+       =========================== */
+    .classes-screen {
+      flex: 1; padding: 40px 36px 60px; overflow-y: auto; background: #f8faf9;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .classes-inner { max-width: 560px; width: 100%; animation: fadeSlideIn .4s ease both; }
+    .dash-head { margin-bottom: 24px; }
+    .dash-head h1 { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .dash-summary {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 8px; font-size: 13px; color: #64748b;
+    }
+    .dash-summary-item { display: flex; align-items: center; gap: 6px; }
+    .dash-summary-item strong { color: #0f172a; font-weight: 700; }
+    .dash-summary-sep { width: 1px; height: 14px; background: #e2e8f0; }
+    .room-list { display: flex; flex-direction: column; gap: 10px; }
+    .room-card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      transition: all .15s; overflow: hidden;
+    }
+    .room-card:hover { border-color: #6ee7b7; box-shadow: 0 2px 12px rgba(16,185,129,.1); }
+    .room-card-header {
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .room-info { flex: 1; min-width: 0; }
+    .room-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .room-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; display: flex; align-items: center; gap: 10px; }
+    .room-avatars { display: flex; align-items: center; }
+    .room-avatars .ra {
+      width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; margin-left: -8px;
+    }
+    .room-avatars .ra:first-child { margin-left: 0; }
+    .room-avatars .ra.w1 { background: #fef2f2; color: #dc2626; }
+    .room-avatars .ra.w2 { background: #fef9c3; color: #a16207; }
+    .room-avatars .ra.w3 { background: #ecfdf5; color: #059669; }
+    .room-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .room-start {
+      padding: 10px 20px; border: none; border-radius: 10px;
+      background: #10b981; color: #fff; font-family: inherit;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: all .15s;
+    }
+    .room-start:hover { background: #059669; }
+    .room-start .material-icons-round { font-size: 18px; }
+    .room-expand {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all .15s;
+    }
+    .room-expand:hover { background: #f1f5f9; }
+    .room-expand .material-icons-round { font-size: 20px; color: #94a3b8; transition: transform .2s; }
+    .room-card.open .room-expand .material-icons-round { transform: rotate(180deg); }
+    .room-roster {
+      display: none; border-top: 1px solid #f1f5f9;
+      padding: 14px 20px 16px; background: #fafbfc;
+    }
+    .room-card.open .room-roster { display: block; }
+    .room-roster-grid { display: flex; flex-direction: column; gap: 6px; }
+    .room-student {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #fff; border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .room-student-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .room-student-avatar.w1 { background: #fef2f2; color: #dc2626; }
+    .room-student-avatar.w2 { background: #fef9c3; color: #a16207; }
+    .room-student-avatar.w3 { background: #ecfdf5; color: #059669; }
+    .room-student-name { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1; }
+    .room-student-detail { display: flex; align-items: center; gap: 8px; }
+    .room-student-grade { font-size: 11px; color: #94a3b8; }
+    .room-student-wida {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    }
+    .room-student-wida.w1 { background: #fef2f2; color: #dc2626; }
+    .room-student-wida.w2 { background: #fef9c3; color: #a16207; }
+    .room-student-wida.w3 { background: #ecfdf5; color: #059669; }
+
+    /* ===========================
+       SCREEN 2: MIC TEST
+       =========================== */
+    .mic-test-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px;
+    }
+    .mic-test-card {
+      background: #fff; border-radius: 20px; padding: 48px 40px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+      max-width: 600px; width: 100%; text-align: center;
+    }
+    .mic-test-card h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .mic-test-card .subtitle { font-size: 14px; color: #94a3b8; margin-bottom: 36px; }
+    .mic-icon-area {
+      display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px;
+    }
+    .waveform-bars { display: flex; gap: 3px; align-items: center; height: 48px; }
+    .waveform-bars .bar { width: 4px; border-radius: 2px; background: #059669; opacity: .35; transition: all .3s; }
+    .waveform-bars.animating .bar { animation: pulse 0.8s ease-in-out infinite; opacity: .7; }
+    .waveform-bars .bar:nth-child(1) { height: 16px; animation-delay: 0s; }
+    .waveform-bars .bar:nth-child(2) { height: 28px; animation-delay: .1s; }
+    .waveform-bars .bar:nth-child(3) { height: 40px; animation-delay: .2s; }
+    .waveform-bars .bar:nth-child(4) { height: 32px; animation-delay: .3s; }
+    .waveform-bars .bar:nth-child(5) { height: 20px; animation-delay: .15s; }
+    .mic-circle {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid #059669; background: #ecfdf5;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .mic-circle .material-icons-round { font-size: 36px; color: #059669; }
+    .speak-text { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+    .speak-text strong { color: #0f172a; }
+    .listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 28px; min-height: 44px;
+    }
+    .listening-bar.hidden { visibility: hidden; }
+    .listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .listening-bar span:not(.dot) { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .mic-selector {
+      display: flex; align-items: center; gap: 8px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 24px; cursor: default;
+    }
+    .mic-selector .material-icons-round { font-size: 18px; color: #64748b; }
+    .mic-selector-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    .mic-selector-value { font-size: 13px; color: #334155; font-weight: 500; }
+    .btn-row { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 12px; font-family: inherit;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      padding: 14px 32px; transition: all .2s; min-width: 220px;
+    }
+    .btn .material-icons-round { font-size: 20px; }
+    .btn-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .btn-green:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .btn-start-class { display: none; }
+
+    /* ===========================
+       SCREEN 3: LIVE CLASS
+       =========================== */
+    .live-class-screen { flex: 1; display: flex; flex-direction: column; }
+    .live-topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .live-timer {
+      font-size: 28px; font-weight: 800; color: #059669;
+      font-family: 'Public Sans', monospace; letter-spacing: 1px;
+    }
+    .live-class-info {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: #475569;
+    }
+    .live-class-info .class-name { font-weight: 700; color: #0f172a; }
+    .mic-status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #059669;
+      background: #ecfdf5; padding: 4px 10px; border-radius: 6px;
+    }
+    .mic-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
+    .btn-red {
+      background: #ef4444; color: #fff; border: none; border-radius: 10px;
+      padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 14px rgba(239,68,68,.25); transition: all .15s;
+    }
+    .btn-red:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,.35); }
+    .transcript-area {
+      flex: 1; display: flex; flex-direction: column; padding: 24px 36px;
+      overflow: hidden; position: relative;
+    }
+    .transcript-card {
+      flex: 1; background: #fff; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+      padding: 28px 32px; overflow-y: auto; font-size: 16px;
+      line-height: 1.8; color: #334155; position: relative;
+    }
+    .transcript-card .line { animation: fadeSlideIn .3s ease both; margin-bottom: 4px; }
+    .live-bottom {
+      padding: 16px 36px 24px; display: flex; flex-direction: column;
+      align-items: center; gap: 16px; flex-shrink: 0;
+    }
+    .live-listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 10px 28px;
+      display: flex; align-items: center; gap: 8px; min-width: 200px;
+    }
+    .live-listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .live-listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .live-listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .live-listening-bar span:not(.dot) { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .live-listening-bar.paused { display: none; }
+    .pause-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .2s; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .pause-btn.is-playing { background: #ef4444; }
+    .pause-btn.is-paused { background: #059669; }
+    .pause-btn .material-icons-round { font-size: 28px; color: #fff; }
+    .paused-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,23,42,.55); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .paused-overlay.show { display: flex; }
+    .paused-overlay .paused-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(255,255,255,.15); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .paused-overlay .paused-icon .material-icons-round { font-size: 32px; color: #fff; }
+    .paused-overlay .paused-label { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+    .paused-overlay .paused-hint { font-size: 13px; color: rgba(255,255,255,.6); }
+
+    /* ===========================
+       SCREEN 4: HISTORY
+       =========================== */
+    .history-screen {
+      flex: 1; padding: 40px 36px 60px; overflow-y: auto; background: #f8faf9;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .history-inner { max-width: 620px; width: 100%; animation: fadeSlideIn .4s ease both; }
+    .history-head { margin-bottom: 20px; }
+    .history-head h1 { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .history-head p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+    .history-filters { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .history-filter {
+      padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0;
+      background: #fff; font-family: inherit; font-size: 12px; font-weight: 600;
+      color: #64748b; cursor: pointer; transition: all .15s;
+    }
+    .history-filter:hover { border-color: #cbd5e1; color: #334155; }
+    .history-filter.active { background: #059669; color: #fff; border-color: #059669; }
+    .session-list { display: flex; flex-direction: column; gap: 10px; }
+    .session-card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      cursor: default; transition: all .15s; overflow: hidden;
+    }
+    .session-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .session-card-header {
+      padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    }
+    .session-info { flex: 1; min-width: 0; }
+    .session-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .session-meta {
+      font-size: 12px; color: #94a3b8; margin-top: 3px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .session-meta .sep { color: #e2e8f0; }
+    .session-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+      background: #f1f5f9; color: #64748b; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .session-badge.inprogress { background: #ecfdf5; color: #059669; }
+    .session-badge.disconnected { background: #fef2f2; color: #dc2626; }
+    .session-teacher-tag {
+      font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+      background: #ecfdf5; color: #059669; flex-shrink: 0;
+    }
+    .session-teacher-tag.you {
+      background: #fef9c3; color: #854d0e; border: 1px solid #fde047;
+    }
+
+    /* ===========================
+       SCREEN 5: PROGRAM
+       =========================== */
+    .program-screen {
+      flex: 1; padding: 40px 36px 60px; overflow-y: auto; background: #f8faf9;
+    }
+    .program-inner { max-width: 800px; margin: 0 auto; width: 100%; animation: fadeSlideIn .4s ease both; }
+    .program-head { margin-bottom: 24px; }
+    .program-head h1 { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .program-head p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+    .program-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+    }
+    .program-stat {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 16px 18px; text-align: center;
+    }
+    .program-stat-val { font-size: 28px; font-weight: 800; color: #0f172a; }
+    .program-stat-label { font-size: 11px; font-weight: 600; color: #94a3b8; margin-top: 2px; }
+
+    .program-section-title {
+      font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .program-section-title .material-icons-round { font-size: 18px; color: #059669; }
+
+    .teacher-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .teacher-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      overflow: hidden; transition: all .15s;
+    }
+    .teacher-card:hover { border-color: #6ee7b7; box-shadow: 0 2px 12px rgba(16,185,129,.08); }
+    .teacher-card-header {
+      padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+      cursor: pointer;
+    }
+    .teacher-card-header:hover { background: #f8fafc; }
+    .teacher-avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .teacher-info { flex: 1; min-width: 0; }
+    .teacher-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .teacher-detail { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .teacher-stats-row {
+      display: flex; gap: 16px; flex-shrink: 0;
+    }
+    .teacher-stat-chip {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #64748b;
+    }
+    .teacher-stat-chip strong { color: #0f172a; font-weight: 800; }
+    .teacher-arrow {
+      font-size: 14px; color: #cbd5e1; transition: transform .2s; flex-shrink: 0;
+    }
+    .teacher-card.open .teacher-arrow { transform: rotate(90deg); }
+    .teacher-students {
+      max-height: 0; overflow: hidden; transition: max-height .3s ease;
+    }
+    .teacher-card.open .teacher-students { max-height: 1000px; }
+    .teacher-students-inner {
+      padding: 0 20px 16px; border-top: 1px solid #f1f5f9;
+    }
+    .teacher-stu-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .teacher-stu-table th {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-align: left; padding: 6px 8px; border-bottom: 1px solid #f1f5f9;
+    }
+    .teacher-stu-table td {
+      font-size: 12px; padding: 8px 8px; border-bottom: 1px solid #f8fafc;
+      color: #334155;
+    }
+    .teacher-stu-table tr:last-child td { border-bottom: none; }
+    .teacher-stu-table .stu-avatar-sm {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; vertical-align: middle; margin-right: 8px;
+    }
+    .wida-pill {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    }
+    .wida-pill.w1 { background: #fef2f2; color: #dc2626; }
+    .wida-pill.w2 { background: #fef9c3; color: #a16207; }
+    .wida-pill.w3 { background: #ecfdf5; color: #059669; }
+    .wida-pill.w4 { background: #dbeafe; color: #1d4ed8; }
+    .wida-pill.w5 { background: #e0e7ff; color: #4338ca; }
+    .lang-pill {
+      font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+      background: #f1f5f9; color: #64748b;
+    }
+
+    /* ── Modals ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 1000; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.show { display: flex; }
+    .dialog {
+      background: #fff; border-radius: 20px; padding: 32px 32px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.08);
+      width: 420px; max-width: 90vw; animation: fadeSlideIn .3s cubic-bezier(.2,.9,.3,1);
+    }
+    .dialog h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 0; padding-bottom: 16px; }
+    .dialog .dialog-hint { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+    .dialog-actions {
+      display: flex; justify-content: space-between; gap: 10px;
+      margin-top: 16px; padding-top: 24px; border-top: 1px solid #e2e8f0;
+    }
+    .dialog-btn {
+      font-family: inherit; cursor: pointer;
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .dialog-btn.secondary { color: #94a3b8; font-size: 14px; font-weight: 600; }
+    .dialog-btn.secondary:hover { color: #475569; }
+    .dialog-btn.primary {
+      background: #059669; color: #fff; font-size: 14px; font-weight: 700;
+      padding: 10px 24px; border-radius: 10px;
+    }
+    .dialog-btn.primary:hover { background: #047857; }
+    .modal-field { margin-bottom: 24px; }
+    .modal-field label {
+      display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;
+    }
+    .modal-field input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      color: #1e293b; outline: none; transition: border-color .15s;
+    }
+    .modal-field input:focus { border-color: #059669; }
+
+    /* ── Back button ── */
+    .detail-back {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .detail-back:hover { background: #f1f5f9; }
+    .detail-back .material-icons-round { font-size: 20px; color: #475569; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="../esl-teacher/assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item active" id="nav-dashboard" title="Dashboard" onclick="showScreen('dashboard')">
+      <span class="material-icons-round">dashboard</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" id="nav-classes" title="My Classes" onclick="showScreen('classes')">
+      <span class="material-icons-round">class</span>
+      <span>My Classes</span>
+    </div>
+    <div class="sidebar-item" id="nav-history" title="History" onclick="showScreen('history')">
+      <span class="material-icons-round">history</span>
+      <span>History</span>
+    </div>
+    <div class="sidebar-item" id="nav-program" title="Program" onclick="showScreen('program')">
+      <span class="material-icons-round">groups</span>
+      <span>Program</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">ESL Coordinator</span>
+      <div class="header-right">
+        <div class="header-user">
+          <div class="header-avatar">JW</div>
+          Ms. Wang
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ===== SCREEN 0: Dashboard (KPI) ===== -->
+      <div class="screen active" id="screen-dashboard">
+        <div class="dashboard-screen">
+          <div class="page-head">
+            <div>
+              <div class="page-title">Dashboard</div>
+              <div class="page-sub">KPI overview across all ESL teachers in your program</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="kpi-manage-btn" onclick="alert('Manage Trackers — coming in v2')">
+                <span class="material-icons-round" style="font-size:18px;">tune</span>
+                Manage Trackers
+              </button>
+              <button class="kpi-setup-btn" onclick="alert('New Tracker — coming in v2')">
+                <span class="material-icons-round" style="font-size:18px;">add</span>
+                New Tracker
+              </button>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+
+            <!-- Left: KPI Tracker (spans 2 rows) -->
+            <div class="kpi-tracker" id="kpi-tracker">
+              <div class="kpi-tracker-header" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                <span class="kpi-tracker-title">KPI Tracker</span>
+                <span style="font-size:12px;color:#64748b;font-weight:400;">Cross-teacher practice targets — track all students across your program</span>
+              </div>
+              <div class="kpi-tracker-body" id="kpi-tracker-body">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Right top: Translation Frequency -->
+            <div class="dash-card" id="barrier-card" style="align-self:start;background:#f1f5f9;">
+              <div class="dash-card-header" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                  <span class="dash-card-title">Translation Frequency</span>
+                  <select class="stat-select" id="barrier-window" onchange="renderBarrier()">
+                    <option value="3">3 Days</option>
+                    <option value="7" selected>7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30">30 Days</option>
+                  </select>
+                </div>
+                <span style="font-size:12px;color:#64748b;font-weight:400;">How often students use translation — less tapping means more independence</span>
+              </div>
+              <div class="dash-card-body">
+                <div class="barrier-grid" id="barrier-grid"><!-- Rendered by JS --></div>
+              </div>
+            </div>
+
+            <!-- Right bottom: Most Tapped Words -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <span class="dash-card-title">Most Tapped Words in Program</span>
+                <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+                  <select class="stat-select" id="tapped-teacher-filter">
+                    <option value="all">All Teachers</option>
+                    <option value="chen">Ms. Chen</option>
+                    <option value="garcia">Mr. Garcia</option>
+                    <option value="wang">Ms. Wang (You)</option>
+                  </select>
+                  <select class="stat-select" id="tapped-period">
+                    <option value="7" selected>7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30">30 Days</option>
+                  </select>
+                </div>
+              </div>
+              <div class="dash-card-body word-table" id="tapped-body">
+                <table class="tapped-table">
+                  <thead>
+                    <tr>
+                      <th style="width:28px;padding-left:20px;">#</th>
+                      <th>Word</th>
+                      <th>Appeared in</th>
+                      <th class="center">Tapped</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tapped-tbody">
+                    <tr><td class="tt-rank">1</td><td class="tt-word">significant</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject hist">History</span></div></td><td class="tt-taps">87</td></tr>
+                    <tr><td class="tt-rank">2</td><td class="tt-word">framework</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject math">Math</span></div></td><td class="tt-taps">74</td></tr>
+                    <tr><td class="tt-rank">3</td><td class="tt-word">concept</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject math">Math</span><span class="tt-subject hist">History</span></div></td><td class="tt-taps">68</td></tr>
+                    <tr><td class="tt-rank">4</td><td class="tt-word">analyze</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject math">Math</span></div></td><td class="tt-taps">62</td></tr>
+                    <tr><td class="tt-rank">5</td><td class="tt-word">photosynthesis</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span></div></td><td class="tt-taps">55</td></tr>
+                    <tr><td class="tt-rank">6</td><td class="tt-word">evidence</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject hist">History</span><span class="tt-subject ss">Social Studies</span></div></td><td class="tt-taps">51</td></tr>
+                    <tr><td class="tt-rank">7</td><td class="tt-word">structure</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span><span class="tt-subject math">Math</span></div></td><td class="tt-taps">48</td></tr>
+                    <tr><td class="tt-rank">8</td><td class="tt-word">ecosystem</td><td><div class="tt-subjects"><span class="tt-subject sci">Science</span></div></td><td class="tt-taps">44</td></tr>
+                    <tr><td class="tt-rank">9</td><td class="tt-word">proportion</td><td><div class="tt-subjects"><span class="tt-subject math">Math</span><span class="tt-subject sci">Science</span></div></td><td class="tt-taps">41</td></tr>
+                    <tr><td class="tt-rank">10</td><td class="tt-word">democracy</td><td><div class="tt-subjects"><span class="tt-subject hist">History</span><span class="tt-subject ss">Social Studies</span></div></td><td class="tt-taps">38</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /dashboard-grid -->
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 1: Classes ===== -->
+      <div class="screen" id="screen-classes">
+        <div class="classes-screen">
+          <div class="classes-inner">
+            <div class="dash-head">
+              <h1>My Classes</h1>
+              <div class="dash-summary">
+                <div class="dash-summary-item">
+                  <span class="material-icons-round" style="font-size:16px;color:#059669;">class</span>
+                  <span><strong>3</strong> classes</span>
+                </div>
+                <div class="dash-summary-sep"></div>
+                <div class="dash-summary-item">
+                  <span class="material-icons-round" style="font-size:16px;color:#059669;">people</span>
+                  <span><strong>9</strong> ESL students</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="room-list">
+              <!-- Pull-out Group A -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-info">
+                    <div class="room-name">Pull-out Group A · WIDA 1</div>
+                    <div class="room-meta"><div class="room-avatars"><div class="ra w1">EC</div><div class="ra w1">CG</div><div class="ra w1">LT</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('Pull-out Group A','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w1">EC</div><div class="room-student-name">Emily Chen</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">CG</div><div class="room-student-name">Carlos Garcia</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">LT</div><div class="room-student-name">Lucia Torres</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pull-out Group B -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-info">
+                    <div class="room-name">Pull-out Group B · WIDA 2</div>
+                    <div class="room-meta"><div class="room-avatars"><div class="ra w2">KL</div><div class="ra w2">SM</div><div class="ra w2">JL</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('Pull-out Group B','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">KL</div><div class="room-student-name">Kevin Liu</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">SM</div><div class="room-student-name">Sofia Martinez</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">JL</div><div class="room-student-name">James Lin</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pull-out Group C -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-info">
+                    <div class="room-name">Pull-out Group C · WIDA 3</div>
+                    <div class="room-meta"><div class="room-avatars"><div class="ra w3">ML</div><div class="ra w3">LH</div><div class="ra w3">CW</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('Pull-out Group C','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w3">ML</div><div class="room-student-name">Maria Lopez</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">LH</div><div class="room-student-name">Lily Huang</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">CW</div><div class="room-student-name">Chloe Wu</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 2: Mic Test ===== -->
+      <div class="screen" id="screen-mic-test">
+        <div style="padding:16px 24px 0;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+          <button class="detail-back" onclick="showScreen('classes')"><span class="material-icons-round">arrow_back</span></button>
+          <span style="font-size:14px;font-weight:600;color:#0f172a;" id="micTestClassName">Pull-out Group A</span>
+          <span style="font-size:12px;color:#94a3b8;">&middot;</span>
+          <span style="font-size:12px;color:#94a3b8;" id="micTestStudentCount">3 ESL students</span>
+        </div>
+        <div class="mic-test-screen">
+          <div class="mic-test-card">
+            <h1>Test Your Microphone</h1>
+            <p class="subtitle">Make sure your audio is working before starting class</p>
+            <div class="mic-icon-area">
+              <div class="waveform-bars" id="waveL">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+              <div class="mic-circle"><span class="material-icons-round">mic</span></div>
+              <div class="waveform-bars" id="waveR">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+            </div>
+            <p class="speak-text">Speak to test: <strong>"Test 1, 2, 3"</strong></p>
+            <div class="listening-bar hidden" id="micTestBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span>Listening...</span>
+            </div>
+            <div class="mic-selector">
+              <span class="material-icons-round">mic</span>
+              <div style="text-align:left;flex:1;">
+                <div class="mic-selector-label">Microphone</div>
+                <div class="mic-selector-value">MacBook Pro Microphone (Built-in)</div>
+              </div>
+              <span class="material-icons-round" style="font-size:18px;color:#cbd5e1;">expand_more</span>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnStartTest" onclick="startMicTest()">
+                <span class="material-icons-round">mic</span> Start Test
+              </button>
+              <button class="btn btn-green btn-start-class" id="btnStartClass" onclick="showScreen('live-class')">
+                <span class="material-icons-round">play_arrow</span> Start Class
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 3: Live Class ===== -->
+      <div class="screen" id="screen-live-class">
+        <div class="live-class-screen">
+          <div class="live-topbar">
+            <div class="live-timer" id="liveTimer">00:00</div>
+            <div class="live-class-info">
+              <span class="class-name" id="liveClassName">Pull-out Group A</span>
+              <div class="mic-status"><span class="dot"></span> Mic on</div>
+            </div>
+            <button class="btn-red" onclick="endClass()">
+              <span class="material-icons-round">stop</span> End Class
+            </button>
+          </div>
+          <div class="transcript-area">
+            <div class="transcript-card" id="transcriptCard"></div>
+          </div>
+          <div class="live-bottom">
+            <div class="live-listening-bar" id="liveBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span id="liveBarText">Listening...</span>
+            </div>
+            <button class="pause-btn is-playing" id="pauseBtn" onclick="togglePause()">
+              <span class="material-icons-round" id="pauseIcon">pause</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 4: History ===== -->
+      <div class="screen" id="screen-history">
+        <div class="history-screen">
+          <div class="history-inner">
+            <div class="history-head">
+              <h1>Broadcast History</h1>
+              <p>Your sessions and your teachers' sessions</p>
+            </div>
+            <div class="history-filters">
+              <button class="history-filter active" onclick="filterHistory(this,'all')">All</button>
+              <button class="history-filter" onclick="filterHistory(this,'mine')">My Classes</button>
+              <button class="history-filter" onclick="filterHistory(this,'chen')">Ms. Chen</button>
+              <button class="history-filter" onclick="filterHistory(this,'garcia')">Mr. Garcia</button>
+            </div>
+            <div class="session-list" id="sessionList">
+              <!-- My sessions -->
+              <div class="session-card" data-teacher="mine">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">Pull-out Group A · WIDA 1</div>
+                    <div class="session-meta">
+                      <span>05/07/2026</span><span class="sep">&middot;</span>
+                      <span>10:00 AM</span><span class="sep">&middot;</span>
+                      <span>42 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag you">My Class</span>
+                  <span class="session-badge inprogress">In Progress</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="chen">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">3rd Grade · WIDA 1</div>
+                    <div class="session-meta">
+                      <span>05/07/2026</span><span class="sep">&middot;</span>
+                      <span>9:00 AM</span><span class="sep">&middot;</span>
+                      <span>38 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag">Ms. Chen</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="garcia">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">5th Grade Math</div>
+                    <div class="session-meta">
+                      <span>05/06/2026</span><span class="sep">&middot;</span>
+                      <span>2:00 PM</span><span class="sep">&middot;</span>
+                      <span>45 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag">Mr. Garcia</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="mine">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">Pull-out Group B · WIDA 2</div>
+                    <div class="session-meta">
+                      <span>05/06/2026</span><span class="sep">&middot;</span>
+                      <span>11:00 AM</span><span class="sep">&middot;</span>
+                      <span>36 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag you">My Class</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="chen">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">4th Grade · WIDA 2</div>
+                    <div class="session-meta">
+                      <span>05/05/2026</span><span class="sep">&middot;</span>
+                      <span>10:30 AM</span><span class="sep">&middot;</span>
+                      <span>40 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag">Ms. Chen</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="garcia">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">3rd Grade Math</div>
+                    <div class="session-meta">
+                      <span>05/05/2026</span><span class="sep">&middot;</span>
+                      <span>9:00 AM</span><span class="sep">&middot;</span>
+                      <span>35 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag">Mr. Garcia</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="mine">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">Pull-out Group C · WIDA 3</div>
+                    <div class="session-meta">
+                      <span>05/05/2026</span><span class="sep">&middot;</span>
+                      <span>1:00 PM</span><span class="sep">&middot;</span>
+                      <span>38 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag you">My Class</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+              <div class="session-card" data-teacher="chen">
+                <div class="session-card-header">
+                  <div class="session-info">
+                    <div class="session-name">5th Grade · WIDA 3</div>
+                    <div class="session-meta">
+                      <span>05/02/2026</span><span class="sep">&middot;</span>
+                      <span>11:00 AM</span><span class="sep">&middot;</span>
+                      <span>44 min</span>
+                    </div>
+                  </div>
+                  <span class="session-teacher-tag">Ms. Chen</span>
+                  <span class="session-badge">Ended</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 5: Program ===== -->
+      <div class="screen" id="screen-program">
+        <div class="program-screen">
+          <div class="program-inner">
+            <div class="program-head">
+              <h1>ESL Program</h1>
+              <p>Teachers and students in your program</p>
+            </div>
+
+            <div class="program-stats">
+              <div class="program-stat">
+                <div class="program-stat-val">3</div>
+                <div class="program-stat-label">Teachers</div>
+              </div>
+              <div class="program-stat">
+                <div class="program-stat-val">18</div>
+                <div class="program-stat-label">Students</div>
+              </div>
+              <div class="program-stat">
+                <div class="program-stat-val">6</div>
+                <div class="program-stat-label">WIDA Levels</div>
+              </div>
+              <div class="program-stat">
+                <div class="program-stat-val">24</div>
+                <div class="program-stat-label">Sessions / Week</div>
+              </div>
+            </div>
+
+            <div class="program-section-title">
+              <span class="material-icons-round">school</span>
+              Teachers &amp; Caseloads
+            </div>
+
+            <div class="teacher-grid">
+              <!-- Ms. Chen (ESL Teacher) -->
+              <div class="teacher-card">
+                <div class="teacher-card-header" onclick="toggleTeacher(this)">
+                  <div class="teacher-avatar" style="background:#059669;">MC</div>
+                  <div class="teacher-info">
+                    <div class="teacher-name">Ms. Chen</div>
+                    <div class="teacher-detail">ESL Teacher · Grades 3–5</div>
+                  </div>
+                  <div class="teacher-stats-row">
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">people</span> <strong>9</strong> students</div>
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">class</span> <strong>12</strong> sessions</div>
+                  </div>
+                  <span class="teacher-arrow">&#9654;</span>
+                </div>
+                <div class="teacher-students">
+                  <div class="teacher-students-inner">
+                    <table class="teacher-stu-table">
+                      <thead><tr><th>Student</th><th>Grade</th><th>WIDA</th><th>Language</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">EC</span>Emily Chen</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">CG</span>Carlos Garcia</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">LT</span>Lucia Torres</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">KL</span>Kevin Liu</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">SM</span>Sofia Martinez</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">JL</span>James Lin</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">ML</span>Maria Lopez</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">LH</span>Lily Huang</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">CW</span>Chloe Wu</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mr. Garcia (Subject Teacher) -->
+              <div class="teacher-card">
+                <div class="teacher-card-header" onclick="toggleTeacher(this)">
+                  <div class="teacher-avatar" style="background:#14b8a6;">AG</div>
+                  <div class="teacher-info">
+                    <div class="teacher-name">Mr. Garcia</div>
+                    <div class="teacher-detail">Subject Teacher · Math · Grades 3–6</div>
+                  </div>
+                  <div class="teacher-stats-row">
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">people</span> <strong>12</strong> students</div>
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">class</span> <strong>8</strong> sessions</div>
+                  </div>
+                  <span class="teacher-arrow">&#9654;</span>
+                </div>
+                <div class="teacher-students">
+                  <div class="teacher-students-inner">
+                    <table class="teacher-stu-table">
+                      <thead><tr><th>Student</th><th>Grade</th><th>WIDA</th><th>Language</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">EC</span>Emily Chen</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">CG</span>Carlos Garcia</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">KL</span>Kevin Liu</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">SM</span>Sofia Martinez</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">JL</span>James Lin</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">AH</span>Amir Hassan</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Arabic</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">ML</span>Maria Lopez</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">LH</span>Lily Huang</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#dbeafe;color:#1d4ed8;">ET</span>Emma Tsai</td><td>6</td><td><span class="wida-pill w4">WIDA 4</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#dbeafe;color:#1d4ed8;">DR</span>Diego Rivera</td><td>6</td><td><span class="wida-pill w4">WIDA 4</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#dbeafe;color:#1d4ed8;">OX</span>Olivia Xu</td><td>6</td><td><span class="wida-pill w4">WIDA 4</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#e0e7ff;color:#4338ca;">LY</span>Lucas Yang</td><td>7</td><td><span class="wida-pill w5">WIDA 5</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ms. Wang (Coordinator = You) -->
+              <div class="teacher-card">
+                <div class="teacher-card-header" onclick="toggleTeacher(this)">
+                  <div class="teacher-avatar" style="background:#059669;">JW</div>
+                  <div class="teacher-info">
+                    <div class="teacher-name">Ms. Wang <span style="font-size:10px;font-weight:700;color:#059669;background:#ecfdf5;padding:2px 8px;border-radius:10px;margin-left:6px;">You</span></div>
+                    <div class="teacher-detail">ESL Coordinator · Pull-out Groups</div>
+                  </div>
+                  <div class="teacher-stats-row">
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">people</span> <strong>9</strong> students</div>
+                    <div class="teacher-stat-chip"><span class="material-icons-round" style="font-size:14px;color:#94a3b8;">class</span> <strong>4</strong> sessions</div>
+                  </div>
+                  <span class="teacher-arrow">&#9654;</span>
+                </div>
+                <div class="teacher-students">
+                  <div class="teacher-students-inner">
+                    <table class="teacher-stu-table">
+                      <thead><tr><th>Student</th><th>Grade</th><th>WIDA</th><th>Language</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">EC</span>Emily Chen</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">CG</span>Carlos Garcia</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef2f2;color:#dc2626;">LT</span>Lucia Torres</td><td>3</td><td><span class="wida-pill w1">WIDA 1</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">KL</span>Kevin Liu</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">SM</span>Sofia Martinez</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#fef9c3;color:#a16207;">JL</span>James Lin</td><td>4</td><td><span class="wida-pill w2">WIDA 2</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">ML</span>Maria Lopez</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Spanish</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">LH</span>Lily Huang</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                        <tr><td><span class="stu-avatar-sm" style="background:#ecfdf5;color:#059669;">CW</span>Chloe Wu</td><td>5</td><td><span class="wida-pill w3">WIDA 3</span></td><td><span class="lang-pill">Chinese</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<!-- ── Paused Overlay ── -->
+<div class="paused-overlay" id="pausedOverlay">
+  <div class="paused-icon"><span class="material-icons-round">pause</span></div>
+  <div class="paused-label">Class Paused</div>
+  <div class="paused-hint">Press play to resume recording</div>
+  <button class="pause-btn is-paused" onclick="togglePause()" style="margin-top:12px;">
+    <span class="material-icons-round">play_arrow</span>
+  </button>
+</div>
+
+<!-- ── Save Class Modal ── -->
+<div class="modal-overlay" id="saveModal">
+  <div class="dialog">
+    <h2>Save Class</h2>
+    <p class="dialog-hint">Name this session for your records.</p>
+    <div class="modal-field">
+      <label>Session Name</label>
+      <input type="text" id="sessionNameInput" value="" />
+    </div>
+    <div class="dialog-actions" style="border-top:none;padding-top:0;">
+      <button class="dialog-btn secondary" onclick="closeSaveModal()">Cancel</button>
+      <button class="dialog-btn primary" onclick="saveClass()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════ Student Data ══════════ */
+var allStudents = [
+  { name: 'Emily Chen',      lang: 'zh', wida: 1, grade: 3, times: {'7':2,'14':5,'30':10},  mins: {'7':10,'14':22,'30':45},  words: {'7':3,'14':6,'30':12},  taps: {'7':24,'14':45,'30':88} },
+  { name: 'Carlos Garcia',   lang: 'es', wida: 1, grade: 3, times: {'7':3,'14':6,'30':12},  mins: {'7':14,'14':28,'30':55},  words: {'7':4,'14':8,'30':14},  taps: {'7':20,'14':38,'30':75} },
+  { name: 'Lucia Torres',    lang: 'es', wida: 1, grade: 3, times: {'7':4,'14':8,'30':16},  mins: {'7':18,'14':36,'30':72},  words: {'7':5,'14':10,'30':18}, taps: {'7':22,'14':42,'30':82} },
+  { name: 'Kevin Liu',       lang: 'zh', wida: 2, grade: 4, times: {'7':5,'14':10,'30':20}, mins: {'7':24,'14':48,'30':95},  words: {'7':6,'14':13,'30':24}, taps: {'7':16,'14':30,'30':58} },
+  { name: 'Sofia Martinez',  lang: 'es', wida: 2, grade: 4, times: {'7':6,'14':12,'30':23}, mins: {'7':28,'14':56,'30':110}, words: {'7':8,'14':16,'30':28}, taps: {'7':15,'14':28,'30':55} },
+  { name: 'James Lin',       lang: 'zh', wida: 2, grade: 4, times: {'7':5,'14':11,'30':21}, mins: {'7':26,'14':52,'30':100}, words: {'7':7,'14':14,'30':26}, taps: {'7':17,'14':32,'30':62} },
+  { name: 'Maria Lopez',     lang: 'es', wida: 3, grade: 5, times: {'7':7,'14':14,'30':28}, mins: {'7':35,'14':68,'30':135}, words: {'7':10,'14':20,'30':36}, taps: {'7':11,'14':20,'30':40} },
+  { name: 'Lily Huang',      lang: 'zh', wida: 3, grade: 5, times: {'7':8,'14':15,'30':30}, mins: {'7':38,'14':74,'30':145}, words: {'7':11,'14':22,'30':40}, taps: {'7':10,'14':19,'30':37} },
+  { name: 'Chloe Wu',        lang: 'zh', wida: 3, grade: 5, times: {'7':6,'14':13,'30':26}, mins: {'7':32,'14':64,'30':125}, words: {'7':9,'14':18,'30':32},  taps: {'7':12,'14':22,'30':43} },
+  { name: 'Emma Tsai',       lang: 'zh', wida: 4, grade: 6, times: {'7':9,'14':18,'30':36}, mins: {'7':45,'14':88,'30':175}, words: {'7':14,'14':27,'30':50}, taps: {'7':7,'14':13,'30':26} },
+  { name: 'Diego Rivera',    lang: 'es', wida: 4, grade: 6, times: {'7':10,'14':19,'30':38},mins: {'7':48,'14':94,'30':185}, words: {'7':15,'14':29,'30':54}, taps: {'7':6,'14':12,'30':24} },
+  { name: 'Olivia Xu',       lang: 'zh', wida: 4, grade: 6, times: {'7':9,'14':17,'30':34}, mins: {'7':44,'14':86,'30':170}, words: {'7':13,'14':25,'30':46}, taps: {'7':8,'14':15,'30':28} },
+  { name: 'Lucas Yang',      lang: 'zh', wida: 5, grade: 7, times: {'7':11,'14':21,'30':42},mins: {'7':54,'14':105,'30':210},words: {'7':17,'14':32,'30':58}, taps: {'7':4,'14':8,'30':15} },
+  { name: 'Valentina Cruz',  lang: 'es', wida: 5, grade: 7, times: {'7':12,'14':22,'30':44},mins: {'7':56,'14':110,'30':220},words: {'7':18,'14':34,'30':62}, taps: {'7':3,'14':7,'30':13} },
+  { name: 'Ava Liao',        lang: 'zh', wida: 5, grade: 7, times: {'7':11,'14':22,'30':43},mins: {'7':55,'14':108,'30':215},words: {'7':18,'14':33,'30':60}, taps: {'7':4,'14':7,'30':14} },
+  { name: 'Ethan Ho',        lang: 'zh', wida: 6, grade: 8, times: {'7':14,'14':26,'30':52},mins: {'7':68,'14':130,'30':260},words: {'7':22,'14':40,'30':72}, taps: {'7':2,'14':4,'30':8} },
+  { name: 'Ana Morales',     lang: 'es', wida: 6, grade: 8, times: {'7':13,'14':25,'30':50},mins: {'7':65,'14':125,'30':250},words: {'7':20,'14':38,'30':68}, taps: {'7':2,'14':3,'30':7} },
+  { name: 'Sophia Hsu',      lang: 'zh', wida: 6, grade: 8, times: {'7':15,'14':28,'30':55},mins: {'7':72,'14':140,'30':275},words: {'7':23,'14':42,'30':76}, taps: {'7':1,'14':3,'30':6} },
+];
+function findStudent(name) { return allStudents.find(function(s) { return s.name === name; }); }
+function getStudentVal(student, metric, cycleDays) {
+  var d = student[metric]; if (!d) return 0;
+  var c = parseInt(cycleDays);
+  if (d[String(c)] !== undefined) return d[String(c)];
+  if (c <= 7) return Math.round(d['7'] * c / 7);
+  if (c >= 30) return Math.round(d['30'] * c / 30);
+  var keys = [7, 14, 30];
+  for (var i = 0; i < keys.length - 1; i++) {
+    if (c >= keys[i] && c <= keys[i + 1]) {
+      var lo = keys[i], hi = keys[i + 1];
+      var ratio = (c - lo) / (hi - lo);
+      return Math.round(d[String(lo)] + (d[String(hi)] - d[String(lo)]) * ratio);
+    }
+  }
+  return Math.round(d['30'] * c / 30);
+}
+
+/* ══════════ KPI Trackers (cross-teacher) ══════════ */
+var metricUnits = { times: 'times', mins: 'mins', words: 'words' };
+
+var _urgentStart = new Date(); _urgentStart.setHours(0,0,0,0); _urgentStart.setDate(_urgentStart.getDate() - 6);
+var _urgentStartStr = _urgentStart.getFullYear() + '-' + String(_urgentStart.getMonth()+1).padStart(2,'0') + '-' + String(_urgentStart.getDate()).padStart(2,'0');
+
+var trackers = [
+  { id: 1, name: 'Ms. Chen · WIDA 1', teacher: 'Ms. Chen', metric: 'times',  target: 6,  cycle: '7',  start: _urgentStartStr, students: ['Emily Chen','Carlos Garcia','Lucia Torres'] },
+  { id: 2, name: 'Ms. Chen · WIDA 2', teacher: 'Ms. Chen', metric: 'mins',   target: 27, cycle: '7',  start: '2026-04-09', students: ['Kevin Liu','Sofia Martinez','James Lin'] },
+  { id: 3, name: 'Ms. Chen · WIDA 3', teacher: 'Ms. Chen', metric: 'words',  target: 19, cycle: '14', start: '2026-04-02', students: ['Maria Lopez','Lily Huang','Chloe Wu'] },
+  { id: 4, name: 'Mr. Garcia · WIDA 4', teacher: 'Mr. Garcia', metric: 'times', target: 16, cycle: '14', start: '2026-04-02', students: ['Emma Tsai','Diego Rivera','Olivia Xu'] },
+  { id: 5, name: 'Mr. Garcia · WIDA 5', teacher: 'Mr. Garcia', metric: 'mins',  target: 60, cycle: '14', start: '2026-03-19', students: ['Lucas Yang','Valentina Cruz','Ava Liao'] },
+  { id: 6, name: 'Ms. Wang · WIDA 6', teacher: 'Ms. Wang', metric: 'words',  target: 40, cycle: '30', start: '2026-03-02', students: ['Ethan Ho','Ana Morales','Sophia Hsu'] },
+];
+
+function parseLocalDate(str) {
+  var parts = str.split('-');
+  return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+function getKpiDaysLeft(rule) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  if (!rule.start || !rule.cycle) return null;
+  var start = parseLocalDate(rule.start);
+  var cycleDays = parseInt(rule.cycle) || 7;
+  var elapsed = Math.floor((today - start) / 86400000);
+  if (elapsed < 0) return Math.ceil((start - today) / 86400000) + cycleDays;
+  var cyclesPassed = Math.floor(elapsed / cycleDays);
+  var nextEnd = new Date(start); nextEnd.setDate(start.getDate() + (cyclesPassed + 1) * cycleDays);
+  return Math.ceil((nextEnd - today) / 86400000);
+}
+
+function renderKpiTracker() {
+  var body = document.getElementById('kpi-tracker-body');
+  var html = '';
+  trackers.forEach(function(rule) {
+    var students = [];
+    (rule.students || []).forEach(function(name) {
+      var s = findStudent(name); if (s) students.push(s);
+    });
+    var met = 0, total = students.length;
+    students.forEach(function(s) {
+      if (getStudentVal(s, rule.metric, rule.cycle) >= rule.target) met++;
+    });
+    var pct = total > 0 ? Math.round(met / total * 100) : 0;
+
+    html += '<div class="kpi-rule" id="kpi-rule-' + rule.id + '">';
+    html += '<div class="kpi-rule-header" onclick="toggleKpiRule(' + rule.id + ')">';
+    html += '<div class="kpi-rule-info">';
+    html += '<div class="kpi-rule-name">' + rule.name + '</div>';
+    html += '<div class="kpi-rule-desc">';
+    html += '<span class="kpi-rule-tag metric">' + rule.target + ' ' + metricUnits[rule.metric] + ' in ' + rule.cycle + ' days</span>';
+    html += '<span class="kpi-rule-tag teacher">' + rule.teacher + '</span>';
+    var daysLeft = getKpiDaysLeft(rule);
+    if (daysLeft != null) {
+      var ctClass = daysLeft <= 1 ? 'danger' : daysLeft <= 3 ? 'warn' : '';
+      var ctText = daysLeft === 0 ? 'Ends today' : daysLeft === 1 ? '1 day left' : daysLeft + ' days left';
+      html += '<span class="kpi-rule-tag countdown ' + ctClass + '">' + ctText + '</span>';
+    }
+    html += '</div></div>';
+    var isUrgent = daysLeft != null && daysLeft <= 2 && met < total;
+    html += '<div class="kpi-rule-summary">';
+    if (isUrgent) html += '<span class="kpi-rule-urgent-wrap"><span class="material-icons-round">warning</span></span>';
+    var barCls = pct >= 80 ? '' : pct >= 50 ? 'warn' : pct > 0 ? 'danger' : '';
+    html += '<div class="kpi-summary-bar-track"><div class="kpi-summary-bar-fill ' + barCls + '" style="width:' + pct + '%"></div></div>';
+    html += '<span class="kpi-summary-pct">' + pct + '%</span>';
+    html += '</div>';
+    html += '<span class="kpi-rule-arrow">&#9654;</span>';
+    html += '</div>';
+
+    html += '<div class="kpi-rule-students"><div class="kpi-rule-students-inner">';
+    var maxVal = rule.target * 1.5;
+    students.forEach(function(s, si) {
+      var val = getStudentVal(s, rule.metric, rule.cycle);
+      var barPct = Math.min(val / maxVal * 100, 100);
+      var targetPct = Math.min(rule.target / maxVal * 100, 100);
+      var barClass = val >= rule.target ? 'met' : val >= rule.target * 0.5 ? 'below' : 'far';
+      html += '<div class="kpi-stu-row">';
+      html += '<span class="kpi-stu-name">' + s.name + '</span>';
+      html += '<div class="kpi-stu-bar-wrap">';
+      html += '<div class="kpi-stu-bar ' + barClass + '" style="width:' + barPct + '%"></div>';
+      var targetLabel = si === 0 ? 'Goal ' + rule.target + ' ' + metricUnits[rule.metric] : '';
+      html += '<div class="kpi-stu-target-line" style="left:' + targetPct + '%" data-target="' + targetLabel + '"></div>';
+      html += '</div>';
+      html += '<span class="kpi-stu-val">' + val + ' <span class="kpi-unit">' + metricUnits[rule.metric] + '</span></span>';
+      html += '</div>';
+    });
+    html += '</div></div></div>';
+  });
+  body.innerHTML = html;
+}
+function toggleKpiRule(id) {
+  var el = document.getElementById('kpi-rule-' + id);
+  if (el) el.classList.toggle('open');
+}
+renderKpiTracker();
+
+/* ══════════ Translation Frequency ══════════ */
+function computeBarrierValue(students, days) {
+  if (!students || students.length === 0) return { val: 0, prev: 0 };
+  var intervals = students.map(function(name) {
+    var s = findStudent(name);
+    if (!s || !s.taps || !s.mins) return 60;
+    var taps = getStudentVal(s, 'taps', days);
+    var mins = getStudentVal(s, 'mins', days);
+    if (taps === 0) return 999;
+    return (mins * 60) / taps;
+  });
+  var avg = intervals.reduce(function(a,b){return a+b;},0) / intervals.length;
+  return { val: avg, prev: avg * 0.85 };
+}
+
+function renderBarrier() {
+  var grid = document.getElementById('barrier-grid');
+  var days = parseInt(document.getElementById('barrier-window').value) || 7;
+  var html = '';
+  trackers.forEach(function(w, i) {
+    var r = computeBarrierValue(w.students, days);
+    var val = r.val;
+    var prev = i === 0 ? val * 1.22 : r.prev;
+    var diff = val - prev;
+    var valClass = val >= 120 ? 'good' : val >= 45 ? 'ok' : 'bad';
+    var trendClass = diff > 5 ? 'improving' : diff < -5 ? 'worsening' : 'stable';
+    var valDisplay, unitDisplay;
+    if (val >= 60) { valDisplay = (val / 60).toFixed(1); unitDisplay = ' min'; }
+    else { valDisplay = val.toFixed(0); unitDisplay = ' sec'; }
+    var pctChange = prev > 0 ? Math.abs((val - prev) / prev * 100).toFixed(0) : 0;
+    var trendText = diff > 5 ? 'Improving +' + pctChange + '%' : diff < -5 ? 'Declining -' + pctChange + '%' : 'Stable';
+
+    html += '<div class="barrier-card" onclick="this.classList.toggle(\'open\')">';
+    html += '<div class="barrier-card-summary"><div class="barrier-card-main">';
+    html += '<div class="barrier-card-top"><div class="barrier-group-name">' + w.name + '</div></div>';
+    html += '<div class="barrier-value ' + valClass + '">' + valDisplay + '<span class="barrier-unit">' + unitDisplay + '</span></div>';
+    html += '<div class="barrier-trend ' + trendClass + '">' + trendText + '</div>';
+    html += '</div><span class="barrier-card-arrow">&#9654;</span></div>';
+    html += '<div class="barrier-students"><div class="barrier-students-inner">';
+    (w.students || []).forEach(function(name) {
+      var s = findStudent(name); if (!s) return;
+      var taps = getStudentVal(s, 'taps', days);
+      var mins = getStudentVal(s, 'mins', days);
+      var interval = taps > 0 ? (mins * 60) / taps : 999;
+      var stuValClass = interval >= 120 ? 'good' : interval >= 45 ? 'ok' : 'bad';
+      var stuDisplay = interval >= 60 ? (interval / 60).toFixed(1) + ' min' : interval.toFixed(0) + ' sec';
+      html += '<div class="barrier-stu-row"><span class="barrier-stu-name">' + s.name + '</span>';
+      html += '<span class="barrier-stu-val ' + stuValClass + '">' + stuDisplay + '</span></div>';
+    });
+    html += '</div></div></div>';
+  });
+  grid.innerHTML = html;
+}
+renderBarrier();
+
+/* ══════════ Screen Navigation ══════════ */
+var currentScreen = 'dashboard';
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  var target = document.getElementById('screen-' + name);
+  if (target) target.classList.add('active');
+  currentScreen = name;
+  if (name === 'live-class') startLiveClass();
+  else stopLiveClass();
+  if (name === 'mic-test') resetMicTest();
+  document.querySelectorAll('.sidebar-item').forEach(function(i) { i.classList.remove('active'); });
+  var sidebarMap = { 'dashboard': 'nav-dashboard', 'classes': 'nav-classes', 'history': 'nav-history', 'program': 'nav-program', 'mic-test': 'nav-classes', 'live-class': 'nav-classes' };
+  var navId = sidebarMap[name];
+  if (navId) { var el = document.getElementById(navId); if (el) el.classList.add('active'); }
+}
+
+/* ══════════ Mic Test ══════════ */
+function startMicTest() {
+  document.getElementById('micTestBar').classList.remove('hidden');
+  document.getElementById('waveL').classList.add('animating');
+  document.getElementById('waveR').classList.add('animating');
+  document.getElementById('btnStartTest').style.display = 'none';
+  setTimeout(function() { document.getElementById('btnStartClass').style.display = 'inline-flex'; }, 3000);
+}
+function resetMicTest() {
+  document.getElementById('micTestBar').classList.add('hidden');
+  document.getElementById('waveL').classList.remove('animating');
+  document.getElementById('waveR').classList.remove('animating');
+  document.getElementById('btnStartTest').style.display = 'inline-flex';
+  document.getElementById('btnStartClass').style.display = 'none';
+}
+
+/* ══════════ Live Class ══════════ */
+var timerInterval = null, timerSeconds = 0, isPaused = false;
+var transcriptLines = [
+  'good morning everyone',
+  'today we are going to work on vocabulary building',
+  'let us start with some words from your reading',
+  'the first word is significant',
+  'can someone use it in a sentence',
+  'great job Carlos',
+  'now let us look at the word framework',
+  'this word appears a lot in science class',
+  'remember to tap any word you do not understand'
+];
+var currentLineIndex = 0, transcriptInterval = null;
+
+function startLiveClass() {
+  timerSeconds = 0; isPaused = false; currentLineIndex = 0;
+  updateTimer(); updatePauseState();
+  document.getElementById('transcriptCard').innerHTML = '';
+  timerInterval = setInterval(function() { if (!isPaused) { timerSeconds++; updateTimer(); } }, 1000);
+  addTranscriptLine();
+  transcriptInterval = setInterval(function() { if (!isPaused) addTranscriptLine(); }, 4000);
+}
+function stopLiveClass() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (transcriptInterval) { clearInterval(transcriptInterval); transcriptInterval = null; }
+}
+function updateTimer() {
+  var m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+  var s = String(timerSeconds % 60).padStart(2, '0');
+  document.getElementById('liveTimer').textContent = m + ':' + s;
+}
+function addTranscriptLine() {
+  if (currentLineIndex >= transcriptLines.length) return;
+  var card = document.getElementById('transcriptCard');
+  var div = document.createElement('div'); div.className = 'line';
+  div.textContent = transcriptLines[currentLineIndex];
+  card.appendChild(div); card.scrollTop = card.scrollHeight; currentLineIndex++;
+}
+function togglePause() { isPaused = !isPaused; updatePauseState(); }
+function updatePauseState() {
+  var btn = document.getElementById('pauseBtn');
+  var icon = document.getElementById('pauseIcon');
+  var bar = document.getElementById('liveBar');
+  var overlay = document.getElementById('pausedOverlay');
+  if (isPaused) {
+    btn.className = 'pause-btn is-paused'; icon.textContent = 'play_arrow';
+    bar.className = 'live-listening-bar paused';
+    if (overlay) overlay.classList.add('show');
+  } else {
+    btn.className = 'pause-btn is-playing'; icon.textContent = 'pause';
+    bar.className = 'live-listening-bar';
+    if (overlay) overlay.classList.remove('show');
+  }
+}
+function endClass() {
+  var now = new Date();
+  var defaultName = selectedClass + ' ' + (now.getMonth()+1) + '/' + now.getDate() + '/' + now.getFullYear();
+  document.getElementById('sessionNameInput').value = defaultName;
+  document.getElementById('saveModal').classList.add('show');
+}
+function closeSaveModal() { document.getElementById('saveModal').classList.remove('show'); }
+function saveClass() { document.getElementById('saveModal').classList.remove('show'); stopLiveClass(); showScreen('history'); }
+
+/* ══════════ Class Start ══════════ */
+var selectedClass = 'Pull-out Group A';
+function startClassFromSchedule(name, students) {
+  selectedClass = name;
+  document.getElementById('liveClassName').textContent = name;
+  document.getElementById('micTestClassName').textContent = name;
+  document.getElementById('micTestStudentCount').textContent = students + ' ESL students';
+  showScreen('mic-test');
+}
+
+/* ══════════ Room Expand ══════════ */
+function toggleRoom(btn) { btn.closest('.room-card').classList.toggle('open'); }
+
+/* ══════════ History Filter ══════════ */
+function filterHistory(btn, teacher) {
+  document.querySelectorAll('.history-filter').forEach(function(f) { f.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('#sessionList .session-card').forEach(function(card) {
+    if (teacher === 'all' || card.getAttribute('data-teacher') === teacher) card.style.display = '';
+    else card.style.display = 'none';
+  });
+}
+
+/* ══════════ Teacher Card Toggle ══════════ */
+function toggleTeacher(header) { header.closest('.teacher-card').classList.toggle('open'); }
+
+/* ══════════ Hash Navigation ══════════ */
+(function() {
+  var h = window.location.hash.replace('#', '');
+  if (h) setTimeout(function() { showScreen(h); }, 100);
+})();
+</script>
+
+</body>
+</html>
