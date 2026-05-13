@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Component — Mastery Popup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+      padding: 40px 20px;
+    }
+
+    /* ── Meta label ── */
+    .component-label {
+      font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Trigger button (preview only) ── */
+    .preview-trigger {
+      display: inline-flex; align-items: center; gap-8px;
+      padding: 12px 28px; border-radius: 10px; border: none;
+      background: #fff; color: #0f172a; font-size: 14px; font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 0 0 1px #e2e8f0;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .preview-trigger:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1), 0 0 0 1px #cbd5e1; }
+
+    /* ══════════════════════════════════════
+       COMPONENT: Mastery Popup
+       ══════════════════════════════════════ */
+
+    /* Overlay */
+    .mastery-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,.35); z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .mastery-overlay.show { opacity: 1; pointer-events: auto; }
+
+    /* Panel */
+    .mastery-panel {
+      background: #fff; border-radius: 24px;
+      width: 440px; max-height: 85vh; overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.2);
+      transform: translateY(20px) scale(.96);
+      transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+      position: relative;
+    }
+    .mastery-overlay.show .mastery-panel { transform: translateY(0) scale(1); }
+
+    /* Close button */
+    .mastery-panel-close {
+      position: absolute; top: 16px; right: 16px; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.85); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #64748b; font-size: 18px; font-weight: 700;
+      transition: all .15s; backdrop-filter: blur(4px);
+    }
+    .mastery-panel-close:hover { background: #fff; color: #0f172a; }
+
+    /* Hero illustration */
+    .mastery-hero {
+      width: 100%; height: 200px; position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #ecfdf5 0%, #A7F3D0 40%, #6EE7B7 100%);
+    }
+    .mastery-hero-visual {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mastery-hero-shape {
+      position: absolute; border-radius: 50%; opacity: .25;
+    }
+    .mastery-hero-shape.s1 { width: 180px; height: 180px; background: #059669; top: -40px; right: -30px; }
+    .mastery-hero-shape.s2 { width: 120px; height: 120px; background: #059669; bottom: -30px; left: 20px; }
+    .mastery-hero-shape.s3 { width: 80px; height: 80px; background: #34d399; top: 30px; left: 60px; opacity: .18; }
+
+    .mastery-hero-badge {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .mastery-hero-flow {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.7); border-radius: 20px;
+      padding: 6px 16px; backdrop-filter: blur(4px);
+    }
+    .mastery-hero-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .mastery-hero-dot.learning { background: #f59e0b; }
+    .mastery-hero-dot.mastered { background: #059669; }
+    .mastery-hero-arrow { color: #94a3b8; font-size: 13px; font-weight: 600; }
+    .mastery-hero-label { font-size: 12px; font-weight: 600; color: #475569; }
+
+    /* Panel body */
+    .mastery-body { padding: 28px 32px 32px; text-align: center; }
+    .mastery-body-title {
+      font-size: 22px; font-weight: 800; color: #0f172a;
+      margin-bottom: 12px; letter-spacing: -.3px;
+    }
+    .mastery-body-rules {
+      text-align: left; display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .mastery-body-rule { font-size: 14px; color: #475569; line-height: 1.6; }
+    .mastery-body-rule strong { color: #0f172a; font-weight: 700; }
+
+    .mastery-body-cta {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 14px 36px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: all .2s; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .mastery-body-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+  </style>
+</head>
+<body>
+
+  <p class="component-label">Component Preview — Mastery Popup</p>
+  <button class="preview-trigger" onclick="document.getElementById('mastery-overlay').classList.add('show')">
+    Open Popup
+  </button>
+
+  <!-- ══ COMPONENT ══ -->
+  <div class="mastery-overlay" id="mastery-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="mastery-panel">
+
+      <!-- Close -->
+      <button class="mastery-panel-close" onclick="document.getElementById('mastery-overlay').classList.remove('show')">&times;</button>
+
+      <!-- Hero -->
+      <div class="mastery-hero">
+        <div class="mastery-hero-shape s1"></div>
+        <div class="mastery-hero-shape s2"></div>
+        <div class="mastery-hero-shape s3"></div>
+        <div class="mastery-hero-visual">
+          <div class="mastery-hero-badge">
+            <div class="mastery-hero-flow">
+              <span class="mastery-hero-dot learning"></span>
+              <span class="mastery-hero-label">Learning</span>
+              <span class="mastery-hero-arrow">→</span>
+              <span class="mastery-hero-dot mastered"></span>
+              <span class="mastery-hero-label">Mastered</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="mastery-body">
+        <div class="mastery-body-title">✨ Making a Word "Mastered"</div>
+        <div class="mastery-body-rules">
+          <p class="mastery-body-rule">
+            <strong>The Power of 5</strong><br>
+            Each word needs 5 correct hits to move from your Learning list to the Mastered list!
+          </p>
+          <p class="mastery-body-rule">
+            <strong>Mix Your Practice</strong><br>
+            To master a word, you'll need to win at least once in every mode (Spelling, Multiple Choice, and Mirroring).
+          </p>
+        </div>
+        <button class="mastery-body-cta" onclick="document.getElementById('mastery-overlay').classList.remove('show')">Got it</button>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
