@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Card — Design Spec</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Page Layout ── */
+    .page-header {
+      max-width: 500px; margin: 0 auto; padding: 48px 32px 0;
+    }
+    .page-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; }
+    .page-header p { font-size: 14px; color: #64748b; margin-top: 6px; }
+    .spec-grid {
+      max-width: 500px; margin: 0 auto; padding: 32px;
+      display: flex; flex-direction: column; gap: 40px;
+    }
+
+    /* ── Variant Label ── */
+    .variant-block { display: flex; flex-direction: column; gap: 12px; }
+    .variant-label {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .variant-label .variant-tag {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    }
+    .variant-tag.single { background: #eff6ff; color: #1d4ed8; }
+    .variant-tag.multi { background: #fef3c7; color: #92400e; }
+    .variant-tag.img { background: #ecfdf5; color: #059669; }
+    .variant-tag.text { background: #f1f5f9; color: #64748b; }
+
+    /* ── Word Card ── */
+    .word-card {
+      background: #fff; border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .word-card-header { padding: 24px 24px 12px; }
+    .word-row { display: flex; align-items: center; gap: 10px; }
+    .word-en { font-size: 24px; font-weight: 800; color: #0f172a; }
+    .word-play {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #ecfdf5; border: 1.5px solid #6EE7B7;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      cursor: pointer;
+    }
+    .word-play .material-icons-round { font-size: 16px; color: #059669; }
+    .word-tl { font-size: 16px; color: #64748b; font-weight: 600; }
+    .translate-toggle {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+    }
+    .translate-label { font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .toggle-switch {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: #e2e8f0; position: relative; cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-switch.on { background: #059669; }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+    .toggle-switch.on::after { transform: translateX(16px); }
+    .pos-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .pos-badge {
+      font-size: 11px; font-weight: 700; color: #475569;
+      background: #F1F5F9; border: 1px solid #E2E8F0;
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* ── Card Body ── */
+    .word-card-body { padding: 0 24px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+    .word-def { font-size: 13px; color: #334155; line-height: 1.6; }
+    .word-image {
+      width: 120px; height: 120px; border-radius: 10px;
+      object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0;
+    }
+    .tl-line { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .example-label {
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px;
+    }
+    .example-text {
+      font-size: 13px; color: #475569; font-style: italic;
+      background: #f8fafc; padding: 10px 14px; border-radius: 6px;
+      border-left: 3px solid #e2e8f0; line-height: 1.6;
+    }
+    .example-text mark {
+      background: #fef9c3; color: #854d0e;
+      padding: 1px 4px; border-radius: 3px; font-style: normal; font-weight: 600;
+    }
+
+    /* ── Meta ── */
+    .meta-table { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+    .meta-row { display: flex; align-items: baseline; }
+    .meta-label {
+      font-size: 11px; font-weight: 400; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .3px; min-width: 76px; flex-shrink: 0;
+    }
+    .meta-value { font-size: 13px; color: #334155; font-weight: 500; }
+
+    /* ── Multi-POS Section ── */
+    .pos-section { padding-top: 14px; margin-top: 14px; border-top: 1px solid #e2e8f0; }
+    .pos-section:first-child { padding-top: 0; margin-top: 0; border-top: none; }
+    .pos-section-header { margin-bottom: 10px; }
+
+    /* ── Mastery Progress ── */
+    .word-mastery {
+      padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fafbfc;
+    }
+    .word-mastery-title {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 8px;
+    }
+    .mastery-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .mastery-track {
+      flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+    }
+    .mastery-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, #059669, #6EE7B7);
+    }
+    .mastery-label { font-size: 12px; font-weight: 700; color: #64748b; min-width: 32px; }
+    .type-checks { display: flex; gap: 12px; }
+    .type-check {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+    }
+    .type-check.done { color: #059669; }
+    .type-check .material-icons-round { font-size: 16px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 24px 0; color: #94a3b8;
+      font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px;
+      max-width: 500px; margin-left: auto; margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Word Card — Design Spec</h1>
+  <p>Four card variants based on number of parts of speech and image availability</p>
+</div>
+
+<div class="spec-grid">
+
+  <!-- ═══════ 1. Single POS, No Image ═══════ -->
+  <div class="variant-block">
+    <div class="variant-label">
+      <span class="variant-tag single">Single POS</span>
+      <span class="variant-tag text">Text Only</span>
+      Variant A — hypothesis
+    </div>
+    <div class="word-card">
+      <div class="word-card-header">
+        <div class="word-row">
+          <span class="word-en">hypothesis</span>
+          <span class="word-play"><span class="material-icons-round">volume_up</span></span>
+          <span class="word-tl">假說</span>
+          <div class="translate-toggle">
+            <span class="translate-label">Translate</span>
+            <div class="toggle-switch on"></div>
+          </div>
+        </div>
+        <div class="pos-row">
+          <span class="pos-badge">noun</span>
+        </div>
+      </div>
+      <div class="word-card-body">
+        <p class="word-def">A proposed explanation made on the basis of limited evidence as a starting point for further investigation.</p>
+        <p class="tl-line">基於有限證據所提出的解釋，作為進一步調查的起點。</p>
+        <div>
+          <div class="example-label">Example</div>
+          <div class="example-text">We need to test our <mark>hypothesis</mark> before drawing any conclusions.</div>
+          <p class="tl-line">在得出任何結論之前，我們需要先驗證我們的假說。</p>
+        </div>
+        <div class="meta-table">
+          <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+          <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+        </div>
+      </div>
+      <div class="word-mastery">
+        <div class="word-mastery-title">Mastery Progress</div>
+        <div class="mastery-bar">
+          <div class="mastery-track"><div class="mastery-fill" style="width:40%;"></div></div>
+          <span class="mastery-label">2 / 5</span>
+        </div>
+        <div class="type-checks">
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Spelling</div>
+          <div class="type-check"><span class="material-icons-round">radio_button_unchecked</span> Multiple Choice</div>
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Mirroring</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 2. Single POS, With Image ═══════ -->
+  <div class="variant-block">
+    <div class="variant-label">
+      <span class="variant-tag single">Single POS</span>
+      <span class="variant-tag img">With Image</span>
+      Variant B — cactus
+    </div>
+    <div class="word-card">
+      <div class="word-card-header">
+        <div class="word-row">
+          <span class="word-en">cactus</span>
+          <span class="word-play"><span class="material-icons-round">volume_up</span></span>
+          <span class="word-tl">仙人掌</span>
+          <div class="translate-toggle">
+            <span class="translate-label">Translate</span>
+            <div class="toggle-switch on"></div>
+          </div>
+        </div>
+        <div class="pos-row">
+          <span class="pos-badge">noun</span>
+        </div>
+      </div>
+      <div class="word-card-body">
+        <img class="word-image" src="https://images.unsplash.com/photo-1509423350716-97f9360b4e09?w=480&q=80" alt="cactus" />
+        <p class="tl-line">一種多肉植物，莖部粗厚，通常帶有刺。</p>
+        <div>
+          <div class="example-label">Example</div>
+          <div class="example-text">A <mark>cactus</mark> can survive in the desert without much water.</div>
+          <p class="tl-line">仙人掌可以在沙漠中生存，不需要太多水。</p>
+        </div>
+        <div class="meta-table">
+          <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+          <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+        </div>
+      </div>
+      <div class="word-mastery">
+        <div class="word-mastery-title">Mastery Progress</div>
+        <div class="mastery-bar">
+          <div class="mastery-track"><div class="mastery-fill" style="width:40%;"></div></div>
+          <span class="mastery-label">2 / 5</span>
+        </div>
+        <div class="type-checks">
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Spelling</div>
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Multiple Choice</div>
+          <div class="type-check"><span class="material-icons-round">radio_button_unchecked</span> Mirroring</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 3. Multi POS, No Image ═══════ -->
+  <div class="variant-block">
+    <div class="variant-label">
+      <span class="variant-tag multi">Multi POS</span>
+      <span class="variant-tag text">Text Only</span>
+      Variant C — force
+    </div>
+    <div class="word-card">
+      <div class="word-card-header">
+        <div class="word-row">
+          <span class="word-en">force</span>
+          <span class="word-play"><span class="material-icons-round">volume_up</span></span>
+          <span class="word-tl">力；迫使</span>
+          <div class="translate-toggle">
+            <span class="translate-label">Translate</span>
+            <div class="toggle-switch on"></div>
+          </div>
+        </div>
+      </div>
+      <div class="word-card-body">
+        <div class="pos-section">
+          <div class="pos-section-header"><span class="pos-badge">noun</span></div>
+          <p class="word-def">A push or pull upon an object resulting from its interaction with another object.</p>
+          <p class="tl-line">物體間交互作用產生的推力或拉力。</p>
+          <div style="margin-top:10px">
+            <div class="example-label">Example</div>
+            <div class="example-text">Gravity is a <mark>force</mark> that pulls objects toward the earth.</div>
+            <p class="tl-line">地球的重力是一種向下的力。</p>
+          </div>
+        </div>
+        <div class="pos-section">
+          <div class="pos-section-header"><span class="pos-badge">verb</span></div>
+          <p class="word-def">To make someone do something against their will.</p>
+          <p class="tl-line">迫使某人做違反其意願的事情。</p>
+          <div style="margin-top:10px">
+            <div class="example-label">Example</div>
+            <div class="example-text">The teacher <mark>forced</mark> the students to finish the test.</div>
+            <p class="tl-line">老師強迫學生完成測驗。</p>
+          </div>
+        </div>
+        <div class="meta-table">
+          <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+          <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+        </div>
+      </div>
+      <div class="word-mastery">
+        <div class="word-mastery-title">Mastery Progress</div>
+        <div class="mastery-bar">
+          <div class="mastery-track"><div class="mastery-fill" style="width:100%;"></div></div>
+          <span class="mastery-label">5 / 5</span>
+        </div>
+        <div class="type-checks">
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Spelling</div>
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Multiple Choice</div>
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Mirroring</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 4. Multi POS, With Images ═══════ -->
+  <div class="variant-block">
+    <div class="variant-label">
+      <span class="variant-tag multi">Multi POS</span>
+      <span class="variant-tag img">With Images</span>
+      Variant D — plant
+    </div>
+    <div class="word-card">
+      <div class="word-card-header">
+        <div class="word-row">
+          <span class="word-en">plant</span>
+          <span class="word-play"><span class="material-icons-round">volume_up</span></span>
+          <span class="word-tl">植物；種植</span>
+          <div class="translate-toggle">
+            <span class="translate-label">Translate</span>
+            <div class="toggle-switch on"></div>
+          </div>
+        </div>
+      </div>
+      <div class="word-card-body">
+        <div class="pos-section">
+          <div class="pos-section-header"><span class="pos-badge">noun</span></div>
+          <img class="word-image" src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=480&q=80" alt="plant (noun)" />
+          <p class="word-def" style="margin-top:10px;">A living organism that grows in the earth, absorbs water and nutrients through its roots.</p>
+          <p class="tl-line">生長在土壤中，通過根部吸收水分和養分的生物體。</p>
+          <div style="margin-top:10px">
+            <div class="example-label">Example</div>
+            <div class="example-text">There are many <mark>plants</mark> in the classroom.</div>
+            <p class="tl-line">教室裡有很多植物。</p>
+          </div>
+        </div>
+        <div class="pos-section">
+          <div class="pos-section-header"><span class="pos-badge">verb</span></div>
+          <img class="word-image" src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=480&q=80" alt="plant (verb)" />
+          <p class="word-def" style="margin-top:10px;">To put a seed or plant in the ground so that it can grow.</p>
+          <p class="tl-line">把種子或植物放入土壤中使其生長。</p>
+          <div style="margin-top:10px">
+            <div class="example-label">Example</div>
+            <div class="example-text">We will <mark>plant</mark> flowers in the garden tomorrow.</div>
+            <p class="tl-line">明天我們會在花園裡種花。</p>
+          </div>
+        </div>
+        <div class="meta-table">
+          <div class="meta-row"><span class="meta-label">Source</span><span class="meta-value">Live Classroom</span></div>
+          <div class="meta-row"><span class="meta-label">Subject</span><span class="meta-value">Science</span></div>
+        </div>
+      </div>
+      <div class="word-mastery">
+        <div class="word-mastery-title">Mastery Progress</div>
+        <div class="mastery-bar">
+          <div class="mastery-track"><div class="mastery-fill" style="width:20%;"></div></div>
+          <span class="mastery-label">1 / 5</span>
+        </div>
+        <div class="type-checks">
+          <div class="type-check done"><span class="material-icons-round">check_circle</span> Spelling</div>
+          <div class="type-check"><span class="material-icons-round">radio_button_unchecked</span> Multiple Choice</div>
+          <div class="type-check"><span class="material-icons-round">radio_button_unchecked</span> Mirroring</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>DAHUA AI &middot; Word Card Design Spec &middot; May 2026</footer>
+
+</body>
+</html>
