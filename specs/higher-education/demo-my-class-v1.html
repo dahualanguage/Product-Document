@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Higher Education My Class v1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════
+       APP SHELL
+    ══════════════════════════════ */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+      border: none; background: none; font-family: inherit; text-decoration: none;
+    }
+    .sidebar-item svg { width: 22px; height: 22px; fill: #94a3b8; }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
+    .sidebar-item span:not(.material-icons-round) { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover svg { fill: #64748b; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
+    .sidebar-item:hover span:not(.material-icons-round) { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active svg { fill: #059669; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
+    .sidebar-item.active span:not(.material-icons-round) { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px; gap: 12px;
+    }
+    .app-header-back {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; display: none; align-items: center; justify-content: center;
+      cursor: pointer; color: #64748b; transition: all .15s; flex-shrink: 0;
+    }
+    .app-header-back:hover { background: #f1f5f9; color: #0f172a; }
+    .app-header-back .material-icons-round { font-size: 18px; }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .version-link {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+      transition: all .15s; flex-shrink: 0;
+    }
+    .version-link:hover { color: #475569; border-color: #cbd5e1; background: #f8fafc; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 700; color: #ef4444;
+    }
+    .live-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+      50% { opacity: .8; box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* ══════════════════════════════
+       SCREEN 1 — MY CLASS
+    ══════════════════════════════ */
+    .my-class-screen {
+      flex: 1; background: #f8faf9; overflow-y: auto;
+      padding: 36px 44px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .my-class-inner { width: 100%; max-width: 560px; }
+
+    .my-class-toprow {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .my-class-toprow h1 { font-size: 22px; font-weight: 800; color: #0f172a; }
+
+    .btn-start-class {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #10b981; color: #fff; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-start-class:hover { background: #059669; }
+    .btn-start-class .material-icons-round { font-size: 18px; }
+
+    /* Subject folder cards */
+    .subject-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .subject-card {
+      display: flex; align-items: center; gap: 16px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      padding: 16px 20px; cursor: pointer; transition: all .15s;
+    }
+    .subject-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .subject-card-icon {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .subject-card-icon .material-icons-round { font-size: 22px; }
+    .subject-card-info { flex: 1; min-width: 0; }
+    .subject-card-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .subject-card-count { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .subject-card-arrow { color: #cbd5e1; font-size: 20px; flex-shrink: 0; }
+    .subject-card:hover .subject-card-arrow { color: #94a3b8; }
+    .subject-card-code-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      border: 1.5px solid #e2e8f0; background: #fff; cursor: pointer;
+      color: #94a3b8; transition: all .15s;
+    }
+    .subject-card-code-btn:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .subject-card-code-btn .material-icons-round { font-size: 16px; }
+
+    /* ── Share Code Modal ── */
+    .share-code-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(15,23,42,.5); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .share-code-overlay.show { display: flex; }
+    .share-code-card {
+      background: #fff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.14);
+      padding: 32px 28px 28px; width: 380px; max-width: 90%;
+    }
+    .share-code-icon {
+      width: 48px; height: 48px; border-radius: 14px; background: #f0fdf4;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    }
+    .share-code-icon .material-icons-round { font-size: 26px; color: #10b981; }
+    .share-code-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .share-code-subject { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .share-code-box {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 14px;
+      padding: 20px; text-align: center; margin-bottom: 16px;
+    }
+    .share-code-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 10px; }
+    .share-code-value { font-size: 36px; font-weight: 800; color: #0f172a; letter-spacing: 6px; font-variant-numeric: tabular-nums; }
+    .share-code-hint { font-size: 12px; color: #94a3b8; margin-top: 8px; }
+    .btn-copy-code {
+      width: 100%; padding: 12px; border: none; border-radius: 12px;
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px;
+    }
+    .btn-copy-code:hover { background: #059669; }
+    .btn-copy-code .material-icons-round { font-size: 18px; }
+    .btn-close-share {
+      width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      background: #fff; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-close-share:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    /* Add new subject */
+    .btn-new-subject {
+      display: flex; align-items: center; gap: 12px;
+      background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 14px;
+      padding: 16px 20px; cursor: pointer; transition: all .15s;
+      font-family: inherit; width: 100%; text-align: left;
+      color: #94a3b8; font-size: 14px; font-weight: 600;
+    }
+    .btn-new-subject:hover { border-color: #10b981; color: #059669; }
+    .btn-new-subject .material-icons-round { font-size: 20px; }
+
+    /* Unclassified section */
+    .unclassified-section { margin-top: 24px; }
+    .unclassified-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; background: none; border: none; padding: 4px 0 10px;
+      cursor: pointer; font-family: inherit;
+    }
+    .unclassified-toggle-left {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+    }
+    .unclassified-toggle-icon {
+      font-size: 16px; color: #94a3b8; transition: transform .2s;
+    }
+    .unclassified-toggle.collapsed .unclassified-toggle-icon { transform: rotate(-90deg); }
+    .unclassified-count {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      background: #f1f5f9; border-radius: 20px; padding: 1px 8px;
+    }
+    .unclassified-list {
+      display: flex; flex-direction: column; gap: 8px;
+      overflow: hidden; transition: all .2s;
+    }
+    .unclassified-list.collapsed { display: none; }
+    .unclassified-card {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 18px 20px; cursor: pointer; transition: all .15s; margin-bottom: 8px;
+    }
+    .unclassified-card:hover { border-color: #cbd5e1; background: #fafbfc; cursor: pointer; }
+    .unclassified-card-info { flex: 1; }
+    .unclassified-card-name { font-size: 14px; font-weight: 600; color: #334155; }
+    .unclassified-card-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .unclassified-tag {
+      font-size: 10px; font-weight: 700; background: #f1f5f9; color: #94a3b8;
+      border-radius: 6px; padding: 2px 8px;
+    }
+
+    /* ══════════════════════════════
+       SCREEN 2 — SUBJECT DETAIL
+    ══════════════════════════════ */
+    .subject-detail-screen {
+      flex: 1; display: flex; overflow: hidden;
+    }
+
+    /* Left: session list */
+    .subject-left {
+      flex: 1; padding: 32px 28px 60px; overflow-y: auto; background: #f8faf9;
+      border-right: 1px solid #e2e8f0;
+    }
+    .subject-left-head { margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+    .subject-left-head h2 { font-size: 18px; font-weight: 800; color: #0f172a; }
+
+    .btn-new-class {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #10b981; color: #fff; border: none; border-radius: 10px;
+      padding: 8px 16px; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .15s; font-family: inherit; flex-shrink: 0;
+    }
+    .btn-new-class:hover { background: #059669; }
+    .btn-new-class .material-icons-round { font-size: 16px; }
+
+    .session-list { display: flex; flex-direction: column; gap: 10px; }
+    .session-card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+      cursor: pointer; transition: all .15s;
+    }
+    .session-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .session-card.selected { border-color: #10b981; background: #f0fdf4; }
+    .session-card-info { flex: 1; min-width: 0; }
+    .session-card-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .session-card-meta {
+      font-size: 12px; color: #94a3b8; margin-top: 3px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .session-card-meta .sep { color: #e2e8f0; }
+    .session-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; color: #059669;
+      background: #ecfdf5; padding: 3px 10px; border-radius: 20px; flex-shrink: 0;
+    }
+    .session-badge .material-icons-round { font-size: 13px; }
+    .session-card-arrow { color: #cbd5e1; font-size: 18px; flex-shrink: 0; }
+    .session-card:hover .session-card-arrow { color: #94a3b8; }
+    .session-card.selected .session-card-arrow { color: #10b981; }
+
+    /* Right: transcript panel */
+    .subject-right {
+      flex: 1; display: flex; flex-direction: column; background: #fff;
+    }
+    .tp-header {
+      padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .tp-name { font-size: 16px; font-weight: 800; color: #0f172a; }
+    .tp-meta {
+      font-size: 12px; color: #94a3b8;
+      display: flex; align-items: center; gap: 6px; margin-top: 2px;
+    }
+    .tp-meta .sep { color: #e2e8f0; }
+    .tp-segments { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .tp-segment { padding: 14px 0; border-bottom: 1px solid #f1f5f9; }
+    .tp-segment:last-child { border-bottom: none; }
+    .tp-segment-text { font-size: 14px; line-height: 1.75; color: #334155; }
+    .tp-word {
+      color: #0d9488; font-weight: 600; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .15s; border-radius: 2px;
+    }
+    .tp-word:hover { border-bottom-color: #0d9488; background: #f0fdfa; }
+    .tp-word.saved { color: #0d9488; }
+    .tp-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #94a3b8; font-size: 13px; text-align: center; padding: 40px; line-height: 1.6;
+    }
+
+    /* ══════════════════════════════
+       SCREEN 3 — LIVE CLASS
+    ══════════════════════════════ */
+    .live-body { flex: 1; display: flex; overflow: hidden; }
+
+    /* Transcript Area */
+    .transcript-area {
+      flex: 1; display: flex; flex-direction: column; background: #f8faf9;
+      border-right: 1px solid #e2e8f0;
+    }
+    .transcript-scroll {
+      flex: 1; padding: 32px 40px; overflow-y: auto;
+      font-size: 15px; line-height: 1.9; color: #334155;
+    }
+    .transcript-scroll p { margin-bottom: 16px; }
+    .transcript-word {
+      color: #0d9488; font-weight: 600; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .15s;
+      position: relative; border-radius: 2px;
+    }
+    .transcript-word:hover { border-bottom-color: #0d9488; background: #f0fdfa; }
+    .transcript-word.dimmed { color: #94a3b8; font-weight: 400; border-bottom: none; cursor: default; }
+
+    /* live speech bar */
+    .live-speech-bar {
+      background: #0f172a; color: #fff; padding: 20px 32px;
+      font-size: 17px; font-weight: 500; line-height: 1.5;
+      border-radius: 16px; margin: 0 24px 24px;
+      min-height: 72px; display: flex; align-items: center; gap: 12px;
+    }
+    .live-speech-bar .speech-text { flex: 1; }
+    .live-speech-bar .highlight { color: #2dd4bf; font-weight: 700; }
+    .btn-end-class {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(239,68,68,.15); color: #fca5a5;
+      border: 1px solid rgba(239,68,68,.25); border-radius: 8px;
+      padding: 8px 16px; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .15s; font-family: inherit; flex-shrink: 0;
+    }
+    .btn-end-class:hover { background: rgba(239,68,68,.25); color: #fff; }
+    .btn-end-class .material-icons-round { font-size: 16px; }
+
+    /* Saved Vocabs Panel */
+    .vocab-panel {
+      width: 280px; flex-shrink: 0; background: #fff;
+      display: flex; flex-direction: column;
+    }
+    .vocab-panel-title { padding: 20px 20px 16px; font-size: 14px; font-weight: 600; color: #64748b; }
+    .vocab-list { flex: 1; overflow-y: auto; padding: 0 16px; }
+    .vocab-card {
+      display: flex; align-items: center; padding: 14px 16px;
+      background: #f8fafc; border-radius: 10px; margin-bottom: 8px;
+      border: 1px solid #e2e8f0; animation: slideIn .3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .vocab-card-text { flex: 1; }
+    .vocab-card-en { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .vocab-card-zh { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .vocab-card-bookmark {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-radius: 6px; transition: all .15s;
+    }
+    .vocab-card-bookmark:hover { background: #f1f5f9; }
+    .vocab-card-bookmark .material-icons-round { font-size: 18px; color: #cbd5e1; }
+    .vocab-card-bookmark.saved .material-icons-round { color: #0d9488; }
+    .vocab-empty {
+      padding: 40px 24px; text-align: center;
+      font-size: 13px; color: #94a3b8; line-height: 1.6;
+    }
+
+    /* Switch Tab button */
+    .btn-minimize {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.7);
+      border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
+      padding: 8px 14px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all .15s; font-family: inherit; flex-shrink: 0;
+    }
+    .btn-minimize:hover { background: rgba(255,255,255,.18); color: #fff; }
+    .btn-minimize .material-icons-round { font-size: 15px; }
+
+    /* ── Screen 4: Fake tab ── */
+    .fake-tab-page { flex: 1; display: flex; flex-direction: column; background: #fff; }
+    .fake-tab-bar {
+      display: flex; gap: 2px; padding: 8px 16px 0;
+      background: #f1f3f4; border-bottom: 1px solid #e2e8f0;
+    }
+    .fake-tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 8px 8px 0 0;
+      font-size: 12px; font-weight: 500; color: #64748b;
+      background: #f1f3f4; cursor: pointer; max-width: 200px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fake-tab.active-tab { background: #fff; color: #202124; font-weight: 500; }
+
+    /* Google header */
+    .fake-page-content.google-page { flex: 1; overflow-y: auto; padding: 0; display: block; }
+    .google-header { padding: 16px 24px 0; border-bottom: 1px solid #ebebeb; background: #fff; }
+    .google-logo { height: 30px; margin-bottom: 12px; }
+    .google-searchbar {
+      display: flex; align-items: center; gap: 10px;
+      border: 1px solid #dfe1e5; border-radius: 24px;
+      padding: 10px 16px; max-width: 580px;
+      box-shadow: 0 1px 6px rgba(32,33,36,.1);
+      font-size: 14px; color: #202124; margin-bottom: 12px;
+    }
+    .google-query { flex: 1; }
+    .google-tabs { display: flex; gap: 0; }
+    .google-tab {
+      padding: 10px 16px; font-size: 13px; color: #70757a;
+      cursor: pointer; border-bottom: 3px solid transparent;
+    }
+    .google-tab.active-gtab { color: #1a73e8; border-bottom-color: #1a73e8; font-weight: 500; }
+
+    /* Search results */
+    .google-results { padding: 12px 24px 80px; max-width: 640px; }
+    .google-result-count { font-size: 13px; color: #70757a; margin-bottom: 16px; }
+
+    .google-featured {
+      border: 1px solid #dfe1e5; border-radius: 8px;
+      padding: 16px 20px; margin-bottom: 20px; background: #fff;
+    }
+    .gf-source { font-size: 12px; color: #202124; margin-bottom: 4px; }
+    .gf-title { font-size: 16px; color: #1a0dab; font-weight: 500; margin-bottom: 8px; cursor: pointer; }
+    .gf-title:hover { text-decoration: underline; }
+    .gf-text { font-size: 14px; color: #4d5156; line-height: 1.58; }
+    .gf-text strong { font-weight: 600; color: #202124; }
+
+    .google-result { margin-bottom: 20px; }
+    .gr-source {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #4d5156; margin-bottom: 2px;
+    }
+    .gr-favicon { width: 16px; height: 16px; border-radius: 2px; }
+    .gr-title { font-size: 18px; color: #1a0dab; cursor: pointer; margin-bottom: 4px; line-height: 1.3; }
+    .gr-title:hover { text-decoration: underline; }
+    .gr-snippet { font-size: 14px; color: #4d5156; line-height: 1.58; }
+    .gr-snippet strong { font-weight: 600; color: #202124; }
+
+    /* ── Mini Player ── */
+    .mini-player {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: none; align-items: center; gap: 14px;
+      background: #0f172a; color: #fff;
+      padding: 14px 20px 14px 18px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+      max-width: 680px; width: calc(100% - 48px);
+      z-index: 200;
+      animation: mpSlideUp .3s ease;
+    }
+    @keyframes mpSlideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .mini-player.show { display: flex; }
+    .mp-live-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #ef4444; flex-shrink: 0;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .mp-text {
+      flex: 1; font-size: 14px; line-height: 1.5; color: #e2e8f0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: opacity .2s;
+    }
+    .mp-text strong { color: #2dd4bf; font-weight: 700; }
+    .mp-return {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #10b981; color: #fff; border: none; border-radius: 10px;
+      padding: 8px 14px; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; flex-shrink: 0; transition: all .15s;
+    }
+    .mp-return:hover { background: #059669; }
+    .mp-return .material-icons-round { font-size: 15px; }
+
+    /* End class overlay */
+    .end-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .end-overlay.show { display: flex; }
+    .end-card {
+      background: #fff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      padding: 36px 32px 28px; max-width: 420px; width: 90%;
+    }
+    .end-card-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: #f0fdf4; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .end-card-icon .material-icons-round { font-size: 28px; color: #10b981; }
+    .end-card-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .end-card-sub { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .end-card-label { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 10px; }
+    .subject-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .subject-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      cursor: pointer; transition: all .15s;
+    }
+    .subject-option:hover { border-color: #a7f3d0; background: #f0fdf4; }
+    .subject-option.selected { border-color: #10b981; background: #f0fdf4; }
+    .subject-option .material-icons-round { font-size: 20px; }
+    .subject-option-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+    .subject-option-check {
+      margin-left: auto; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .subject-option.selected .subject-option-check {
+      background: #10b981; border-color: #10b981;
+    }
+    .subject-option.selected .subject-option-check::after {
+      content: ''; display: block; width: 6px; height: 6px;
+      border-radius: 50%; background: #fff;
+    }
+    .end-actions { display: flex; gap: 8px; }
+    .btn-skip {
+      flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px;
+      background: #fff; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-skip:hover { background: #f8fafc; }
+    .btn-save-subject {
+      flex: 2; padding: 12px; border: none; border-radius: 12px;
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-save-subject:hover { background: #059669; }
+
+    /* New Subject overlay */
+    .new-subject-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .new-subject-overlay.show { display: flex; }
+    .new-subject-card {
+      background: #fff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      padding: 32px 28px 24px; max-width: 440px; width: 90%;
+    }
+
+    /* preview + title row */
+    .ns-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .ns-preview {
+      width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .ns-preview .material-icons-round { font-size: 26px; transition: color .2s; }
+    .ns-header-text {}
+    .new-subject-title { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .new-subject-sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+    .ns-field-label { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+    .ns-input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-size: 14px; font-family: inherit; color: #0f172a; outline: none;
+      transition: border-color .15s; background: #fff;
+    }
+    .ns-input:focus { border-color: #10b981; }
+    .ns-input::placeholder { color: #cbd5e1; }
+
+    /* Icon picker */
+    .ns-section-label { font-size: 12px; font-weight: 700; color: #475569; margin: 18px 0 10px; }
+    .ns-icon-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+    }
+    .ns-icon-opt {
+      width: 100%; aspect-ratio: 1; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid transparent; background: #f8fafc;
+      transition: all .15s;
+    }
+    .ns-icon-opt:hover { background: #f1f5f9; border-color: #e2e8f0; }
+    .ns-icon-opt.selected { border-color: #10b981; background: #f0fdf4; }
+    .ns-icon-opt .material-icons-round { font-size: 20px; color: #64748b; }
+    .ns-icon-opt.selected .material-icons-round { color: #059669; }
+
+    /* Color picker */
+    .ns-color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ns-color-opt {
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      border: 3px solid transparent; transition: all .15s; flex-shrink: 0;
+      outline: 2px solid transparent; outline-offset: 2px;
+    }
+    .ns-color-opt.selected { outline-color: #0f172a; }
+
+    .ns-actions { display: flex; gap: 8px; margin-top: 24px; }
+    .btn-ns-cancel {
+      flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px;
+      background: #fff; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-ns-cancel:hover { background: #f8fafc; }
+    .btn-ns-create {
+      flex: 2; padding: 12px; border: none; border-radius: 12px;
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-ns-create:hover { background: #059669; }
+    .btn-ns-create:disabled { background: #d1fae5; color: #a7f3d0; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="../esl-student/assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+
+    <button class="sidebar-item active" id="nav-my-class" onclick="goToMyClass()" title="My Class">
+      <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+      <span>My Class</span>
+    </button>
+    <button class="sidebar-item" id="nav-word-bank" title="Word Bank">
+      <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+      <span>Word Bank</span>
+    </button>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <button class="app-header-back" id="headerBack" onclick="goBack()">
+        <span class="material-icons-round">arrow_back</span>
+      </button>
+      <div class="app-header-title" id="headerTitle">My Class</div>
+      <a class="version-link" href="versions/index.html" title="Version history">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+        v1
+      </a>
+      <div class="live-badge" id="liveBadge" style="display:none;">
+        <div class="live-dot"></div> LIVE
+      </div>
+    </div>
+
+    <!-- ══════════ SCREEN 1: MY CLASS ══════════ -->
+    <div class="screen active" id="screen-my-class">
+      <div class="my-class-screen">
+        <div class="my-class-inner">
+
+          <div class="my-class-toprow">
+            <h1>My Class</h1>
+            <button class="btn-start-class" onclick="startNewClass()">
+              <span class="material-icons-round">play_arrow</span>
+              Start new class
+            </button>
+          </div>
+
+          <div class="subject-list">
+
+            <!-- Subject: History -->
+            <div class="subject-card" onclick="openSubject('History', 'history', '📚')">
+              <div class="subject-card-icon" style="background:#fef3c7;">
+                <span class="material-icons-round" style="color:#d97706;">history_edu</span>
+              </div>
+              <div class="subject-card-info">
+                <div class="subject-card-name">History</div>
+                <div class="subject-card-count">4 sessions</div>
+              </div>
+              <button class="subject-card-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('History','HIS')">
+                <span class="material-icons-round">key</span>
+              </button>
+              <span class="material-icons-round subject-card-arrow">chevron_right</span>
+            </div>
+
+            <!-- Subject: Biology -->
+            <div class="subject-card" onclick="openSubject('Biology', 'biology', '🔬')">
+              <div class="subject-card-icon" style="background:#dcfce7;">
+                <span class="material-icons-round" style="color:#16a34a;">science</span>
+              </div>
+              <div class="subject-card-info">
+                <div class="subject-card-name">Biology</div>
+                <div class="subject-card-count">2 sessions</div>
+              </div>
+              <button class="subject-card-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('Biology','BIO')">
+                <span class="material-icons-round">key</span>
+              </button>
+              <span class="material-icons-round subject-card-arrow">chevron_right</span>
+            </div>
+
+            <!-- Subject: Law -->
+            <div class="subject-card" onclick="openSubject('Law', 'law', '⚖️')">
+              <div class="subject-card-icon" style="background:#ede9fe;">
+                <span class="material-icons-round" style="color:#7c3aed;">gavel</span>
+              </div>
+              <div class="subject-card-info">
+                <div class="subject-card-name">Law</div>
+                <div class="subject-card-count">1 session</div>
+              </div>
+              <button class="subject-card-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('Law','LAW')">
+                <span class="material-icons-round">key</span>
+              </button>
+              <span class="material-icons-round subject-card-arrow">chevron_right</span>
+            </div>
+
+            <!-- New Subject -->
+            <button class="btn-new-subject" onclick="openNewSubjectOverlay()">
+              <span class="material-icons-round">add</span>
+              New Subject
+            </button>
+          </div>
+
+          <!-- Unclassified -->
+          <div class="unclassified-section">
+            <button class="unclassified-toggle" onclick="toggleUnclassified(this)">
+              <span class="unclassified-toggle-left">
+                <span class="material-icons-round unclassified-toggle-icon">expand_more</span>
+                <span>Unclassified</span>
+              </span>
+              <span class="unclassified-count">5</span>
+            </button>
+            <div class="unclassified-list" id="unclassifiedList">
+              <div class="unclassified-card" id="unclassifiedCard" onclick="openAssignOverlay()">
+                <div class="unclassified-card-info">
+                  <div class="unclassified-card-name">Recording — May 14</div>
+                  <div class="unclassified-card-meta">05/14 · 10:00 AM · 42 min</div>
+                </div>
+                <span class="unclassified-tag">No subject</span>
+                <span class="material-icons-round" style="color:#cbd5e1;font-size:18px;flex-shrink:0;">chevron_right</span>
+              </div>
+              <div class="unclassified-card" onclick="openAssignOverlay()">
+                <div class="unclassified-card-info">
+                  <div class="unclassified-card-name">Recording — May 13</div>
+                  <div class="unclassified-card-meta">05/13 · 2:00 PM · 37 min</div>
+                </div>
+                <span class="unclassified-tag">No subject</span>
+                <span class="material-icons-round" style="color:#cbd5e1;font-size:18px;flex-shrink:0;">chevron_right</span>
+              </div>
+              <div class="unclassified-card" onclick="openAssignOverlay()">
+                <div class="unclassified-card-info">
+                  <div class="unclassified-card-name">Recording — May 11</div>
+                  <div class="unclassified-card-meta">05/11 · 9:30 AM · 51 min</div>
+                </div>
+                <span class="unclassified-tag">No subject</span>
+                <span class="material-icons-round" style="color:#cbd5e1;font-size:18px;flex-shrink:0;">chevron_right</span>
+              </div>
+              <div class="unclassified-card" onclick="openAssignOverlay()">
+                <div class="unclassified-card-info">
+                  <div class="unclassified-card-name">Recording — May 8</div>
+                  <div class="unclassified-card-meta">05/08 · 3:00 PM · 28 min</div>
+                </div>
+                <span class="unclassified-tag">No subject</span>
+                <span class="material-icons-round" style="color:#cbd5e1;font-size:18px;flex-shrink:0;">chevron_right</span>
+              </div>
+              <div class="unclassified-card" onclick="openAssignOverlay()">
+                <div class="unclassified-card-info">
+                  <div class="unclassified-card-name">Recording — May 6</div>
+                  <div class="unclassified-card-meta">05/06 · 11:00 AM · 44 min</div>
+                </div>
+                <span class="unclassified-tag">No subject</span>
+                <span class="material-icons-round" style="color:#cbd5e1;font-size:18px;flex-shrink:0;">chevron_right</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SCREEN 2: SUBJECT DETAIL ══════════ -->
+    <div class="screen" id="screen-subject">
+      <div class="subject-detail-screen">
+
+        <!-- Left: session list -->
+        <div class="subject-left">
+          <div class="subject-left-head">
+            <h2 id="subjectTitle">History</h2>
+            <button class="btn-new-class" onclick="startNewClass()">
+              <span class="material-icons-round">play_arrow</span>
+              Start
+            </button>
+          </div>
+
+          <div class="session-list" id="sessionList">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Right: transcript panel -->
+        <div class="subject-right">
+          <div class="tp-empty" id="tpEmpty">Select a session to view its transcript</div>
+          <div id="tpContent" style="display:none; flex:1; flex-direction:column;">
+            <div class="tp-header">
+              <div class="tp-name" id="tpName"></div>
+              <div class="tp-meta" id="tpMeta"></div>
+            </div>
+            <div class="tp-segments" id="tpSegments"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ SCREEN 3: LIVE CLASS ══════════ -->
+    <div class="screen" id="screen-live">
+      <div class="live-body">
+
+        <!-- Transcript -->
+        <div class="transcript-area">
+          <div class="transcript-scroll">
+            <p>In the 20th century, the concept of <span class="transcript-word" data-word="sovereignty" data-zh="主權">sovereignty</span> underwent significant transformation in response to the rise of international law.</p>
+            <p>The <span class="transcript-word" data-word="Westphalian" data-zh="西伐利亞的">Westphalian</span> model, established in 1648, had defined the nation-state as the primary unit of international relations.</p>
+            <p>However, the aftermath of World War II led to the creation of <span class="transcript-word" data-word="multilateral" data-zh="多邊的">multilateral</span> institutions such as the United Nations.</p>
+            <p>These bodies introduced the idea of <span class="transcript-word" data-word="humanitarian" data-zh="人道主義的">humanitarian</span> intervention — the notion that state sovereignty is not absolute when governments commit atrocities against their own citizens.</p>
+            <p>Scholars debate whether such interventions constitute a legitimate limitation on sovereignty or a form of modern <span class="transcript-word" data-word="imperialism" data-zh="帝國主義">imperialism</span>.</p>
+            <p>The 1990s saw several key cases, including the <span class="transcript-word" data-word="intervention" data-zh="干預">intervention</span> in Kosovo, that shaped contemporary international norms.</p>
+          </div>
+          <div class="live-speech-bar">
+            <div class="speech-text">
+              ...the concept of <span class="highlight">geopolitical</span> influence in the post-Cold War era...
+            </div>
+            <button class="btn-minimize" onclick="enterMiniPlayer()" title="Simulate switching tab">
+              <span class="material-icons-round">open_in_new</span>
+              Switch Tab
+            </button>
+            <button class="btn-end-class" onclick="showEndOverlay()">
+              <span class="material-icons-round">stop_circle</span>
+              End Class
+            </button>
+          </div>
+        </div>
+
+        <!-- Saved Vocabs Panel -->
+        <div class="vocab-panel">
+          <div class="vocab-panel-title">Saved Vocabs</div>
+          <div class="vocab-list" id="vocabList">
+            <div class="vocab-empty" id="vocabEmpty">Click on any word to save it to your Word Bank.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════ SCREEN 4: SIMULATED OTHER TAB ══════════ -->
+    <div class="screen" id="screen-tab">
+      <div class="fake-tab-page">
+        <!-- Fake browser chrome -->
+        <div class="fake-tab-bar">
+          <div class="fake-tab active-tab">
+            <svg viewBox="0 0 18 18" style="width:14px;height:14px;flex-shrink:0;"><circle cx="9" cy="9" r="9" fill="#fff"/><path d="M9 1.5A7.5 7.5 0 1 0 16.5 9 7.508 7.508 0 0 0 9 1.5z" fill="none"/><path d="M9 1.5v15M1.5 9h15" stroke="#e2e8f0" stroke-width=".5"/><path d="M9 1.5C6.9 3.8 5.6 6.3 5.6 9s1.3 5.2 3.4 7.5C10.9 14.2 12.4 11.7 12.4 9S10.9 3.8 9 1.5z" fill="#4285f4" opacity=".15"/></svg>
+            Westphalian model — Google Search
+          </div>
+          <div class="fake-tab">
+            <span class="material-icons-round" style="font-size:14px;color:#10b981;">play_arrow</span>
+            History — Live · DAHUA
+          </div>
+        </div>
+        <!-- Google Search page -->
+        <div class="fake-page-content google-page">
+          <!-- Google header -->
+          <div class="google-header">
+            <svg class="google-logo" viewBox="0 0 272 92" xmlns="http://www.w3.org/2000/svg">
+              <path d="M115.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C71.25 34.32 81.24 25 93.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44S80.99 39.2 80.99 47.18c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z" fill="#EA4335"/>
+              <path d="M163.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18c0-12.85 9.99-22.18 22.25-22.18s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44s-12.51 5.46-12.51 13.44c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z" fill="#FBBC05"/>
+              <path d="M209.75 26.34v39.82c0 16.38-9.66 23.07-21.08 23.07-10.75 0-17.22-7.19-19.66-13.07l8.48-3.53c1.51 3.61 5.21 7.87 11.17 7.87 7.31 0 11.84-4.51 11.84-13v-3.19h-.34c-2.18 2.69-6.38 5.04-11.68 5.04-11.09 0-21.25-9.66-21.25-22.09 0-12.52 10.16-22.26 21.25-22.26 5.29 0 9.49 2.35 11.68 4.96h.34v-3.61h9.25zm-8.56 20.92c0-7.81-5.21-13.52-11.84-13.52-6.72 0-12.35 5.71-12.35 13.52 0 7.73 5.63 13.36 12.35 13.36 6.63 0 11.84-5.63 11.84-13.36z" fill="#4285F4"/>
+              <path d="M225 3v65h-9.5V3h9.5z" fill="#34A853"/>
+              <path d="M262.02 54.48l7.56 5.04c-2.44 3.61-8.32 9.83-18.48 9.83-12.6 0-22.01-9.74-22.01-22.18 0-13.19 9.49-22.18 20.92-22.18 11.51 0 17.14 9.16 18.98 14.11l1.01 2.52-29.65 12.28c2.27 4.45 5.8 6.72 10.75 6.72 4.96 0 8.4-2.44 10.92-6.14zm-23.27-7.98l19.82-8.23c-1.09-2.77-4.37-4.7-8.23-4.7-4.95 0-11.84 4.37-11.59 12.93z" fill="#EA4335"/>
+              <path d="M35.29 41.41V32h31.09c.31 1.64.47 3.58.47 5.68 0 7.06-1.93 15.79-8.15 22.01-6.05 6.3-13.78 9.66-24.02 9.66C16.32 69.35.36 53.89.36 35.53.36 17.17 16.32 1.71 34.68 1.71c10.47 0 17.93 4.12 23.54 9.49l-6.64 6.64c-4.01-3.78-9.49-6.72-16.9-6.72-13.78 0-24.56 11.1-24.56 24.9 0 13.81 10.78 24.9 24.56 24.9 8.95 0 14.04-3.61 17.3-6.87 2.65-2.65 4.39-6.44 5.07-11.61H35.29z" fill="#4285F4"/>
+            </svg>
+            <div class="google-searchbar">
+              <span class="material-icons-round" style="font-size:20px;color:#9aa0a6;">search</span>
+              <span class="google-query">Westphalian model sovereignty definition</span>
+              <span class="material-icons-round" style="font-size:20px;color:#9aa0a6;margin-left:auto;">mic</span>
+            </div>
+            <div class="google-tabs">
+              <span class="google-tab active-gtab">All</span>
+              <span class="google-tab">Images</span>
+              <span class="google-tab">News</span>
+              <span class="google-tab">Videos</span>
+              <span class="google-tab">Books</span>
+            </div>
+          </div>
+          <!-- Search results -->
+          <div class="google-results">
+            <div class="google-result-count">About 4,120,000 results (0.42 seconds)</div>
+
+            <!-- Knowledge panel snippet -->
+            <div class="google-featured">
+              <div class="gf-source">en.wikipedia.org › wiki › Westphalian_sovereignty</div>
+              <div class="gf-title">Westphalian sovereignty — Wikipedia</div>
+              <div class="gf-text">The <strong>Westphalian model</strong> refers to the concept of national sovereignty established by the Peace of Westphalia in 1648. It holds that each nation-state has sovereignty over its territory and domestic affairs, to the exclusion of all external powers.</div>
+            </div>
+
+            <!-- Regular results -->
+            <div class="google-result">
+              <div class="gr-source">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%234285f4'/%3E%3Ctext x='8' y='12' text-anchor='middle' fill='white' font-size='10' font-family='sans-serif'%3EB%3C/text%3E%3C/svg%3E" alt="" class="gr-favicon">
+                britannica.com
+              </div>
+              <div class="gr-title">Westphalian Sovereignty | International Relations</div>
+              <div class="gr-snippet">The Peace of Westphalia (1648) established the principle of <strong>state sovereignty</strong>, becoming the foundation of modern international law and the nation-state system that persists today...</div>
+            </div>
+
+            <div class="google-result">
+              <div class="gr-source">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%23e63946'/%3E%3Ctext x='8' y='12' text-anchor='middle' fill='white' font-size='10' font-family='sans-serif'%3EJ%3C/text%3E%3C/svg%3E" alt="" class="gr-favicon">
+                jstor.org
+              </div>
+              <div class="gr-title">Rethinking the Westphalian System — JSTOR</div>
+              <div class="gr-snippet">This article examines the challenges to Westphalian sovereignty posed by <strong>multilateral institutions</strong>, humanitarian intervention, and the erosion of absolute state authority in the 21st century...</div>
+            </div>
+
+            <div class="google-result">
+              <div class="gr-source">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%23333'/%3E%3Ctext x='8' y='12' text-anchor='middle' fill='white' font-size='10' font-family='sans-serif'%3EY%3C/text%3E%3C/svg%3E" alt="" class="gr-favicon">
+                youtube.com
+              </div>
+              <div class="gr-title">The Westphalian System Explained in 8 Minutes — YouTube</div>
+              <div class="gr-snippet">A concise explanation of how the 1648 Peace of Westphalia shaped modern concepts of <strong>state sovereignty</strong> and international order. Covers key treaties, political philosophy, and lasting impact...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+<!-- ══════════ MINI PLAYER ══════════ -->
+<div class="mini-player" id="miniPlayer">
+  <div class="mp-live-dot"></div>
+  <div class="mp-text" id="mpText">...the concept of <strong>geopolitical</strong> influence in the post-Cold War era...</div>
+  <button class="mp-return" onclick="exitMiniPlayer()">
+    <span class="material-icons-round">open_in_new</span>
+    Return to class
+  </button>
+</div>
+
+<!-- Assign Subject Overlay -->
+<!-- ===== Share Class Code Modal ===== -->
+<div class="share-code-overlay" id="shareCodeOverlay" onclick="if(event.target===this)closeShareCode()">
+  <div class="share-code-card">
+    <div class="share-code-icon">
+      <span class="material-icons-round">key</span>
+    </div>
+    <div class="share-code-title">Share Class Code</div>
+    <div class="share-code-subject" id="shareCodeSubject">History</div>
+    <div class="share-code-box">
+      <div class="share-code-label">Class Code</div>
+      <div class="share-code-value" id="shareCodeValue">HIS-482</div>
+      <div class="share-code-hint">Students enter this code to join your class</div>
+    </div>
+    <button class="btn-copy-code" id="btnCopyCode" onclick="copyCode()">
+      <span class="material-icons-round">content_copy</span> Copy Code
+    </button>
+    <button class="btn-close-share" onclick="closeShareCode()">Close</button>
+  </div>
+</div>
+
+<div class="end-overlay" id="assignOverlay">
+  <div class="end-card">
+    <div class="end-card-icon">
+      <span class="material-icons-round">drive_file_move</span>
+    </div>
+    <div class="end-card-title">Move to Subject</div>
+    <div class="end-card-sub">Recording — May 14 &nbsp;·&nbsp; 05/14 · 10:00 AM · 42 min</div>
+    <div class="end-card-label">Choose a subject folder</div>
+    <div class="subject-options" id="assignSubjectOptions">
+      <div class="subject-option selected" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#d97706;">history_edu</span>
+        <span class="subject-option-name">History</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <div class="subject-option" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#16a34a;">science</span>
+        <span class="subject-option-name">Biology</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <div class="subject-option" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#7c3aed;">gavel</span>
+        <span class="subject-option-name">Law</span>
+        <div class="subject-option-check"></div>
+      </div>
+    </div>
+    <div class="end-actions">
+      <button class="btn-skip" onclick="closeAssignOverlay()">Cancel</button>
+      <button class="btn-save-subject" onclick="confirmAssign()">Move</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Subject Overlay -->
+<div class="new-subject-overlay" id="newSubjectOverlay">
+  <div class="new-subject-card">
+
+    <!-- Preview + heading -->
+    <div class="ns-header">
+      <div class="ns-preview" id="nsPreview" style="background:#fef3c7;">
+        <span class="material-icons-round" id="nsPreviewIcon" style="color:#d97706;">history_edu</span>
+      </div>
+      <div class="ns-header-text">
+        <div class="new-subject-title">New Subject</div>
+        <div class="new-subject-sub">Create a folder for your recordings.</div>
+      </div>
+    </div>
+
+    <!-- Name -->
+    <div class="ns-field-label">Subject name</div>
+    <input class="ns-input" id="nsNameInput" type="text" placeholder="e.g. Economics, Psychology…" oninput="updateCreateBtn()" />
+
+    <!-- Icon picker -->
+    <div class="ns-section-label">Icon</div>
+    <div class="ns-icon-grid" id="nsIconGrid">
+      <!-- injected by JS -->
+    </div>
+
+    <!-- Color picker -->
+    <div class="ns-section-label">Color</div>
+    <div class="ns-color-row" id="nsColorRow">
+      <!-- injected by JS -->
+    </div>
+
+    <div class="ns-actions">
+      <button class="btn-ns-cancel" onclick="closeNewSubjectOverlay()">Cancel</button>
+      <button class="btn-ns-create" id="nsCreateBtn" onclick="createNewSubject()" disabled>Create Subject</button>
+    </div>
+  </div>
+</div>
+
+<!-- End Class Overlay -->
+<div class="end-overlay" id="endOverlay">
+  <div class="end-card">
+    <div class="end-card-icon">
+      <span class="material-icons-round">check_circle</span>
+    </div>
+    <div class="end-card-title">Class ended</div>
+    <div class="end-card-sub">Session saved · 47 min · 3 words saved</div>
+    <div class="end-card-label">Move to Subject (optional)</div>
+    <div class="subject-options">
+      <div class="subject-option selected" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#d97706;">history_edu</span>
+        <span class="subject-option-name">History</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <div class="subject-option" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#16a34a;">science</span>
+        <span class="subject-option-name">Biology</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <div class="subject-option" onclick="selectSubject(this)">
+        <span class="material-icons-round" style="color:#7c3aed;">gavel</span>
+        <span class="subject-option-name">Law</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <!-- New subject inline -->
+      <div class="subject-option" id="endNewSubjectOption" onclick="selectEndNewSubject(this)">
+        <span class="material-icons-round" style="color:#94a3b8;">add_circle_outline</span>
+        <span class="subject-option-name" style="color:#64748b;">New subject…</span>
+        <div class="subject-option-check"></div>
+      </div>
+      <input class="ns-input" id="endNewSubjectInput" type="text"
+        placeholder="Subject name"
+        style="display:none; margin-top:8px;"
+        oninput="updateEndSaveBtn()" />
+    </div>
+    <div class="end-actions">
+      <button class="btn-skip" onclick="goToMyClass()">Skip</button>
+      <button class="btn-save-subject" id="endSaveBtn" onclick="goToMyClass()">Save &amp; go back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Data ── */
+  const SUBJECTS = {
+    History: [
+      { id: 1, name: 'History class01 — Modern Europe', date: '05/12', startTime: '9:00 AM', duration: '52 min', words: 7,
+        segments: [
+          { text: 'The concept of <span class="tp-word" onclick="saveWord(this)" data-word="sovereignty" data-zh="主權">sovereignty</span> was redefined after the Treaty of Westphalia in 1648, establishing the modern nation-state system.' },
+          { text: 'National <span class="tp-word" onclick="saveWord(this)" data-word="unification" data-zh="統一">unification</span> movements swept through Europe in the 19th century, reshaping borders and identities.' },
+          { text: 'The Congress of Vienna attempted to restore <span class="tp-word" onclick="saveWord(this)" data-word="legitimacy" data-zh="合法性">legitimacy</span> and balance of power among European states.' },
+        ]
+      },
+      { id: 2, name: 'History class02 — Cold War', date: '05/09', startTime: '2:00 PM', duration: '48 min', words: 5,
+        segments: [
+          { text: 'The Cold War was characterised by <span class="tp-word" onclick="saveWord(this)" data-word="ideological" data-zh="意識形態的">ideological</span> competition between capitalism and communism.' },
+          { text: '<span class="tp-word" onclick="saveWord(this)" data-word="Containment" data-zh="圍堵">Containment</span> became the cornerstone of US foreign policy, aiming to prevent Soviet expansion.' },
+        ]
+      },
+      { id: 3, name: 'History class03 — Post-colonial', date: '05/05', startTime: '10:30 AM', duration: '55 min', words: 9,
+        segments: [
+          { text: '<span class="tp-word" onclick="saveWord(this)" data-word="Decolonisation" data-zh="去殖民化">Decolonisation</span> refers to the process by which colonies gained independence from European imperial powers.' },
+        ]
+      },
+      { id: 4, name: 'History class04 — French Revolution', date: '04/28', startTime: '9:00 AM', duration: '61 min', words: 11,
+        segments: [
+          { text: 'The French Revolution fundamentally challenged the <span class="tp-word" onclick="saveWord(this)" data-word="aristocracy" data-zh="貴族">aristocracy</span> and the feudal order.' },
+        ]
+      },
+    ],
+    Biology: [
+      { id: 5, name: 'Biology class01 — Cell Biology', date: '05/10', startTime: '1:00 PM', duration: '44 min', words: 6,
+        segments: [
+          { text: '<span class="tp-word" onclick="saveWord(this)" data-word="Mitosis" data-zh="有絲分裂">Mitosis</span> is the process of cell division that results in two genetically identical daughter cells.' },
+        ]
+      },
+      { id: 6, name: 'Biology class02 — Genetics', date: '05/06', startTime: '3:30 PM', duration: '50 min', words: 8,
+        segments: [
+          { text: '<span class="tp-word" onclick="saveWord(this)" data-word="Alleles" data-zh="等位基因">Alleles</span> are different versions of the same gene, and their combinations determine an organism\'s traits.' },
+        ]
+      },
+    ],
+    Law: [
+      { id: 7, name: 'Law class01 — Constitutional Law', date: '05/11', startTime: '11:00 AM', duration: '58 min', words: 10,
+        segments: [
+          { text: '<span class="tp-word" onclick="saveWord(this)" data-word="Jurisprudence" data-zh="法理學">Jurisprudence</span> is the theoretical study of law, exploring its nature, sources, and purpose.' },
+        ]
+      },
+    ],
+  };
+
+  let currentSubject = 'History';
+  let selectedSession = null;
+  let savedWords = new Set();
+
+  /* ── Navigation ── */
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  function goToMyClass() {
+    showScreen('my-class');
+    document.getElementById('headerTitle').textContent = 'My Class';
+    document.getElementById('headerBack').style.display = 'none';
+    document.getElementById('liveBadge').style.display = 'none';
+    document.getElementById('endOverlay').classList.remove('show');
+    setSidebarActive('nav-my-class');
+  }
+
+  function openSubject(name, key, emoji) {
+    currentSubject = name;
+    document.getElementById('headerTitle').textContent = name;
+    document.getElementById('headerBack').style.display = 'flex';
+    document.getElementById('liveBadge').style.display = 'none';
+    document.getElementById('subjectTitle').textContent = name;
+
+    // Render sessions
+    const sessions = SUBJECTS[name] || [];
+    const list = document.getElementById('sessionList');
+    list.innerHTML = sessions.map(s => `
+      <div class="session-card" id="sess-${s.id}" onclick="selectSession(${s.id})">
+        <div class="session-card-info">
+          <div class="session-card-name">${s.name}</div>
+          <div class="session-card-meta">
+            <span>${s.date}</span>
+            <span class="sep">·</span>
+            <span>${s.startTime}</span>
+            <span class="sep">·</span>
+            <span>${s.duration}</span>
+          </div>
+        </div>
+        <div class="session-badge">
+          <span class="material-icons-round">bookmark</span>
+          ${s.words}
+        </div>
+        <span class="material-icons-round session-card-arrow">chevron_right</span>
+      </div>
+    `).join('');
+
+    // Reset transcript panel
+    document.getElementById('tpEmpty').style.display = 'flex';
+    document.getElementById('tpContent').style.display = 'none';
+    selectedSession = null;
+
+    showScreen('subject');
+  }
+
+  function selectSession(id) {
+    // Highlight card
+    document.querySelectorAll('.session-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('sess-' + id).classList.add('selected');
+
+    // Find session data
+    const all = Object.values(SUBJECTS).flat();
+    const sess = all.find(s => s.id === id);
+    if (!sess) return;
+
+    document.getElementById('tpEmpty').style.display = 'none';
+    const content = document.getElementById('tpContent');
+    content.style.display = 'flex';
+
+    document.getElementById('tpName').textContent = sess.name;
+    document.getElementById('tpMeta').innerHTML =
+      `<span>${sess.date}</span><span class="sep">·</span><span>${sess.duration}</span><span class="sep">·</span><span>${sess.words} words saved</span>`;
+
+    document.getElementById('tpSegments').innerHTML = sess.segments.map(seg => `
+      <div class="tp-segment">
+        <div class="tp-segment-text">${seg.text}</div>
+      </div>
+    `).join('');
+  }
+
+  function goBack() {
+    goToMyClass();
+  }
+
+  function startNewClass() {
+    document.getElementById('headerTitle').textContent = 'History — Live';
+    document.getElementById('headerBack').style.display = 'none';
+    document.getElementById('liveBadge').style.display = 'flex';
+    setSidebarActive('nav-my-class');
+    showScreen('live');
+  }
+
+  function setSidebarActive(id) {
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
+  }
+
+  /* ── Live class: save word ── */
+  document.querySelectorAll('.transcript-word').forEach(w => {
+    w.addEventListener('click', function() {
+      const word = this.dataset.word;
+      const zh = this.dataset.zh;
+      if (!word || savedWords.has(word)) return;
+      savedWords.add(word);
+      addVocabCard(word, zh);
+    });
+  });
+
+  function addVocabCard(word, zh) {
+    const empty = document.getElementById('vocabEmpty');
+    if (empty) empty.style.display = 'none';
+    const list = document.getElementById('vocabList');
+    const card = document.createElement('div');
+    card.className = 'vocab-card';
+    card.innerHTML = `
+      <div class="vocab-card-text">
+        <div class="vocab-card-en">${word}</div>
+        <div class="vocab-card-zh">${zh}</div>
+      </div>
+      <div class="vocab-card-bookmark saved">
+        <span class="material-icons-round">bookmark</span>
+      </div>
+    `;
+    list.prepend(card);
+  }
+
+  /* ── Mini Player ── */
+  const MP_PHRASES = [
+    '...the concept of <strong>geopolitical</strong> influence in the post-Cold War era...',
+    '...sovereignty was fundamentally challenged by <strong>multilateral</strong> institutions...',
+    '...the rise of <strong>humanitarian</strong> intervention redefined state authority...',
+    '...NATO\'s role as a <strong>supranational</strong> body remains contested today...',
+    '...critics argue this represents a new form of <strong>imperialism</strong>...',
+  ];
+  let mpInterval = null;
+  let mpIndex = 0;
+
+  function enterMiniPlayer() {
+    document.getElementById('headerTitle').textContent = 'History — Live';
+    document.getElementById('liveBadge').style.display = 'flex';
+    showScreen('tab');
+    document.getElementById('miniPlayer').classList.add('show');
+    mpIndex = 0;
+    document.getElementById('mpText').innerHTML = MP_PHRASES[0];
+    mpInterval = setInterval(() => {
+      mpIndex = (mpIndex + 1) % MP_PHRASES.length;
+      const el = document.getElementById('mpText');
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.innerHTML = MP_PHRASES[mpIndex];
+        el.style.opacity = '1';
+      }, 200);
+    }, 3500);
+  }
+
+  function exitMiniPlayer() {
+    clearInterval(mpInterval);
+    document.getElementById('miniPlayer').classList.remove('show');
+    showScreen('live');
+  }
+
+  /* ── End class overlay ── */
+  function showEndOverlay() {
+    document.getElementById('endOverlay').classList.add('show');
+  }
+
+  function selectSubject(el) {
+    document.querySelectorAll('#endOverlay .subject-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    // hide new subject input if another option selected
+    const input = document.getElementById('endNewSubjectInput');
+    if (el.id !== 'endNewSubjectOption') {
+      input.style.display = 'none';
+      input.value = '';
+    }
+    updateEndSaveBtn();
+  }
+
+  function selectEndNewSubject(el) {
+    document.querySelectorAll('#endOverlay .subject-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const input = document.getElementById('endNewSubjectInput');
+    input.style.display = 'block';
+    setTimeout(() => input.focus(), 50);
+    updateEndSaveBtn();
+  }
+
+  function updateEndSaveBtn() {
+    const newOpt = document.getElementById('endNewSubjectOption');
+    const input = document.getElementById('endNewSubjectInput');
+    const btn = document.getElementById('endSaveBtn');
+    if (newOpt.classList.contains('selected')) {
+      btn.disabled = input.value.trim().length === 0;
+    } else {
+      btn.disabled = false;
+    }
+  }
+
+  /* ── New Subject overlay ── */
+  const NS_ICONS = [
+    'history_edu','science','gavel','calculate','psychology',
+    'palette','language','public','auto_stories','biotech',
+    'architecture','music_note','computer','eco','engineering',
+    'medical_services','translate','functions','theater_comedy','sports_soccer',
+    'school','book','brush','camera_alt',
+  ];
+  const NS_COLORS = [
+    { bg: '#fef3c7', icon: '#d97706' },
+    { bg: '#dcfce7', icon: '#16a34a' },
+    { bg: '#ede9fe', icon: '#7c3aed' },
+    { bg: '#fee2e2', icon: '#dc2626' },
+    { bg: '#e0f2fe', icon: '#0284c7' },
+    { bg: '#fce7f3', icon: '#db2777' },
+    { bg: '#ffedd5', icon: '#ea580c' },
+    { bg: '#f0fdf4', icon: '#15803d' },
+  ];
+
+  let nsState = { icon: NS_ICONS[0], bg: NS_COLORS[0].bg, iconColor: NS_COLORS[0].icon };
+
+  function buildNsPicker() {
+    // Icons
+    const iconGrid = document.getElementById('nsIconGrid');
+    iconGrid.innerHTML = NS_ICONS.map((ic, i) => `
+      <div class="ns-icon-opt${i === 0 ? ' selected' : ''}" data-icon="${ic}" onclick="selectNsIcon(this)" title="${ic.replace(/_/g,' ')}">
+        <span class="material-icons-round">${ic}</span>
+      </div>
+    `).join('');
+
+    // Colors
+    const colorRow = document.getElementById('nsColorRow');
+    colorRow.innerHTML = NS_COLORS.map((c, i) => `
+      <div class="ns-color-opt${i === 0 ? ' selected' : ''}"
+           style="background:${c.bg};"
+           data-bg="${c.bg}" data-icon-color="${c.icon}"
+           onclick="selectNsColor(this)" title="${c.bg}"></div>
+    `).join('');
+  }
+
+  function updateNsPreview() {
+    document.getElementById('nsPreview').style.background = nsState.bg;
+    document.getElementById('nsPreviewIcon').style.color = nsState.iconColor;
+    document.getElementById('nsPreviewIcon').textContent = nsState.icon;
+  }
+
+  function selectNsIcon(el) {
+    document.querySelectorAll('.ns-icon-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    nsState.icon = el.dataset.icon;
+    updateNsPreview();
+  }
+
+  function selectNsColor(el) {
+    document.querySelectorAll('.ns-color-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    nsState.bg = el.dataset.bg;
+    nsState.iconColor = el.dataset.iconColor;
+    updateNsPreview();
+  }
+
+  function openNewSubjectOverlay() {
+    buildNsPicker();
+    nsState = { icon: NS_ICONS[0], bg: NS_COLORS[0].bg, iconColor: NS_COLORS[0].icon };
+    updateNsPreview();
+    document.getElementById('nsNameInput').value = '';
+    document.getElementById('nsCreateBtn').disabled = true;
+    document.getElementById('newSubjectOverlay').classList.add('show');
+    setTimeout(() => document.getElementById('nsNameInput').focus(), 50);
+  }
+
+  function closeNewSubjectOverlay() {
+    document.getElementById('newSubjectOverlay').classList.remove('show');
+  }
+
+  function updateCreateBtn() {
+    const val = document.getElementById('nsNameInput').value.trim();
+    document.getElementById('nsCreateBtn').disabled = val.length === 0;
+  }
+
+  function createNewSubject() {
+    const name = document.getElementById('nsNameInput').value.trim();
+    if (!name) return;
+    if (!SUBJECTS[name]) SUBJECTS[name] = [];
+
+    const btn = document.querySelector('.btn-new-subject');
+    const card = document.createElement('div');
+    card.className = 'subject-card';
+    card.setAttribute('onclick', `openSubject('${name}', '${name.toLowerCase()}', '')`);
+    card.innerHTML = `
+      <div class="subject-card-icon" style="background:${nsState.bg};">
+        <span class="material-icons-round" style="color:${nsState.iconColor};">${nsState.icon}</span>
+      </div>
+      <div class="subject-card-info">
+        <div class="subject-card-name">${name}</div>
+        <div class="subject-card-count">0 sessions</div>
+      </div>
+      <span class="material-icons-round subject-card-arrow">chevron_right</span>
+    `;
+    btn.parentNode.insertBefore(card, btn);
+    closeNewSubjectOverlay();
+  }
+
+  document.getElementById('newSubjectOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeNewSubjectOverlay();
+  });
+
+  /* ── Unclassified toggle ── */
+  function toggleUnclassified(btn) {
+    btn.classList.toggle('collapsed');
+    document.getElementById('unclassifiedList').classList.toggle('collapsed');
+  }
+
+  /* ── Assign Subject overlay ── */
+  function openAssignOverlay() {
+    // reset selection to first option
+    document.querySelectorAll('#assignSubjectOptions .subject-option').forEach((o, i) => {
+      o.classList.toggle('selected', i === 0);
+    });
+    document.getElementById('assignOverlay').classList.add('show');
+  }
+
+  function closeAssignOverlay() {
+    document.getElementById('assignOverlay').classList.remove('show');
+  }
+
+  function confirmAssign() {
+    // Hide the unclassified card (session moved)
+    const card = document.getElementById('unclassifiedCard');
+    card.style.transition = 'opacity .3s';
+    card.style.opacity = '0';
+    setTimeout(() => {
+      card.style.display = 'none';
+      // Hide section label if no more unclassified
+      const label = card.previousElementSibling;
+      if (label && label.classList.contains('section-label')) label.style.display = 'none';
+    }, 300);
+    closeAssignOverlay();
+  }
+
+  document.getElementById('assignOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeAssignOverlay();
+  });
+
+  /* ── Transcript panel word save ── */
+  function saveWord(el) {
+    el.classList.add('saved');
+    el.style.color = '#059669';
+  }
+
+  /* ── Share Class Code ── */
+  var _shareCodes = { 'HIS': '482', 'BIO': '739', 'LAW': '156' };
+
+  function openShareCode(subjectName, prefix) {
+    var code = _shareCodes[prefix] || Math.floor(100 + Math.random() * 900).toString();
+    _shareCodes[prefix] = code;
+    document.getElementById('shareCodeSubject').textContent = subjectName;
+    document.getElementById('shareCodeValue').textContent = prefix + '-' + code;
+    var btn = document.getElementById('btnCopyCode');
+    btn.innerHTML = '<span class="material-icons-round">content_copy</span> Copy Code';
+    btn.style.background = '#10b981';
+    document.getElementById('shareCodeOverlay').classList.add('show');
+  }
+
+  function closeShareCode() {
+    document.getElementById('shareCodeOverlay').classList.remove('show');
+  }
+
+  function copyCode() {
+    var code = document.getElementById('shareCodeValue').textContent;
+    navigator.clipboard.writeText(code).catch(function() {});
+    var btn = document.getElementById('btnCopyCode');
+    btn.innerHTML = '<span class="material-icons-round">check</span> Copied!';
+    btn.style.background = '#059669';
+  }
+</script>
+</body>
+</html>

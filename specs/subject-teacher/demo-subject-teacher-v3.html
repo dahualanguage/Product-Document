@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Subject Teacher v3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b; background: #fff; line-height: 1.5; font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    @keyframes listening-dot {
+      0%, 100% { opacity: .4; }
+      50% { opacity: 1; }
+    }
+
+    /* ── App Frame ── */
+    .app-frame { display: flex; width: 100%; min-height: 100vh; background: #fff; }
+
+    /* ── Sidebar ── */
+    .app-sidebar {
+      width: 88px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0; gap: 6px;
+    }
+    .sidebar-logo {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; flex-shrink: 0;
+    }
+    .sidebar-item {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 0; width: 64px; cursor: pointer; position: relative;
+      transition: all .15s; border-radius: 10px; gap: 4px;
+    }
+    .sidebar-item .material-icons-round { font-size: 22px; color: #94a3b8; }
+    .sidebar-item span { font-size: 10px; font-weight: 600; color: #94a3b8; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item:hover .material-icons-round { color: #64748b; }
+    .sidebar-item:hover span { color: #64748b; }
+    .sidebar-item.active { background: #ecfdf5; }
+    .sidebar-item.active .material-icons-round { color: #059669; }
+    .sidebar-item.active span { color: #059669; }
+
+    /* ── Main ── */
+    .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .app-header {
+      height: 56px; flex-shrink: 0; background: #fff;
+      border-bottom: 1px solid #C4CDD5;
+      display: flex; align-items: center; padding: 0 28px;
+    }
+    .app-header-title { font-size: 16px; font-weight: 700; color: #0f172a; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #475569; font-weight: 500;
+    }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-content { flex: 1; background: #f8faf9; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+
+    /* ── Screen containers ── */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ===========================
+       SCREEN 1: MIC TEST
+       =========================== */
+    .mic-test-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px;
+    }
+    .mic-test-card {
+      background: #fff; border-radius: 20px; padding: 48px 40px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+      max-width: 600px; width: 100%; text-align: center;
+    }
+    .mic-test-card h1 {
+      font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 8px;
+    }
+    .mic-test-card .subtitle {
+      font-size: 14px; color: #94a3b8; margin-bottom: 36px;
+    }
+
+    /* Mic icon area */
+    .mic-icon-area {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-bottom: 20px;
+    }
+    .waveform-bars {
+      display: flex; gap: 3px; align-items: center; height: 48px;
+    }
+    .waveform-bars .bar {
+      width: 4px; border-radius: 2px; background: #14b8a6; opacity: .35;
+      transition: all .3s;
+    }
+    .waveform-bars.animating .bar {
+      animation: pulse 0.8s ease-in-out infinite;
+      opacity: .7;
+    }
+    .waveform-bars .bar:nth-child(1) { height: 16px; animation-delay: 0s; }
+    .waveform-bars .bar:nth-child(2) { height: 28px; animation-delay: .1s; }
+    .waveform-bars .bar:nth-child(3) { height: 40px; animation-delay: .2s; }
+    .waveform-bars .bar:nth-child(4) { height: 32px; animation-delay: .3s; }
+    .waveform-bars .bar:nth-child(5) { height: 20px; animation-delay: .15s; }
+    .mic-circle {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid #14b8a6; background: #f0fdfa;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mic-circle .material-icons-round { font-size: 36px; color: #14b8a6; }
+
+    .speak-text {
+      font-size: 14px; color: #64748b; margin-bottom: 20px;
+    }
+    .speak-text strong { color: #0f172a; }
+
+    /* Dark listening bar */
+    .listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 28px; min-height: 44px;
+    }
+    .listening-bar.hidden { visibility: hidden; }
+    .listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .listening-bar span {
+      font-size: 13px; font-weight: 600; color: #e2e8f0;
+    }
+
+    /* Mic selector dropdown */
+    .mic-selector {
+      display: flex; align-items: center; gap: 8px;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 24px; cursor: default;
+    }
+    .mic-selector .material-icons-round { font-size: 18px; color: #64748b; }
+    .mic-selector-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    .mic-selector-value { font-size: 13px; color: #334155; font-weight: 500; }
+
+    /* Buttons */
+    .btn-row { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 12px; font-family: inherit;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      padding: 14px 32px; transition: all .2s; min-width: 220px;
+    }
+    .btn .material-icons-round { font-size: 20px; }
+    .btn-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .btn-green:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .btn-orange {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,.3);
+    }
+    .btn-orange:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245,158,11,.4); }
+    .btn-outline {
+      background: transparent; color: #14b8a6;
+      border: 2px solid #14b8a6; padding: 12px 28px;
+    }
+    .btn-outline:hover { background: #f0fdfa; }
+    .btn-red {
+      background: #ef4444; color: #fff;
+      box-shadow: 0 4px 14px rgba(239,68,68,.25);
+    }
+    .btn-red:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,.35); }
+
+    /* Start class button (hidden initially) */
+    .btn-start-class { display: none; }
+
+
+    /* ===========================
+       SCREEN 2: LIVE CLASS
+       =========================== */
+    .live-class-screen { flex: 1; display: flex; flex-direction: column; }
+    .live-topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .live-timer {
+      font-size: 28px; font-weight: 800; color: #10b981;
+      font-family: 'Public Sans', monospace; letter-spacing: 1px;
+    }
+    .live-class-info {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: #475569;
+    }
+    .live-class-info .class-name { font-weight: 700; color: #0f172a; }
+    .live-class-info .class-sep { color: #cbd5e1; }
+    .mic-status {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #10b981;
+      background: #ecfdf5; padding: 4px 10px; border-radius: 6px;
+    }
+    .mic-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+    .live-topbar .btn-red { padding: 10px 20px; font-size: 13px; min-width: auto; border-radius: 10px; }
+
+    .transcript-area {
+      flex: 1; display: flex; flex-direction: column; padding: 24px 36px;
+      overflow: hidden; position: relative;
+    }
+    .transcript-card {
+      flex: 1; background: #fff; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+      padding: 28px 32px; overflow-y: auto; font-size: 16px;
+      line-height: 1.8; color: #334155; position: relative;
+    }
+    .transcript-card .line {
+      animation: fadeSlideIn .3s ease both;
+      margin-bottom: 4px;
+    }
+
+    /* Bottom controls */
+    .live-bottom {
+      padding: 16px 36px 24px; display: flex; flex-direction: column;
+      align-items: center; gap: 16px; flex-shrink: 0;
+    }
+    .live-listening-bar {
+      background: #0f172a; border-radius: 24px; padding: 10px 28px;
+      display: flex; align-items: center; gap: 8px; min-width: 200px;
+    }
+    .live-listening-bar .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+      animation: listening-dot 1.2s ease-in-out infinite;
+    }
+    .live-listening-bar .dot:nth-child(2) { animation-delay: .2s; }
+    .live-listening-bar .dot:nth-child(3) { animation-delay: .4s; }
+    .live-listening-bar span {
+      font-size: 13px; font-weight: 600; color: #e2e8f0;
+    }
+    .live-listening-bar.paused { display: none; }
+    .live-bottom.is-paused .pause-btn { display: none; }
+
+    .pause-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .2s; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .pause-btn.is-playing {
+      background: #ef4444;
+    }
+    .pause-btn.is-paused {
+      background: #10b981;
+    }
+    .pause-btn .material-icons-round { font-size: 28px; color: #fff; }
+
+    /* Paused overlay */
+    .paused-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,23,42,.55);
+      backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .paused-overlay.show { display: flex; }
+    .paused-overlay .paused-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(255,255,255,.15); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .paused-overlay .paused-icon .material-icons-round { font-size: 32px; color: #fff; }
+    .paused-overlay .paused-label {
+      font-size: 20px; font-weight: 800; color: #fff; letter-spacing: .5px;
+    }
+    .paused-overlay .paused-hint {
+      font-size: 13px; color: rgba(255,255,255,.6);
+    }
+
+    /* ===========================
+       UNIFIED DIALOG SYSTEM
+       =========================== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 1000; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.show { display: flex; }
+
+    /* ── Shared dialog card ── */
+    .dialog {
+      background: #fff; border-radius: 20px; padding: 32px 32px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.08);
+      width: 420px; max-width: 90vw;
+      animation: fadeSlideIn .3s cubic-bezier(.2,.9,.3,1);
+    }
+    .dialog-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .dialog-icon .material-icons-round { font-size: 26px; }
+    .dialog-icon.green { background: #ecfdf5; }
+    .dialog-icon.green .material-icons-round { color: #059669; }
+    .dialog-icon.amber { background: #fef9c3; }
+    .dialog-icon.amber .material-icons-round { color: #b45309; }
+    .dialog-icon.red { background: #fef2f2; }
+    .dialog-icon.red .material-icons-round { color: #dc2626; }
+
+    .dialog h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 0;
+      padding-bottom: 16px;
+    }
+    .dialog .dialog-divider {
+      height: 1px; background: #e2e8f0; margin: 0 -32px 16px;
+    }
+    .dialog .dialog-body {
+      font-size: 14px; color: #475569; line-height: 1.55; margin-bottom: 8px;
+    }
+    .dialog .dialog-hint {
+      font-size: 13px; color: #94a3b8; margin-bottom: 16px;
+    }
+
+    /* ── Shared dialog actions ── */
+    .dialog-actions {
+      display: flex; justify-content: space-between; gap: 10px;
+      margin-top: 16px; padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .dialog-btn {
+      font-family: inherit; cursor: pointer;
+      padding: 12px 0; border-radius: 10px; border: none;
+      background: transparent; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .dialog-btn.secondary {
+      color: #94a3b8; font-size: 14px; font-weight: 600;
+    }
+    .dialog-btn.secondary:hover { color: #475569; }
+    .dialog-btn.primary {
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      padding: 10px 24px; border-radius: 10px;
+    }
+    .dialog-btn.primary:hover { background: #059669; }
+
+    /* ── Save modal specifics ── */
+    .modal-field { margin-bottom: 24px; }
+    .modal-field label {
+      display: block; font-size: 12px; font-weight: 600; color: #64748b;
+      margin-bottom: 6px;
+    }
+    .modal-field input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      color: #1e293b; outline: none; transition: border-color .15s;
+    }
+    .modal-field input:focus { border-color: #10b981; }
+
+    /* ── Countdown (Still Here) ── */
+    .countdown-inline {
+      font-size: 32px; font-weight: 800; color: #f59e0b;
+      font-family: 'Public Sans', monospace; letter-spacing: 2px;
+      margin: 16px 0 8px;
+    }
+
+    /* ===========================
+       SCREEN 4: BROADCAST HISTORY (50:50)
+       =========================== */
+    .history-layout { flex: 1; display: flex; overflow: hidden; }
+    .history-left {
+      flex: 1; padding: 32px 28px 60px; overflow-y: auto; background: #f8faf9;
+      border-right: 1px solid #e2e8f0;
+    }
+    .history-head { margin-bottom: 20px; }
+    .history-head h1 { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .history-head p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+    /* Class filter tabs */
+    .history-filters {
+      display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .history-filter {
+      padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0;
+      background: #fff; font-family: inherit; font-size: 12px; font-weight: 600;
+      color: #64748b; cursor: pointer; transition: all .15s;
+    }
+    .history-filter:hover { border-color: #cbd5e1; color: #334155; }
+    .history-filter.active {
+      background: #059669; color: #fff; border-color: #059669;
+    }
+
+    .session-list { display: flex; flex-direction: column; gap: 10px; }
+    .session-card {
+      background: #fff; border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer; transition: all .15s; overflow: hidden;
+    }
+    .session-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .session-card.selected { border-color: #10b981; background: #f0fdf4; }
+    .session-card-header {
+      padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    }
+    .session-info { flex: 1; min-width: 0; }
+    .session-name { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .session-meta {
+      font-size: 12px; color: #94a3b8; margin-top: 3px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .session-meta .sep { color: #e2e8f0; }
+    .session-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+      background: #f1f5f9; color: #64748b; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .session-badge.disconnected { background: #fef2f2; color: #dc2626; }
+    .session-badge.inprogress { background: #ecfdf5; color: #059669; }
+    .session-card-arrow { color: #cbd5e1; font-size: 18px; flex-shrink: 0; }
+    .session-card:hover .session-card-arrow { color: #94a3b8; }
+    .session-card.selected .session-card-arrow { color: #10b981; }
+
+    /* Right — transcript panel */
+    .history-right {
+      flex: 1; display: flex; flex-direction: column; background: #fff;
+    }
+    .transcript-panel-header {
+      padding: 20px 24px; border-bottom: 1px solid #e2e8f0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .transcript-panel-name { font-size: 16px; font-weight: 800; color: #0f172a; }
+    .transcript-panel-meta {
+      font-size: 12px; color: #94a3b8;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .transcript-panel-badge {
+      font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+      background: #f1f5f9; color: #64748b; text-transform: uppercase; letter-spacing: .5px;
+      margin-left: 4px;
+    }
+    .transcript-segments {
+      flex: 1; overflow-y: auto; padding: 20px 24px;
+    }
+    .transcript-segment {
+      padding: 14px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .transcript-segment:last-child { border-bottom: none; }
+    .transcript-segment-text {
+      font-size: 14px; line-height: 1.75; color: #334155;
+    }
+    .transcript-segment-text .t-word {
+      color: #0d9488; font-weight: 600; text-decoration: underline;
+      text-decoration-color: transparent; transition: text-decoration-color .15s;
+    }
+    .transcript-segment-text .t-word:hover { text-decoration-color: #0d9488; }
+    .transcript-segment-time {
+      font-size: 11px; color: #94a3b8; margin-top: 4px;
+    }
+    .transcript-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #94a3b8; font-size: 13px; text-align: center; padding: 40px;
+      line-height: 1.6;
+    }
+
+    /* ===========================
+       SCREEN 0: DASHBOARD
+       =========================== */
+    .dashboard-screen {
+      flex: 1; padding: 40px 36px 60px; overflow-y: auto; background: #f8faf9;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .dash-inner { max-width: 560px; width: 100%; animation: fadeSlideIn .4s ease both; }
+
+    /* Header */
+    .dash-head { margin-bottom: 24px; }
+    .dash-head h1 { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .dash-summary {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 8px; font-size: 13px; color: #64748b;
+    }
+    .dash-summary-item {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dash-summary-item strong { color: #0f172a; font-weight: 700; }
+    .dash-summary-sep {
+      width: 1px; height: 14px; background: #e2e8f0;
+    }
+
+    /* Room list */
+    .room-list { display: flex; flex-direction: column; gap: 10px; }
+    .btn-live-code {
+      display: flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 10px;
+      border: 1.5px solid #e2e8f0; background: #fff;
+      color: #64748b; cursor: pointer; transition: all .15s; flex-shrink: 0;
+    }
+    .btn-live-code:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .btn-live-code .material-icons-round { font-size: 20px; }
+    .btn-start-adhoc {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 12px;
+      background: #fff; color: #64748b;
+      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      padding: 12px 0; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-start-adhoc:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .btn-start-adhoc .material-icons-round { font-size: 18px; }
+    .room-card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      transition: all .15s; overflow: hidden;
+    }
+    .room-card:hover { border-color: #6ee7b7; box-shadow: 0 2px 12px rgba(16,185,129,.1); }
+    .room-card-header {
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+    }
+    .room-icon { display: none; }
+    .room-info { flex: 1; min-width: 0; }
+    .room-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .room-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; display: flex; align-items: center; gap: 10px; }
+    .grade-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #f0fdf4; color: #059669; border: 1px solid #d1fae5; }
+    .subject-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .room-avatars {
+      display: flex; align-items: center;
+    }
+    .room-avatars .ra {
+      width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; margin-left: -8px;
+    }
+    .room-avatars .ra:first-child { margin-left: 0; }
+    .room-avatars .ra.w1 { background: #fef2f2; color: #dc2626; }
+    .room-avatars .ra.w2 { background: #fef9c3; color: #a16207; }
+    .room-avatars .ra.w3 { background: #ecfdf5; color: #059669; }
+    .room-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .room-start {
+      padding: 10px 20px; border: none; border-radius: 10px;
+      background: #10b981; color: #fff; font-family: inherit;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: all .15s;
+    }
+    .room-start:hover { background: #059669; }
+    .room-start .material-icons-round { font-size: 18px; }
+    .room-code-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; color: #94a3b8; transition: all .15s; flex-shrink: 0;
+    }
+    .room-code-btn:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .room-code-btn .material-icons-round { font-size: 16px; }
+
+    /* ── Share Code Modal ── */
+    .share-code-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(15,23,42,.5); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .share-code-overlay.show { display: flex; }
+    .share-code-card {
+      background: #fff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.14);
+      padding: 32px 28px 28px; width: 380px; max-width: 90%;
+    }
+    .share-code-icon {
+      width: 48px; height: 48px; border-radius: 14px; background: #f0fdf4;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    }
+    .share-code-icon .material-icons-round { font-size: 26px; color: #10b981; }
+    .share-code-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .share-code-subject { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .share-code-box {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 14px;
+      padding: 20px; text-align: center; margin-bottom: 16px;
+    }
+    .share-code-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 10px; }
+    .share-code-value { font-size: 36px; font-weight: 800; color: #0f172a; letter-spacing: 6px; }
+    .share-code-hint { font-size: 12px; color: #94a3b8; margin-top: 8px; }
+    .btn-copy-code {
+      width: 100%; padding: 12px; border: none; border-radius: 12px;
+      background: #10b981; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px;
+    }
+    .btn-copy-code:hover { background: #059669; }
+    .btn-copy-code .material-icons-round { font-size: 18px; }
+    .btn-close-share {
+      width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      background: #fff; color: #64748b; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-close-share:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .btn-start-now {
+      width: 100%; padding: 12px; border: none; border-radius: 12px;
+      background: #0f172a; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px;
+    }
+    .btn-start-now:hover { background: #1e293b; }
+    .btn-start-now .material-icons-round { font-size: 18px; }
+
+    .room-expand {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all .15s;
+    }
+    .room-expand:hover { background: #f1f5f9; }
+    .room-expand .material-icons-round { font-size: 20px; color: #94a3b8; transition: transform .2s; }
+    .room-card.open .room-expand .material-icons-round { transform: rotate(180deg); }
+
+    /* Student roster inside room card */
+    .room-roster {
+      display: none; border-top: 1px solid #f1f5f9;
+      padding: 14px 20px 16px; background: #fafbfc;
+    }
+    .room-card.open .room-roster { display: block; }
+    .room-roster-grid {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .room-student {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #fff; border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .room-student-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .room-student-avatar.w1 { background: #fef2f2; color: #dc2626; }
+    .room-student-avatar.w2 { background: #fef9c3; color: #a16207; }
+    .room-student-avatar.w3 { background: #ecfdf5; color: #059669; }
+    .room-student-name { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1; }
+    .room-student-detail {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .room-student-grade { font-size: 11px; color: #94a3b8; }
+    .room-student-wida {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    }
+    .room-student-wida.w1 { background: #fef2f2; color: #dc2626; }
+    .room-student-wida.w2 { background: #fef9c3; color: #a16207; }
+    .room-student-wida.w3 { background: #ecfdf5; color: #059669; }
+
+
+    /* ── Back button (shared) ── */
+    .detail-back {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .detail-back:hover { background: #f1f5f9; }
+    .detail-back .material-icons-round { font-size: 20px; color: #475569; }
+  </style>
+</head>
+<body>
+
+<!-- ===== Share Class Code Modal ===== -->
+<div class="share-code-overlay" id="shareCodeOverlay" onclick="if(event.target===this)closeShareCode()">
+  <div class="share-code-card">
+    <div class="share-code-icon">
+      <span class="material-icons-round">key</span>
+    </div>
+    <div class="share-code-title">Share Class Code</div>
+    <div class="share-code-subject" id="shareCodeSubject"></div>
+    <div class="share-code-box">
+      <div class="share-code-label">Class Code</div>
+      <div class="share-code-value" id="shareCodeValue"></div>
+      <div class="share-code-hint">Students enter this code to join your class</div>
+    </div>
+    <button class="btn-copy-code" id="btnCopyCode" onclick="copyCode()">
+      <span class="material-icons-round">content_copy</span> Copy Code
+    </button>
+    <button class="btn-start-now" id="btnStartNow" style="display:none;" onclick="closeShareCode();startClassFromSchedule('New Class','0')">
+      <span class="material-icons-round">play_arrow</span> Start class now
+    </button>
+    <button class="btn-close-share" onclick="closeShareCode()">Close</button>
+  </div>
+</div>
+
+<div class="app-frame">
+
+  <!-- ── Sidebar ── -->
+  <nav class="app-sidebar">
+    <div class="sidebar-logo"><img src="../esl-teacher/assets/dh_single.png" alt="DAHUA" width="38" height="38"></div>
+    <div class="sidebar-item active" id="nav-dashboard" title="Classes" onclick="sidebarNav('dashboard')">
+      <span class="material-icons-round">class</span>
+      <span>Classes</span>
+    </div>
+    <div class="sidebar-item" id="nav-history" title="History" onclick="showScreen('history')">
+      <span class="material-icons-round">history</span>
+      <span>History</span>
+    </div>
+  </nav>
+
+  <!-- ── Main area ── -->
+  <div class="app-main">
+    <div class="app-header">
+      <span class="app-header-title">Subject Teacher</span>
+      <div class="header-right">
+        <a href="versions/index.html" title="Version history" style="font-size:12px;font-weight:600;color:#94a3b8;text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;transition:all .15s;" onmouseover="this.style.color='#475569';this.style.borderColor='#cbd5e1'" onmouseout="this.style.color='#94a3b8';this.style.borderColor='#e2e8f0'">
+          <span class="material-icons-round" style="font-size:14px;">schedule</span>
+          Versions
+        </a>
+        <div class="header-user">
+          <div class="header-avatar">SS</div>
+          Mr. Shen
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ===== SCREEN 0: Dashboard ===== -->
+      <div class="screen active" id="screen-dashboard">
+        <div class="dashboard-screen">
+          <div class="dash-inner">
+
+            <div class="dash-head">
+              <h1>My Classes</h1>
+              <div class="dash-summary">
+                <div class="dash-summary-item">
+                  <span class="material-icons-round" style="font-size:16px;color:#059669;">class</span>
+                  <span><strong>6</strong> classes</span>
+                </div>
+                <div class="dash-summary-sep"></div>
+                <div class="dash-summary-item">
+                  <span class="material-icons-round" style="font-size:16px;color:#059669;">people</span>
+                  <span><strong>22</strong> ESL students</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="room-list">
+
+              <!-- 1st Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">1st Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 1</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w1">EC</div><div class="ra w2">CG</div><div class="ra w1">YK</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('1st Grade Math','1GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('1st Grade Math','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w1">EC</div><div class="room-student-name">Emily Chen</div><div class="room-student-detail"><span class="room-student-grade">Grade 1</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">CG</div><div class="room-student-name">Carlos Garcia</div><div class="room-student-detail"><span class="room-student-grade">Grade 1</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">YK</div><div class="room-student-name">Yuki Kobayashi</div><div class="room-student-detail"><span class="room-student-grade">Grade 1</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2nd Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">2nd Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 2</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w2">LT</div><div class="ra w1">KL</div><div class="ra w3">SM</div><div class="ra w2">AH</div></div> 4 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('2nd Grade Math','2GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('2nd Grade Math','4')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">LT</div><div class="room-student-name">Lucia Torres</div><div class="room-student-detail"><span class="room-student-grade">Grade 2</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">KL</div><div class="room-student-name">Kevin Liu</div><div class="room-student-detail"><span class="room-student-grade">Grade 2</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">SM</div><div class="room-student-name">Sofia Martinez</div><div class="room-student-detail"><span class="room-student-grade">Grade 2</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">AH</div><div class="room-student-name">Amir Hassan</div><div class="room-student-detail"><span class="room-student-grade">Grade 2</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3rd Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">3rd Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 3</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w2">JL</div><div class="ra w1">MR</div><div class="ra w3">TN</div><div class="ra w2">AW</div><div class="ra w1">DR</div></div> 5 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('3rd Grade Math','3GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('3rd Grade Math','5')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">JL</div><div class="room-student-name">James Lin</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">MR</div><div class="room-student-name">Maria Rodriguez</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">TN</div><div class="room-student-name">Thanh Nguyen</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">AW</div><div class="room-student-name">Amy Wang</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">DR</div><div class="room-student-name">Daniel Rivera</div><div class="room-student-detail"><span class="room-student-grade">Grade 3</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4th Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">4th Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 4</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w2">MH</div><div class="ra w1">OJ</div><div class="ra w3">HK</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('4th Grade Math','4GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('4th Grade Math','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">MH</div><div class="room-student-name">Mei Huang</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">OJ</div><div class="room-student-name">Oscar Jimenez</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">HK</div><div class="room-student-name">Hana Kim</div><div class="room-student-detail"><span class="room-student-grade">Grade 4</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5th Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">5th Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 5</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w2">IP</div><div class="ra w1">YZ</div><div class="ra w3">RG</div><div class="ra w2">LC</div></div> 4 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('5th Grade Math','5GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('5th Grade Math','4')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">IP</div><div class="room-student-name">Isabella Perez</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">YZ</div><div class="room-student-name">Yuki Zhang</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">RG</div><div class="room-student-name">Raj Gupta</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w2">LC</div><div class="room-student-name">Lily Cho</div><div class="room-student-detail"><span class="room-student-grade">Grade 5</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6th Grade Math -->
+              <div class="room-card">
+                <div class="room-card-header">
+                  <div class="room-icon"><span class="material-icons-round">groups</span></div>
+                  <div class="room-info">
+                    <div class="room-name">6th Grade Math</div>
+                    <div class="room-meta"><span class="grade-tag">Grade 6</span><span class="subject-tag">Math</span><div class="room-avatars"><div class="ra w2">PL</div><div class="ra w3">SW</div><div class="ra w1">NK</div></div> 3 students</div>
+                  </div>
+                  <div class="room-actions">
+                    <button class="room-code-btn" title="Share class code" onclick="event.stopPropagation();openShareCode('6th Grade Math','6GM')"><span class="material-icons-round">key</span></button>
+                    <button class="room-start" onclick="event.stopPropagation();startClassFromSchedule('6th Grade Math','3')"><span class="material-icons-round">play_arrow</span> Start</button>
+                    <button class="room-expand" onclick="toggleRoom(this)"><span class="material-icons-round">expand_more</span></button>
+                  </div>
+                </div>
+                <div class="room-roster">
+                  <div class="room-roster-grid">
+                    <div class="room-student"><div class="room-student-avatar w2">PL</div><div class="room-student-name">Pedro Lopez</div><div class="room-student-detail"><span class="room-student-grade">Grade 6</span><span class="room-student-wida w2">WIDA 2</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w3">SW</div><div class="room-student-name">Suki Wu</div><div class="room-student-detail"><span class="room-student-grade">Grade 6</span><span class="room-student-wida w3">WIDA 3</span></div></div>
+                    <div class="room-student"><div class="room-student-avatar w1">NK</div><div class="room-student-name">Nadia Kouri</div><div class="room-student-detail"><span class="room-student-grade">Grade 6</span><span class="room-student-wida w1">WIDA 1</span></div></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <button class="btn-start-adhoc" onclick="openShareCode('New Class','NEW')">
+              <span class="material-icons-round">add</span> Start new class
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 1: Mic Test ===== -->
+      <div class="screen" id="screen-mic-test">
+        <div style="padding:16px 24px 0;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+          <button class="detail-back" onclick="showScreen('dashboard')"><span class="material-icons-round">arrow_back</span></button>
+          <span style="font-size:14px;font-weight:600;color:#0f172a;" id="micTestClassName">3rd Grade Math</span>
+          <span style="font-size:12px;color:#94a3b8;">&middot;</span>
+          <span style="font-size:12px;color:#94a3b8;" id="micTestStudentCount">5 ESL students</span>
+        </div>
+        <div class="mic-test-screen">
+          <div class="mic-test-card">
+            <h1>Test Your Microphone</h1>
+            <p class="subtitle">Make sure your audio is working before starting class</p>
+
+            <div class="mic-icon-area">
+              <div class="waveform-bars" id="waveL">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+              <div class="mic-circle">
+                <span class="material-icons-round">mic</span>
+              </div>
+              <div class="waveform-bars" id="waveR">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              </div>
+            </div>
+
+            <p class="speak-text">Speak to test: <strong>"Test 1, 2, 3"</strong></p>
+
+            <div class="listening-bar hidden" id="micTestBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span>Listening...</span>
+            </div>
+
+            <div class="mic-selector">
+              <span class="material-icons-round">mic</span>
+              <div style="text-align:left;flex:1;">
+                <div class="mic-selector-label">Microphone</div>
+                <div class="mic-selector-value">MacBook Pro&#30340;&#40613;&#20811;&#39080; (Built-in)</div>
+              </div>
+              <span class="material-icons-round" style="font-size:18px;color:#cbd5e1;">expand_more</span>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnStartTest" onclick="startMicTest()">
+                <span class="material-icons-round">mic</span>
+                Start Test
+              </button>
+              <button class="btn btn-green btn-start-class" id="btnStartClass" onclick="showScreen('live-class')">
+                <span class="material-icons-round">play_arrow</span>
+                Start Class
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 2: Live Class ===== -->
+      <div class="screen" id="screen-live-class">
+        <div class="live-class-screen">
+          <div class="live-topbar">
+            <div class="live-timer" id="liveTimer">00:00</div>
+            <div class="live-class-info">
+              <span class="class-name">3rd Grade Math</span>
+              <div class="mic-status"><span class="dot"></span> Mic on</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button class="btn-live-code" onclick="openShareCode('Current Class','CUR')" title="Show class code">
+                <span class="material-icons-round">key</span>
+              </button>
+              <button class="btn btn-red" onclick="endClass()">
+                <span class="material-icons-round">stop</span>
+                End Class
+              </button>
+            </div>
+          </div>
+
+          <div class="transcript-area">
+            <div class="transcript-card" id="transcriptCard">
+              <!-- Lines appear here dynamically -->
+            </div>
+          </div>
+
+          <div class="live-bottom">
+            <div class="live-listening-bar" id="liveBar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span id="liveBarText">Listening...</span>
+            </div>
+            <button class="pause-btn is-playing" id="pauseBtn" onclick="togglePause()">
+              <span class="material-icons-round" id="pauseIcon">pause</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCREEN 4: Broadcast History (50:50) =====
+           Updated 2026-05-12: Upgraded from single-column to 50:50 layout.
+           Broadcast History unified across all 4 products
+           (ESL Student / ESL Teacher / Subject Teacher / ESL Coordinator)
+           Subject Teacher view: own broadcasts, filter by class name (grade).
+      ===== -->
+      <div class="screen" id="screen-history">
+        <div class="history-layout">
+          <!-- Left: session list -->
+          <div class="history-left">
+            <div class="history-head">
+              <h1>Broadcast History</h1>
+              <p>Past sessions and transcripts</p>
+            </div>
+            <div class="history-filters">
+              <button class="history-filter active" onclick="filterHistory(this,'all')">All</button>
+              <button class="history-filter" onclick="filterHistory(this,'1st')">1st Grade</button>
+              <button class="history-filter" onclick="filterHistory(this,'2nd')">2nd Grade</button>
+              <button class="history-filter" onclick="filterHistory(this,'3rd')">3rd Grade</button>
+              <button class="history-filter" onclick="filterHistory(this,'4th')">4th Grade</button>
+              <button class="history-filter" onclick="filterHistory(this,'5th')">5th Grade</button>
+              <button class="history-filter" onclick="filterHistory(this,'6th')">6th Grade</button>
+            </div>
+            <div class="session-list" id="sessionList">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+          <!-- Right: transcript panel -->
+          <div class="history-right" id="transcriptPanel">
+            <div class="transcript-empty" id="tp-empty">
+              Select a session to view its transcript
+            </div>
+            <div class="transcript-panel-header" id="tp-header" style="display:none;">
+              <div class="transcript-panel-name" id="tp-name"></div>
+              <div class="transcript-panel-meta">
+                <span id="tp-meta"></span>
+                <span class="transcript-panel-badge" id="tp-badge">Ended</span>
+              </div>
+            </div>
+            <div class="transcript-segments" id="tp-segments" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-frame -->
+
+
+<!-- ===== Paused Overlay ===== -->
+<div class="paused-overlay" id="pausedOverlay">
+  <div class="paused-icon"><span class="material-icons-round">pause</span></div>
+  <div class="paused-label">Class Paused</div>
+  <div class="paused-hint">Press play to resume recording</div>
+  <button class="pause-btn is-paused" onclick="togglePause()" style="margin-top:12px;">
+    <span class="material-icons-round">play_arrow</span>
+  </button>
+</div>
+
+<!-- ===== Save Class Modal ===== -->
+<div class="modal-overlay" id="saveModal">
+  <div class="dialog">
+    <h2>Save Class</h2>
+    <p class="dialog-hint">Name this session for your records.</p>
+    <div class="modal-field">
+      <label>Session Name</label>
+      <input type="text" id="sessionNameInput" value="" />
+    </div>
+    <div class="dialog-actions" style="border-top:none;padding-top:0;">
+      <button class="dialog-btn secondary" onclick="closeSaveModal()">Cancel</button>
+      <button class="dialog-btn primary" onclick="saveClass()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Session Found Modal ===== -->
+<div class="modal-overlay" id="sessionFoundModal">
+  <div class="dialog">
+    <h2>Session Found</h2>
+    <p class="dialog-body">You have a previous session that was disconnected.</p>
+    <p class="dialog-hint">Would you like to resume the previous session or start a new one?</p>
+    <div class="dialog-actions">
+      <button class="dialog-btn secondary" onclick="closeSessionFound(false)">Start New Session</button>
+      <button class="dialog-btn primary" onclick="closeSessionFound(true)">Resume Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Still In Class Modal ===== -->
+<div class="modal-overlay" id="stillHereModal">
+  <div class="dialog">
+    <h2>Are you still in class?</h2>
+    <div class="countdown-inline" id="countdownTime">09:48</div>
+    <p class="dialog-hint">This session will end automatically if no response.</p>
+    <div class="dialog-actions">
+      <button class="dialog-btn secondary" onclick="closeStillHere(false)">End Class</button>
+      <button class="dialog-btn primary" onclick="closeStillHere(true)">Yes, I'm here</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── State ── */
+  let currentScreen = 'dashboard';
+  let timerInterval = null;
+  let timerSeconds = 0;
+  let isPaused = false;
+  let transcriptLines = [
+    'good morning everyone',
+    'today we\'re going to learn about fractions',
+    'so a fraction represents a part of a whole',
+    'the top number is called the numerator',
+    'and the bottom number is the denominator',
+    'for example one half means one out of two equal parts',
+    'now let\'s look at equivalent fractions',
+    'two fourths is the same as one half',
+    'can anyone tell me what three sixths equals'
+  ];
+  let currentLineIndex = 0;
+  let transcriptInterval = null;
+
+  /* ── Screen navigation ── */
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    if (target) target.classList.add('active');
+    currentScreen = name;
+
+    if (name === 'live-class') {
+      startLiveClass();
+    } else {
+      stopLiveClass();
+    }
+    if (name === 'mic-test') {
+      resetMicTest();
+    }
+
+    /* Update sidebar active state */
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    var sidebarMap = {
+      'dashboard': 'nav-dashboard',
+      'history': 'nav-history',
+      'mic-test': 'nav-dashboard',
+      'live-class': 'nav-dashboard'
+    };
+    var navId = sidebarMap[name];
+    if (navId) {
+      var el = document.getElementById(navId);
+      if (el) el.classList.add('active');
+    }
+  }
+
+  /* ── Mic test ── */
+  function startMicTest() {
+    const bar = document.getElementById('micTestBar');
+    bar.classList.remove('hidden');
+    document.getElementById('waveL').classList.add('animating');
+    document.getElementById('waveR').classList.add('animating');
+    document.getElementById('btnStartTest').style.display = 'none';
+
+    setTimeout(() => {
+      document.getElementById('btnStartClass').style.display = 'inline-flex';
+    }, 3000);
+  }
+
+  function resetMicTest() {
+    const bar = document.getElementById('micTestBar');
+    bar.classList.add('hidden');
+    document.getElementById('waveL').classList.remove('animating');
+    document.getElementById('waveR').classList.remove('animating');
+    document.getElementById('btnStartTest').style.display = 'inline-flex';
+    document.getElementById('btnStartClass').style.display = 'none';
+  }
+
+  /* ── Live class ── */
+  function startLiveClass() {
+    timerSeconds = 0;
+    isPaused = false;
+    currentLineIndex = 0;
+    updateTimer();
+    updatePauseState();
+
+    document.getElementById('transcriptCard').innerHTML = '';
+
+    timerInterval = setInterval(() => {
+      if (!isPaused) {
+        timerSeconds++;
+        updateTimer();
+      }
+    }, 1000);
+
+    // Add transcript lines periodically
+    addTranscriptLine();
+    transcriptInterval = setInterval(() => {
+      if (!isPaused) addTranscriptLine();
+    }, 4000);
+  }
+
+  function stopLiveClass() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (transcriptInterval) { clearInterval(transcriptInterval); transcriptInterval = null; }
+  }
+
+  function updateTimer() {
+    const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    const s = String(timerSeconds % 60).padStart(2, '0');
+    document.getElementById('liveTimer').textContent = m + ':' + s;
+  }
+
+  function addTranscriptLine() {
+    if (currentLineIndex >= transcriptLines.length) return;
+    const card = document.getElementById('transcriptCard');
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.textContent = transcriptLines[currentLineIndex];
+    card.appendChild(div);
+    card.scrollTop = card.scrollHeight;
+    currentLineIndex++;
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    updatePauseState();
+  }
+
+  function updatePauseState() {
+    const btn = document.getElementById('pauseBtn');
+    const icon = document.getElementById('pauseIcon');
+    const bar = document.getElementById('liveBar');
+    const barText = document.getElementById('liveBarText');
+
+    var overlay = document.getElementById('pausedOverlay');
+    var bottom = document.querySelector('.live-bottom');
+    if (isPaused) {
+      btn.className = 'pause-btn is-paused';
+      icon.textContent = 'play_arrow';
+      bar.className = 'live-listening-bar paused';
+      barText.textContent = 'Paused';
+      if (overlay) overlay.classList.add('show');
+      if (bottom) bottom.classList.add('is-paused');
+    } else {
+      btn.className = 'pause-btn is-playing';
+      icon.textContent = 'pause';
+      bar.className = 'live-listening-bar';
+      barText.textContent = 'Listening...';
+      if (overlay) overlay.classList.remove('show');
+      if (bottom) bottom.classList.remove('is-paused');
+    }
+  }
+
+  /* ── End class / Save modal ── */
+  function endClass() {
+    var now = new Date();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    var y = now.getFullYear();
+    var h = now.getHours();
+    var min = String(now.getMinutes()).padStart(2, '0');
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    var className = selectedClass;
+    var defaultName = className + ' ' + m + '/' + d + '/' + y + ' ' + h + ':' + min + ' ' + ampm;
+    document.getElementById('sessionNameInput').value = defaultName;
+    document.getElementById('saveModal').classList.add('show');
+  }
+
+  function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('show');
+  }
+
+  function saveClass() {
+    document.getElementById('saveModal').classList.remove('show');
+    stopLiveClass();
+    showScreen('history');
+  }
+
+  /* ── Toggle room roster ── */
+  function toggleRoom(btn) {
+    var card = btn.closest('.room-card');
+    card.classList.toggle('open');
+  }
+
+  /* ── Start class from schedule ── */
+  var selectedClass = '3rd Grade Math';
+  var selectedStudents = '5';
+  function startClassFromSchedule(name, students) {
+    selectedClass = name;
+    selectedStudents = students;
+    document.querySelector('.class-name').textContent = name;
+    document.getElementById('micTestClassName').textContent = name;
+    document.getElementById('micTestStudentCount').textContent = students + ' ESL students';
+    showScreen('mic-test');
+  }
+
+  /* ── History Data ── */
+  var HISTORY_SESSIONS = [
+    { name: '3rd Grade Math', grade: '3rd', date: '04/29/2026', time: '10:00 AM', duration: '38 min', status: 'inprogress' },
+    { name: '5th Grade Math', grade: '5th', date: '04/28/2026', time: '2:00 PM', duration: '42 min', status: 'ended' },
+    { name: '1st Grade Math', grade: '1st', date: '04/28/2026', time: '9:00 AM', duration: '35 min', status: 'disconnected' },
+    { name: '6th Grade Math', grade: '6th', date: '04/25/2026', time: '1:30 PM', duration: '40 min', status: 'ended' },
+    { name: '2nd Grade Math', grade: '2nd', date: '04/24/2026', time: '3:17 PM', duration: '36 min', status: 'ended' },
+    { name: '4th Grade Math', grade: '4th', date: '04/24/2026', time: '12:00 PM', duration: '41 min', status: 'ended' },
+    { name: '3rd Grade Math', grade: '3rd', date: '04/23/2026', time: '10:00 AM', duration: '35 min', status: 'ended' },
+    { name: '1st Grade Math', grade: '1st', date: '04/22/2026', time: '9:00 AM', duration: '33 min', status: 'ended' },
+  ];
+
+  var DEMO_TRANSCRIPT = [
+    { text: 'Good morning class. Today we\'re going to learn about <span class="t-word">fractions</span>.', time: '10:00 AM' },
+    { text: 'So a fraction represents a part of a whole.', time: '10:01 AM' },
+    { text: 'The top number is called the <span class="t-word">numerator</span>.', time: '10:03 AM' },
+    { text: 'And the bottom number is the <span class="t-word">denominator</span>.', time: '10:04 AM' },
+    { text: 'For example, one half means one out of two equal parts.', time: '10:06 AM' },
+    { text: 'Now let\'s look at <span class="t-word">equivalent</span> fractions.', time: '10:08 AM' },
+    { text: 'Two fourths is the same as one half. They are equivalent.', time: '10:09 AM' },
+    { text: 'Can anyone tell me what three sixths equals?', time: '10:11 AM' },
+    { text: 'Excellent. Three sixths also equals one half.', time: '10:12 AM' },
+    { text: 'Let me write the <span class="t-word">equation</span> on the board. One over two equals two over four.', time: '10:14 AM' },
+  ];
+
+  function renderHistoryList() {
+    var list = document.getElementById('sessionList');
+    list.innerHTML = '';
+    HISTORY_SESSIONS.forEach(function(s, i) {
+      var card = document.createElement('div');
+      card.className = 'session-card';
+      card.setAttribute('data-class', s.grade);
+      card.setAttribute('data-idx', i);
+      var badgeClass = 'session-badge';
+      var badgeText = 'Ended';
+      if (s.status === 'inprogress') { badgeClass += ' inprogress'; badgeText = 'In Progress'; }
+      if (s.status === 'disconnected') { badgeClass += ' disconnected'; badgeText = 'Disconnected'; }
+      card.innerHTML =
+        '<div class="session-card-header">' +
+          '<div class="session-info">' +
+            '<div class="session-name">' + s.name + '</div>' +
+            '<div class="session-meta">' +
+              '<span>' + s.date + '</span><span class="sep">&middot;</span>' +
+              '<span>' + s.time + '</span><span class="sep">&middot;</span>' +
+              '<span>' + s.duration + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<span class="' + badgeClass + '">' + badgeText + '</span>' +
+          '<span class="session-card-arrow">&rsaquo;</span>' +
+        '</div>';
+      card.addEventListener('click', function() { openTranscript(i); });
+      list.appendChild(card);
+    });
+  }
+  renderHistoryList();
+
+  function openTranscript(idx) {
+    var s = HISTORY_SESSIONS[idx];
+    if (!s) return;
+    document.querySelectorAll('.session-card').forEach(function(c) { c.classList.remove('selected'); });
+    var card = document.querySelector('.session-card[data-idx="' + idx + '"]');
+    if (card) card.classList.add('selected');
+
+    document.getElementById('tp-empty').style.display = 'none';
+    document.getElementById('tp-header').style.display = '';
+    document.getElementById('tp-segments').style.display = '';
+    document.getElementById('tp-name').textContent = s.name;
+    document.getElementById('tp-meta').textContent = s.date + ' · ' + s.time + ' · ' + s.duration;
+    var badge = document.getElementById('tp-badge');
+    if (s.status === 'inprogress') badge.textContent = 'In Progress';
+    else if (s.status === 'disconnected') badge.textContent = 'Disconnected';
+    else badge.textContent = 'Ended';
+
+    var segments = DEMO_TRANSCRIPT;
+    var container = document.getElementById('tp-segments');
+    container.innerHTML = '';
+    segments.forEach(function(seg) {
+      var div = document.createElement('div');
+      div.className = 'transcript-segment';
+      div.innerHTML =
+        '<div class="transcript-segment-text">' + seg.text + '</div>' +
+        '<div class="transcript-segment-time">' + s.date + ', ' + seg.time + '</div>';
+      container.appendChild(div);
+    });
+    container.scrollTop = 0;
+  }
+
+  /* ── History filter ── */
+  function filterHistory(btn, grade) {
+    document.querySelectorAll('.history-filter').forEach(function(f) { f.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('#sessionList .session-card').forEach(function(card) {
+      if (grade === 'all' || card.getAttribute('data-class') === grade) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  /* ── Session Found modal ── */
+  function showSessionFound() {
+    document.getElementById('sessionFoundModal').classList.add('show');
+  }
+  function closeSessionFound(resume) {
+    document.getElementById('sessionFoundModal').classList.remove('show');
+    if (resume) {
+      showScreen('live-class');
+    }
+  }
+
+  /* ── Still In Class modal ── */
+  var stillHereTimer = null;
+  var stillHereSeconds = 588; // 9:48
+  function showStillHere() {
+    stillHereSeconds = 588;
+    updateStillHereTimer();
+    document.getElementById('stillHereModal').classList.add('show');
+    stillHereTimer = setInterval(function() {
+      stillHereSeconds--;
+      updateStillHereTimer();
+      if (stillHereSeconds <= 0) {
+        closeStillHere(false);
+      }
+    }, 1000);
+  }
+  function updateStillHereTimer() {
+    var m = String(Math.floor(stillHereSeconds / 60)).padStart(2, '0');
+    var s = String(stillHereSeconds % 60).padStart(2, '0');
+    document.getElementById('countdownTime').textContent = m + ':' + s;
+  }
+  function closeStillHere(stayInClass) {
+    if (stillHereTimer) { clearInterval(stillHereTimer); stillHereTimer = null; }
+    document.getElementById('stillHereModal').classList.remove('show');
+    if (!stayInClass) {
+      endClass();
+    }
+  }
+
+  /* ── Demo triggers ── */
+  // Show "Session Found" on hash #session-found
+  // Show "Still Here" on hash #still-here
+  (function() {
+    var h = window.location.hash.replace('#', '');
+    if (h === 'session-found') {
+      setTimeout(function() { showScreen('mic-test'); setTimeout(showSessionFound, 500); }, 100);
+    } else if (h === 'still-here') {
+      setTimeout(function() { showScreen('live-class'); setTimeout(showStillHere, 1000); }, 100);
+    } else if (h) {
+      setTimeout(function() { showScreen(h); }, 100);
+    }
+  })();
+
+  /* ── Share Class Code ── */
+  var _shareCodes = { '1GM':'347','2GM':'582','3GM':'916','4GM':'273','5GM':'641','6GM':'809' };
+
+  function openShareCode(subjectName, prefix) {
+    if (!_shareCodes[prefix]) {
+      _shareCodes[prefix] = Math.floor(100 + Math.random() * 900).toString();
+    }
+    var code = _shareCodes[prefix];
+    document.getElementById('shareCodeSubject').textContent = subjectName;
+    document.getElementById('shareCodeValue').textContent = prefix + '-' + code;
+    var btn = document.getElementById('btnCopyCode');
+    btn.innerHTML = '<span class="material-icons-round">content_copy</span> Copy Code';
+    btn.style.background = '#10b981';
+    var startBtn = document.getElementById('btnStartNow');
+    startBtn.style.display = prefix === 'NEW' ? 'flex' : 'none';
+    document.getElementById('shareCodeOverlay').classList.add('show');
+  }
+
+  function closeShareCode() {
+    document.getElementById('shareCodeOverlay').classList.remove('show');
+  }
+
+  function copyCode() {
+    var code = document.getElementById('shareCodeValue').textContent;
+    navigator.clipboard.writeText(code).catch(function() {});
+    var btn = document.getElementById('btnCopyCode');
+    btn.innerHTML = '<span class="material-icons-round">check</span> Copied!';
+    btn.style.background = '#059669';
+  }
+</script>
+
+</body>
+</html>

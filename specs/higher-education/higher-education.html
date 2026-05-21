@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Higher Education</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; }
+
+    /* ── Layout ── */
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #fff; border-right: 1px solid #e2e8f0;
+      position: sticky; top: 49px; height: calc(100vh - 49px);
+      overflow-y: auto; padding: 24px 0;
+    }
+    .sidebar-title {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 0 20px; margin-bottom: 12px;
+    }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar ol ol { padding-left: 0; }
+    .sidebar li { margin: 0; }
+    .sidebar a {
+      display: block; padding: 6px 20px;
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar ol ol a { padding-left: 34px; font-size: 12px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+
+    /* ── Main content ── */
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .page-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; position: static; height: auto;
+        border-right: none; border-bottom: 1px solid #e2e8f0;
+        padding: 16px 0;
+      }
+      .main-content { padding: 24px 20px 60px; }
+    }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #059669;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .card h4 { margin-top: 0; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #f0fdf4; }
+    .check { color: #10b981; font-weight: 700; }
+    .cross { color: #ef4444; }
+    .new { color: #059669; font-weight: 600; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .callout-info { background: #f0fdf4; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-goal { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-question {
+      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+      border: 2px solid #facc15; border-radius: 10px;
+      padding: 18px 22px; margin: 20px 0 16px;
+    }
+    .callout-question .q-text {
+      font-size: 15px; font-weight: 700; color: #854d0e; line-height: 1.5;
+    }
+    .callout-question .q-context {
+      font-size: 12px; color: #a16207; margin-top: 6px; font-weight: 500;
+    }
+
+    /* ── Tag chips ── */
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      border-radius: 5px; padding: 2px 8px; margin-right: 4px;
+    }
+    .tag-new { background: #ecfdf5; color: #059669; }
+    .tag-reuse { background: #f0fdf4; color: #166534; }
+    .tag-tbd { background: #f1f5f9; color: #64748b; }
+
+    /* ── Mini Player mockup ── */
+    .mini-mockup {
+      background: #0f172a; border-radius: 12px; padding: 20px 24px; margin: 16px 0;
+    }
+    .mini-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px; padding: 10px 16px;
+    }
+    .mini-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; flex-shrink: 0; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    .mini-text { color: #e2e8f0; font-size: 13px; flex: 1; }
+    .mini-word { background: #059669; color: #fff; border-radius: 4px; padding: 1px 6px; }
+    .mini-controls { display: flex; gap: 6px; }
+    .mini-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: rgba(255,255,255,.1); color: #94a3b8;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+    }
+
+    /* ── State diagram ── */
+    .state-diagram {
+      display: flex; align-items: center; gap: 0; margin: 20px 0; flex-wrap: wrap; gap: 4px;
+    }
+    .state-box {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; text-align: center; min-width: 130px;
+    }
+    .state-box.blue { border-color: #059669; background: #f0fdf4; }
+    .state-box.purple { border-color: #7c3aed; background: #f5f3ff; }
+    .state-name { font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 2px; }
+    .state-desc { font-size: 11px; color: #94a3b8; }
+    .state-arrow { color: #94a3b8; font-size: 20px; padding: 0 8px; display: flex; flex-direction: column; align-items: center; }
+    .arrow-label { font-size: 10px; color: #94a3b8; white-space: nowrap; }
+
+    /* ── Formula / code block ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap;
+    }
+
+    /* ── Footer ── */
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <span>3. ESL Modules</span>
+  <span class="sep">/</span>
+  <span class="current">Higher Education</span>
+</div>
+
+<!-- ── PAGE LAYOUT ── -->
+<div class="page-layout">
+
+  <!-- ── SIDEBAR TOC ── -->
+  <nav class="sidebar">
+    <div class="sidebar-title">Contents</div>
+    <ol>
+      <li><a href="#context">1. Use Case &amp; Context</a></li>
+      <li>
+        <a href="#session-creation">2. Session Creation</a>
+        <ol>
+          <li><a href="#path-direct">2.1 Direct Start</a></li>
+          <li><a href="#path-subject">2.2 From Subject Group</a></li>
+        </ol>
+      </li>
+      <li><a href="#full-mode">3. Full Transcription View</a></li>
+      <li>
+        <a href="#mini-player">4. Mini Player</a>
+        <ol>
+          <li><a href="#mini-states">4.1 State Transitions</a></li>
+          <li><a href="#mini-anatomy">4.2 Anatomy</a></li>
+        </ol>
+      </li>
+      <li><a href="#word-cards">5. Word Interaction</a></li>
+      <li>
+        <a href="#my-class">6. My Class</a>
+        <ol>
+          <li><a href="#subject-group">6.1 Subject Group</a></li>
+          <li><a href="#session-detail">6.2 Session Detail</a></li>
+        </ol>
+      </li>
+      <li><a href="#component-scope">7. Component Scope</a></li>
+      <li><a href="#open-questions">8. Open Questions</a></li>
+    </ol>
+  </nav>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+
+    <!-- ── Header ── -->
+    <div class="doc-header">
+      <h1>Higher Education</h1>
+      <p class="subtitle">Self-directed transcription &amp; academic vocabulary support for university-level students — with Mini Player floating subtitle bar.</p>
+      <div class="meta">
+        <span>ESL Module &mdash; 3.7</span>
+        <span>Status: Concept</span>
+        <span>Audience: University / Advanced</span>
+        <span>Updated: May 2026</span>
+      </div>
+    </div>
+
+    <!-- ════════════════ 1. USE CASE ════════════════ -->
+    <h2 id="context"><span class="num">1</span> Use Case &amp; Context</h2>
+
+    <p>Advanced learners — university students or high-grade secondary students — encounter dense academic vocabulary in lectures, seminars, and subject-matter videos. Unlike the K–12 ESL student who works inside a teacher-managed class, this user operates <strong>independently</strong>: they open a laptop, start recording, and want real-time transcription with word-level support without any instructor setup.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>Target User</h4>
+        <p style="margin:0; font-size:13px; color:#64748b;">University student or advanced learner taking content-heavy lectures (science, law, business, etc.) with high academic vocabulary density. No teacher or admin in the loop.</p>
+      </div>
+      <div class="card">
+        <h4>Core Problem</h4>
+        <p style="margin:0; font-size:13px; color:#64748b;">Academic lectures move fast. Students miss or misunderstand specialist terms they haven't encountered before. They need real-time support without disrupting the flow of listening.</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Dimension</th><th>ESL Student (3.2)</th><th>Higher Education (3.7)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Initiated by</td><td>Teacher creates class</td><td class="new">Student creates own session</td></tr>
+        <tr><td>Roles involved</td><td>Teacher + Student</td><td class="new">Student only</td></tr>
+        <tr><td>Multitasking need</td><td>No (full-screen classroom)</td><td class="new">Yes — student browses while listening</td></tr>
+        <tr><td>Session ownership</td><td>Teacher</td><td class="new">Student</td></tr>
+        <tr><td>Admin layer</td><td>School Admin + ESL Coordinator</td><td class="new">None</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ════════════════ 2. SESSION CREATION ════════════════ -->
+    <h2 id="session-creation"><span class="num">2</span> Session Creation (Student-Initiated)</h2>
+
+    <p>There is no teacher to create or schedule a session. The student starts directly from <strong>My Class</strong>. There are two paths to start a new session:</p>
+
+    <h3 id="path-direct">2.1 Direct Start (No Subject)</h3>
+
+    <table>
+      <thead>
+        <tr><th>Step</th><th>Action</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Open My Class</td><td>Student lands on their class home page.</td></tr>
+        <tr><td><strong>2</strong></td><td>Tap "Start new class"</td><td>Opens mic permission check and begins recording. No subject assigned yet.</td></tr>
+        <tr><td><strong>3</strong></td><td>Grant Microphone Permission</td><td>Browser permission prompt on first use. State is remembered for subsequent sessions.</td></tr>
+        <tr><td><strong>4</strong></td><td>Recording Begins</td><td>Live transcript appears in real time. Student can click any word to save it.</td></tr>
+        <tr><td><strong>5</strong></td><td>End Class → Assign Subject (optional)</td><td>After ending, student can file the session into a Subject group — or leave it unclassified.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="path-subject">2.2 From Subject Group</h3>
+
+    <table>
+      <thead>
+        <tr><th>Step</th><th>Action</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Open My Class</td><td>Student sees list of Subject groups.</td></tr>
+        <tr><td><strong>2</strong></td><td>Tap a Subject group (e.g. History)</td><td>Opens the subject folder — shows past class sessions in that subject.</td></tr>
+        <tr><td><strong>3</strong></td><td>Tap "+ New Class"</td><td>Starts a new session. Subject is automatically assigned to this group.</td></tr>
+        <tr><td><strong>4</strong></td><td>Recording Begins</td><td>Same as direct start. Session is pre-filed under the chosen subject.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ════════════════ 3. FULL MODE ════════════════ -->
+    <h2 id="full-mode"><span class="num">3</span> Full Transcription View (Active Tab)</h2>
+
+    <p>When the student is focused on the app, they see the standard live transcription interface — same rendering pipeline as Live Classroom (3.6), but without teacher controls.</p>
+
+    <table>
+      <thead>
+        <tr><th>UI Element</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Live transcript panel</strong></td><td>Scrolling live transcript. Academic vocabulary highlighted in real time. Click to open word card.</td></tr>
+        <tr><td><strong>Recording indicator</strong></td><td>Red dot + elapsed time. Confirms microphone is active.</td></tr>
+        <tr><td><strong>Pause / Resume</strong></td><td>Pauses transcription and timer. Student can pause without ending the session.</td></tr>
+        <tr><td><strong>End Session</strong></td><td>Stops recording and saves to session history.</td></tr>
+        <tr><td><strong>Mini Player toggle</strong></td><td>Collapses view to floating subtitle bar. Also triggered automatically on tab switch.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <strong>Reuse from 3.6:</strong> Live transcription engine, word-click popup card, and transcript scroll behaviour are shared with the Live Classroom spec. No need to redesign these components.
+    </div>
+
+    <!-- ════════════════ 4. MINI PLAYER ════════════════ -->
+    <h2 id="mini-player"><span class="num">4</span> Mini Player</h2>
+
+    <p>This is the defining feature of 3.7. When the student switches to another browser tab or application — e.g. taking notes in Notion, or looking up a concept — the transcription session does not stop. The tab collapses into a <strong>persistent floating subtitle bar</strong> overlaid on the screen.</p>
+
+    <h3 id="mini-states">4.1 State Transitions</h3>
+
+    <div class="state-diagram">
+      <div class="state-box blue">
+        <div class="state-name">Full Mode</div>
+        <div class="state-desc">Full transcript view<br>Tab in focus</div>
+      </div>
+      <div class="state-arrow">
+        <span>→</span>
+        <span class="arrow-label">switch tab / window</span>
+      </div>
+      <div class="state-box purple">
+        <div class="state-name">Mini Player</div>
+        <div class="state-desc">Floating subtitle bar<br>persists on top</div>
+      </div>
+      <div class="state-arrow">
+        <span>→</span>
+        <span class="arrow-label">click bar or return to tab</span>
+      </div>
+      <div class="state-box blue">
+        <div class="state-name">Full Mode</div>
+        <div class="state-desc">Restored<br>full transcript</div>
+      </div>
+    </div>
+
+    <h3 id="mini-anatomy">4.2 Anatomy</h3>
+
+    <div class="mini-mockup">
+      <div class="mini-bar">
+        <div class="mini-dot"></div>
+        <div class="mini-text">
+          "...the process of <span class="mini-word">mitochondrial</span> biogenesis is regulated by..."
+        </div>
+        <div class="mini-controls">
+          <div class="mini-btn">⏸</div>
+          <div class="mini-btn">↗</div>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Element</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>A — Recording indicator</strong></td><td>Pulsing red dot confirms microphone is still active. Student always knows the session is live.</td></tr>
+        <tr><td><strong>B — Live subtitle text</strong></td><td>Current transcription sentence streams in real time. Highlighted academic words remain tappable — clicking opens the word card without leaving the current app.</td></tr>
+        <tr><td><strong>C — Pause button</strong></td><td>Student can pause recording directly from Mini Player without returning to the app.</td></tr>
+        <tr><td><strong>D — Expand button</strong></td><td>Returns focus to the app tab and restores the full transcript view.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-question">
+      <div class="q-text">How is Mini Player implemented technically?</div>
+      <div class="q-context">Option A — Picture-in-Picture API (native browser, video element required). Option B — always-on-top browser popup window. Option C — Electron / desktop app wrapper that can draw over other windows. Each has trade-offs for web portability and permission complexity.</div>
+    </div>
+
+    <div class="callout callout-question">
+      <div class="q-text">Where does the Mini Player appear on screen?</div>
+      <div class="q-context">Default position (bottom-center? top-right?), whether it is draggable, and whether its position persists across sessions.</div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>Platform constraint:</strong> A standard browser tab cannot render content on top of other tabs or native apps. Mini Player requires either the Picture-in-Picture API, a separate popup window, or a desktop app wrapper. This needs a technical feasibility decision before design can finalise.
+    </div>
+
+    <!-- ════════════════ 5. WORD INTERACTION ════════════════ -->
+    <h2 id="word-cards"><span class="num">5</span> Word Interaction</h2>
+
+    <p>Word interaction is <strong>identical to the existing ESL Student (3.2) functionality</strong>. No redesign needed.</p>
+
+    <div class="callout callout-tip">
+      <strong>Reuse from 3.2:</strong> Student taps a word in the live transcript → word card popup → save to word bank. Same component, same behaviour.
+    </div>
+
+    <!-- ════════════════ 6. MY CLASS ════════════════ -->
+    <h2 id="my-class"><span class="num">6</span> My Class</h2>
+
+    <p><strong>My Class</strong> is the student's home page. It shows all Subject groups (folders) and provides entry points to start a new session.</p>
+
+    <table>
+      <thead>
+        <tr><th>Element</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Start new class</strong></td><td>Top-level CTA. Starts a session with no subject pre-assigned. Student can assign a subject after class ends.</td></tr>
+        <tr><td><strong>Subject group list</strong></td><td>All subject folders the student has created (e.g. History, Biology). Each shows a preview of how many sessions are inside.</td></tr>
+        <tr><td><strong>+ New Subject</strong></td><td>Creates a new subject folder. Student provides a name.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="subject-group">6.1 Subject Group (Folder View)</h3>
+
+    <p>Tapping a Subject group opens the folder and shows all sessions inside it.</p>
+
+    <table>
+      <thead>
+        <tr><th>Element</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Session list</strong></td><td>Past sessions in this subject, sorted by date. Shows session name, date, duration, and saved word count.</td></tr>
+        <tr><td><strong>+ New Class</strong></td><td>Starts a new session pre-filed under this subject. No additional subject selection needed.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Subject assignment is flexible:</strong> Sessions started from the top-level "Start new class" are unclassified by default. The student can drag or assign them to a Subject group at any time — during review or immediately after class ends.
+    </div>
+
+    <h3 id="session-detail">6.2 Session Detail</h3>
+
+    <p>Tapping a session opens a detail view:</p>
+    <ul>
+      <li><strong>Full transcript</strong> — scrollable, all saved words still tappable</li>
+      <li><strong>Saved words from this session</strong> — quick-access list</li>
+      <li><strong>Subject assignment</strong> — move session to a different subject group if needed</li>
+    </ul>
+
+    <!-- ════════════════ 7. COMPONENT SCOPE ════════════════ -->
+    <h2 id="component-scope"><span class="num">7</span> Component Scope</h2>
+
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Status</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Live transcription engine</td><td><span class="tag tag-reuse">Reuse</span></td><td>Shared with 3.6 Live Classroom — same speech-to-text pipeline</td></tr>
+        <tr><td>Word card &amp; save word</td><td><span class="tag tag-reuse">Reuse</span></td><td>Identical to ESL Student (3.2) — no changes needed</td></tr>
+        <tr><td>Student-initiated session creation</td><td><span class="tag tag-new">New</span></td><td>No teacher, no class — student owns the full session lifecycle</td></tr>
+        <tr><td>Subject group (folder structure)</td><td><span class="tag tag-new">New</span></td><td>My Class home with subject folders, session filing, and in-folder class start</td></tr>
+        <tr><td>Mini Player / floating subtitle bar</td><td><span class="tag tag-new">New</span></td><td>Core differentiator — requires platform decision first</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ════════════════ 8. OPEN QUESTIONS ════════════════ -->
+    <h2 id="open-questions"><span class="num">8</span> Open Questions</h2>
+
+    <ol>
+      <li><strong>Subject naming</strong> — Is the subject name free text (student types anything), or selected from a preset list? Does it affect anything beyond the folder label?</li>
+      <li><strong>Unclassified sessions</strong> — Where do sessions without a subject appear on My Class? A separate "Uncategorised" section, or always at the top?</li>
+      <li><strong>Mini Player implementation</strong> — PiP API / popup window / desktop wrapper? Needs technical feasibility decision before design finalises.</li>
+      <li><strong>Mini Player position</strong> — Default screen position, draggability, and whether position persists across sessions.</li>
+      <li><strong>Account requirement</strong> — Does the student need an account, or can sessions be anonymous / guest?</li>
+    </ol>
+
+    <footer>DAHUA AI &middot; Product Spec &middot; 3. ESL Modules — Higher Education &middot; May 2026</footer>
+
+  </div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<!-- ── Scroll-spy: highlight active sidebar link ── -->
+<script>
+(function(){
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const ids = Array.from(links).map(a => a.getAttribute('href').slice(1));
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+  function onScroll() {
+    let current = ids[0];
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= 80) current = ids[i];
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

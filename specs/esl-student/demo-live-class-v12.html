@@ -373,6 +373,66 @@
       color: #94a3b8; font-size: 13px; text-align: center; padding: 40px;
       line-height: 1.6;
     }
+
+    /* ── Join with code (secondary, below list) ── */
+    .btn-join-code {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 12px;
+      background: #fff; color: #64748b;
+      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      padding: 12px 0; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-join-code:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .btn-join-code .material-icons-round { font-size: 18px; }
+
+    /* ── User avatar ── */
+    .header-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #1e293b;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+      margin-left: 14px;
+    }
+
+    /* ── Join Class Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal-card {
+      background: #fff; border-radius: 16px; padding: 32px 28px;
+      width: 400px; max-width: calc(100vw - 40px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      transform: translateY(12px); transition: transform .2s;
+    }
+    .modal-overlay.show .modal-card { transform: translateY(0); }
+    .modal-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .modal-desc { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+    .modal-label { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 8px; letter-spacing: .5px; text-transform: uppercase; }
+    .modal-input {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 11px 16px; font-size: 18px; font-family: inherit; color: #0f172a;
+      outline: none; transition: border-color .15s; letter-spacing: 3px;
+      text-transform: uppercase; text-align: center; font-weight: 700;
+    }
+    .modal-input::placeholder { letter-spacing: 0; text-transform: none; color: #cbd5e1; font-weight: 400; font-size: 14px; }
+    .modal-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-btn-cancel {
+      flex: 1; padding: 11px 0; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      background: #fff; font-size: 14px; font-weight: 600; color: #64748b;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .modal-btn-cancel:hover { border-color: #cbd5e1; color: #475569; background: #f8fafc; }
+    .modal-btn-confirm {
+      flex: 2; padding: 11px 0; border: none; border-radius: 10px;
+      background: #10b981; font-size: 14px; font-weight: 700; color: #fff;
+      cursor: pointer; transition: background .15s; font-family: inherit;
+    }
+    .modal-btn-confirm:hover { background: #059669; }
   </style>
 </head>
 <body>
@@ -407,6 +467,7 @@
         <div class="live-dot"></div>
         LIVE NOW
       </div>
+      <div class="header-avatar">T</div>
     </div>
 
     <!-- ===== SCREEN 1: My Classes ===== -->
@@ -468,6 +529,9 @@
             </button>
           </div>
         </div>
+        <button class="btn-join-code" onclick="openJoinModal()">
+          <span class="material-icons-round">add</span> Join with code
+        </button>
         </div>
       </div>
     </div>
@@ -552,6 +616,20 @@
 </div>
 
 <!-- Class Complete Overlay -->
+<!-- ===== Join Class Modal ===== -->
+<div class="modal-overlay" id="joinClassModal" onclick="if(event.target===this)closeJoinModal()">
+  <div class="modal-card">
+    <div class="modal-title">Join a Class</div>
+    <div class="modal-desc">Enter the class code your teacher shared with you.</div>
+    <div class="modal-label">Class Code</div>
+    <input class="modal-input" id="classCodeInput" type="text" placeholder="e.g. ABC-123" maxlength="8" />
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeJoinModal()">Cancel</button>
+      <button class="modal-btn-confirm" onclick="confirmJoinClass()">Join Class</button>
+    </div>
+  </div>
+</div>
+
 <div class="complete-overlay" id="completeOverlay">
   <div class="complete-card">
     <div class="complete-title">Class Complete</div>
@@ -825,6 +903,35 @@ function showScreen(name) {
 }
 
 function joinClass() {
+  showScreen('live-class');
+}
+
+/* ── Join Class Modal ── */
+function openJoinModal() {
+  var modal = document.getElementById('joinClassModal');
+  modal.classList.add('show');
+  setTimeout(function() {
+    var input = document.getElementById('classCodeInput');
+    if (input) input.focus();
+  }, 180);
+}
+
+function closeJoinModal() {
+  var modal = document.getElementById('joinClassModal');
+  modal.classList.remove('show');
+  var input = document.getElementById('classCodeInput');
+  if (input) input.value = '';
+}
+
+function confirmJoinClass() {
+  var input = document.getElementById('classCodeInput');
+  var code = input ? input.value.trim() : '';
+  if (!code) {
+    if (input) { input.focus(); input.style.borderColor = '#ef4444'; }
+    return;
+  }
+  if (input) input.style.borderColor = '';
+  closeJoinModal();
   showScreen('live-class');
 }
 
