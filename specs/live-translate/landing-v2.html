@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DAHUA AI Live Translate — 跨國會議，即時理解</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, .section-title, .hero-title, .pricing-price, .pricing-card h3, .stat-number {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Scroll Animations ── */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.25s; }
+    .reveal-delay-4 { transition-delay: 0.35s; }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: box-shadow 0.3s;
+    }
+    .nav.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.3); }
+    .nav-inner {
+      max-width: 1080px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-brand img { height: 32px; width: 32px; border-radius: 8px; }
+    .nav-brand span { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 17px; color: #f8fafc; letter-spacing: -0.01em; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { text-decoration: none; color: #94a3b8; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #f8fafc; }
+    .nav-cta {
+      background: #fff; color: #0f172a; border: none; border-radius: 8px;
+      padding: 9px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: 'Outfit', sans-serif; transition: all 0.25s;
+    }
+    .nav-cta:hover { background: #e2e8f0; transform: translateY(-1px); }
+    .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .nav-hamburger span { display: block; width: 22px; height: 2px; background: #f8fafc; margin: 5px 0; border-radius: 2px; transition: 0.3s; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(15,23,42,0.98); backdrop-filter: blur(16px);
+      z-index: 99; flex-direction: column; align-items: center;
+      padding-top: 48px; gap: 28px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { text-decoration: none; color: #f8fafc; font-size: 18px; font-weight: 500; }
+    .mobile-menu .nav-cta { font-size: 16px; padding: 14px 36px; margin-top: 8px; }
+
+    /* ── Hero (Dark) ── */
+    .hero {
+      padding: 120px 0 100px;
+      background: #0f172a;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(40,89,197,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(5,150,105,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    /* Grid pattern overlay */
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1080px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; gap: 72px;
+      position: relative; z-index: 1;
+    }
+    .hero-text { flex: 1; min-width: 0; }
+    .hero-visual { flex: 0 0 400px; position: relative; }
+
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); color: #94a3b8;
+      font-size: 13px; font-weight: 600; padding: 7px 18px;
+      border-radius: 6px; margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
+      opacity: 0; animation: fadeInUp 0.6s 0.1s forwards;
+    }
+    .hero-pill .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16,185,129,0.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+    .hero-title {
+      font-size: 52px; font-weight: 800; line-height: 1.1;
+      color: #f8fafc; margin-bottom: 20px;
+      letter-spacing: -0.03em;
+      opacity: 0; animation: fadeInUp 0.6s 0.2s forwards;
+    }
+    .hero-title .accent {
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: 17px; color: #94a3b8; margin-bottom: 36px;
+      font-weight: 500; line-height: 1.75; max-width: 480px;
+      opacity: 0; animation: fadeInUp 0.6s 0.3s forwards;
+    }
+    .hero-actions {
+      display: flex; gap: 14px; margin-bottom: 20px;
+      opacity: 0; animation: fadeInUp 0.6s 0.4s forwards;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; color: #0f172a; border: none; border-radius: 10px;
+      padding: 15px 32px; font-size: 16px; font-weight: 700; cursor: pointer;
+      font-family: 'Outfit', sans-serif; transition: all 0.25s;
+    }
+    .btn-primary:hover { background: #e2e8f0; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 15px 32px; font-size: 16px; font-weight: 600;
+      cursor: pointer; font-family: 'Outfit', sans-serif; transition: all 0.25s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.3); color: #f8fafc; background: rgba(255,255,255,0.04); }
+    .hero-note {
+      font-size: 13px; color: #475569; font-weight: 500;
+      opacity: 0; animation: fadeInUp 0.6s 0.5s forwards;
+    }
+
+    /* ── Waveform Visual ── */
+    .waveform-wrap {
+      width: 100%; height: 280px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .waveform-bars {
+      display: flex; align-items: center; gap: 3px; height: 120px;
+    }
+    .waveform-bar {
+      width: 3px; border-radius: 2px;
+      background: linear-gradient(180deg, #10b981 0%, #3b82f6 100%);
+      opacity: 0.5;
+      animation: waveBar 1.8s ease-in-out infinite;
+    }
+    @keyframes waveBar {
+      0%, 100% { transform: scaleY(0.3); opacity: 0.3; }
+      50% { transform: scaleY(1); opacity: 0.7; }
+    }
+    .waveform-label {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 10px 20px;
+    }
+    .waveform-label .rec-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .waveform-label span {
+      font-size: 13px; color: #94a3b8; font-weight: 600; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Logos / Trust Bar ── */
+    .trust-bar {
+      padding: 48px 0;
+      background: #fff;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .trust-inner {
+      text-align: center;
+    }
+    .trust-label {
+      font-size: 12px; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .trust-logos {
+      display: flex; align-items: center; justify-content: center; gap: 48px;
+      flex-wrap: wrap;
+    }
+    .trust-logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px; font-weight: 700; color: #cbd5e1;
+      letter-spacing: -0.01em;
+      transition: color 0.2s;
+    }
+    .trust-logo:hover { color: #94a3b8; }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      padding: 56px 0;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .stats-inner {
+      display: flex; align-items: center; justify-content: center; gap: 0;
+    }
+    .stat-item {
+      flex: 1; text-align: center;
+      padding: 0 32px;
+    }
+    .stat-item + .stat-item { border-left: 1px solid #e2e8f0; }
+    .stat-number {
+      font-size: 36px; font-weight: 800; color: #0f172a;
+      letter-spacing: -0.02em; line-height: 1.2;
+    }
+    .stat-label { font-size: 13px; color: #64748b; font-weight: 500; margin-top: 4px; }
+
+    /* ── Section Styles ── */
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      text-align: center; font-size: 36px; font-weight: 700; color: #0f172a;
+      margin-bottom: 14px; letter-spacing: -0.02em;
+    }
+    .section-subtitle {
+      text-align: center; color: #64748b; font-size: 16px; font-weight: 500;
+      margin-bottom: 56px; max-width: 520px; margin-left: auto; margin-right: auto;
+      line-height: 1.7;
+    }
+
+    /* ── Feature Rows ── */
+    .feature-section { position: relative; overflow: hidden; }
+    .feature-section.bg-white { background: #fff; }
+    .feature-section.bg-gray { background: #f8fafc; }
+    .feature-row {
+      display: flex; align-items: center; gap: 72px; padding: 96px 0;
+    }
+    .feature-row.reverse { flex-direction: row-reverse; }
+    .feature-row-text { flex: 1; }
+    .feature-tag {
+      display: inline-block;
+      font-size: 12px; font-weight: 700; color: #3b82f6;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .feature-row-text h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 30px; font-weight: 700; color: #0f172a;
+      margin-bottom: 14px; letter-spacing: -0.015em;
+    }
+    .feature-row-text > p {
+      font-size: 15px; color: #475569; line-height: 1.75;
+      font-weight: 500; margin-bottom: 28px;
+    }
+    .feature-points {
+      list-style: none; display: flex; flex-direction: column; gap: 12px;
+    }
+    .feature-points li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 15px; font-weight: 500; color: #1e293b;
+      line-height: 1.5;
+    }
+    .feature-points li .icon-check {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: #eff6ff; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .feature-points li .icon-check svg { width: 12px; height: 12px; }
+
+    /* ── Phone Frame ── */
+    .phone-frame {
+      width: 280px; height: 560px;
+      background: #fff;
+      border-radius: 24px;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 6px 16px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+    }
+    .phone-frame:hover {
+      transform: translateY(-8px) rotate(1deg);
+      box-shadow: 0 28px 80px rgba(0,0,0,0.12), 0 10px 24px rgba(0,0,0,0.06);
+    }
+    .phone-frame img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+    .phone-frame.tilt-left:hover { transform: translateY(-8px) rotate(-1.5deg); }
+    .phone-frame.tilt-right:hover { transform: translateY(-8px) rotate(1.5deg); }
+
+    /* ── Use Cases ── */
+    .usecases {
+      padding: 100px 0;
+      background: #fff;
+    }
+    .usecases-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .usecase-card {
+      background: #f8fafc; border-radius: 14px; padding: 32px 24px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .usecase-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+      border-color: #cbd5e1;
+    }
+    .usecase-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .usecase-icon svg { width: 24px; height: 24px; }
+    .usecase-icon.blue { background: #eff6ff; color: #3b82f6; }
+    .usecase-icon.emerald { background: #ecfdf5; color: #059669; }
+    .usecase-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .usecase-icon.amber { background: #fefce8; color: #d97706; }
+    .usecase-icon.rose { background: #fff1f2; color: #e11d48; }
+    .usecase-icon.slate { background: #f1f5f9; color: #475569; }
+    .usecase-card h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #0f172a;
+    }
+    .usecase-card p { font-size: 14px; color: #64748b; line-height: 1.65; font-weight: 500; }
+
+    /* ── Pricing ── */
+    .pricing {
+      padding: 100px 0;
+      background: #f8fafc;
+    }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+      max-width: 920px; margin: 0 auto;
+    }
+    .pricing-card {
+      background: #fff; border-radius: 16px; padding: 36px 28px;
+      border: 1px solid #e2e8f0; text-align: center;
+      display: flex; flex-direction: column; transition: all 0.3s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+    }
+    .pricing-card.featured {
+      border: 2px solid #0f172a; position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      transform: scale(1.04); background: #fff;
+    }
+    .pricing-card.featured:hover {
+      transform: scale(1.04) translateY(-3px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.1);
+    }
+    .pricing-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: #0f172a; color: #fff;
+      font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 600;
+      padding: 5px 20px; border-radius: 6px; white-space: nowrap;
+    }
+    .pricing-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #0f172a; }
+    .pricing-desc { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .pricing-price {
+      font-size: 42px; font-weight: 800; color: #0f172a; margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+    .pricing-price span { font-size: 15px; font-weight: 500; color: #94a3b8; }
+    .pricing-original { font-size: 13px; color: #94a3b8; text-decoration: line-through; margin-bottom: 4px; }
+    .pricing-save {
+      display: inline-block; background: #ecfdf5; color: #059669;
+      font-size: 12px; font-weight: 600; padding: 4px 12px;
+      border-radius: 6px; margin-bottom: 16px;
+    }
+    .pricing-features { list-style: none; margin: 24px 0; flex: 1; text-align: left; }
+    .pricing-features li {
+      font-size: 14px; color: #475569; font-weight: 500;
+      padding: 9px 0; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pricing-features li::before {
+      content: '';
+      width: 18px; height: 18px; flex-shrink: 0;
+      background: #f1f5f9; border-radius: 4px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: center; background-size: 10px;
+    }
+    .pricing-btn-outline {
+      width: 100%; padding: 13px 0; border-radius: 10px; font-size: 15px;
+      font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif;
+      background: transparent; color: #0f172a; border: 1.5px solid #e2e8f0;
+      transition: all 0.25s;
+    }
+    .pricing-btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .pricing-btn-solid {
+      width: 100%; padding: 13px 0; border-radius: 10px; font-size: 15px;
+      font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif;
+      background: #0f172a; color: #fff; border: none; transition: all 0.25s;
+    }
+    .pricing-btn-solid:hover { background: #1e293b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    /* ── FAQ ── */
+    .faq {
+      padding: 100px 0;
+      background: #fff;
+    }
+    .faq-list { max-width: 680px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid #e2e8f0; }
+    .faq-question {
+      width: 100%; text-align: left;
+      background: none; border: none; cursor: pointer;
+      padding: 22px 0;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px; font-weight: 600; color: #0f172a;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; transition: color 0.2s;
+    }
+    .faq-question:hover { color: #3b82f6; }
+    .faq-icon {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.3s;
+    }
+    .faq-icon svg { width: 16px; height: 16px; color: #94a3b8; }
+    .faq-item.open .faq-icon { transform: rotate(180deg); }
+    .faq-item.open .faq-icon svg { color: #3b82f6; }
+    .faq-answer {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-item.open .faq-answer { max-height: 300px; }
+    .faq-answer-inner {
+      padding: 0 0 22px;
+      font-size: 15px; color: #64748b; line-height: 1.75; font-weight: 500;
+    }
+
+    /* ── Final CTA ── */
+    .final-cta {
+      padding: 100px 0;
+      background: #0f172a;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .final-cta::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 100%, rgba(40,89,197,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .final-cta::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .final-cta .container { position: relative; z-index: 1; }
+    .final-cta h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 36px; font-weight: 700; color: #f8fafc;
+      margin-bottom: 14px; letter-spacing: -0.02em;
+    }
+    .final-cta .section-subtitle { color: #64748b; margin-bottom: 36px; }
+    .btn-cta-large {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #fff; color: #0f172a; border: none; border-radius: 10px;
+      padding: 16px 40px; font-size: 17px; font-weight: 700; cursor: pointer;
+      font-family: 'Outfit', sans-serif; transition: all 0.25s;
+    }
+    .btn-cta-large:hover { background: #e2e8f0; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.2); }
+    .cta-note { font-size: 13px; color: #475569; margin-top: 16px; font-weight: 500; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center; padding: 40px 24px;
+      border-top: 1px solid #1e293b;
+      background: #0f172a;
+    }
+    .footer-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .footer-brand img { height: 26px; width: 26px; border-radius: 7px; }
+    .footer-brand span { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 15px; color: #f8fafc; }
+    .footer-links { margin-bottom: 20px; }
+    .footer-links a {
+      text-decoration: none; color: #64748b; font-size: 13px; font-weight: 500;
+      margin: 0 14px; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: #f8fafc; }
+    .footer-copy { font-size: 12px; color: #475569; }
+
+    /* ── Animations ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-hamburger { display: block; }
+
+      .hero { padding: 72px 0 64px; }
+      .hero-inner { flex-direction: column; gap: 48px; text-align: center; }
+      .hero-visual { flex: none; width: 100%; }
+      .hero-title { font-size: 34px; }
+      .hero-subtitle { font-size: 15px; margin-left: auto; margin-right: auto; }
+      .hero-actions { justify-content: center; flex-wrap: wrap; }
+
+      .trust-logos { gap: 28px; }
+      .trust-logo { font-size: 15px; }
+
+      .stats-inner { flex-direction: column; gap: 24px; }
+      .stat-item + .stat-item { border-left: none; border-top: 1px solid #e2e8f0; padding-top: 24px; }
+
+      .section-title { font-size: 28px; }
+
+      .feature-row {
+        flex-direction: column !important;
+        gap: 40px; padding: 72px 0;
+      }
+      .phone-frame {
+        width: 220px; height: 440px;
+        border-radius: 18px;
+        order: -1;
+      }
+      .feature-row-text h2 { font-size: 26px; }
+
+      .usecases-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+
+      .pricing-grid { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
+      .pricing-card.featured { transform: none; order: -1; }
+      .pricing-card.featured:hover { transform: translateY(-3px); }
+
+      .final-cta h2 { font-size: 28px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title { font-size: 28px; }
+      .btn-primary, .btn-outline { padding: 12px 24px; font-size: 15px; }
+      .feature-row { gap: 32px; padding: 56px 0; }
+      .phone-frame { width: 200px; height: 400px; border-radius: 16px; }
+      .usecase-card { padding: 24px 20px; }
+      .pricing-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav" id="mainNav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="../esl-teacher/assets/dh_single.png" alt="DAHUA AI" />
+        <span>Live Translate</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#usecases">應用場景</a>
+        <a href="#pricing">方案</a>
+        <a href="#faq">FAQ</a>
+        <a href="#">登入</a>
+        <button class="nav-cta">免費試用</button>
+      </div>
+      <button class="nav-hamburger" onclick="toggleMobileMenu()" aria-label="選單">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features" onclick="closeMobileMenu()">功能</a>
+    <a href="#usecases" onclick="closeMobileMenu()">應用場景</a>
+    <a href="#pricing" onclick="closeMobileMenu()">方案</a>
+    <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
+    <a href="#">登入</a>
+    <button class="nav-cta" style="margin-top: 8px;">免費試用</button>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          AI-Powered Real-time Translation
+        </div>
+        <h1 class="hero-title">跨國會議<br><span class="accent">零語言障礙</span></h1>
+        <p class="hero-subtitle">即時語音辨識 · 同步翻譯 · 完整逐字稿<br>讓每一場英語會議都不再漏聽、不再誤解</p>
+        <div class="hero-actions">
+          <button class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            免費試用
+          </button>
+          <button class="btn-outline">了解更多</button>
+        </div>
+        <p class="hero-note">無需信用卡 · 支援 Chrome / Edge / Safari</p>
+      </div>
+      <div class="hero-visual">
+        <div class="waveform-wrap" id="waveformWrap">
+          <div class="waveform-bars" id="waveformBars"></div>
+          <div class="waveform-label">
+            <span class="rec-dot"></span>
+            <span>LISTENING</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Bar -->
+  <div class="trust-bar reveal">
+    <div class="container">
+      <div class="trust-inner">
+        <div class="trust-label">Trusted by teams at</div>
+        <div class="trust-logos">
+          <span class="trust-logo">Foxconn</span>
+          <span class="trust-logo">TSMC</span>
+          <span class="trust-logo">MediaTek</span>
+          <span class="trust-logo">Delta</span>
+          <span class="trust-logo">Acer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar reveal">
+    <div class="container">
+      <div class="stats-inner">
+        <div class="stat-item">
+          <div class="stat-number">50+</div>
+          <div class="stat-label">支援語言</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">99%</div>
+          <div class="stat-label">語音辨識率</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">&lt;1s</div>
+          <div class="stat-label">翻譯延遲</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">逐字稿保存</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 1: 即時翻譯 -->
+  <section class="feature-section bg-white" id="features">
+    <div class="container">
+      <div class="feature-row reveal">
+        <div class="phone-frame tilt-right">
+          <img src="assets/ss-translate.png" alt="即時翻譯介面" />
+        </div>
+        <div class="feature-row-text">
+          <div class="feature-tag">Core Feature</div>
+          <h2>即時語音翻譯</h2>
+          <p>會議進行中，英語發言即時轉為文字並同步翻譯。每一句話都完整記錄，不再依賴手動筆記。</p>
+          <ul class="feature-points">
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              即時語音辨識，延遲低於 1 秒
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              逐句同步翻譯成你的母語
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              點擊任何專業術語即可標記保存
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 2: 術語庫 -->
+  <section class="feature-section bg-gray">
+    <div class="container">
+      <div class="feature-row reverse reveal">
+        <div class="phone-frame tilt-left">
+          <img src="assets/ss-wordbank.png" alt="術語庫介面" />
+        </div>
+        <div class="feature-row-text">
+          <div class="feature-tag">Vocabulary</div>
+          <h2>商務術語庫</h2>
+          <p>會議中標記的專業術語自動整理成字卡，包含定義、例句和上下文翻譯。累積你的產業專屬詞彙。</p>
+          <ul class="feature-points">
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              完整字卡（定義 + 商務例句）
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              依產業分類，快速查找
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              匯出 PDF / CSV，分享給團隊
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 3: 會議紀錄 -->
+  <section class="feature-section bg-white">
+    <div class="container">
+      <div class="feature-row reveal">
+        <div class="phone-frame tilt-right">
+          <img src="assets/ss-history.png" alt="會議紀錄介面" />
+        </div>
+        <div class="feature-row-text">
+          <div class="feature-tag">Meeting Records</div>
+          <h2>完整會議紀錄</h2>
+          <p>每場會議的逐字稿自動保存，月曆檢視所有歷史。會後隨時回顧關鍵討論內容和決議事項。</p>
+          <ul class="feature-points">
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              月曆檢視，快速定位任一場會議
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              雙語逐字稿，對照原文與翻譯
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              標記的術語自動連結到術語庫
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 4: 練習 -->
+  <section class="feature-section bg-gray">
+    <div class="container">
+      <div class="feature-row reverse reveal">
+        <div class="phone-frame tilt-left">
+          <img src="assets/ss-quiz.png" alt="練習介面" />
+        </div>
+        <div class="feature-row-text">
+          <div class="feature-tag">Practice</div>
+          <h2>商務英語強化</h2>
+          <p>從你的術語庫自動出題，拼寫和跟讀兩種模式。優先練習最常出錯和最新加入的術語。</p>
+          <ul class="feature-points">
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              拼寫練習，掌握正確書寫
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              跟讀錄音，精進發音
+            </li>
+            <li>
+              <span class="icon-check"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              智慧出題策略（常錯優先）
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases -->
+  <section class="usecases" id="usecases">
+    <div class="container">
+      <h2 class="section-title reveal">適用場景</h2>
+      <p class="section-subtitle reveal">無論是跨國會議、客戶簡報還是海外出差，Live Translate 都能即時協助</p>
+      <div class="usecases-grid">
+        <div class="usecase-card reveal reveal-delay-1">
+          <div class="usecase-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3>跨國視訊會議</h3>
+          <p>Zoom、Teams、Google Meet 會議中開啟即時翻譯，全程記錄逐字稿</p>
+        </div>
+        <div class="usecase-card reveal reveal-delay-2">
+          <div class="usecase-icon violet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h3>海外出差</h3>
+          <p>商務拜訪、工廠巡檢、展會交流，隨時開啟即時翻譯</p>
+        </div>
+        <div class="usecase-card reveal reveal-delay-3">
+          <div class="usecase-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <h3>培訓研討</h3>
+          <p>國際培訓課程、技術研討會，邊聽邊保存關鍵術語</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <h2 class="section-title reveal">選擇方案</h2>
+      <p class="section-subtitle reveal">免費開始體驗，依需求升級</p>
+      <div class="pricing-grid">
+        <div class="pricing-card reveal reveal-delay-1">
+          <h3>Free</h3>
+          <p class="pricing-desc">個人體驗</p>
+          <div class="pricing-price">$0 <span>/月</span></div>
+          <ul class="pricing-features">
+            <li>每天 1 場會議翻譯</li>
+            <li>基本術語庫（50 筆）</li>
+            <li>7 天逐字稿紀錄</li>
+          </ul>
+          <button class="pricing-btn-outline">免費開始</button>
+        </div>
+        <div class="pricing-card featured reveal reveal-delay-2">
+          <div class="pricing-badge">推薦方案</div>
+          <h3>Pro</h3>
+          <p class="pricing-desc">商務人士首選</p>
+          <div class="pricing-price">$XX <span>/月</span></div>
+          <ul class="pricing-features">
+            <li>無限場會議翻譯</li>
+            <li>完整術語庫（無上限）</li>
+            <li>永久逐字稿保存</li>
+            <li>匯出 PDF / CSV</li>
+            <li>拼寫 + 跟讀練習</li>
+          </ul>
+          <button class="pricing-btn-solid">開始免費試用</button>
+        </div>
+        <div class="pricing-card reveal reveal-delay-3">
+          <h3>Enterprise</h3>
+          <p class="pricing-desc">團隊與企業</p>
+          <div class="pricing-price">洽詢</div>
+          <ul class="pricing-features">
+            <li>Pro 所有功能</li>
+            <li>團隊共享術語庫</li>
+            <li>管理後台</li>
+            <li>SSO 單一登入</li>
+            <li>專屬客戶經理</li>
+          </ul>
+          <button class="pricing-btn-outline">聯繫我們</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <h2 class="section-title reveal">常見問題</h2>
+      <p class="section-subtitle reveal">關於安全性、準確度和企業部署的常見疑問</p>
+      <div class="faq-list">
+        <div class="faq-item reveal">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>會議內容的安全性如何保障？</span>
+            <span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">所有語音資料即時處理後即刪除，不會儲存在伺服器。逐字稿以加密方式保存於您的帳戶中，支援 SOC 2 Type II 合規標準。企業方案額外提供 SSO 和 IP 白名單。</div>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>在會議中使用會不會有延遲？</span>
+            <span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">翻譯延遲低於 1 秒，幾乎感受不到時差。語音辨識準確率在標準商務英語環境下達 99% 以上，即使是帶口音的英語也能準確辨識。</div>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>支援哪些視訊會議軟體？</span>
+            <span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">Live Translate 是網頁應用，透過麥克風接收音訊，因此適用於所有視訊會議軟體 — Zoom、Microsoft Teams、Google Meet、Webex 等。也支援面對面會議場景。</div>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>企業方案如何部署？</span>
+            <span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">企業方案支援 SSO 單一登入（SAML / OIDC）、團隊管理後台、使用量分析報表。可依需求提供私有化部署選項。聯繫我們的銷售團隊取得客製化方案。</div>
+          </div>
+        </div>
+        <div class="faq-item reveal">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>能辨識專業產業術語嗎？</span>
+            <span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">我們的 AI 模型針對商務、科技、金融、醫療等產業術語進行了專項優化。隨著您持續使用並保存術語，系統會學習您的產業語境，翻譯精準度會持續提升。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="final-cta">
+    <div class="container">
+      <h2 class="reveal">讓語言不再是會議的障礙</h2>
+      <p class="section-subtitle reveal">開啟你的第一場 AI 翻譯會議</p>
+      <div class="reveal">
+        <button class="btn-cta-large">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          免費試用
+        </button>
+      </div>
+      <p class="cta-note reveal">免費方案永久有效 · 無需信用卡</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <img src="../esl-teacher/assets/dh_single.png" alt="DAHUA AI" />
+      <span>DAHUA AI</span>
+    </div>
+    <div class="footer-links">
+      <a href="#features">功能</a>
+      <a href="#pricing">方案</a>
+      <a href="#faq">FAQ</a>
+      <a href="#">使用條款</a>
+      <a href="#">隱私政策</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 DAHUA AI. All rights reserved.</p>
+  </footer>
+
+  <script>
+    /* ── Scroll reveal ── */
+    document.addEventListener('DOMContentLoaded', function() {
+      var reveals = document.querySelectorAll('.reveal');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach(function(el) { observer.observe(el); });
+
+      /* ── Nav scroll shadow ── */
+      var nav = document.getElementById('mainNav');
+      window.addEventListener('scroll', function() {
+        nav.classList.toggle('scrolled', window.scrollY > 10);
+      }, { passive: true });
+
+      /* ── Waveform bars ── */
+      var barsContainer = document.getElementById('waveformBars');
+      var barCount = 48;
+      for (var i = 0; i < barCount; i++) {
+        var bar = document.createElement('div');
+        bar.className = 'waveform-bar';
+        var h = 20 + Math.random() * 100;
+        var delay = (i * 0.06) + 's';
+        var dur = (1.2 + Math.random() * 1.2) + 's';
+        bar.style.cssText = 'height:' + h + 'px;animation-delay:' + delay + ';animation-duration:' + dur + ';';
+        barsContainer.appendChild(bar);
+      }
+    });
+
+    /* ── Mobile menu ── */
+    function toggleMobileMenu() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+    }
+    function closeMobileMenu() {
+      document.getElementById('mobileMenu').classList.remove('open');
+    }
+
+    /* ── FAQ ── */
+    function toggleFaq(btn) {
+      var item = btn.closest('.faq-item');
+      var wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+      if (!wasOpen) item.classList.add('open');
+    }
+  </script>
+
+</body>
+</html>

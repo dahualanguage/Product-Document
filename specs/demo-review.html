@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo vs Dev — 差異追蹤</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 32px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #64748b;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar a { color: #64748b; text-decoration: none; }
+    .topbar a:hover { color: #0f172a; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #dc2626; font-weight: 500; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .sync-status { font-size: 12px; color: #94a3b8; }
+    .sync-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+      background: #16a34a; color: #fff; border: none; border-radius: 6px;
+      cursor: pointer; transition: background .15s;
+    }
+    .sync-btn:hover { background: #15803d; }
+    .sync-btn:disabled { background: #86efac; cursor: not-allowed; }
+    .sync-btn svg { flex-shrink: 0; }
+    .load-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+      background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px;
+      cursor: pointer; transition: background .15s, color .15s;
+    }
+    .load-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .load-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      color: #fff; opacity: 0; pointer-events: none;
+      transition: opacity .25s, transform .25s; z-index: 9999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #16a34a; }
+    .toast.error   { background: #dc2626; }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    /* ── Doc Header ── */
+    .doc-header {
+      margin-bottom: 40px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .doc-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -.3px;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .meta span {
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* ── Instructions Banner ── */
+    .instructions {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 36px;
+      font-size: 13px;
+      color: #1e40af;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .instructions svg { flex-shrink: 0; margin-top: 2px; }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-bottom: 36px;
+      padding: 16px 20px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .legend-group { display: flex; flex-direction: column; gap: 6px; }
+    .legend-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .legend-items { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .tag-ui     { background: #ede9fe; color: #6d28d9; }
+    .tag-func   { background: #dbeafe; color: #1d4ed8; }
+    .tag-copy   { background: #fef9c3; color: #854d0e; }
+    .tag-miss   { background: #fee2e2; color: #991b1b; }
+    .tag-layout { background: #e0f2fe; color: #0369a1; }
+
+    .sev { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .sev-p1 { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .sev-p2 { background: #fefce8; color: #b45309; border: 1px solid #fde68a; }
+    .sev-p3 { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+
+    .status { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+    .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .status-open     { background: #fef2f2; color: #dc2626; }
+    .status-open::before { background: #dc2626; }
+    .status-review   { background: #fefce8; color: #b45309; }
+    .status-review::before { background: #f59e0b; }
+    .status-fixed    { background: #f0fdf4; color: #15803d; }
+    .status-fixed::before { background: #22c55e; }
+    .status-hold     { background: #f1f5f9; color: #64748b; }
+    .status-hold::before { background: #94a3b8; }
+
+    /* ── Product Section ── */
+    .product-section {
+      margin-bottom: 48px;
+    }
+    .product-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .product-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .product-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .product-header .demo-links {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .demo-link {
+      font-size: 11px;
+      color: #475569;
+      text-decoration: none;
+      padding: 3px 9px;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      background: #fff;
+      transition: border-color .15s, color .15s;
+    }
+    .demo-link:hover { border-color: #94a3b8; color: #0f172a; }
+
+    /* ── Count summary ── */
+    .issue-count {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .count-pill {
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── Table ── */
+    .tracker-table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: #f8fafc;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    thead th:first-child { border-radius: 10px 0 0 0; }
+    thead th:last-child  { border-radius: 0 10px 0 0; }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+      color: #334155;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafbfc; }
+
+    /* contenteditable cells */
+    td[contenteditable="true"] {
+      outline: none;
+      cursor: text;
+    }
+    td[contenteditable="true"]:focus {
+      background: #fefce8 !important;
+      box-shadow: inset 0 0 0 2px #fde047;
+    }
+    td[contenteditable="true"]:empty::before {
+      content: attr(data-placeholder);
+      color: #cbd5e1;
+      font-style: italic;
+    }
+
+    /* Col widths */
+    .col-num    { width: 36px; color: #94a3b8; font-size: 12px; text-align: center; }
+    .col-screen { width: 140px; font-weight: 500; }
+    .col-type   { width: 110px; }
+    .col-desc   { min-width: 220px; }
+    .col-sev    { width: 70px; }
+    .col-status { width: 90px; }
+    .col-note   { min-width: 160px; color: #64748b; font-size: 12px; }
+    .col-link    { width: 76px; text-align: center; vertical-align: middle; }
+    .col-actions { width: 100px; text-align: right; white-space: nowrap; }
+
+    /* ── Link cell ── */
+    .link-input-field {
+      width: 100%; border: none; background: none;
+      font-size: 11px; color: #64748b; outline: none; text-align: center;
+    }
+    .link-input-field::placeholder { color: #cbd5e1; }
+    .link-display { display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .link-open {
+      font-size: 11px; font-weight: 600; color: #3b82f6;
+      text-decoration: none; display: flex; align-items: center; gap: 3px;
+      padding: 2px 6px; border-radius: 4px; background: #eff6ff;
+    }
+    .link-open:hover { background: #dbeafe; }
+    .link-clear-btn {
+      background: none; border: none; color: #cbd5e1;
+      cursor: pointer; font-size: 11px; padding: 0; line-height: 1;
+    }
+    .link-clear-btn:hover { color: #ef4444; }
+
+    /* ── Row action buttons ── */
+    .del-btn, .row-save-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 26px; border-radius: 5px;
+      border: none; cursor: pointer; font-size: 11px; font-weight: 600;
+      transition: color .15s, background .15s;
+    }
+    .del-btn {
+      width: 26px; background: none; color: #cbd5e1;
+    }
+    .del-btn:hover { color: #ef4444; background: #fef2f2; }
+    .row-save-btn {
+      padding: 0 9px; gap: 4px;
+      background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;
+    }
+    .row-save-btn:hover { background: #dcfce7; border-color: #86efac; }
+    .row-save-btn.saving { background: #d1fae5; color: #065f46; cursor: not-allowed; }
+    .row-save-btn.saved  { background: #16a34a; color: #fff; border-color: #15803d; }
+
+    /* ── Add Row button ── */
+    .add-row-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #64748b;
+      background: none;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .add-row-btn:hover { color: #334155; border-color: #94a3b8; }
+
+    /* ── Section divider h2 ── */
+    h2.section-heading {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 48px 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2.section-heading::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    /* ── Summary bar ── */
+    .summary-bar {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      display: flex;
+      gap: 32px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+    .summary-stat { display: flex; flex-direction: column; gap: 2px; }
+    .summary-stat .num { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .summary-stat .lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+    .summary-stat .num.red    { color: #dc2626; }
+    .summary-stat .num.amber  { color: #b45309; }
+    .summary-stat .num.green  { color: #15803d; }
+    .summary-stat .num.gray   { color: #64748b; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      padding: 24px 0;
+      color: #94a3b8;
+      font-size: 12px;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <a href="../index.html">Home</a>
+  <span class="sep">/</span>
+  <span class="current">Demo vs Dev 差異追蹤</span>
+  <div class="topbar-right">
+    <span class="sync-status" id="sync-status"></span>
+    <button class="load-btn" id="load-btn" onclick="loadFromSheets()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
+      從 Sheets 載入
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <h1>Demo vs Dev — 差異追蹤</h1>
+    <p class="subtitle">記錄 Demo 設計稿與開發實作之間的落差，供 PM／設計端持續維護</p>
+    <div class="meta">
+      <span>跨產品</span>
+      <span>PM 維護</span>
+      <span>更新：2026 年 5 月</span>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <strong>如何使用</strong>
+      <ol style="padding-left:18px;display:flex;flex-direction:column;gap:4px;margin:0;">
+        <li>點擊各產品下方的 <strong>＋ 新增問題</strong> 新增一列</li>
+        <li>點擊「頁面／畫面」、「問題描述」、「備註」欄位直接輸入文字（黃色高亮表示編輯中）</li>
+        <li>點擊 <strong>問題類型</strong> badge 循環切換：UI 視覺 → 功能行為 → 文案 → 缺少功能 → 排版</li>
+        <li>點擊 <strong>嚴重程度</strong>（P1 / P2 / P3）和<strong>狀態</strong>（Open / 處理中 / 已修正 / 暫緩）badge 切換</li>
+        <li>截圖可上傳至 Google Drive，將連結貼入「備註」欄</li>
+        <li>填完後點列右側的 <strong>✓ 儲存</strong> — 同時存入瀏覽器本機並同步到 Google Sheets</li>
+        <li>換瀏覽器或換電腦時，點右上角 <strong>從 Sheets 載入</strong> 按鈕還原所有資料</li>
+      </ol>
+      <p style="margin:0;color:#3b82f6;opacity:.8;font-size:12px;">資料會同步至 Google Sheets。換瀏覽器後點「從 Sheets 載入」即可還原。</p>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-group">
+      <div class="legend-label">問題類型</div>
+      <div class="legend-items">
+        <span class="tag tag-ui">UI 視覺</span>
+        <span class="tag tag-func">功能行為</span>
+        <span class="tag tag-copy">文案</span>
+        <span class="tag tag-miss">缺少功能</span>
+        <span class="tag tag-layout">排版</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <div class="legend-label">嚴重程度</div>
+      <div class="legend-items">
+        <span class="sev sev-p1">P1</span>
+        <span class="sev sev-p2">P2</span>
+        <span class="sev sev-p3">P3</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <div class="legend-label">狀態</div>
+      <div class="legend-items">
+        <span class="status status-open">Open</span>
+        <span class="status status-review">處理中</span>
+        <span class="status status-fixed">已修正</span>
+        <span class="status status-hold">暫緩</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <div class="legend-label">優先序說明</div>
+      <div class="legend-items" style="font-size:12px; color:#64748b; align-items:center;">
+        <span class="sev sev-p1">P1</span>&nbsp;影響核心流程 &nbsp;
+        <span class="sev sev-p2">P2</span>&nbsp;明顯但可繞過 &nbsp;
+        <span class="sev sev-p3">P3</span>&nbsp;細節／美觀
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ ESL TEACHER ═══════════════════════ -->
+  <h2 class="section-heading">老師端</h2>
+
+  <!-- ESL Teacher -->
+  <div class="product-section" id="esl-teacher">
+    <div class="product-header">
+      <div class="product-badge" style="background:#059669;">T</div>
+      <h2>ESL Teacher</h2>
+      <div class="demo-links">
+        <a class="demo-link" href="esl-teacher/demo-dashboard-v7.html" target="_blank">Dashboard v7</a>
+        <a class="demo-link" href="esl-teacher/demo-session-insights-v7.html" target="_blank">Session Insights v7</a>
+        <a class="demo-link" href="esl-teacher/demo-students-v7.html" target="_blank">Students v7</a>
+        <a class="demo-link" href="esl-teacher/demo-insight-inbox.html" target="_blank">Insight Inbox</a>
+        <a class="demo-link" href="esl-teacher/demo-create-assignment.html" target="_blank">Create Assignment</a>
+      </div>
+    </div>
+    <div class="tracker-table-wrap">
+      <table id="table-esl-teacher">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-screen">頁面／畫面</th>
+            <th class="col-type">問題類型</th>
+            <th class="col-desc">問題描述</th>
+            <th class="col-sev">嚴重</th>
+            <th class="col-status">狀態</th>
+            <th class="col-note">備註</th>
+            <th class="col-link">連結</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow('table-esl-teacher')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增問題
+    </button>
+  </div>
+
+  <!-- Subject Teacher -->
+  <div class="product-section" id="subject-teacher">
+    <div class="product-header">
+      <div class="product-badge" style="background:#0284c7;">S</div>
+      <h2>Subject Teacher</h2>
+      <div class="demo-links">
+        <a class="demo-link" href="subject-teacher/demo-subject-teacher-v2.html" target="_blank">Dashboard v2</a>
+      </div>
+    </div>
+    <div class="tracker-table-wrap">
+      <table id="table-subject-teacher">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-screen">頁面／畫面</th>
+            <th class="col-type">問題類型</th>
+            <th class="col-desc">問題描述</th>
+            <th class="col-sev">嚴重</th>
+            <th class="col-status">狀態</th>
+            <th class="col-note">備註</th>
+            <th class="col-link">連結</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow('table-subject-teacher')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增問題
+    </button>
+  </div>
+
+  <!-- ESL Coordinator -->
+  <div class="product-section" id="esl-coordinator">
+    <div class="product-header">
+      <div class="product-badge" style="background:#7c3aed;">C</div>
+      <h2>ESL Coordinator</h2>
+      <div class="demo-links">
+        <a class="demo-link" href="esl-coordinator/demo-coordinator-v1.html" target="_blank">Coordinator v1</a>
+      </div>
+    </div>
+    <div class="tracker-table-wrap">
+      <table id="table-esl-coordinator">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-screen">頁面／畫面</th>
+            <th class="col-type">問題類型</th>
+            <th class="col-desc">問題描述</th>
+            <th class="col-sev">嚴重</th>
+            <th class="col-status">狀態</th>
+            <th class="col-note">備註</th>
+            <th class="col-link">連結</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow('table-esl-coordinator')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增問題
+    </button>
+  </div>
+
+  <!-- ═══════════════════════ 學生端 ═══════════════════════ -->
+  <h2 class="section-heading">學生端</h2>
+
+  <!-- ESL Student -->
+  <div class="product-section" id="esl-student">
+    <div class="product-header">
+      <div class="product-badge" style="background:#10b981;">W</div>
+      <h2>ESL Student</h2>
+      <div class="demo-links">
+        <a class="demo-link" href="esl-student/demo-word-bank-v13.html" target="_blank">Word Bank v13</a>
+        <a class="demo-link" href="esl-student/demo-live-class-v12.html" target="_blank">Live Class v12</a>
+        <a class="demo-link" href="esl-student/demo-vocabs-mirroring-v2.html" target="_blank">Mirroring v2</a>
+        <a class="demo-link" href="esl-student/demo-spelling.html" target="_blank">Spelling</a>
+        <a class="demo-link" href="esl-student/demo-multiple-choice.html" target="_blank">Multiple Choice</a>
+        <a class="demo-link" href="esl-student/demo-mixed.html" target="_blank">Mixed</a>
+        <a class="demo-link" href="esl-student/demo-dashboard.html" target="_blank">Dashboard</a>
+      </div>
+    </div>
+    <div class="tracker-table-wrap">
+      <table id="table-esl-student">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-screen">頁面／畫面</th>
+            <th class="col-type">問題類型</th>
+            <th class="col-desc">問題描述</th>
+            <th class="col-sev">嚴重</th>
+            <th class="col-status">狀態</th>
+            <th class="col-note">備註</th>
+            <th class="col-link">連結</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow('table-esl-student')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增問題
+    </button>
+  </div>
+
+  <!-- ═══════════════════════ 高教 ═══════════════════════ -->
+  <h2 class="section-heading">高教</h2>
+
+  <!-- Higher Education -->
+  <div class="product-section" id="higher-education">
+    <div class="product-header">
+      <div class="product-badge" style="background:#0ea5e9;">H</div>
+      <h2>Higher Education</h2>
+      <div class="demo-links">
+        <a class="demo-link" href="higher-education/demo-my-class-v1.html" target="_blank">My Class v1</a>
+      </div>
+    </div>
+    <div class="tracker-table-wrap">
+      <table id="table-higher-ed">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-screen">頁面／畫面</th>
+            <th class="col-type">問題類型</th>
+            <th class="col-desc">問題描述</th>
+            <th class="col-sev">嚴重</th>
+            <th class="col-status">狀態</th>
+            <th class="col-note">備註</th>
+            <th class="col-link">連結</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow('table-higher-ed')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增問題
+    </button>
+  </div>
+
+  <footer>DAHUA AI · Demo vs Dev 差異追蹤 · 2026 年 5 月</footer>
+</div>
+
+<script>
+  const TRASH_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4h6v2"/></svg>`;
+  const SAVE_ICON  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  // ── Build row HTML ──
+  function buildLinkCell(url) {
+    if (url) {
+      return `<td class="col-link"><div class="link-display">
+        <a class="link-open" href="${url}" target="_blank" rel="noopener">🔗 開啟</a>
+        <button class="link-clear-btn" onclick="clearLink(this)" title="移除連結">✕</button>
+      </div></td>`;
+    }
+    return `<td class="col-link"><input type="url" class="link-input-field" placeholder="＋ 連結" onchange="onLinkChange(this)" onkeydown="onLinkKeydown(event, this)"></td>`;
+  }
+
+  function onLinkChange(input) {
+    const val = input.value.trim();
+    if (!val) return;
+    const td = input.closest('td');
+    td.innerHTML = `<div class="link-display">
+      <a class="link-open" href="${val}" target="_blank" rel="noopener">🔗 開啟</a>
+      <button class="link-clear-btn" onclick="clearLink(this)" title="編輯連結">✎</button>
+    </div>`;
+    saveToLocal();
+  }
+
+  function clearLink(btn) {
+    const td = btn.closest('td');
+    const currentUrl = td.querySelector('.link-open') ? td.querySelector('.link-open').getAttribute('href') : '';
+    td.innerHTML = `<input type="url" class="link-input-field" placeholder="＋ 連結" onchange="onLinkChange(this)" onkeydown="onLinkKeydown(event, this)">`;
+    const inp = td.querySelector('input');
+    inp.value = currentUrl;
+    inp.focus();
+    inp.select();
+    saveToLocal();
+  }
+
+  function onLinkKeydown(e, input) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onLinkChange(input);
+    }
+    if (e.key === 'Escape') {
+      const val = input.value.trim();
+      if (val) {
+        onLinkChange(input);
+      } else {
+        input.blur();
+      }
+    }
+  }
+
+  function buildRowHTML(num, d = {}) {
+    return `
+      <td class="col-num">${num}</td>
+      <td class="col-screen" contenteditable="true" data-placeholder="頁面名稱">${d.screen || ''}</td>
+      <td class="col-type"><span class="tag ${d.typeVariant || 'tag-ui'}">${d.typeLabel || 'UI 視覺'}</span></td>
+      <td class="col-desc" contenteditable="true" data-placeholder="描述 Demo 與實作的差異…">${d.desc || ''}</td>
+      <td class="col-sev"><span class="sev ${d.sevVariant || 'sev-p2'}">${d.sevLabel || 'P2'}</span></td>
+      <td class="col-status"><span class="status ${d.statusVariant || 'status-open'}">${d.statusLabel || 'Open'}</span></td>
+      <td class="col-note" contenteditable="true" data-placeholder="備註…">${d.note || ''}</td>
+      ${buildLinkCell(d.link || '')}
+      <td class="col-actions">
+        <button class="row-save-btn" onclick="saveRow(this)" title="儲存並同步">${SAVE_ICON} 儲存</button>
+        <button class="del-btn" onclick="deleteRow(this)" title="刪除此列">${TRASH_ICON}</button>
+      </td>
+    `;
+  }
+
+  // ── Save Row (localStorage + Sheets) ──
+  async function saveRow(btn) {
+    if (btn.classList.contains('saving')) return;
+    btn.classList.add('saving');
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> 儲存中`;
+
+    saveToLocal();
+
+    const rows = collectAllRows();
+    const syncedAt = new Date().toLocaleString('zh-TW');
+    try {
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ rows, syncedAt }),
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (result.success === false) throw new Error(result.error || 'Script 回傳失敗');
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.innerHTML = `${SAVE_ICON} 已儲存`;
+      document.getElementById('sync-status').textContent = '上次同步：' + syncedAt;
+      setTimeout(() => {
+        btn.classList.remove('saved');
+        btn.innerHTML = `${SAVE_ICON} 儲存`;
+      }, 2500);
+    } catch(err) {
+      btn.classList.remove('saving');
+      btn.innerHTML = `${SAVE_ICON} 儲存`;
+      showToast('同步失敗：' + err.message, 'error');
+      console.error('saveRow error:', err);
+    }
+  }
+
+  // ── Add Row ──
+  function addRow(tableId) {
+    const tbody = document.querySelector('#' + tableId + ' tbody');
+    const num = tbody.querySelectorAll('tr').length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = buildRowHTML(num);
+    tbody.appendChild(tr);
+    tr.querySelector('.col-screen').focus();
+    saveToLocal();
+  }
+
+  // ── Delete Row ──
+  function deleteRow(btn) {
+    const tr = btn.closest('tr');
+    const tbody = tr.closest('tbody');
+    tr.remove();
+    tbody.querySelectorAll('tr').forEach((row, i) => {
+      row.querySelector('.col-num').textContent = i + 1;
+    });
+    saveToLocal();
+  }
+
+  // ── Click type tag to cycle ──
+  const TYPE_CYCLE = [
+    { cls: 'tag-ui',     label: 'UI 視覺' },
+    { cls: 'tag-func',   label: '功能行為' },
+    { cls: 'tag-copy',   label: '文案' },
+    { cls: 'tag-miss',   label: '缺少功能' },
+    { cls: 'tag-layout', label: '排版' },
+  ];
+  const SEV_CYCLE = [
+    { cls: 'sev-p1', label: 'P1' },
+    { cls: 'sev-p2', label: 'P2' },
+    { cls: 'sev-p3', label: 'P3' },
+  ];
+  const STATUS_CYCLE = [
+    { cls: 'status-open',   label: 'Open' },
+    { cls: 'status-review', label: '處理中' },
+    { cls: 'status-fixed',  label: '已修正' },
+    { cls: 'status-hold',   label: '暫緩' },
+  ];
+
+  function cycleClass(el, cycle) {
+    const current = cycle.findIndex(c => el.classList.contains(c.cls));
+    const next = (current + 1) % cycle.length;
+    cycle.forEach(c => el.classList.remove(c.cls));
+    el.classList.add(cycle[next].cls);
+    el.textContent = cycle[next].label;
+    saveToLocal();
+  }
+
+  document.addEventListener('click', function(e) {
+    const tag = e.target.closest('.tag');
+    if (tag) { cycleClass(tag, TYPE_CYCLE); return; }
+    const sev = e.target.closest('.sev');
+    if (sev) { cycleClass(sev, SEV_CYCLE); return; }
+    const status = e.target.closest('.status');
+    if (status) { cycleClass(status, STATUS_CYCLE); return; }
+  });
+
+  // 輸入時即時存入 localStorage
+  document.addEventListener('input', function(e) {
+    if (e.target.hasAttribute('contenteditable')) saveToLocal();
+  });
+
+  // ── localStorage save / load ──
+  const LS_KEY = 'demo-review-v1';
+
+  function getVariant(el, base) {
+    return Array.from(el.classList).find(c => c !== base && c.startsWith(base)) || '';
+  }
+
+  function saveToLocal() {
+    const data = {};
+    Object.keys(PRODUCT_LABELS).forEach(tableId => {
+      const tbody = document.querySelector('#' + tableId + ' tbody');
+      if (!tbody) return;
+      data[tableId] = [];
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 8) return;
+        const tagEl    = cells[2].querySelector('.tag');
+        const sevEl    = cells[4].querySelector('.sev');
+        const statusEl = cells[5].querySelector('.status');
+        const linkAnchor = cells[7] ? cells[7].querySelector('.link-open') : null;
+        const linkInput  = cells[7] ? cells[7].querySelector('.link-input-field') : null;
+        const linkUrl    = linkAnchor ? linkAnchor.getAttribute('href') : (linkInput ? linkInput.value : '');
+        data[tableId].push({
+          screen:        cells[1].textContent,
+          typeVariant:   tagEl    ? getVariant(tagEl,    'tag')    : 'tag-ui',
+          typeLabel:     tagEl    ? tagEl.textContent               : 'UI 視覺',
+          desc:          cells[3].textContent,
+          sevVariant:    sevEl    ? getVariant(sevEl,    'sev')    : 'sev-p2',
+          sevLabel:      sevEl    ? sevEl.textContent               : 'P2',
+          statusVariant: statusEl ? getVariant(statusEl, 'status') : 'status-open',
+          statusLabel:   statusEl ? statusEl.textContent            : 'Open',
+          note:          cells[6].textContent,
+          link:          linkUrl,
+        });
+      });
+    });
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  }
+
+  function loadFromLocal() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    let data;
+    try { data = JSON.parse(raw); } catch { return; }
+    Object.keys(PRODUCT_LABELS).forEach(tableId => {
+      const rows = data[tableId];
+      if (!rows || !rows.length) return;
+      const tbody = document.querySelector('#' + tableId + ' tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      rows.forEach((d, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = buildRowHTML(i + 1, d);
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  // ── Google Sheets Sync ──
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwslXKesitXUejKxCsQ5UJDZaDVapAxHmI5-mvOiO48m2cE0YsCB0hjidNX6tfZzC6Yjw/exec';
+
+  const PRODUCT_LABELS = {
+    'table-esl-teacher':    'ESL Teacher',
+    'table-subject-teacher':'Subject Teacher',
+    'table-esl-coordinator':'ESL Coordinator',
+    'table-esl-student':    'ESL Student',
+    'table-higher-ed':      'Higher Education',
+  };
+
+  // ── label → CSS variant 對照 ──
+  const LABEL_TO_TABLE = {
+    'ESL Teacher':    'table-esl-teacher',
+    'Subject Teacher':'table-subject-teacher',
+    'ESL Coordinator':'table-esl-coordinator',
+    'ESL Student':    'table-esl-student',
+    'Higher Education':'table-higher-ed',
+  };
+  const TYPE_LABEL_MAP   = { 'UI 視覺':'tag-ui', '功能行為':'tag-func', '文案':'tag-copy', '缺少功能':'tag-miss', '排版':'tag-layout' };
+  const SEV_LABEL_MAP    = { 'P1':'sev-p1', 'P2':'sev-p2', 'P3':'sev-p3' };
+  const STATUS_LABEL_MAP = { 'Open':'status-open', '處理中':'status-review', '已修正':'status-fixed', '暫緩':'status-hold' };
+
+  // ── 從 Google Sheets 載入 ──
+  async function loadFromSheets() {
+    const btn = document.getElementById('load-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> 載入中…`;
+
+    try {
+      const resp = await fetch(SCRIPT_URL);
+      const data = await resp.json();
+
+      if (!data.rows || !data.rows.length) {
+        showToast('Sheets 目前沒有資料', 'error');
+        return;
+      }
+
+      // 清空所有 tbody
+      Object.keys(PRODUCT_LABELS).forEach(id => {
+        document.querySelector('#' + id + ' tbody').innerHTML = '';
+      });
+
+      // 照產品分組填入
+      const grouped = {};
+      data.rows.forEach(row => {
+        const tableId = LABEL_TO_TABLE[row.product];
+        if (!tableId) return;
+        if (!grouped[tableId]) grouped[tableId] = [];
+        grouped[tableId].push({
+          screen:        row.screen,
+          typeVariant:   TYPE_LABEL_MAP[row.type]     || 'tag-ui',
+          typeLabel:     row.type     || 'UI 視覺',
+          desc:          row.description,
+          sevVariant:    SEV_LABEL_MAP[row.severity]  || 'sev-p2',
+          sevLabel:      row.severity || 'P2',
+          statusVariant: STATUS_LABEL_MAP[row.status] || 'status-open',
+          statusLabel:   row.status   || 'Open',
+          note:          row.notes,
+          link:          row.link || '',
+        });
+      });
+
+      Object.entries(grouped).forEach(([tableId, rows]) => {
+        const tbody = document.querySelector('#' + tableId + ' tbody');
+        rows.forEach((d, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = buildRowHTML(i + 1, d);
+          tbody.appendChild(tr);
+        });
+      });
+
+      saveToLocal();
+      const total = data.rows.length;
+      document.getElementById('sync-status').textContent = '已載入 ' + total + ' 筆';
+      showToast('✓ 已從 Sheets 載入 ' + total + ' 筆問題', 'success');
+
+    } catch(err) {
+      showToast('載入失敗，請確認 Script URL 或網路', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg> 從 Sheets 載入`;
+    }
+  }
+
+  loadFromLocal();
+
+  function collectAllRows() {
+    const rows = [];
+    Object.entries(PRODUCT_LABELS).forEach(([tableId, product]) => {
+      const tbody = document.querySelector('#' + tableId + ' tbody');
+      if (!tbody) return;
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 7) return;
+        const screen = cells[1].textContent.trim();
+        const type   = cells[2].querySelector('.tag')   ? cells[2].querySelector('.tag').textContent.trim()   : '';
+        const desc   = cells[3].textContent.trim();
+        const sev    = cells[4].querySelector('.sev')   ? cells[4].querySelector('.sev').textContent.trim()   : '';
+        const status = cells[5].querySelector('.status')? cells[5].querySelector('.status').textContent.trim(): '';
+        const note   = cells[6].textContent.trim();
+        const linkAnchor2 = cells[7] ? cells[7].querySelector('.link-open') : null;
+        const linkInput2  = cells[7] ? cells[7].querySelector('.link-input-field') : null;
+        const link   = linkAnchor2 ? linkAnchor2.getAttribute('href') : (linkInput2 ? linkInput2.value : '');
+        // Skip completely empty rows
+        if (!screen && !desc && !note) return;
+        rows.push({ product, screen, type, description: desc, severity: sev, status, notes: note, link });
+      });
+    });
+    return rows;
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  async function syncToSheets() {
+    if (!SCRIPT_URL) {
+      showToast('請先填入 Apps Script URL', 'error');
+      return;
+    }
+    const btn = document.getElementById('sync-btn');
+    const statusEl = document.getElementById('sync-status');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> 同步中…`;
+    statusEl.textContent = '';
+
+    const rows = collectAllRows();
+    const syncedAt = new Date().toLocaleString('zh-TW');
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ rows, syncedAt }),
+      });
+      statusEl.textContent = '上次同步：' + syncedAt;
+      showToast('✓ 已同步 ' + rows.length + ' 筆問題到 Google Sheets', 'success');
+    } catch (err) {
+      showToast('同步失敗，請確認網路或 Script URL', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sync to Sheets`;
+    }
+  }
+</script>
+
+<style>
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+</body>
+</html>

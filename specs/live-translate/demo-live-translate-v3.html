@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Translate v3 — DAHUA AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* ════════ Version link ════════ */
+    .page-version {
+      position: fixed; top: 16px; right: 16px; z-index: 999;
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 6px;
+      border: 1px solid #e2e8f0; background: #fff;
+      transition: all .15s;
+    }
+    .page-version:hover { color: #475569; border-color: #cbd5e1; background: #f8fafc; }
+    .page-version .material-icons-round { font-size: 14px; }
+
+    /* ════════ Phone frame ════════ */
+    .phone {
+      width: 390px;
+      height: 780px;
+      background: #f8faf9;
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 32px 80px rgba(0,0,0,.16), 0 4px 16px rgba(0,0,0,.08);
+      position: relative;
+    }
+
+    /* ════════ Shared top bar ════════ */
+    .top-bar {
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-icon { width: 34px; height: 34px; }
+    .logo-icon img { width: 34px; height: 34px; display: block; }
+    .logo-name { font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -.3px; }
+    .top-bar-right { display: flex; align-items: center; gap: 8px; }
+    .timer-badge {
+      font-size: 13px; font-weight: 700; color: #ef4444;
+      background: #fef2f2; border: 1px solid #fca5a5;
+      padding: 4px 10px; border-radius: 20px;
+      display: none;
+    }
+    .timer-badge.live { display: block; }
+    /* ════════ Bottom Nav (M3 Navigation Bar) ════════ */
+    .bottom-nav {
+      display: flex; height: 80px; background: #fff;
+      border-top: 1px solid #f1f5f9; flex-shrink: 0; z-index: 10;
+      padding: 0 8px;
+    }
+    .bottom-nav.hidden { display: none; }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; color: #64748b; font-size: 12px; font-weight: 500;
+      background: none; border: none; font-family: inherit;
+      transition: color .2s; position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-item .nav-icon-wrap {
+      width: 64px; height: 32px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .nav-item .material-icons-round { font-size: 24px; transition: font-variation-settings .2s; }
+    .nav-item.active { color: #059669; font-weight: 700; }
+    .nav-item.active .nav-icon-wrap { background: #ecfdf5; }
+    .nav-item.active .material-icons-round { color: #059669; }
+
+    /* ════════ Screen system ════════ */
+    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* ════════════════════════════════
+       SCREEN 1 — Start
+    ════════════════════════════════ */
+    .s1-body {
+      flex: 1; padding: 28px 20px 36px;
+      display: flex; flex-direction: column; align-items: center;
+      overflow: hidden;
+    }
+
+    /* Language card */
+    .lang-card {
+      width: 100%; background: #fff; border-radius: 18px;
+      padding: 6px 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      display: flex; align-items: center; flex-shrink: 0;
+    }
+    .lang-slot { flex: 1; position: relative; }
+    .lang-btn {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; background: none; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 600; color: #0f172a;
+      padding: 10px 8px; border-radius: 12px; transition: background .12s;
+    }
+    .lang-btn:hover { background: #f8fafc; }
+    .lang-btn.disabled { cursor: default; color: #64748b; }
+    .lang-btn.disabled:hover { background: none; }
+    .lang-code {
+      font-size: 11px; font-weight: 700; background: #f1f5f9; color: #64748b;
+      padding: 2px 6px; border-radius: 6px; letter-spacing: .3px;
+    }
+    .lang-btn .material-icons-round { font-size: 16px; color: #94a3b8; }
+    .lang-sep { width: 1px; height: 28px; background: #e2e8f0; flex-shrink: 0; margin: 0 2px; }
+    .lang-arrow-wrap { padding: 0 6px; display: flex; align-items: center; }
+    .lang-arrow-wrap .material-icons-round { font-size: 18px; color: #94a3b8; }
+    .lang-dropdown {
+      display: none; position: absolute; top: calc(100% + 6px); left: -8px; right: -8px;
+      background: #fff; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,.14);
+      overflow: hidden; z-index: 50;
+    }
+    .lang-dropdown.open { display: block; }
+    .lang-option {
+      display: flex; align-items: center; gap: 10px; padding: 13px 16px;
+      font-size: 14px; font-weight: 500; color: #1e293b; cursor: pointer; transition: background .1s;
+    }
+    .lang-option:hover { background: #f8fafc; }
+    .lang-option.selected { background: #f0fdf4; color: #059669; font-weight: 700; }
+    .opt-code {
+      font-size: 10px; font-weight: 700; background: #f1f5f9; color: #64748b;
+      padding: 2px 6px; border-radius: 5px; letter-spacing: .3px; flex-shrink: 0;
+    }
+    .lang-option.selected .opt-code { background: #dcfce7; color: #059669; }
+
+    /* Idle waveform */
+    .wave-section {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 24px;
+      padding: 28px 0 16px; width: 100%;
+    }
+    .hint-text { font-size: 15px; font-weight: 500; color: #64748b; text-align: center; line-height: 1.65; }
+    .waveform-idle {
+      display: flex; align-items: center; justify-content: center; gap: 3px;
+      height: 90px; width: 100%;
+    }
+    .waveform-idle .bar { width: 3px; border-radius: 3px; background: #6ee7b7; opacity: .45; }
+
+    /* Start button */
+    .btn-start {
+      margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 200px; padding: 16px 0; border: none; border-radius: 40px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(16,185,129,.4); transition: box-shadow .15s, transform .1s;
+    }
+    .btn-start:hover { box-shadow: 0 6px 28px rgba(16,185,129,.5); transform: translateY(-1px); }
+    .btn-start:active { transform: scale(.97); }
+    .btn-start .material-icons-round { font-size: 20px; }
+
+    /* ════════════════════════════════
+       SCREEN 2 — Recording
+    ════════════════════════════════ */
+    .s2-body {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* Live waveform strip */
+    .live-wave-strip {
+      padding: 10px 20px 8px;
+      display: flex; align-items: center; justify-content: center; gap: 3px;
+      flex-shrink: 0; background: #f8faf9;
+    }
+    .live-wave-strip .bar {
+      width: 3px; border-radius: 3px; background: #059669;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scaleY(.3); opacity: .5; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    /* Transcript scroll */
+    .transcript-scroll {
+      flex: 1; overflow-y: auto; padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .transcript-scroll::-webkit-scrollbar { width: 3px; }
+    .transcript-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+
+    .trans-block {
+      display: flex; flex-direction: column; gap: 8px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .trans-en {
+      font-size: 16px; font-weight: 600; color: #0f172a; line-height: 1.55;
+    }
+    .trans-native {
+      font-size: 15px; font-weight: 400; color: #64748b; line-height: 1.55;
+      padding-left: 12px; border-left: 2px solid #e2e8f0;
+    }
+    /* Incoming (last block) */
+    .trans-block.incoming { border-color: #6ee7b7; background: #f0fdf4; }
+    .trans-block.incoming .trans-en { color: #059669; }
+    .trans-block.incoming .trans-native { color: #64748b; border-color: #a7f3d0; }
+
+    /* Clickable words (Screen 3) */
+    .word {
+      cursor: pointer; border-radius: 3px;
+      transition: background .12s, color .12s;
+      padding: 0 1px;
+    }
+    .word:hover { background: #dcfce7; color: #059669; }
+    .word.saved { background: #dcfce7; color: #059669; font-weight: 700; }
+
+    /* Bottom controls */
+    .rec-controls {
+      padding: 16px 20px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      flex-shrink: 0; background: #f8faf9;
+      border-top: 1px solid #e2e8f0;
+    }
+    .btn-stop {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 32px; border: none; border-radius: 40px;
+      background: #ef4444; color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(239,68,68,.3); transition: all .15s;
+    }
+    .btn-stop:hover { background: #dc2626; transform: translateY(-1px); }
+    .btn-stop .material-icons-round { font-size: 18px; }
+    .btn-pause {
+      width: 48px; height: 48px; border: 1.5px solid #e2e8f0; border-radius: 50%;
+      background: #fff; color: #64748b; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .btn-pause:hover { border-color: #10b981; color: #10b981; }
+    .btn-pause .material-icons-round { font-size: 20px; }
+
+    /* ════════════════════════════════
+       SCREEN 3 — Click word
+       (same layout as S2, tap hint shown)
+    ════════════════════════════════ */
+    .tap-hint {
+      margin: 12px 16px 0;
+      padding: 8px 14px;
+      background: #f1f5f9; border-radius: 10px;
+      font-size: 12px; font-weight: 600; color: #0f172a;
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0;
+    }
+    .tap-hint .material-icons-round { font-size: 15px; color: #64748b; }
+
+    /* Saved chips strip */
+    .saved-strip {
+      padding: 10px 20px;
+      display: none; gap: 8px; flex-wrap: wrap;
+      flex-shrink: 0;
+      border-top: 1px solid #d1fae5;
+      background: rgba(240,253,244,.9);
+    }
+    .saved-strip.has-words { display: flex; }
+    .saved-chip {
+      font-size: 12px; font-weight: 700;
+      background: #dcfce7; color: #059669;
+      padding: 4px 12px; border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .saved-chip .material-icons-round { font-size: 13px; }
+
+    /* Review mode (Screen 3) */
+    .review-header {
+      padding: 12px 16px 8px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .review-badge {
+      font-size: 11px; font-weight: 700; color: #64748b;
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      padding: 5px 12px; border-radius: 20px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .review-badge .material-icons-round { font-size: 14px; color: #94a3b8; }
+    .review-count {
+      font-size: 11px; font-weight: 700; color: #059669;
+      background: #dcfce7; padding: 5px 12px; border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .review-count .material-icons-round { font-size: 14px; }
+    .btn-end-solo {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(15,23,42,.2); transition: all .15s;
+    }
+    .btn-end-solo:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(15,23,42,.3); }
+    .btn-end-solo .material-icons-round { font-size: 18px; }
+
+    /* ════════════════════════════════
+       SCREEN 4 — Summary
+    ════════════════════════════════ */
+    .s4-body {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+      background: #fff;
+    }
+    .s4-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      flex-shrink: 0;
+    }
+    .s4-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
+    .s4-stats {
+      display: flex; gap: 12px;
+    }
+    .stat-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 13px; font-weight: 600; color: #475569;
+    }
+    .stat-pill .material-icons-round { font-size: 16px; color: #94a3b8; }
+    .stat-pill strong { color: #0f172a; }
+
+    /* Input fields */
+    .s4-fields {
+      padding: 16px 24px 0; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;
+    }
+    .s4-field-label {
+      font-size: 11px; font-weight: 700; color: #64748b;
+      margin-bottom: 5px; display: block;
+    }
+    .s4-input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: #0f172a;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .s4-input:focus { border-color: #10b981; }
+    .s4-textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-family: inherit; font-size: 13px; color: #475569;
+      background: #fff; outline: none; resize: none; height: 72px;
+      line-height: 1.5; transition: border-color .15s;
+    }
+    .s4-textarea:focus { border-color: #10b981; }
+
+    .s4-section-label {
+      padding: 16px 24px 8px;
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px;
+      flex-shrink: 0;
+    }
+    .s4-word-list {
+      flex: 1; overflow-y: auto; padding: 0 24px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .s4-word-list::-webkit-scrollbar { width: 3px; }
+    .s4-word-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+    .word-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; background: #f8fafc;
+      border-radius: 12px; border: 1px solid #e2e8f0;
+    }
+    .word-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981; flex-shrink: 0;
+    }
+    .word-en { font-size: 14px; font-weight: 700; color: #0f172a; flex: 1; }
+    .word-native { font-size: 13px; color: #64748b; }
+
+    .s4-footer {
+      padding: 16px 24px 28px;
+      display: flex; gap: 10px;
+      border-top: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+    .btn-done {
+      flex: 1; padding: 14px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3); transition: all .15s;
+    }
+    .btn-done:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .btn-again {
+      padding: 14px 20px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      background: #fff; color: #64748b;
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-again:hover { border-color: #10b981; color: #10b981; }
+    .btn-again .material-icons-round { font-size: 18px; }
+
+    /* ════════════════════════════════
+       Sub-screen top bar
+    ════════════════════════════════ */
+    .topbar-home { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .topbar-sub { display: none; align-items: center; width: 100%; gap: 4px; }
+    .topbar-sub.active { display: flex; }
+    .back-btn {
+      width: 36px; height: 36px; border: none; background: none;
+      border-radius: 10px; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; color: #334155;
+    }
+    .back-btn:hover { background: #f1f5f9; }
+    .back-btn .material-icons-round { font-size: 22px; }
+    .sub-screen-title { flex: 1; font-size: 16px; font-weight: 800; color: #0f172a; }
+    .sub-action-btn {
+      width: 36px; height: 36px; border: none; background: none;
+      border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; color: #64748b;
+    }
+    .sub-action-btn:hover { background: #f1f5f9; }
+    .sub-action-btn .material-icons-round { font-size: 20px; }
+
+    /* ════════════════════════════════
+       SCREEN 5 — History
+    ════════════════════════════════ */
+    .hist-body {
+      flex: 1; overflow-y: auto; padding: 4px 0 28px;
+      background: #f8faf9;
+    }
+    .hist-body::-webkit-scrollbar { width: 3px; }
+    .hist-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+
+    .hist-group-label {
+      padding: 16px 20px 8px;
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .6px;
+    }
+    .hist-card {
+      margin: 0 16px 10px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+      overflow: hidden; cursor: pointer;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .hist-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+    .hist-card.expanded { border-color: #a7f3d0; }
+    .hist-card-head { padding: 14px 16px 10px; }
+    .hist-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .hist-name {
+      font-size: 14px; font-weight: 700; color: #0f172a;
+      flex: 1; line-height: 1.4; margin-right: 10px;
+    }
+    .hist-lang-badge {
+      font-size: 10px; font-weight: 800; letter-spacing: .3px;
+      background: #ecfdf5; color: #059669;
+      padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
+    }
+    .hist-meta { display: flex; align-items: center; gap: 14px; }
+    .hist-meta-item {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: #64748b;
+    }
+    .hist-meta-item .material-icons-round { font-size: 14px; color: #94a3b8; }
+    .hist-preview-chips {
+      padding: 0 16px 10px;
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    }
+    .hist-preview-chip {
+      font-size: 11px; font-weight: 600; color: #475569;
+      background: #f1f5f9; padding: 3px 10px; border-radius: 20px;
+    }
+    .hist-more-pill {
+      font-size: 11px; font-weight: 700; color: #94a3b8;
+      padding: 3px 10px; border-radius: 20px;
+      border: 1px dashed #cbd5e1;
+    }
+    .hist-card-chevron {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0 14px 12px;
+    }
+    .hist-card-chevron .material-icons-round { font-size: 18px; color: #cbd5e1; }
+    .hist-empty {
+      text-align: center; padding: 60px 20px;
+      color: #94a3b8; font-size: 14px; line-height: 1.8;
+    }
+    .hist-empty .material-icons-round { font-size: 40px; display: block; margin-bottom: 12px; color: #e2e8f0; }
+
+    /* ════════════════════════════════
+       SCREEN 6 — Session Detail
+    ════════════════════════════════ */
+    .detail-body {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+      background: #f8faf9;
+    }
+    .detail-meta-card {
+      margin: 0; padding: 14px 20px;
+      background: #f8faf9; flex-shrink: 0;
+    }
+    .detail-session-name {
+      font-size: 15px; font-weight: 800; color: #0f172a;
+      margin-bottom: 8px; line-height: 1.4;
+    }
+    .detail-meta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .detail-meta-pill {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: #64748b;
+    }
+    .detail-meta-pill .material-icons-round { font-size: 14px; color: #94a3b8; }
+    .detail-lang-dot {
+      font-size: 10px; font-weight: 800;
+      background: #ecfdf5; color: #059669;
+      padding: 2px 8px; border-radius: 6px;
+    }
+    /* Tabs */
+    .detail-tabs {
+      display: flex; margin: 0; flex-shrink: 0;
+      border-bottom: 1.5px solid #e2e8f0;
+      background: #fff;
+    }
+    .detail-tab {
+      flex: 1; padding: 12px 0; text-align: center;
+      font-size: 13px; font-weight: 700; color: #94a3b8;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1.5px; transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .detail-tab .material-icons-round { font-size: 16px; }
+    .detail-tab.active { color: #059669; border-color: #059669; }
+    .detail-tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .detail-tab-panel.active { display: flex; }
+
+    /* Transcript toggle */
+    .trans-toggle-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; flex-shrink: 0;
+      background: #f8faf9;
+    }
+    .trans-toggle-label { font-size: 12px; font-weight: 600; color: #64748b; }
+    .toggle-switch {
+      width: 44px; height: 24px; background: #e2e8f0;
+      border-radius: 12px; position: relative; cursor: pointer;
+      transition: background .2s; border: none; padding: 0;
+    }
+    .toggle-switch.on { background: #10b981; }
+    .toggle-switch::after {
+      content: ''; width: 20px; height: 20px;
+      background: #fff; border-radius: 50%;
+      position: absolute; top: 2px; left: 2px;
+      transition: transform .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .detail-scroll {
+      flex: 1; overflow-y: auto; padding: 8px 16px 24px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .detail-scroll::-webkit-scrollbar { width: 3px; }
+    .detail-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+    .trans-block .trans-native { transition: opacity .2s, max-height .2s; overflow: hidden; }
+    .trans-block .trans-native.hidden { opacity: 0; max-height: 0; padding: 0; margin: 0; border: 0; }
+
+    /* Word detail cards */
+    .words-scroll {
+      flex: 1; overflow-y: auto; padding: 10px 0 24px;
+    }
+    .words-scroll::-webkit-scrollbar { width: 3px; }
+    .words-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+    .wd-card {
+      margin: 0 16px 10px;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 14px; overflow: hidden;
+    }
+    .wd-head {
+      padding: 14px 16px 10px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .wd-en { font-size: 17px; font-weight: 800; color: #0f172a; line-height: 1.3; }
+    .wd-zh { font-size: 14px; font-weight: 600; color: #059669; margin-top: 3px; display: none; }
+    .wd-tl-line {
+      font-size: 12px; color: #94a3b8; display: none;
+      margin-top: 10px;
+    }
+    .words-scroll.show-tl .wd-zh,
+    .words-scroll.show-tl .wd-tl-line { display: block; }
+    .wd-pron { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 4px; }
+    .wd-play {
+      width: 34px; height: 34px; border: 1.5px solid #e2e8f0;
+      border-radius: 50%; background: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #94a3b8; flex-shrink: 0; transition: all .15s;
+    }
+    .wd-play:hover { border-color: #10b981; color: #10b981; }
+    .wd-play .material-icons-round { font-size: 18px; }
+    .wd-section {
+      padding: 10px 16px 12px; border-top: 1px solid #f1f5f9;
+    }
+    .wd-label {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px;
+    }
+    .wd-text { font-size: 13px; color: #475569; line-height: 1.55; }
+    .wd-example { font-size: 13px; color: #64748b; line-height: 1.55; font-style: italic; }
+    .wd-example .wd-highlight {
+      background: #dcfce7; color: #059669; font-weight: 700;
+      font-style: normal; padding: 0 2px; border-radius: 3px;
+    }
+    /* POS badge */
+    .wd-pos-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 700; color: #475569;
+      background: #F1F5F9; border: 1px solid #E2E8F0;
+      padding: 2px 10px; border-radius: 20px;
+      margin-bottom: 6px;
+    }
+    /* POS section (unified for single & multi) */
+    .wd-pos-section {
+      padding: 12px 16px; border-top: 1px solid #f1f5f9;
+    }
+    .wd-pos-section + .wd-pos-section { border-top: 1px solid #e2e8f0; }
+    .wd-pos-image {
+      width: 200px; height: 200px; object-fit: cover;
+      border-radius: 8px; margin: 8px 0 6px; display: block;
+    }
+    .wd-pos-section .wd-text { margin-top: 4px; }
+    .wd-pos-section .wd-example-wrap {
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+    }
+    /* ════════════════════════════════
+       SCREEN 7 — Word Bank
+    ════════════════════════════════ */
+    .wb-stats {
+      padding: 14px 20px 6px;
+      font-size: 14px; font-weight: 700; color: #0f172a; flex-shrink: 0;
+    }
+    .wb-stats span { color: #059669; }
+    .wb-filters {
+      padding: 6px 16px 10px;
+      display: flex; gap: 6px; flex-shrink: 0;
+    }
+    .wb-filter-chip {
+      font-size: 12px; font-weight: 600; color: #64748b;
+      background: #fff; border: 1px solid #e2e8f0;
+      padding: 5px 14px; border-radius: 20px;
+      cursor: pointer; transition: all .15s; border: none;
+      font-family: inherit;
+    }
+    .wb-filter-chip:hover { background: #f1f5f9; }
+    .wb-filter-chip.active {
+      background: #0f172a; color: #fff;
+    }
+    /* Frequency badge */
+    .wd-freq {
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      background: #f1f5f9; padding: 2px 8px; border-radius: 10px;
+      margin-top: 4px; display: inline-block;
+    }
+
+
+    /* ── Word Bank: action bar & select mode ── */
+    .wb-action-bar {
+      position: sticky; bottom: 0; left: 0; right: 0;
+      padding: 12px 16px 20px; background: #fff;
+      border-top: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+    .wb-enter-btn {
+      width: 100%; padding: 13px 0; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .wb-enter-btn .material-icons-round { font-size: 18px; }
+    .wb-select-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .wb-select-count { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .wb-select-count span { color: #059669; }
+    .wb-quick-btns { display: flex; gap: 6px; }
+    .wb-quick-btn {
+      font-size: 12px; font-weight: 600; padding: 5px 12px;
+      border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .wb-quick-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .wb-type-chips { display: flex; gap: 6px; }
+    .wb-type-chip {
+      font-size: 12px; font-weight: 600; padding: 5px 14px;
+      border-radius: 20px; border: 1.5px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    .wb-type-chip.active { border-color: #059669; background: #ecfdf5; color: #059669; }
+    .wb-start-btn {
+      width: 100%; padding: 13px 0; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .wb-start-btn:disabled {
+      background: #e2e8f0; color: #94a3b8; box-shadow: none; cursor: default;
+    }
+    /* Card select state */
+    .wd-card.selectable { cursor: pointer; position: relative; }
+    .wd-card.selected { border-color: #10b981; background: #fafffe; }
+    .wd-select-dot {
+      position: absolute; top: 16px; right: 16px;
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #cbd5e1; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wd-card.selected .wd-select-dot {
+      background: #10b981; border-color: #10b981;
+    }
+    .wd-select-dot .material-icons-round { font-size: 15px; color: #fff; display: none; }
+    .wd-card.selected .wd-select-dot .material-icons-round { display: block; }
+
+    /* ── Screen 8: Practice ── */
+    .prac-body {
+      flex: 1; display: flex; flex-direction: column; background: #EFF5FF; overflow: hidden;
+    }
+    .prac-progress { height: 4px; background: #e2e8f0; flex-shrink: 0; }
+    .prac-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width .4s ease; border-radius: 0 2px 2px 0;
+    }
+    .prac-area {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .prac-counter {
+      font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 16px;
+    }
+    .prac-counter strong { color: #0f172a; font-weight: 800; }
+    .prac-card {
+      width: 100%; background: #fff; border-radius: 16px;
+      border: 1.5px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      padding: 28px 24px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .prac-type-badge {
+      align-self: center; font-size: 11px; font-weight: 700;
+      padding: 3px 12px; border-radius: 20px;
+    }
+    .prac-type-badge.spelling { background: #dbeafe; color: #1e40af; }
+    .prac-type-badge.mirroring { background: #E6F9FC; color: #00B8D9; }
+    /* Spelling */
+    .prac-zh { font-size: 24px; font-weight: 800; color: #0f172a; text-align: center; }
+    .prac-sub { font-size: 12px; font-weight: 600; color: #94a3b8; text-align: center; }
+    .prac-def {
+      font-size: 13px; color: #334155; line-height: 1.6;
+      padding: 12px 16px; background: #f8fafc; border-radius: 8px;
+      border-left: 3px solid #10b981;
+    }
+    .prac-input {
+      width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
+      border-radius: 12px; font-family: inherit; font-size: 16px;
+      font-weight: 600; text-align: center; color: #0f172a;
+      outline: none; transition: all .15s; letter-spacing: 1px;
+    }
+    .prac-input:focus { border-color: #10b981; }
+    .prac-input.correct { border-color: #10b981; background: #f0fdf4; color: #059669; }
+    .prac-input.wrong { border-color: #ef4444; background: #fef2f2; color: #ef4444; }
+    .prac-submit {
+      width: 100%; padding: 13px 0; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .prac-answer { font-size: 14px; font-weight: 700; text-align: center; display: none; }
+    .prac-answer.correct { color: #059669; display: block; }
+    .prac-answer.wrong { color: #ef4444; display: block; }
+    /* Mirroring */
+    .prac-word-big { font-size: 28px; font-weight: 800; color: #0f172a; text-align: center; }
+    .prac-pron { font-size: 13px; color: #94a3b8; font-style: italic; text-align: center; }
+    .prac-play-btn {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: #ecfdf5; border: 2px solid #6EE7B7;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; margin: 4px auto;
+    }
+    .prac-play-btn .material-icons-round { font-size: 24px; color: #059669; }
+    .prac-rec-btn {
+      width: 100%; padding: 13px 0; border: none; border-radius: 10px;
+      background: #ef4444; color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .prac-rec-btn .material-icons-round { font-size: 18px; }
+    .prac-rec-btn.recording { animation: pulse-rec 1.5s ease-in-out infinite; }
+    @keyframes pulse-rec {
+      0%, 100% { box-shadow: 0 0 0 rgba(239,68,68,0); }
+      50% { box-shadow: 0 0 20px rgba(239,68,68,.35); }
+    }
+    /* Results */
+    .prac-results { text-align: center; }
+    .prac-results .material-icons-round { font-size: 48px; color: #10b981; margin-bottom: 12px; }
+    .prac-results-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .prac-results-sub { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+    .prac-done-btn {
+      padding: 13px 32px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+
+    .wd-empty {
+      text-align: center; padding: 48px 20px;
+      color: #94a3b8; font-size: 14px; line-height: 1.7;
+    }
+    .wd-empty .material-icons-round { font-size: 36px; display: block; margin-bottom: 10px; color: #e2e8f0; }
+
+    /* ════════ Toast ════════ */
+    .toast {
+      position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(8px);
+      background: #0f172a; color: #fff; font-size: 13px; font-weight: 600;
+      padding: 8px 18px; border-radius: 20px;
+      opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<a class="page-version" href="versions/index.html" title="Version history">
+  <span class="material-icons-round">schedule</span> Versions
+</a>
+<div class="phone" id="phone">
+
+  <!-- ══ Shared top bar ══ -->
+  <div class="top-bar">
+    <!-- Home state -->
+    <div class="topbar-home" id="topbar-home">
+      <div class="logo">
+        <div class="logo-icon"><img src="../esl-teacher/assets/dh_single.png" alt="DAHUA AI"></div>
+        <span class="logo-name">DAHUA AI</span>
+      </div>
+      <div class="top-bar-right">
+        <div class="timer-badge" id="timer-badge">
+          <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
+          <span id="timer-display">00:00</span>
+        </div>
+      </div>
+    </div>
+    <!-- Sub-screen state -->
+    <div class="topbar-sub" id="topbar-sub">
+      <button class="back-btn" onclick="goBack()" aria-label="返回">
+        <span class="material-icons-round">arrow_back</span>
+      </button>
+      <span class="sub-screen-title" id="sub-title">歷史紀錄</span>
+      <button class="sub-action-btn" aria-label="搜尋">
+        <span class="material-icons-round">search</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 1: Start ══ -->
+  <div class="screen active" id="screen-1">
+    <div class="s1-body">
+
+      <div class="lang-card">
+        <div class="lang-slot">
+          <button class="lang-btn disabled" disabled>
+            <span class="lang-code">EN</span> English
+          </button>
+        </div>
+        <div class="lang-sep"></div>
+        <div class="lang-arrow-wrap"><span class="material-icons-round">arrow_forward</span></div>
+        <div class="lang-sep"></div>
+        <div class="lang-slot" id="target-wrap" style="position:relative;">
+          <button class="lang-btn" id="target-btn" onclick="toggleDropdown()">
+            <span class="lang-code" id="target-code">ZH</span>
+            <span id="target-label">中文</span>
+            <span class="material-icons-round">expand_more</span>
+          </button>
+          <div class="lang-dropdown" id="lang-dropdown">
+            <div class="lang-option selected" onclick="selectLang('ZH','中文','zh')">
+              <span class="opt-code">ZH</span> 中文
+            </div>
+            <div class="lang-option" onclick="selectLang('ES','Español','es')">
+              <span class="opt-code">ES</span> Español
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wave-section">
+        <p class="hint-text" id="hint-text">選擇語言，點擊開始收音<br>即時翻譯英語內容。</p>
+        <div class="waveform-idle" id="waveform-idle"></div>
+      </div>
+
+      <button class="btn-start" id="btn-start" onclick="startRecording()">
+        <span class="material-icons-round">mic</span>
+        <span id="start-label">開始收音</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: Recording ══ -->
+  <div class="screen" id="screen-2">
+    <div class="s2-body">
+      <div class="tap-hint">
+        <span class="material-icons-round">touch_app</span>
+        點擊單字即可保存
+      </div>
+      <div class="transcript-scroll" id="transcript-2" style="padding-top:10px;"></div>
+      <div class="saved-strip" id="saved-strip-2"></div>
+      <div class="live-wave-strip" id="live-wave"></div>
+      <div class="rec-controls">
+        <button class="btn-pause" id="pause-btn-2" onclick="togglePause(this)" title="暫停">
+          <span class="material-icons-round">pause</span>
+        </button>
+        <button class="btn-stop" onclick="goToScreen3()">
+          <span class="material-icons-round">stop</span>
+          停止收音
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: Review & save ══ -->
+  <div class="screen" id="screen-3">
+    <div class="s2-body">
+      <div class="review-header">
+        <div class="review-badge">
+          <span class="material-icons-round">stop_circle</span>
+          錄音已停止 · 點選單字保存
+        </div>
+        <div class="review-count" id="review-count">
+          <span class="material-icons-round">bookmark</span>
+          <span id="review-count-num">0</span>
+        </div>
+      </div>
+      <div class="saved-strip" id="saved-strip-3"></div>
+      <div class="transcript-scroll" id="transcript-3" style="padding-top:8px;"></div>
+      <div class="rec-controls">
+        <button class="btn-end-solo" onclick="endSession()">
+          <span class="material-icons-round">check_circle</span>
+          完成 · 查看總結
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 4: Summary ══ -->
+  <div class="screen" id="screen-4">
+    <div class="s4-body">
+      <div class="s4-header">
+        <div class="s4-title">翻譯總結</div>
+        <div class="s4-stats">
+          <div class="stat-pill">
+            <span class="material-icons-round">schedule</span>
+            時長 <strong id="final-time">03:47</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="material-icons-round">bookmark</span>
+            保存 <strong id="saved-count">0</strong> 個單字
+          </div>
+        </div>
+      </div>
+      <div class="s4-fields">
+        <div>
+          <label class="s4-field-label">名稱</label>
+          <input class="s4-input" id="session-name" type="text" placeholder="Session name">
+        </div>
+        <div>
+          <label class="s4-field-label">備註</label>
+          <textarea class="s4-textarea" placeholder="加入備註..."></textarea>
+        </div>
+      </div>
+      <div class="s4-section-label">已保存單字</div>
+      <div class="s4-word-list" id="s4-word-list">
+        <!-- filled by JS -->
+      </div>
+      <div class="s4-footer">
+        <button class="btn-again" onclick="resetToStart()">
+          <span class="material-icons-round">replay</span>
+          再次收音
+        </button>
+        <button class="btn-done">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 5: History ══ -->
+  <div class="screen" id="screen-5">
+    <div class="hist-body" id="hist-body">
+      <!-- filled by buildHistoryList() -->
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 6: Session Detail ══ -->
+  <div class="screen" id="screen-6">
+    <div class="detail-body">
+      <div class="detail-meta-card" id="detail-meta"></div>
+      <!-- Tabs -->
+      <div class="detail-tabs">
+        <div class="detail-tab active" data-tab="transcript" onclick="switchDetailTab('transcript')">
+          <span class="material-icons-round">description</span> 逐字稿
+        </div>
+        <div class="detail-tab" data-tab="words" onclick="switchDetailTab('words')">
+          <span class="material-icons-round">bookmark</span> 儲存單字
+        </div>
+      </div>
+      <!-- Tab 1: Transcript -->
+      <div class="detail-tab-panel active" id="panel-transcript">
+        <div class="trans-toggle-bar">
+          <span class="trans-toggle-label">翻譯</span>
+          <button class="toggle-switch" id="trans-toggle" onclick="toggleTranslation()"></button>
+        </div>
+        <div class="detail-scroll" id="detail-scroll"></div>
+      </div>
+      <!-- Tab 2: Saved Words -->
+      <div class="detail-tab-panel" id="panel-words">
+        <div class="trans-toggle-bar">
+          <span class="trans-toggle-label">翻譯</span>
+          <button class="toggle-switch" id="words-toggle" onclick="toggleWordsTl()"></button>
+        </div>
+        <div class="words-scroll" id="words-scroll"></div>
+      </div>
+      <!-- Practice button -->
+      <div class="wb-action-bar" id="detail-practice-bar">
+        <button class="wb-enter-btn" onclick="startSessionPractice()">
+          <span class="material-icons-round">fitness_center</span> 開始練習
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 7: Word Bank ══ -->
+  <div class="screen" id="screen-7">
+    <div class="detail-body">
+      <div class="wb-stats" id="wb-stats"></div>
+      <div class="wb-filters" id="wb-filters"></div>
+      <div class="trans-toggle-bar">
+        <span class="trans-toggle-label">翻譯</span>
+        <button class="toggle-switch" id="wb-toggle" onclick="toggleWbTl()"></button>
+      </div>
+      <div class="words-scroll" id="wb-scroll"></div>
+      <div class="wb-action-bar" id="wb-action-bar">
+        <button class="wb-enter-btn" onclick="enterSelectMode()">
+          <span class="material-icons-round">fitness_center</span> 開始練習
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 8: Practice ══ -->
+  <div class="screen" id="screen-8">
+    <div class="prac-body">
+      <div class="prac-progress"><div class="prac-progress-fill" id="prac-fill"></div></div>
+      <div class="prac-area" id="prac-area"></div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 9: Quiz tab root ══ -->
+  <div class="screen" id="screen-9">
+    <div class="detail-body">
+      <div class="wb-stats" id="quiz-stats"></div>
+      <div class="words-scroll" id="quiz-scroll"></div>
+      <div class="wb-action-bar" id="quiz-action-bar">
+        <button class="wb-enter-btn" onclick="enterQuizSelect()">
+          <span class="material-icons-round">fitness_center</span> 選擇單字
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Bottom Nav (M3) ══ -->
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" data-tab="record" onclick="switchTab('record')">
+      <div class="nav-icon-wrap"><span class="material-icons-round">mic</span></div>
+      <span>錄音</span>
+    </button>
+    <button class="nav-item" data-tab="wordbank" onclick="switchTab('wordbank')">
+      <div class="nav-icon-wrap"><span class="material-icons-round">bookmarks</span></div>
+      <span>單字庫</span>
+    </button>
+    <button class="nav-item" data-tab="quiz" onclick="switchTab('quiz')">
+      <div class="nav-icon-wrap"><span class="material-icons-round">quiz</span></div>
+      <span>測驗</span>
+    </button>
+    <button class="nav-item" data-tab="history" onclick="switchTab('history')">
+      <div class="nav-icon-wrap"><span class="material-icons-round">history</span></div>
+      <span>紀錄</span>
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+/* ══════════ Data ══════════ */
+var currentLang = 'zh';
+var savedWords = [];
+var timerInterval = null;
+var timerSec = 0;
+var isPaused = false;
+
+var transcriptData = [
+  {
+    en: 'The teacher opened the lesson by reviewing last week\'s vocabulary words.',
+    zh: '老師通過複習上週的詞彙開始了這節課。',
+    es: 'La maestra comenzó la lección repasando el vocabulario de la semana pasada.'
+  },
+  {
+    en: 'Please take out your notebooks and write down the key terms on the board.',
+    zh: '請拿出筆記本，把黑板上的關鍵詞抄下來。',
+    es: 'Por favor saquen sus cuadernos y escriban los términos clave del pizarrón.'
+  },
+  {
+    en: 'Today we will focus on photosynthesis and how plants convert sunlight into energy.',
+    zh: '今天我們將重點學習光合作用，以及植物如何將陽光轉化為能量。',
+    es: 'Hoy nos enfocaremos en la fotosíntesis y cómo las plantas convierten la luz solar en energía.'
+  },
+  {
+    en: 'The assignment is due on Friday — make sure you submit it before three o\'clock.',
+    zh: '作業截止日期是週五，請確保在三點前提交。',
+    es: 'La tarea vence el viernes — asegúrense de entregarla antes de las tres.'
+  },
+  {
+    en: 'If you have any questions, raise your hand and I will come to help you.',
+    zh: '如果有任何問題，請舉手，我會過來幫助你。',
+    es: 'Si tienen alguna pregunta, levanten la mano y yo iré a ayudarlos.'
+  }
+];
+
+/* Words with their translations */
+var wordMap = {
+  'vocabulary': { zh: '詞彙', es: 'vocabulario' },
+  'notebooks': { zh: '筆記本', es: 'cuadernos' },
+  'photosynthesis': { zh: '光合作用', es: 'fotosíntesis' },
+  'sunlight': { zh: '陽光', es: 'luz solar' },
+  'energy': { zh: '能量', es: 'energía' },
+  'assignment': { zh: '作業', es: 'tarea' },
+  'submit': { zh: '提交', es: 'entregar' },
+  'questions': { zh: '問題', es: 'preguntas' },
+  'plant': { zh: '植物；種植', es: 'planta; plantar' },
+  'record': { zh: '紀錄；錄製', es: 'registro; grabar' }
+};
+
+/* ══════════ Idle waveform ══════════ */
+(function() {
+  var h = [14,20,32,46,60,74,86,78,62,48,34,22,16,26,40,56,70,82,90,80,
+           66,50,36,24,18,28,44,60,76,88,82,68,52,38,26,20,30,46,62,78,
+           88,76,60,44,30,20,14,22,36,52];
+  var wrap = document.getElementById('waveform-idle');
+  h.forEach(function(v) {
+    var b = document.createElement('div');
+    b.className = 'bar';
+    b.style.height = v + 'px';
+    wrap.appendChild(b);
+  });
+})();
+
+/* Live waveform builder */
+function buildLiveWave(id) {
+  var h = [10,16,24,34,42,48,40,30,22,14,10,16,26,36,44,48,38,28,20,12,
+            9,14,24,34,42,46,36,26,18,12,10,18,28,38,44,40,30,22,14,10];
+  var wrap = document.getElementById(id);
+  wrap.innerHTML = '';
+  h.forEach(function(v, i) {
+    var b = document.createElement('div');
+    b.className = 'bar';
+    b.style.height = v + 'px';
+    b.style.animationDelay = (i * 0.05) + 's';
+    wrap.appendChild(b);
+  });
+}
+
+/* ══════════ Language selector ══════════ */
+var hints = {
+  zh: '選擇語言，點擊開始收音<br>即時翻譯英語內容。',
+  es: 'Selecciona el idioma y toca<br>iniciar para traducir.'
+};
+var startLabels = { zh: '開始收音', es: 'Iniciar' };
+var stopLabels  = { zh: '停止收音', es: 'Detener' };
+var endLabels   = { zh: '結束翻譯', es: 'Terminar' };
+
+function toggleDropdown() {
+  document.getElementById('lang-dropdown').classList.toggle('open');
+}
+function selectLang(code, label, locale) {
+  currentLang = locale;
+  document.getElementById('target-code').textContent = code;
+  document.getElementById('target-label').textContent = label;
+  document.getElementById('hint-text').innerHTML = hints[locale];
+  document.getElementById('lang-dropdown').classList.remove('open');
+  document.getElementById('start-label').textContent = startLabels[locale];
+  document.querySelectorAll('.lang-option').forEach(function(el) {
+    el.classList.toggle('selected', el.textContent.trim().startsWith(label));
+  });
+}
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('target-wrap').contains(e.target))
+    document.getElementById('lang-dropdown').classList.remove('open');
+});
+
+/* ══════════ Timer ══════════ */
+function startTimer() {
+  timerSec = 0;
+  document.getElementById('timer-badge').classList.add('live');
+  timerInterval = setInterval(function() {
+    if (!isPaused) {
+      timerSec++;
+      var m = String(Math.floor(timerSec / 60)).padStart(2, '0');
+      var s = String(timerSec % 60).padStart(2, '0');
+      document.getElementById('timer-display').textContent = m + ':' + s;
+    }
+  }, 1000);
+}
+function stopTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('timer-badge').classList.remove('live');
+}
+
+/* ══════════ Screen nav ══════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+/* ══════════ Screen 1 → 2 ══════════ */
+function startRecording() {
+  hideBottomNav();
+  buildLiveWave('live-wave');
+  buildTranscript('transcript-2', true, ['vocabulary', 'photosynthesis']);
+  startTimer();
+  showScreen('screen-2');
+}
+
+/* ══════════ Screen 2 → 3 ══════════ */
+function goToScreen3() {
+  buildLiveWave('live-wave-3');
+  buildTranscript('transcript-3', true, []);
+  showScreen('screen-3');
+}
+
+/* ══════════ Screen 3 → 4 ══════════ */
+function endSession() {
+  stopTimer();
+  var m = String(Math.floor(timerSec / 60)).padStart(2, '0');
+  var s = String(timerSec % 60).padStart(2, '0');
+  document.getElementById('final-time').textContent = m + ':' + s;
+  document.getElementById('saved-count').textContent = savedWords.length;
+
+  /* Default session name: YYYY/MM/DD HH:MM */
+  var now = new Date();
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var defaultName = now.getFullYear() + '/' +
+    pad(now.getMonth() + 1) + '/' + pad(now.getDate()) + '  ' +
+    pad(now.getHours()) + ':' + pad(now.getMinutes());
+  document.getElementById('session-name').value = defaultName;
+
+  buildSummary();
+  showScreen('screen-4');
+}
+
+/* ══════════ Reset ══════════ */
+function resetToStart() {
+  savedWords = [];
+  isPaused = false;
+  showBottomNav();
+  showScreen('screen-1');
+}
+
+/* ══════════ Pause ══════════ */
+function togglePause(btn) {
+  isPaused = !isPaused;
+  btn.querySelector('.material-icons-round').textContent = isPaused ? 'play_arrow' : 'pause';
+  btn.style.borderColor = isPaused ? '#10b981' : '';
+  btn.style.color = isPaused ? '#10b981' : '';
+}
+
+/* ══════════ Build transcript ══════════ */
+function buildTranscript(containerId, clickable, preSelected) {
+  preSelected = preSelected || [];
+  var container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  transcriptData.forEach(function(item, i) {
+    var block = document.createElement('div');
+    block.className = 'trans-block' + (i === transcriptData.length - 1 ? ' incoming' : '');
+
+    var enDiv = document.createElement('div');
+    enDiv.className = 'trans-en';
+
+    if (clickable) {
+      var words = item.en.split(/(\s+)/);
+      words.forEach(function(tok) {
+        var clean = tok.trim().replace(/[.,!?']/g, '').toLowerCase();
+        if (wordMap[clean]) {
+          var span = document.createElement('span');
+          span.className = 'word';
+          span.textContent = tok;
+          span.dataset.word = clean;
+          /* Pre-select demo words */
+          if (preSelected.indexOf(clean) !== -1) {
+            span.classList.add('saved');
+          }
+          span.onclick = function() { saveWord(span, clean); };
+          enDiv.appendChild(span);
+        } else {
+          enDiv.appendChild(document.createTextNode(tok));
+        }
+      });
+    } else {
+      enDiv.textContent = item.en;
+    }
+
+    var nativeDiv = document.createElement('div');
+    nativeDiv.className = 'trans-native';
+    nativeDiv.textContent = currentLang === 'zh' ? item.zh : item.es;
+
+    block.appendChild(enDiv);
+    block.appendChild(nativeDiv);
+    container.appendChild(block);
+  });
+
+
+  setTimeout(function() { container.scrollTop = container.scrollHeight; }, 50);
+}
+
+function addChipToStrip(stripId, word) {
+  var strip = document.getElementById(stripId);
+  /* Avoid duplicates */
+  if (strip.querySelector('[data-word="' + word + '"]')) return;
+  var chip = document.createElement('div');
+  chip.className = 'saved-chip';
+  chip.dataset.word = word;
+  chip.innerHTML = '<span class="material-icons-round">bookmark</span>' + word;
+  strip.appendChild(chip);
+}
+
+/* ══════════ Save word ══════════ */
+function saveWord(span, word) {
+  if (span.classList.contains('saved')) return;
+  span.classList.add('saved');
+
+  var trans = wordMap[word][currentLang];
+  savedWords.push({ word: word, trans: trans });
+
+  showToast(currentLang === 'zh' ? '已保存：' + trans : 'Guardado: ' + trans);
+}
+
+/* ══════════ Build summary ══════════ */
+function buildSummary() {
+  var list = document.getElementById('s4-word-list');
+  list.innerHTML = '';
+  if (savedWords.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:14px;">' +
+      (currentLang === 'zh' ? '本次未保存任何單字' : 'No se guardaron palabras') + '</div>';
+    return;
+  }
+  savedWords.forEach(function(item) {
+    var row = document.createElement('div');
+    row.className = 'word-row';
+    row.innerHTML = '<div class="word-dot"></div>' +
+      '<div class="word-en">' + item.word + '</div>' +
+      '<div class="word-native">' + item.trans + '</div>';
+    list.appendChild(row);
+  });
+}
+
+/* ══════════ Bottom Nav ══════════ */
+var currentTab = 'record';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  showHomeBar();
+  showBottomNav();
+
+  if (tab === 'record') {
+    showScreen('screen-1');
+  } else if (tab === 'wordbank') {
+    goToWordBank();
+  } else if (tab === 'quiz') {
+    goToQuiz();
+  } else if (tab === 'history') {
+    goToHistory();
+  }
+}
+
+function showBottomNav() {
+  document.getElementById('bottom-nav').classList.remove('hidden');
+}
+function hideBottomNav() {
+  document.getElementById('bottom-nav').classList.add('hidden');
+}
+
+/* ══════════ Toast ══════════ */
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 1800);
+}
+
+/* ══════════════════════════════════════
+   HISTORY (Screen 5)
+══════════════════════════════════════ */
+var historyData = [
+  {
+    name: '理科課 · 光合作用單元',
+    dateGroup: '今天',
+    time: '14:30',
+    duration: '15:23',
+    lang: 'zh',
+    words: ['photosynthesis','sunlight','energy','plant','record','vocabulary','notebooks','assignment']
+  },
+  {
+    name: '2025/05/25  09:45',
+    dateGroup: '今天',
+    time: '09:45',
+    duration: '03:47',
+    lang: 'zh',
+    words: ['vocabulary','photosynthesis','energy']
+  },
+  {
+    name: 'English Writing Class',
+    dateGroup: '05/24',
+    time: '15:00',
+    duration: '22:10',
+    lang: 'zh',
+    words: ['assignment','submit','questions','notebooks','vocabulary','sunlight','energy','photosynthesis']
+  },
+  {
+    name: 'Matemáticas Avanzadas',
+    dateGroup: '05/24',
+    time: '10:20',
+    duration: '08:15',
+    lang: 'es',
+    words: ['energy','sunlight','assignment','submit','questions']
+  },
+  {
+    name: 'Science Lab Report',
+    dateGroup: '05/22',
+    time: '13:45',
+    duration: '31:52',
+    lang: 'zh',
+    words: ['photosynthesis','sunlight','energy','vocabulary','notebooks']
+  }
+];
+
+/* Back action stack */
+var currentBackAction = null;
+function goBack() { if (currentBackAction) currentBackAction(); else goHome(); }
+
+function goHome() {
+  showHomeBar();
+  showBottomNav();
+  currentBackAction = null;
+  currentTab = 'record';
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.tab === 'record');
+  });
+  showScreen('screen-1');
+}
+
+function showSubBar(title) {
+  document.getElementById('topbar-home').style.display = 'none';
+  document.getElementById('topbar-sub').classList.add('active');
+  document.getElementById('sub-title').textContent = title;
+}
+
+function showHomeBar() {
+  document.getElementById('topbar-home').style.display = 'flex';
+  document.getElementById('topbar-sub').classList.remove('active');
+}
+
+function goToHistory() {
+  showSubBar('歷史紀錄');
+  currentBackAction = goHome;
+  buildHistoryList();
+  showScreen('screen-5');
+}
+
+function goToSessionDetail(session) {
+  showSubBar('逐字稿');
+  currentBackAction = function() {
+    showSubBar('歷史紀錄');
+    currentBackAction = goHome;
+    showScreen('screen-5');
+  };
+  buildSessionDetail(session);
+  showScreen('screen-6');
+}
+
+/* ══════════ Word details data ══════════ */
+var wordDetails = {
+  /* ── Single POS, no image ── */
+  'vocabulary': {
+    pron: '/vəˈkæb.jə.ler.i/',
+    senses: [{
+      pos: 'noun',
+      def: 'All the words known and used by a particular person or group.',
+      defZh: '一個人或群體所認識和使用的所有單字。',
+      defEs: 'Todas las palabras conocidas y usadas por una persona o grupo.',
+      example: 'The teacher reviewed last week\'s <b>vocabulary</b> words.',
+      exZh: '老師複習了上週的詞彙。',
+      exEs: 'La maestra repasó el vocabulario de la semana pasada.'
+    }]
+  },
+  'assignment': {
+    pron: '/əˈsaɪn.mənt/',
+    senses: [{
+      pos: 'noun',
+      def: 'A task or piece of work assigned to someone as part of a course of study.',
+      defZh: '作為課程學習的一部分而分配給某人的任務或作業。',
+      defEs: 'Una tarea asignada a alguien como parte de un curso de estudio.',
+      example: 'The <b>assignment</b> is due on Friday.',
+      exZh: '作業截止日期是週五。',
+      exEs: 'La tarea vence el viernes.'
+    }]
+  },
+  'submit': {
+    pron: '/səbˈmɪt/',
+    senses: [{
+      pos: 'verb',
+      def: 'To give a document or piece of work to someone in authority for them to consider.',
+      defZh: '將文件或作品交給有權限的人審閱。',
+      defEs: 'Entregar un documento o trabajo a alguien con autoridad.',
+      example: 'Make sure you <b>submit</b> it before three o\'clock.',
+      exZh: '請確保在三點前提交。',
+      exEs: 'Asegúrense de entregarlo antes de las tres.'
+    }]
+  },
+  'questions': {
+    pron: '/ˈkwes.tʃənz/',
+    senses: [{
+      pos: 'noun',
+      def: 'Sentences or phrases used to find out information.',
+      defZh: '用來尋找資訊的句子或短語。',
+      defEs: 'Oraciones o frases usadas para obtener información.',
+      example: 'If you have any <b>questions</b>, raise your hand.',
+      exZh: '如果有任何問題，請舉手。',
+      exEs: 'Si tienen alguna pregunta, levanten la mano.'
+    }]
+  },
+  'energy': {
+    pron: '/ˈen.ɚ.dʒi/',
+    senses: [{
+      pos: 'noun',
+      def: 'The power from something such as electricity or oil that can do work.',
+      defZh: '來自電力或石油等物質的力量，可以用來做功。',
+      defEs: 'La potencia proveniente de algo como la electricidad o el petróleo.',
+      example: 'Plants convert sunlight into <b>energy</b>.',
+      exZh: '植物將陽光轉化為能量。',
+      exEs: 'Las plantas convierten la luz solar en energía.'
+    }]
+  },
+  /* ── Single POS, with image ── */
+  'photosynthesis': {
+    pron: '/ˌfoʊ.toʊˈsɪn.θə.sɪs/',
+    senses: [{
+      pos: 'noun',
+      def: 'The process by which green plants use sunlight to make food from carbon dioxide and water.',
+      defZh: '綠色植物利用陽光將二氧化碳和水轉化為養分的過程。',
+      defEs: 'El proceso por el cual las plantas verdes usan la luz solar para producir alimento.',
+      example: 'Today we will focus on <b>photosynthesis</b> and how plants convert sunlight into energy.',
+      exZh: '今天我們將重點學習光合作用。',
+      exEs: 'Hoy nos enfocaremos en la fotosíntesis.'
+    }]
+  },
+  'sunlight': {
+    pron: '/ˈsʌn.laɪt/',
+    image: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=480&q=80',
+    senses: [{
+      pos: 'noun',
+      def: 'The light that comes from the sun.',
+      defZh: '來自太陽的光線。',
+      defEs: 'La luz que proviene del sol.',
+      example: 'Plants convert <b>sunlight</b> into energy through photosynthesis.',
+      exZh: '植物通過光合作用將陽光轉化為能量。',
+      exEs: 'Las plantas convierten la luz solar en energía.'
+    }]
+  },
+  'notebooks': {
+    pron: '/ˈnoʊt.bʊks/',
+    image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=480&q=80',
+    senses: [{
+      pos: 'noun',
+      def: 'Small books for writing notes in.',
+      defZh: '用來寫筆記的小本子。',
+      defEs: 'Libretas pequeñas para escribir notas.',
+      example: 'Please take out your <b>notebooks</b> and write down the key terms.',
+      exZh: '請拿出筆記本，把關鍵詞抄下來。',
+      exEs: 'Saquen sus cuadernos y escriban los términos clave.'
+    }]
+  },
+  /* ── Multi POS ── */
+  'plant': {
+    pron: '/plænt/',
+    senses: [
+      {
+        pos: 'noun',
+        image: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=480&q=80',
+        def: 'A living organism that grows in the earth and absorbs water through its roots.',
+        defZh: '生長在土壤中，通過根部吸收水分的生物體。',
+        defEs: 'Un organismo vivo que crece en la tierra y absorbe agua por sus raíces.',
+        example: 'There are many <b>plants</b> in the classroom.',
+        exZh: '教室裡有很多植物。',
+        exEs: 'Hay muchas plantas en el salón de clase.'
+      },
+      {
+        pos: 'verb',
+        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=480&q=80',
+        def: 'To put a seed or plant in the ground so that it can grow.',
+        defZh: '把種子或植物放入土壤中使其生長。',
+        defEs: 'Poner una semilla o planta en la tierra para que crezca.',
+        example: 'We will <b>plant</b> flowers in the garden tomorrow.',
+        exZh: '明天我們會在花園裡種花。',
+        exEs: 'Mañana plantaremos flores en el jardín.'
+      }
+    ]
+  },
+  'record': {
+    pron: '/ˈrek.ɚd/ · /rɪˈkɔːrd/',
+    senses: [
+      {
+        pos: 'noun',
+        def: 'A thing constituting a piece of evidence about the past.',
+        defZh: '構成過去事件證據的事物。',
+        defEs: 'Algo que constituye una evidencia sobre el pasado.',
+        example: 'The teacher kept a <b>record</b> of each student\'s progress.',
+        exZh: '老師記錄了每位學生的進度。',
+        exEs: 'La maestra mantuvo un registro del progreso de cada estudiante.'
+      },
+      {
+        pos: 'verb',
+        def: 'To set down in writing or some other permanent form for later reference.',
+        defZh: '以書寫或其他永久形式記錄下來，以供日後參考。',
+        defEs: 'Registrar por escrito u otra forma permanente para referencia futura.',
+        example: 'Please <b>record</b> the experiment results in your notebook.',
+        exZh: '請在筆記本中記錄實驗結果。',
+        exEs: 'Registren los resultados del experimento en su cuaderno.'
+      }
+    ]
+  }
+};
+
+/* ══════════ Detail state ══════════ */
+var detailSession = null;
+var showTranslation = false;
+
+function buildSessionDetail(session) {
+  detailSession = session;
+  showTranslation = false;
+  var langDisplay = session.lang === 'zh' ? 'ZH' : 'ES';
+
+  /* Meta card */
+  document.getElementById('detail-meta').innerHTML =
+    '<div class="detail-session-name">' + session.name + '</div>' +
+    '<div class="detail-meta-row">' +
+      '<div class="detail-meta-pill"><span class="material-icons-round">schedule</span>' + session.duration + '</div>' +
+      '<div class="detail-meta-pill"><span class="material-icons-round">bookmark</span>' + session.words.length + ' 個單字</div>' +
+      '<div class="detail-lang-dot">' + langDisplay + '</div>' +
+    '</div>';
+
+  /* Reset tabs to transcript */
+  switchDetailTab('transcript');
+
+  /* Reset toggles */
+  showTranslation = false;
+  showWordsTl = false;
+  document.getElementById('trans-toggle').classList.remove('on');
+  document.getElementById('words-toggle').classList.remove('on');
+  document.getElementById('words-scroll').classList.remove('show-tl');
+
+  /* Build transcript */
+  buildDetailTranscript(session);
+
+  /* Build word cards */
+  buildDetailWords(session);
+}
+
+/* ══════════ Tab switching ══════════ */
+function switchDetailTab(tab) {
+  document.querySelectorAll('.detail-tab').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.getElementById('panel-transcript').classList.toggle('active', tab === 'transcript');
+  document.getElementById('panel-words').classList.toggle('active', tab === 'words');
+}
+
+/* ══════════ Translation toggles (independent) ══════════ */
+var showWordsTl = false;
+
+function toggleTranslation() {
+  showTranslation = !showTranslation;
+  document.getElementById('trans-toggle').classList.toggle('on', showTranslation);
+
+  document.querySelectorAll('#detail-scroll .trans-native').forEach(function(el) {
+    el.classList.toggle('hidden', !showTranslation);
+  });
+}
+
+function toggleWordsTl() {
+  showWordsTl = !showWordsTl;
+  document.getElementById('words-toggle').classList.toggle('on', showWordsTl);
+  document.getElementById('words-scroll').classList.toggle('show-tl', showWordsTl);
+}
+
+/* ══════════ Build transcript panel ══════════ */
+function buildDetailTranscript(session) {
+  var scroll = document.getElementById('detail-scroll');
+  scroll.innerHTML = '';
+
+  transcriptData.forEach(function(item) {
+    var block = document.createElement('div');
+    block.className = 'trans-block';
+
+    var enDiv = document.createElement('div');
+    enDiv.className = 'trans-en';
+    item.en.split(/(\s+)/).forEach(function(tok) {
+      var clean = tok.trim().replace(/[.,!?']/g, '').toLowerCase();
+      if (session.words.indexOf(clean) !== -1) {
+        var span = document.createElement('span');
+        span.className = 'word saved';
+        span.textContent = tok;
+        enDiv.appendChild(span);
+      } else {
+        enDiv.appendChild(document.createTextNode(tok));
+      }
+    });
+
+    var nativeDiv = document.createElement('div');
+    nativeDiv.className = 'trans-native hidden';
+    nativeDiv.textContent = session.lang === 'zh' ? item.zh : item.es;
+
+    block.appendChild(enDiv);
+    block.appendChild(nativeDiv);
+    scroll.appendChild(block);
+  });
+}
+
+/* ══════════ Shared: build single word card element ══════════ */
+function buildWordCardEl(w, lang) {
+  var native = (wordMap[w] && wordMap[w][lang]) || '—';
+  var d = wordDetails[w] || {};
+  var senses = d.senses || [];
+  var isMulti = senses.length > 1;
+
+  var card = document.createElement('div');
+  card.className = 'wd-card';
+
+  var headHtml =
+    '<div class="wd-head">' +
+      '<div>' +
+        '<div class="wd-en">' + w + '</div>' +
+        '<div class="wd-zh">' + native + '</div>' +
+        (d.pron ? '<div class="wd-pron">' + d.pron + '</div>' : '') +
+      '</div>' +
+      '<button class="wd-play" onclick="event.stopPropagation();showToast(\'🔊 ' + w + '\')" title="發音">' +
+        '<span class="material-icons-round">volume_up</span>' +
+      '</button>' +
+    '</div>';
+
+  var sectionsHtml = senses.map(function(s) {
+    var defText = s.def || '—';
+    var defTl = lang === 'zh' ? (s.defZh || '') : (s.defEs || '');
+    var exHtml = (s.example || '').replace(/<b>/g, '<span class="wd-highlight">').replace(/<\/b>/g, '</span>');
+    var exTl = lang === 'zh' ? (s.exZh || '') : (s.exEs || '');
+    var imgSrc = s.image || (!isMulti && d.image) || '';
+    var imgHtml = imgSrc ? '<img class="wd-pos-image" src="' + imgSrc + '" alt="' + w + '">' : '';
+    return '<div class="wd-pos-section">' +
+      (s.pos ? '<span class="wd-pos-badge">' + s.pos + '</span>' : '') +
+      imgHtml +
+      (!imgSrc ? '<div class="wd-text">' + defText + '</div>' +
+        (defTl ? '<p class="wd-tl-line">' + defTl + '</p>' : '') : '') +
+      (exHtml ? '<div class="wd-example-wrap">' +
+        '<div class="wd-label">Example</div>' +
+        '<div class="wd-example">' + exHtml + '</div>' +
+        (exTl ? '<p class="wd-tl-line">' + exTl + '</p>' : '') +
+      '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  card.innerHTML = headHtml + sectionsHtml;
+  return card;
+}
+
+/* ══════════ Build word cards panel (session detail) ══════════ */
+function buildDetailWords(session) {
+  var scroll = document.getElementById('words-scroll');
+  scroll.innerHTML = '';
+
+  if (!session.words.length) {
+    scroll.innerHTML = '<div class="wd-empty">' +
+      '<span class="material-icons-round">bookmark_border</span>' +
+      '本次未保存任何單字</div>';
+    return;
+  }
+
+  session.words.forEach(function(w) {
+    scroll.appendChild(buildWordCardEl(w, session.lang));
+  });
+}
+
+function buildHistoryList() {
+  var body = document.getElementById('hist-body');
+  body.innerHTML = '';
+
+  if (!historyData.length) {
+    body.innerHTML = '<div class="hist-empty">' +
+      '<span class="material-icons-round">history</span>' +
+      '尚無翻譯紀錄<br>完成一次翻譯後就會在這裡顯示</div>';
+    return;
+  }
+
+  /* Group by dateGroup while preserving order */
+  var groups = [];
+  var groupIndex = {};
+  historyData.forEach(function(s) {
+    if (groupIndex[s.dateGroup] === undefined) {
+      groupIndex[s.dateGroup] = groups.length;
+      groups.push({ label: s.dateGroup, items: [] });
+    }
+    groups[groupIndex[s.dateGroup]].items.push(s);
+  });
+
+  groups.forEach(function(g) {
+    var label = document.createElement('div');
+    label.className = 'hist-group-label';
+    label.textContent = g.label;
+    body.appendChild(label);
+    g.items.forEach(function(session) {
+      body.appendChild(buildHistCard(session));
+    });
+  });
+}
+
+function buildHistCard(session) {
+  var card = document.createElement('div');
+  card.className = 'hist-card';
+  card.onclick = function() { goToSessionDetail(session); };
+
+  var langDisplay = session.lang === 'zh' ? 'ZH' : 'ES';
+  var wordCount = session.words.length;
+
+  /* Preview chips — max 3 */
+  var previewHtml = session.words.slice(0, 3).map(function(w) {
+    return '<span class="hist-preview-chip">' + w + '</span>';
+  }).join('');
+  if (wordCount > 3) previewHtml += '<span class="hist-more-pill">+' + (wordCount - 3) + '</span>';
+  if (!wordCount) previewHtml = '<span style="font-size:12px;color:#94a3b8;">未保存單字</span>';
+
+  card.innerHTML =
+    '<div class="hist-card-head">' +
+      '<div class="hist-card-top">' +
+        '<div class="hist-name">' + session.name + '</div>' +
+        '<div class="hist-lang-badge">' + langDisplay + '</div>' +
+      '</div>' +
+      '<div class="hist-meta">' +
+        '<div class="hist-meta-item"><span class="material-icons-round">schedule</span>' + session.duration + '</div>' +
+        '<div class="hist-meta-item"><span class="material-icons-round">bookmark</span>' + wordCount + ' 個單字</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="hist-preview-chips">' + previewHtml + '</div>' +
+    '<div class="hist-card-chevron"><span class="material-icons-round">chevron_right</span></div>';
+
+  return card;
+}
+
+/* ══════════════════════════════════════
+   WORD BANK (Screen 7)
+══════════════════════════════════════ */
+var showWbTl = false;
+var wbFilter = 'all';
+
+
+function goToWordBank() {
+  showSubBar('單字庫');
+  currentBackAction = goHome;
+  showWbTl = false;
+  wbFilter = 'all';
+  document.getElementById('wb-toggle').classList.remove('on');
+  document.getElementById('wb-scroll').classList.remove('show-tl');
+  buildWordBank();
+  showScreen('screen-7');
+}
+
+function toggleWbTl() {
+  showWbTl = !showWbTl;
+  document.getElementById('wb-toggle').classList.toggle('on', showWbTl);
+  document.getElementById('wb-scroll').classList.toggle('show-tl', showWbTl);
+}
+
+/* Count how many sessions each word appears in */
+function getWordFreq() {
+  var freq = {};
+  historyData.forEach(function(session) {
+    session.words.forEach(function(w) {
+      freq[w] = (freq[w] || 0) + 1;
+    });
+  });
+  return freq;
+}
+
+function getAllUniqueWords() {
+  var seen = {};
+  var words = [];
+  historyData.forEach(function(session) {
+    session.words.forEach(function(w) {
+      if (!seen[w]) { seen[w] = true; words.push(w); }
+    });
+  });
+  return words;
+}
+
+function buildWordBank() {
+  var allWords = getAllUniqueWords();
+
+  var filters = document.getElementById('wb-filters');
+  filters.innerHTML =
+    '<button class="wb-filter-chip active" data-filter="all" onclick="filterWb(\'all\',this)">全部</button>' +
+    '<button class="wb-filter-chip" data-filter="freq" onclick="filterWb(\'freq\',this)">最常保存</button>';
+
+  renderWbCards(allWords, 'all');
+}
+
+function filterWb(filter, chip) {
+  wbFilter = filter;
+  document.querySelectorAll('.wb-filter-chip').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.filter === filter);
+  });
+  renderWbCards(getAllUniqueWords(), filter);
+}
+
+var wbSelectMode = false;
+var wbSelected = {};
+var wbFilteredWords = [];
+var pracTypes = { spelling: true, mirroring: false };
+
+function renderWbCards(allWords, filter) {
+  var freq = getWordFreq();
+  var filtered = allWords.slice();
+
+  if (filter === 'freq') {
+    filtered.sort(function(a, b) { return (freq[b] || 0) - (freq[a] || 0); });
+  }
+
+  wbFilteredWords = filtered;
+  document.getElementById('wb-stats').innerHTML = '<span>' + filtered.length + '</span> 個單字';
+
+  var scroll = document.getElementById('wb-scroll');
+  scroll.innerHTML = '';
+
+  if (!filtered.length) {
+    scroll.innerHTML = '<div class="wd-empty"><span class="material-icons-round">bookmark_border</span>沒有符合的單字</div>';
+    return;
+  }
+
+  var showFreq = (filter === 'freq');
+
+  filtered.forEach(function(w) {
+    var card = buildWordCardEl(w, 'zh');
+
+    if (showFreq && freq[w] > 1) {
+      var badge = document.createElement('div');
+      badge.className = 'wd-freq';
+      badge.textContent = '保存 ' + freq[w] + ' 次';
+      card.querySelector('.wd-head > div').appendChild(badge);
+    }
+
+    if (wbSelectMode) {
+      card.classList.add('selectable');
+      if (wbSelected[w]) card.classList.add('selected');
+      var dot = document.createElement('div');
+      dot.className = 'wd-select-dot';
+      dot.innerHTML = '<span class="material-icons-round">check</span>';
+      card.appendChild(dot);
+      card.onclick = function() { toggleWordSelect(w, card); };
+    }
+
+    scroll.appendChild(card);
+  });
+}
+
+/* ══════════ Select mode ══════════ */
+function enterSelectMode() {
+  wbSelectMode = true;
+  wbSelected = {};
+  pracTypes = { spelling: true, mirroring: false };
+  updateActionBar();
+  renderWbCards(getAllUniqueWords(), wbFilter);
+}
+
+function exitSelectMode() {
+  wbSelectMode = false;
+  wbSelected = {};
+  document.getElementById('wb-action-bar').innerHTML =
+    '<button class="wb-enter-btn" onclick="enterSelectMode()">' +
+      '<span class="material-icons-round">fitness_center</span> 開始練習</button>';
+  renderWbCards(getAllUniqueWords(), wbFilter);
+}
+
+function toggleWordSelect(word, card) {
+  wbSelected[word] = !wbSelected[word];
+  if (!wbSelected[word]) delete wbSelected[word];
+  card.classList.toggle('selected', !!wbSelected[word]);
+  updateActionBar();
+}
+
+function updateActionBar() {
+  var count = Object.keys(wbSelected).length;
+  var bar = document.getElementById('wb-action-bar');
+  var total = wbFilteredWords.length;
+  var allSelected = count === total && total > 0;
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  var qCount = count * typeCount;
+  var canStart = count > 0 && typeCount > 0;
+  bar.innerHTML =
+    '<div class="wb-select-row">' +
+      '<div class="wb-select-count">已選 <span>' + count + '</span> 個</div>' +
+      '<div class="wb-quick-btns">' +
+        '<button class="wb-quick-btn" onclick="selectAllWords()">' + (allSelected ? '取消全選' : '全選') + '</button>' +
+        '<button class="wb-quick-btn" onclick="selectRandomWords()">隨機</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wb-select-row">' +
+      '<div class="wb-type-chips">' +
+        '<button class="wb-type-chip' + (pracTypes.spelling ? ' active' : '') + '" onclick="togglePracType(\'spelling\')">拼寫</button>' +
+        '<button class="wb-type-chip' + (pracTypes.mirroring ? ' active' : '') + '" onclick="togglePracType(\'mirroring\')">跟讀</button>' +
+      '</div>' +
+    '</div>' +
+    '<button class="wb-start-btn" onclick="startPracticeSession()"' + (!canStart ? ' disabled' : '') + '>' +
+      '開始' + (qCount > 0 ? ' (' + qCount + ' 題)' : '') +
+    '</button>';
+}
+
+function togglePracType(type) {
+  pracTypes[type] = !pracTypes[type];
+  updateActionBar();
+}
+
+function selectAllWords() {
+  var allSelected = Object.keys(wbSelected).length === wbFilteredWords.length;
+  if (allSelected) {
+    wbSelected = {};
+  } else {
+    wbSelected = {};
+    wbFilteredWords.forEach(function(w) { wbSelected[w] = true; });
+  }
+  updateActionBar();
+  renderWbCards(getAllUniqueWords(), wbFilter);
+}
+
+function selectRandomWords() {
+  wbSelected = {};
+  var pool = wbFilteredWords.slice();
+  var count = Math.min(5, pool.length);
+  for (var i = 0; i < count; i++) {
+    var j = Math.floor(Math.random() * pool.length);
+    wbSelected[pool[j]] = true;
+    pool.splice(j, 1);
+  }
+  updateActionBar();
+  renderWbCards(getAllUniqueWords(), wbFilter);
+}
+
+/* ══════════ Practice session ══════════ */
+var pracQueue = [];
+var pracIndex = 0;
+var pracCorrect = 0;
+
+function startPracticeSession() {
+  var words = Object.keys(wbSelected);
+  if (!words.length) return;
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  if (!typeCount) return;
+
+  /* Build queue: each word × selected types */
+  pracQueue = [];
+  words.forEach(function(w) {
+    if (pracTypes.spelling) pracQueue.push({ word: w, type: 'spelling' });
+    if (pracTypes.mirroring) pracQueue.push({ word: w, type: 'mirroring' });
+  });
+  pracIndex = 0;
+  pracCorrect = 0;
+  pracReturnTo = 'wordbank';
+
+  var title = (pracTypes.spelling && pracTypes.mirroring) ? '拼寫 + 跟讀' :
+              pracTypes.spelling ? '拼寫練習' : '跟讀練習';
+  showSubBar(title);
+  currentBackAction = function() {
+    showSubBar('單字庫');
+    currentBackAction = goHome;
+    exitSelectMode();
+    showScreen('screen-7');
+  };
+
+  hideBottomNav();
+  showScreen('screen-8');
+  showPracQuestion();
+}
+
+function showPracQuestion() {
+  var total = pracQueue.length;
+  var pct = Math.round((pracIndex / total) * 100);
+  document.getElementById('prac-fill').style.width = pct + '%';
+
+  if (pracIndex >= total) {
+    showPracResults();
+    return;
+  }
+
+  var q = pracQueue[pracIndex];
+  var area = document.getElementById('prac-area');
+
+  if (q.type === 'spelling') {
+    buildSpellingQ(area, q.word);
+  } else {
+    buildMirroringQ(area, q.word);
+  }
+}
+
+function buildSpellingQ(area, word) {
+  var d = wordDetails[word] || {};
+  var native = (wordMap[word] && wordMap[word]['zh']) || '';
+  var s = (d.senses && d.senses[0]) || {};
+  var total = pracQueue.length;
+
+  area.innerHTML =
+    '<div class="prac-counter"><strong>' + (pracIndex + 1) + '</strong> / ' + total + '</div>' +
+    '<div class="prac-card">' +
+      '<span class="prac-type-badge spelling">拼寫</span>' +
+      '<div class="prac-zh">' + native + '</div>' +
+      (s.pos ? '<div class="prac-sub">' + s.pos + (d.pron ? ' · ' + d.pron : '') + '</div>' : '') +
+      (s.def ? '<div class="prac-def">' + s.def + '</div>' : '') +
+      '<input class="prac-input" id="prac-input" type="text" placeholder="輸入英文拼寫" autocomplete="off" autocapitalize="off">' +
+      '<div class="prac-answer" id="prac-answer"></div>' +
+      '<button class="prac-submit" id="prac-submit" onclick="checkPracSpelling(\'' + word + '\')">確認</button>' +
+    '</div>';
+
+  setTimeout(function() {
+    var inp = document.getElementById('prac-input');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPracSpelling(word); });
+    }
+  }, 300);
+}
+
+function checkPracSpelling(word) {
+  var input = document.getElementById('prac-input');
+  var answer = document.getElementById('prac-answer');
+  var val = input.value.trim().toLowerCase();
+  if (!val) return;
+
+  if (val === word) {
+    input.className = 'prac-input correct';
+    answer.className = 'prac-answer correct';
+    answer.textContent = '✓ 正確！';
+    pracCorrect++;
+    var btn = document.getElementById('prac-submit');
+    btn.textContent = '下一題';
+    btn.onclick = function() { pracIndex++; showPracQuestion(); };
+  } else {
+    input.className = 'prac-input wrong';
+    answer.className = 'prac-answer wrong';
+    answer.textContent = '正確答案：' + word;
+    setTimeout(function() {
+      var btn = document.getElementById('prac-submit');
+      btn.textContent = '下一題';
+      btn.onclick = function() { pracIndex++; showPracQuestion(); };
+    }, 1000);
+  }
+}
+
+function buildMirroringQ(area, word) {
+  var d = wordDetails[word] || {};
+  var total = pracQueue.length;
+
+  area.innerHTML =
+    '<div class="prac-counter"><strong>' + (pracIndex + 1) + '</strong> / ' + total + '</div>' +
+    '<div class="prac-card">' +
+      '<span class="prac-type-badge mirroring">跟讀</span>' +
+      '<div class="prac-word-big">' + word + '</div>' +
+      (d.pron ? '<div class="prac-pron">' + d.pron + '</div>' : '') +
+      '<button class="prac-play-btn" onclick="showToast(\'🔊 ' + word + '\')">' +
+        '<span class="material-icons-round">volume_up</span>' +
+      '</button>' +
+      '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:8px;">點擊播放示範</div>' +
+      '<button class="prac-rec-btn" id="prac-rec" onclick="togglePracRec(\'' + word + '\')">' +
+        '<span class="material-icons-round">mic</span> 開始錄音' +
+      '</button>' +
+      '<div class="prac-answer" id="prac-answer"></div>' +
+    '</div>';
+}
+
+function togglePracRec(word) {
+  var btn = document.getElementById('prac-rec');
+  if (btn.classList.contains('recording')) {
+    btn.classList.remove('recording');
+    btn.innerHTML = '<span class="material-icons-round">mic</span> 開始錄音';
+    var answer = document.getElementById('prac-answer');
+    answer.className = 'prac-answer correct';
+    answer.textContent = '✓ 錄音完成！';
+    pracCorrect++;
+    setTimeout(function() { pracIndex++; showPracQuestion(); }, 1000);
+  } else {
+    btn.classList.add('recording');
+    btn.innerHTML = '<span class="material-icons-round">stop</span> 停止錄音';
+  }
+}
+
+function showPracResults() {
+  document.getElementById('prac-fill').style.width = '100%';
+  var total = pracQueue.length;
+  document.getElementById('prac-area').innerHTML =
+    '<div class="prac-card prac-results">' +
+      '<span class="material-icons-round">emoji_events</span>' +
+      '<div class="prac-results-title">練習完成！</div>' +
+      '<div class="prac-results-sub">' + pracCorrect + ' / ' + total + ' 答對</div>' +
+      '<button class="prac-done-btn" onclick="endPractice()">返回單字庫</button>' +
+    '</div>';
+}
+
+var pracReturnTo = 'wordbank'; /* 'wordbank' or 'detail' */
+
+function endPractice() {
+  showBottomNav();
+  if (pracReturnTo === 'detail') {
+    showSubBar('逐字稿');
+    currentBackAction = function() {
+      showSubBar('歷史紀錄');
+      currentBackAction = goHome;
+      showScreen('screen-5');
+    };
+    showScreen('screen-6');
+  } else if (pracReturnTo === 'quiz') {
+    switchTab('quiz');
+  } else {
+    showSubBar('單字庫');
+    currentBackAction = goHome;
+    exitSelectMode();
+    showScreen('screen-7');
+  }
+}
+
+/* Start practice from session detail (Screen 6) */
+function startSessionPractice() {
+  if (!detailSession || !detailSession.words.length) return;
+
+  /* Select all words from this session */
+  wbSelected = {};
+  detailSession.words.forEach(function(w) { wbSelected[w] = true; });
+  pracTypes = { spelling: true, mirroring: false };
+  pracReturnTo = 'detail';
+
+  /* Show type selection bar in a mini picker */
+  var bar = document.getElementById('detail-practice-bar');
+  bar.innerHTML =
+    '<div class="wb-select-row">' +
+      '<div class="wb-select-count"><span>' + detailSession.words.length + '</span> 個單字</div>' +
+      '<div class="wb-type-chips">' +
+        '<button class="wb-type-chip active" id="dt-chip-spelling" onclick="toggleDetailPracType(\'spelling\')">拼寫</button>' +
+        '<button class="wb-type-chip" id="dt-chip-mirroring" onclick="toggleDetailPracType(\'mirroring\')">跟讀</button>' +
+      '</div>' +
+    '</div>' +
+    '<button class="wb-start-btn" id="dt-start-btn" onclick="launchSessionPractice()">開始 (' + detailSession.words.length + ' 題)</button>';
+}
+
+function toggleDetailPracType(type) {
+  pracTypes[type] = !pracTypes[type];
+  document.getElementById('dt-chip-spelling').classList.toggle('active', pracTypes.spelling);
+  document.getElementById('dt-chip-mirroring').classList.toggle('active', pracTypes.mirroring);
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  var qCount = detailSession.words.length * typeCount;
+  var btn = document.getElementById('dt-start-btn');
+  btn.disabled = typeCount === 0;
+  btn.textContent = '開始' + (qCount > 0 ? ' (' + qCount + ' 題)' : '');
+}
+
+function launchSessionPractice() {
+  var words = detailSession.words;
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  if (!words.length || !typeCount) return;
+
+  pracQueue = [];
+  words.forEach(function(w) {
+    if (pracTypes.spelling) pracQueue.push({ word: w, type: 'spelling' });
+    if (pracTypes.mirroring) pracQueue.push({ word: w, type: 'mirroring' });
+  });
+  pracIndex = 0;
+  pracCorrect = 0;
+
+  var title = (pracTypes.spelling && pracTypes.mirroring) ? '拼寫 + 跟讀' :
+              pracTypes.spelling ? '拼寫練習' : '跟讀練習';
+  showSubBar(title);
+  currentBackAction = function() {
+    showSubBar('逐字稿');
+    currentBackAction = function() {
+      showSubBar('歷史紀錄');
+      currentBackAction = goHome;
+      showScreen('screen-5');
+    };
+    resetDetailPracticeBar();
+    showScreen('screen-6');
+  };
+
+  hideBottomNav();
+  showScreen('screen-8');
+  showPracQuestion();
+}
+
+function resetDetailPracticeBar() {
+  document.getElementById('detail-practice-bar').innerHTML =
+    '<button class="wb-enter-btn" onclick="startSessionPractice()">' +
+      '<span class="material-icons-round">fitness_center</span> 開始練習</button>';
+}
+
+/* ══════════════════════════════════════
+   QUIZ TAB (Screen 9)
+══════════════════════════════════════ */
+var quizSelectMode = false;
+var quizSelected = {};
+var quizWords = [];
+
+function goToQuiz() {
+  showSubBar('測驗');
+  currentBackAction = function() { switchTab('record'); };
+  quizSelectMode = false;
+  quizSelected = {};
+  pracTypes = { spelling: true, mirroring: false };
+  buildQuizList();
+  showScreen('screen-9');
+}
+
+function buildQuizList() {
+  quizWords = getAllUniqueWords();
+  document.getElementById('quiz-stats').innerHTML = '<span>' + quizWords.length + '</span> 個單字可練習';
+
+  var scroll = document.getElementById('quiz-scroll');
+  scroll.innerHTML = '';
+
+  if (!quizWords.length) {
+    scroll.innerHTML = '<div class="wd-empty"><span class="material-icons-round">fitness_center</span>尚無單字<br>先到錄音收集單字</div>';
+    return;
+  }
+
+  quizWords.forEach(function(w) {
+    var card = buildWordCardEl(w, 'zh');
+    if (quizSelectMode) {
+      card.classList.add('selectable');
+      if (quizSelected[w]) card.classList.add('selected');
+      var dot = document.createElement('div');
+      dot.className = 'wd-select-dot';
+      dot.innerHTML = '<span class="material-icons-round">check</span>';
+      card.appendChild(dot);
+      card.onclick = function() {
+        quizSelected[w] = !quizSelected[w];
+        if (!quizSelected[w]) delete quizSelected[w];
+        card.classList.toggle('selected', !!quizSelected[w]);
+        updateQuizBar();
+      };
+    }
+    scroll.appendChild(card);
+  });
+}
+
+function enterQuizSelect() {
+  quizSelectMode = true;
+  quizSelected = {};
+  updateQuizBar();
+  buildQuizList();
+}
+
+function updateQuizBar() {
+  var count = Object.keys(quizSelected).length;
+  var total = quizWords.length;
+  var allSelected = count === total && total > 0;
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  var qCount = count * typeCount;
+  var canStart = count > 0 && typeCount > 0;
+
+  document.getElementById('quiz-action-bar').innerHTML =
+    '<div class="wb-select-row">' +
+      '<div class="wb-select-count">已選 <span>' + count + '</span> 個</div>' +
+      '<div class="wb-quick-btns">' +
+        '<button class="wb-quick-btn" onclick="quizSelectAll()">' + (allSelected ? '取消全選' : '全選') + '</button>' +
+        '<button class="wb-quick-btn" onclick="quizSelectRandom()">隨機</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wb-select-row">' +
+      '<div class="wb-type-chips">' +
+        '<button class="wb-type-chip' + (pracTypes.spelling ? ' active' : '') + '" onclick="toggleQuizType(\'spelling\')">拼寫</button>' +
+        '<button class="wb-type-chip' + (pracTypes.mirroring ? ' active' : '') + '" onclick="toggleQuizType(\'mirroring\')">跟讀</button>' +
+      '</div>' +
+    '</div>' +
+    '<button class="wb-start-btn" onclick="startQuizPractice()"' + (!canStart ? ' disabled' : '') + '>' +
+      '開始' + (qCount > 0 ? ' (' + qCount + ' 題)' : '') +
+    '</button>';
+}
+
+function toggleQuizType(type) {
+  pracTypes[type] = !pracTypes[type];
+  updateQuizBar();
+}
+
+function quizSelectAll() {
+  var allSelected = Object.keys(quizSelected).length === quizWords.length;
+  quizSelected = {};
+  if (!allSelected) quizWords.forEach(function(w) { quizSelected[w] = true; });
+  updateQuizBar();
+  buildQuizList();
+}
+
+function quizSelectRandom() {
+  quizSelected = {};
+  var pool = quizWords.slice();
+  var n = Math.min(5, pool.length);
+  for (var i = 0; i < n; i++) {
+    var j = Math.floor(Math.random() * pool.length);
+    quizSelected[pool[j]] = true;
+    pool.splice(j, 1);
+  }
+  updateQuizBar();
+  buildQuizList();
+}
+
+function startQuizPractice() {
+  var words = Object.keys(quizSelected);
+  var typeCount = (pracTypes.spelling ? 1 : 0) + (pracTypes.mirroring ? 1 : 0);
+  if (!words.length || !typeCount) return;
+
+  pracQueue = [];
+  words.forEach(function(w) {
+    if (pracTypes.spelling) pracQueue.push({ word: w, type: 'spelling' });
+    if (pracTypes.mirroring) pracQueue.push({ word: w, type: 'mirroring' });
+  });
+  pracIndex = 0;
+  pracCorrect = 0;
+  pracReturnTo = 'quiz';
+
+  var title = (pracTypes.spelling && pracTypes.mirroring) ? '拼寫 + 跟讀' :
+              pracTypes.spelling ? '拼寫練習' : '跟讀練習';
+  showSubBar(title);
+  currentBackAction = function() {
+    showSubBar('測驗');
+    currentBackAction = function() { switchTab('record'); };
+    showBottomNav();
+    quizSelectMode = false;
+    buildQuizList();
+    document.getElementById('quiz-action-bar').innerHTML =
+      '<button class="wb-enter-btn" onclick="enterQuizSelect()">' +
+        '<span class="material-icons-round">fitness_center</span> 選擇單字</button>';
+    showScreen('screen-9');
+  };
+
+  hideBottomNav();
+  showScreen('screen-8');
+  showPracQuestion();
+}
+
+</script>
+</body>
+</html>

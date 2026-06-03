@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catch — Catch every word.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #18181b; background: #fafafa;
+      -webkit-font-smoothing: antialiased; line-height: 1.6; overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, .section-title, .hero-title, .pricing-price, .pricing-card h3,
+    .stat-number, .persona-title, .summary-title, .nav-brand span, .nav-cta,
+    .btn-primary, .btn-secondary, .btn-cta-large, .pricing-btn-solid, .pricing-btn-outline,
+    .faq-question {
+      font-family: 'Sora', -apple-system, sans-serif;
+    }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Grain overlay ── */
+    .grain::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+      opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      background-size: 128px;
+    }
+
+    /* ── Reveal ── */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.12s; }
+    .reveal-delay-2 { transition-delay: 0.24s; }
+    .reveal-delay-3 { transition-delay: 0.36s; }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,250,250,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      transition: box-shadow 0.3s;
+    }
+    .nav.scrolled { box-shadow: 0 1px 16px rgba(0,0,0,0.06); }
+    .nav-inner {
+      max-width: 1080px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: #2563eb; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: 16px;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    }
+    .nav-brand span { font-weight: 800; font-size: 20px; color: #18181b; letter-spacing: -0.03em; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { text-decoration: none; color: #71717a; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #18181b; }
+    .nav-cta {
+      background: #18181b; color: #fff; border: none; border-radius: 10px;
+      padding: 10px 24px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.25s; letter-spacing: -0.01em;
+    }
+    .nav-cta:hover { background: #27272a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .nav-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+    .nav-hamburger span { display: block; width: 22px; height: 2px; background: #18181b; margin: 5px 0; border-radius: 2px; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: rgba(250,250,250,0.98); backdrop-filter: blur(16px);
+      z-index: 99; flex-direction: column; align-items: center;
+      padding-top: 48px; gap: 28px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { text-decoration: none; color: #18181b; font-size: 18px; font-weight: 500; }
+    .mobile-menu .nav-cta { font-size: 16px; padding: 14px 36px; margin-top: 8px; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 120px 0 100px;
+      background: #18181b;
+      position: relative; overflow: hidden;
+      text-align: center;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 50% 40% at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 20% 80%, rgba(139,92,246,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(59,130,246,0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero .container { position: relative; z-index: 3; }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); color: #a1a1aa;
+      font-size: 13px; font-weight: 600; padding: 8px 20px;
+      border-radius: 24px; margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.08);
+      opacity: 0; animation: fadeInUp 0.7s 0.1s forwards;
+    }
+    .hero-pill .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #3b82f6;
+      box-shadow: 0 0 10px rgba(59,130,246,0.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .hero-title {
+      font-size: 72px; font-weight: 800; line-height: 1.05;
+      margin-bottom: 24px; letter-spacing: -0.04em;
+      opacity: 0; animation: fadeInUp 0.7s 0.2s forwards;
+    }
+    .hero-title .shimmer {
+      background: linear-gradient(
+        90deg,
+        #f4f4f5 0%, #f4f4f5 40%,
+        #3b82f6 48%, #60a5fa 52%,
+        #f4f4f5 60%, #f4f4f5 100%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%, 100% { background-position: 100% 0; }
+      50% { background-position: -100% 0; }
+    }
+    .hero-title .sub {
+      display: block; font-size: 28px; font-weight: 600;
+      color: #71717a; letter-spacing: -0.01em;
+      margin-top: 8px;
+    }
+    .hero-subtitle {
+      font-size: 17px; color: #a1a1aa; margin-bottom: 40px;
+      font-weight: 500; line-height: 1.75; max-width: 480px; margin-left: auto; margin-right: auto;
+      opacity: 0; animation: fadeInUp 0.7s 0.3s forwards;
+    }
+    .hero-actions {
+      display: flex; gap: 14px; justify-content: center; margin-bottom: 20px;
+      opacity: 0; animation: fadeInUp 0.7s 0.4s forwards;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #2563eb; color: #fff; border: none; border-radius: 12px;
+      padding: 16px 36px; font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+      letter-spacing: -0.01em;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8; transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 28px rgba(37,99,235,0.4);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); color: #d4d4d8;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 16px 36px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s; letter-spacing: -0.01em;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #f4f4f5; border-color: rgba(255,255,255,0.2); }
+    .hero-note {
+      font-size: 13px; color: #52525b; font-weight: 500;
+      opacity: 0; animation: fadeInUp 0.7s 0.5s forwards;
+    }
+
+    /* ── Floating preview cards in hero ── */
+    .hero-floats {
+      position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    }
+    .float-card {
+      position: absolute; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 14px 18px;
+      backdrop-filter: blur(8px);
+      animation: floatDrift 6s ease-in-out infinite;
+    }
+    .float-card span {
+      font-size: 12px; font-weight: 600; color: #a1a1aa;
+      display: block; white-space: nowrap;
+    }
+    .float-card .fc-en { color: #d4d4d8; font-size: 13px; margin-bottom: 4px; }
+    .float-card .fc-zh { color: #71717a; font-size: 11px; }
+    .float-card .fc-tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 4px; margin-top: 6px;
+    }
+    .float-card.a { top: 18%; left: 8%; animation-delay: 0s; }
+    .float-card.b { top: 25%; right: 6%; animation-delay: 1.5s; }
+    .float-card.c { bottom: 20%; left: 12%; animation-delay: 3s; }
+    @keyframes floatDrift {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(0.5deg); }
+    }
+
+    /* ── Stats ── */
+    .stats {
+      padding: 52px 0; background: #fff;
+      border-bottom: 1px solid #e4e4e7;
+    }
+    .stats-inner { display: flex; align-items: center; justify-content: center; }
+    .stat-item { flex: 1; text-align: center; padding: 0 32px; }
+    .stat-item + .stat-item { border-left: 1px solid #e4e4e7; }
+    .stat-number { font-size: 34px; font-weight: 800; color: #2563eb; letter-spacing: -0.03em; }
+    .stat-label { font-size: 13px; color: #71717a; font-weight: 500; margin-top: 2px; }
+
+    /* ── Section ── */
+    .section-title {
+      text-align: center; font-size: 36px; font-weight: 700; color: #18181b;
+      margin-bottom: 14px; letter-spacing: -0.03em;
+    }
+    .section-subtitle {
+      text-align: center; color: #71717a; font-size: 16px; font-weight: 500;
+      margin-bottom: 56px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    }
+
+    /* ── Dual Persona ── */
+    .personas { padding: 100px 0; background: #fafafa; }
+    .persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .persona-card {
+      background: #fff; border-radius: 20px; padding: 44px 36px;
+      border: 1px solid #e4e4e7;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative; overflow: hidden;
+    }
+    .persona-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+    }
+    .persona-card::before {
+      content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+    }
+    .persona-card.student::before { background: linear-gradient(180deg, #10b981, #6ee7b7); }
+    .persona-card.business::before { background: linear-gradient(180deg, #3b82f6, #93c5fd); }
+    .persona-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 18px; padding: 5px 12px;
+      border-radius: 6px;
+    }
+    .persona-card.student .persona-badge { background: #ecfdf5; color: #059669; }
+    .persona-card.business .persona-badge { background: #eff6ff; color: #2563eb; }
+    .persona-title { font-size: 24px; font-weight: 700; color: #18181b; margin-bottom: 12px; letter-spacing: -0.02em; }
+    .persona-desc { font-size: 15px; color: #52525b; line-height: 1.75; font-weight: 500; margin-bottom: 24px; }
+    .persona-features { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .persona-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 600; color: #27272a;
+    }
+    .persona-features li .pf-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .persona-card.student .pf-icon { background: #ecfdf5; color: #059669; }
+    .persona-card.business .pf-icon { background: #eff6ff; color: #2563eb; }
+    .persona-features li .pf-icon svg { width: 14px; height: 14px; }
+    .persona-phone {
+      margin-top: 32px; border-radius: 14px; overflow: hidden;
+      border: 1px solid #e4e4e7;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .persona-card:hover .persona-phone { transform: scale(1.02); }
+    .persona-phone img { width: 100%; display: block; }
+
+    /* ── Feature Row ── */
+    .feature-section { position: relative; overflow: hidden; }
+    .feature-section.bg-white { background: #fff; }
+    .feature-section.bg-tint { background: #fafafa; }
+    .feature-row { display: flex; align-items: center; gap: 72px; padding: 96px 0; }
+    .feature-row.reverse { flex-direction: row-reverse; }
+    .feature-row-text { flex: 1; }
+    .feature-tag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .feature-tag.green { color: #059669; }
+    .feature-tag.blue { color: #2563eb; }
+    .feature-row-text h2 {
+      font-size: 30px; font-weight: 700; color: #18181b;
+      margin-bottom: 14px; letter-spacing: -0.025em;
+    }
+    .feature-row-text > p {
+      font-size: 15px; color: #52525b; line-height: 1.75; font-weight: 500; margin-bottom: 28px;
+    }
+    .feature-points { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .feature-points li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 15px; font-weight: 500; color: #27272a; line-height: 1.5;
+    }
+    .feature-points li .icon-check {
+      width: 22px; height: 22px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .icon-check.green { background: #ecfdf5; }
+    .icon-check.blue { background: #eff6ff; }
+    .feature-points li .icon-check svg { width: 12px; height: 12px; }
+
+    /* ── Phone Frame (3D tilt) ── */
+    .phone-frame {
+      width: 280px; height: 560px; background: #fff; border-radius: 24px;
+      flex-shrink: 0; overflow: hidden; position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+      border: 1px solid #e4e4e7;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
+      transform: perspective(800px) rotateY(0deg) rotateX(0deg);
+    }
+    .phone-frame:hover {
+      transform: perspective(800px) rotateY(-4deg) rotateX(2deg) translateY(-8px);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.04);
+    }
+    .phone-frame iframe {
+      width: 390px; height: 844px; border: none;
+      transform: scale(0.718); transform-origin: top left;
+      pointer-events: none;
+    }
+    .phone-frame img {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+
+    /* ── AI Summary ── */
+    .summary-section {
+      padding: 100px 0;
+      background: #18181b;
+      color: #f4f4f5; position: relative; overflow: hidden;
+    }
+    .summary-section::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 50% 60% at 70% 50%, rgba(139,92,246,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .summary-inner {
+      position: relative; z-index: 3;
+      display: flex; align-items: center; gap: 72px;
+    }
+    .summary-text { flex: 1; }
+    .summary-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(139,92,246,0.12); color: #c4b5fd;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 6px 16px;
+      border-radius: 6px; border: 1px solid rgba(139,92,246,0.15);
+      margin-bottom: 18px;
+    }
+    .summary-badge .sparkle { width: 14px; height: 14px; }
+    .summary-title {
+      font-size: 34px; font-weight: 700; color: #f4f4f5;
+      margin-bottom: 16px; letter-spacing: -0.025em; line-height: 1.2;
+    }
+    .summary-title .accent {
+      background: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .summary-desc {
+      font-size: 16px; color: #a1a1aa; line-height: 1.75; font-weight: 500;
+      margin-bottom: 28px; max-width: 460px;
+    }
+    .summary-points { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .summary-points li {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 15px; font-weight: 500; color: #d4d4d8;
+    }
+    .summary-points li .sp-icon {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: rgba(139,92,246,0.12);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .summary-points li .sp-icon svg { width: 12px; height: 12px; color: #a78bfa; }
+    .summary-visual { flex: 0 0 380px; }
+
+    /* ── Glowing mock card ── */
+    .summary-card-mock {
+      background: #fff; border-radius: 16px; padding: 28px;
+      color: #18181b;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .summary-card-mock::before {
+      content: ''; position: absolute; inset: -2px; border-radius: 18px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(99,102,241,0.2), rgba(139,92,246,0.1));
+      z-index: -1;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.5; } 50% { opacity: 1; }
+    }
+    .sc-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+      padding-bottom: 16px; border-bottom: 1px solid #f4f4f5;
+    }
+    .sc-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sc-icon svg { width: 18px; height: 18px; color: #fff; }
+    .sc-header-text h4 { font-size: 14px; font-weight: 700; color: #18181b; margin-bottom: 1px; }
+    .sc-header-text span { font-size: 12px; color: #a1a1aa; font-weight: 500; }
+    .sc-body h5 {
+      font-size: 12px; font-weight: 700; color: #52525b;
+      margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .sc-body p { font-size: 13px; color: #71717a; line-height: 1.7; margin-bottom: 16px; }
+    .sc-body ul { list-style: none; margin-bottom: 16px; }
+    .sc-body ul li {
+      font-size: 13px; color: #52525b; padding: 4px 0;
+      display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;
+    }
+    .sc-body ul li::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: #8b5cf6; margin-top: 7px; flex-shrink: 0;
+    }
+    .sc-keywords { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sc-keyword {
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; background: #f5f3ff; color: #7c3aed;
+    }
+
+    /* ── Pricing ── */
+    .pricing { padding: 100px 0; background: #fafafa; }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+      max-width: 920px; margin: 0 auto;
+    }
+    .pricing-card {
+      background: #fff; border-radius: 16px; padding: 36px 28px;
+      border: 1px solid #e4e4e7; text-align: center;
+      display: flex; flex-direction: column; transition: all 0.3s;
+    }
+    .pricing-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
+    .pricing-card.featured {
+      border: 2px solid #2563eb; position: relative;
+      box-shadow: 0 8px 32px rgba(37,99,235,0.1);
+      transform: scale(1.04);
+    }
+    .pricing-card.featured:hover { transform: scale(1.04) translateY(-3px); box-shadow: 0 16px 48px rgba(37,99,235,0.14); }
+    .pricing-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: #2563eb; color: #fff;
+      font-size: 12px; font-weight: 700; padding: 5px 20px;
+      border-radius: 24px; white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    }
+    .pricing-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .pricing-desc { font-size: 13px; color: #71717a; margin-bottom: 20px; }
+    .pricing-price { font-size: 42px; font-weight: 800; color: #18181b; margin-bottom: 4px; letter-spacing: -0.03em; }
+    .pricing-price span { font-size: 15px; font-weight: 500; color: #a1a1aa; }
+    .pricing-features { list-style: none; margin: 24px 0; flex: 1; text-align: left; }
+    .pricing-features li {
+      font-size: 14px; color: #52525b; font-weight: 500;
+      padding: 9px 0; border-bottom: 1px solid #f4f4f5;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pricing-features li::before {
+      content: ''; width: 18px; height: 18px; flex-shrink: 0;
+      background: #fafafa; border-radius: 4px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: center; background-size: 10px;
+    }
+    .pricing-btn-outline {
+      width: 100%; padding: 13px 0; border-radius: 10px; font-size: 14px;
+      font-weight: 600; cursor: pointer; letter-spacing: -0.01em;
+      background: transparent; color: #18181b; border: 1.5px solid #e4e4e7; transition: all 0.25s;
+    }
+    .pricing-btn-outline:hover { background: #fafafa; border-color: #d4d4d8; }
+    .pricing-btn-solid {
+      width: 100%; padding: 13px 0; border-radius: 10px; font-size: 14px;
+      font-weight: 600; cursor: pointer; letter-spacing: -0.01em;
+      background: #2563eb; color: #fff; border: none; transition: all 0.25s;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+    }
+    .pricing-btn-solid:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+
+    /* ── FAQ ── */
+    .faq { padding: 100px 0; background: #fff; }
+    .faq-list { max-width: 680px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid #e4e4e7; }
+    .faq-question {
+      width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+      padding: 22px 0; font-size: 15px; font-weight: 600; color: #18181b;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      transition: color 0.2s; letter-spacing: -0.01em;
+    }
+    .faq-question:hover { color: #2563eb; }
+    .faq-icon {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .faq-icon svg { width: 16px; height: 16px; color: #a1a1aa; }
+    .faq-item.open .faq-icon { transform: rotate(180deg); }
+    .faq-item.open .faq-icon svg { color: #2563eb; }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+    .faq-item.open .faq-answer { max-height: 300px; }
+    .faq-answer-inner { padding: 0 0 22px; font-size: 15px; color: #71717a; line-height: 1.75; font-weight: 500; }
+
+    /* ── Final CTA ── */
+    .final-cta {
+      padding: 120px 0 100px; text-align: center;
+      background: #18181b; position: relative; overflow: hidden;
+    }
+    .final-cta::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 50% 50% at 50% 100%, rgba(59,130,246,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .final-cta .container { position: relative; z-index: 1; }
+    .final-cta h2 {
+      font-size: 48px; font-weight: 800; color: #f4f4f5;
+      margin-bottom: 14px; letter-spacing: -0.035em;
+    }
+    .final-cta .section-subtitle { color: #71717a; margin-bottom: 36px; }
+    .btn-cta-large {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #2563eb; color: #fff; border: none; border-radius: 14px;
+      padding: 18px 52px; font-size: 17px; font-weight: 700; cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px rgba(37,99,235,0.3);
+      letter-spacing: -0.01em;
+    }
+    .btn-cta-large:hover {
+      background: #1d4ed8; transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 32px rgba(37,99,235,0.4);
+    }
+    .cta-note { font-size: 13px; color: #52525b; margin-top: 16px; font-weight: 500; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center; padding: 40px 24px;
+      border-top: 1px solid #27272a; background: #18181b;
+    }
+    .footer-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .footer-brand span { font-weight: 800; font-size: 16px; color: #f4f4f5; letter-spacing: -0.02em; }
+    .footer-links { margin-bottom: 20px; }
+    .footer-links a { text-decoration: none; color: #71717a; font-size: 13px; font-weight: 500; margin: 0 14px; transition: color 0.2s; }
+    .footer-links a:hover { color: #f4f4f5; }
+    .footer-copy { font-size: 12px; color: #52525b; }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-hamburger { display: block; }
+      .hero { padding: 80px 0 64px; }
+      .hero-title { font-size: 44px; }
+      .hero-title .sub { font-size: 22px; }
+      .hero-subtitle { font-size: 15px; }
+      .hero-actions { flex-wrap: wrap; }
+      .hero-floats { display: none; }
+      .stats-inner { flex-direction: column; gap: 20px; }
+      .stat-item + .stat-item { border-left: none; border-top: 1px solid #e4e4e7; padding-top: 20px; }
+      .section-title { font-size: 28px; }
+      .persona-grid { grid-template-columns: 1fr; }
+      .feature-row { flex-direction: column !important; gap: 40px; padding: 72px 0; }
+      .phone-frame { width: 220px; height: 440px; border-radius: 18px; }
+      .summary-inner { flex-direction: column; gap: 48px; }
+      .summary-visual { flex: none; width: 100%; max-width: 400px; }
+      .summary-title { font-size: 28px; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
+      .pricing-card.featured { transform: none; order: -1; }
+      .pricing-card.featured:hover { transform: translateY(-3px); }
+      .final-cta h2 { font-size: 32px; }
+    }
+    @media (max-width: 480px) {
+      .hero-title { font-size: 36px; }
+      .hero-title .sub { font-size: 18px; }
+      .btn-primary, .btn-secondary { padding: 14px 28px; font-size: 14px; }
+      .phone-frame { width: 200px; height: 400px; border-radius: 16px; }
+      .persona-card { padding: 32px 24px; }
+      .pricing-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav" id="mainNav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <div class="nav-logo">C</div>
+        <span>Catch</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#pricing">方案</a>
+        <a href="#faq">FAQ</a>
+        <a href="#">登入</a>
+        <button class="nav-cta">免費開始</button>
+      </div>
+      <button class="nav-hamburger" onclick="toggleMobileMenu()" aria-label="選單">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features" onclick="closeMobileMenu()">功能</a>
+    <a href="#pricing" onclick="closeMobileMenu()">方案</a>
+    <a href="#faq" onclick="closeMobileMenu()">FAQ</a>
+    <a href="#">登入</a>
+    <button class="nav-cta" style="margin-top: 8px;">免費開始</button>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero grain">
+    <div class="hero-floats">
+      <div class="float-card a">
+        <span class="fc-en">"Let's finalize the budget"</span>
+        <span class="fc-zh">「讓我們敲定預算」</span>
+      </div>
+      <div class="float-card b">
+        <span class="fc-en">procurement</span>
+        <span class="fc-zh">採購</span>
+        <span class="fc-tag" style="background:rgba(16,185,129,0.15);color:#10b981;">已保存</span>
+      </div>
+      <div class="float-card c">
+        <span class="fc-en">AI Summary</span>
+        <span class="fc-zh">3 個待辦事項</span>
+      </div>
+    </div>
+    <div class="container">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        即時 AI 翻譯
+      </div>
+      <h1 class="hero-title">
+        <span class="shimmer">Catch every word.</span>
+        <span class="sub">即時翻譯 · 單字保存 · AI 摘要</span>
+      </h1>
+      <p class="hero-subtitle">英語對話即時翻譯，不懂的字一鍵保存，<br>會後 AI 自動整理重點。</p>
+      <div class="hero-actions">
+        <button class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          免費試用
+        </button>
+        <button class="btn-secondary">看功能介紹</button>
+      </div>
+      <p class="hero-note">每天免費使用一次 · 無需信用卡</p>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats reveal">
+    <div class="container">
+      <div class="stats-inner">
+        <div class="stat-item"><div class="stat-number">50+</div><div class="stat-label">支援語言</div></div>
+        <div class="stat-item"><div class="stat-number">99%</div><div class="stat-label">語音辨識率</div></div>
+        <div class="stat-item"><div class="stat-number">&lt;1s</div><div class="stat-label">翻譯延遲</div></div>
+        <div class="stat-item"><div class="stat-number">AI</div><div class="stat-label">會後摘要</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature: 即時翻譯 -->
+  <section class="feature-section bg-white" id="features">
+    <div class="container">
+      <div class="feature-row reveal">
+        <div class="phone-frame"><iframe id="embed-translate" src="demo-live-translate-mobile.html" loading="lazy"></iframe></div>
+        <div class="feature-row-text">
+          <div class="feature-tag green">核心功能</div>
+          <h2>即時語音翻譯</h2>
+          <p>開啟麥克風，英語對話即時轉為文字並同步翻譯。每一句話都完整記錄，點擊任何不懂的字即可保存。</p>
+          <ul class="feature-points">
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>即時語音辨識，延遲低於 1 秒</li>
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>逐句同步翻譯成你的母語</li>
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>一鍵保存不認識的字</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature: 單字庫 -->
+  <section class="feature-section bg-tint">
+    <div class="container">
+      <div class="feature-row reverse reveal">
+        <div class="phone-frame"><iframe id="embed-wordbank" src="demo-live-translate-mobile.html" loading="lazy"></iframe></div>
+        <div class="feature-row-text">
+          <div class="feature-tag green">單字庫</div>
+          <h2>你的專屬單字庫</h2>
+          <p>所有保存的單字自動整理成字卡，包含定義、例句和翻譯。用拼寫和跟讀測驗鞏固記憶。</p>
+          <ul class="feature-points">
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>完整字卡（定義 + 例句）</li>
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>拼寫 + 跟讀練習</li>
+            <li><span class="icon-check green"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>智慧出題（常錯優先）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature: 逐字稿 -->
+  <section class="feature-section bg-white">
+    <div class="container">
+      <div class="feature-row reveal">
+        <div class="phone-frame"><iframe id="embed-history" src="demo-live-translate-mobile.html" loading="lazy"></iframe></div>
+        <div class="feature-row-text">
+          <div class="feature-tag blue">逐字稿</div>
+          <h2>完整逐字稿紀錄</h2>
+          <p>每次翻譯自動保存完整逐字稿，月曆檢視所有歷史。隨時回顧對話內容和保存的單字。</p>
+          <ul class="feature-points">
+            <li><span class="icon-check blue"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>月曆檢視，快速定位</li>
+            <li><span class="icon-check blue"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>雙語逐字稿，對照原文與翻譯</li>
+            <li><span class="icon-check blue"><svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>匯出 PDF / CSV</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Summary -->
+  <section class="summary-section grain" id="ai-summary">
+    <div class="container">
+      <div class="summary-inner reveal">
+        <div class="summary-text">
+          <div class="summary-badge">
+            <svg class="sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            全新功能
+          </div>
+          <h2 class="summary-title">會後自動產出<br><span class="accent">AI Summary</span></h2>
+          <p class="summary-desc">翻譯結束後，AI 自動分析逐字稿，產出結構化摘要。重點決議、待辦事項、關鍵術語一目瞭然。</p>
+          <ul class="summary-points">
+            <li><span class="sp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>自動摘要重點內容</li>
+            <li><span class="sp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>待辦事項自動擷取</li>
+            <li><span class="sp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>關鍵術語自動標記</li>
+          </ul>
+        </div>
+        <div class="summary-visual">
+          <div class="summary-card-mock">
+            <div class="sc-header">
+              <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+              <div class="sc-header-text"><h4>AI Summary</h4><span>2026/06/03 · 45 min meeting</span></div>
+            </div>
+            <div class="sc-body">
+              <h5>摘要</h5>
+              <p>團隊討論了 Q3 產品路線圖，確認優先開發即時翻譯功能的離線模式，並決定將發佈時程提前至八月底。</p>
+              <h5>待辦事項</h5>
+              <ul>
+                <li>完成離線模式 POC — Kevin, 6/10</li>
+                <li>更新 Q3 路線圖文件 — Sarah</li>
+                <li>安排與設計團隊的 review 會議</li>
+              </ul>
+              <h5>關鍵術語</h5>
+              <div class="sc-keywords">
+                <span class="sc-keyword">offline mode</span>
+                <span class="sc-keyword">roadmap</span>
+                <span class="sc-keyword">POC</span>
+                <span class="sc-keyword">sprint review</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <h2 class="section-title reveal">選擇方案</h2>
+      <p class="section-subtitle reveal">免費開始，隨時升級</p>
+      <div class="pricing-grid">
+        <div class="pricing-card reveal reveal-delay-1">
+          <h3>Free</h3>
+          <p class="pricing-desc">體驗 Catch 的核心功能</p>
+          <div class="pricing-price">$0 <span>/月</span></div>
+          <ul class="pricing-features">
+            <li>每天 1 次翻譯</li>
+            <li>基本單字庫（50 字）</li>
+            <li>拼寫練習</li>
+            <li>7 天逐字稿紀錄</li>
+          </ul>
+          <button class="pricing-btn-outline">免費開始</button>
+        </div>
+        <div class="pricing-card featured reveal reveal-delay-2">
+          <div class="pricing-badge">推薦</div>
+          <h3>Pro</h3>
+          <p class="pricing-desc">學生與商務人士首選</p>
+          <div class="pricing-price">$XX <span>/月</span></div>
+          <ul class="pricing-features">
+            <li>無限次翻譯</li>
+            <li>完整單字庫（無上限）</li>
+            <li>拼寫 + 跟讀練習</li>
+            <li>永久逐字稿保存</li>
+            <li>AI Summary</li>
+            <li>匯出 PDF / CSV</li>
+          </ul>
+          <button class="pricing-btn-solid">開始免費試用</button>
+        </div>
+        <div class="pricing-card reveal reveal-delay-3">
+          <h3>Enterprise</h3>
+          <p class="pricing-desc">團隊與企業方案</p>
+          <div class="pricing-price">洽詢</div>
+          <ul class="pricing-features">
+            <li>Pro 所有功能</li>
+            <li>團隊共享單字庫</li>
+            <li>管理後台</li>
+            <li>SSO 單一登入</li>
+            <li>專屬客戶經理</li>
+          </ul>
+          <button class="pricing-btn-outline">聯繫我們</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <h2 class="section-title reveal">常見問題</h2>
+      <div class="faq-list">
+        <div class="faq-item reveal"><button class="faq-question" onclick="toggleFaq(this)"><span>Catch 適合哪些人使用？</span><span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="faq-answer"><div class="faq-answer-inner">任何需要理解英語的人都適合。學生可以用來聽講座、看影片，邊聽邊存生字；商務人士可以用在跨國會議，即時翻譯加會後 AI 摘要。</div></div></div>
+        <div class="faq-item reveal"><button class="faq-question" onclick="toggleFaq(this)"><span>AI Summary 如何運作？</span><span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="faq-answer"><div class="faq-answer-inner">翻譯結束後，AI 會自動分析完整逐字稿，產出結構化摘要，包含重點內容、待辦事項和關鍵術語。Pro 方案以上可使用此功能。</div></div></div>
+        <div class="faq-item reveal"><button class="faq-question" onclick="toggleFaq(this)"><span>需要安裝 App 嗎？</span><span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="faq-answer"><div class="faq-answer-inner">不需要。Catch 是網頁應用，在手機或電腦的瀏覽器中直接開啟即可使用，支援 Chrome、Safari、Edge 等主流瀏覽器。</div></div></div>
+        <div class="faq-item reveal"><button class="faq-question" onclick="toggleFaq(this)"><span>免費方案有使用期限嗎？</span><span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="faq-answer"><div class="faq-answer-inner">免費方案永久有效。每天可使用一次即時翻譯，並保存最多 50 個單字。隨時可升級 Pro 方案解鎖完整功能。</div></div></div>
+        <div class="faq-item reveal"><button class="faq-question" onclick="toggleFaq(this)"><span>會議內容安全嗎？</span><span class="faq-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button><div class="faq-answer"><div class="faq-answer-inner">所有語音資料即時處理後即刪除，逐字稿以加密方式保存於您的帳戶中。企業方案額外提供 SSO 和私有化部署選項。</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="final-cta grain">
+    <div class="container">
+      <h2 class="reveal">Catch every word.</h2>
+      <p class="section-subtitle reveal">開始你的第一次 AI 翻譯體驗</p>
+      <div class="reveal"><button class="btn-cta-large">免費試用</button></div>
+      <p class="cta-note reveal">每天免費使用一次 · 無需信用卡</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand"><span>Catch</span></div>
+    <div class="footer-links">
+      <a href="#features">功能</a>
+      <a href="#pricing">方案</a>
+      <a href="#faq">FAQ</a>
+      <a href="#">使用條款</a>
+      <a href="#">隱私政策</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 DAHUA AI. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var reveals = document.querySelectorAll('.reveal');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach(function(el) { observer.observe(el); });
+
+      var nav = document.getElementById('mainNav');
+      window.addEventListener('scroll', function() {
+        nav.classList.toggle('scrolled', window.scrollY > 10);
+      }, { passive: true });
+    });
+
+    /* ── Iframe embeds ── */
+    function initEmbed(id, fn) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('load', function() {
+        var w = el.contentWindow;
+        [600, 1200, 2000].forEach(function(delay) {
+          setTimeout(function() { try { fn(w); } catch(e) {} }, delay);
+        });
+      });
+    }
+    initEmbed('embed-translate', function(w) { w.startRecording(); });
+    initEmbed('embed-wordbank', function(w) { w.switchTab('wordbank'); });
+    initEmbed('embed-history', function(w) { w.switchTab('history'); });
+
+    function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+    function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
+    function toggleFaq(btn) {
+      var item = btn.closest('.faq-item');
+      var wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+      if (!wasOpen) item.classList.add('open');
+    }
+  </script>
+
+</body>
+</html>
