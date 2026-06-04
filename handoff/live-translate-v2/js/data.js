@@ -238,6 +238,7 @@ var wordDetails = {
 };
 
 /* ── 歷史紀錄（Demo 用） ── */
+/* summary.en / summary.zh → 工程師替換為 AI API 回傳 */
 var historyData = [
   {
     name: '理科課 · 光合作用單元',
@@ -245,7 +246,11 @@ var historyData = [
     time: '14:30',
     duration: '15:23',
     lang: 'zh',
-    words: ['photosynthesis','sunlight','energy','plant','record','vocabulary','notebooks','assignment','hypothesis','experiment','conclusion','observation','temperature','equation']
+    words: ['photosynthesis','sunlight','energy','plant','record','vocabulary','notebooks','assignment','hypothesis','experiment','conclusion','observation','temperature','equation'],
+    summary: {
+      en: 'This lesson introduced the core principles of photosynthesis, explaining how plants convert sunlight, carbon dioxide, and water into energy. The class also reviewed last week\'s vocabulary and assigned a written homework due Friday.',
+      zh: '本堂課介紹了光合作用的核心原理，說明植物如何利用陽光將二氧化碳與水轉化為能量。課堂中也複習了上週的詞彙，並指派了一份週五截止的書面作業。'
+    }
   },
   {
     name: '英語聽力練習',
@@ -253,7 +258,11 @@ var historyData = [
     time: '09:45',
     duration: '03:47',
     lang: 'zh',
-    words: ['vocabulary','photosynthesis','energy']
+    words: ['vocabulary','photosynthesis','energy'],
+    summary: {
+      en: 'A short listening practice session focusing on vocabulary review. Students practiced identifying key science terms including vocabulary, photosynthesis, and energy.',
+      zh: '一堂簡短的聽力練習，重點複習詞彙。學生練習辨識關鍵科學術語，包括詞彙、光合作用和能量。'
+    }
   },
   {
     name: 'English Writing Class',
@@ -261,7 +270,11 @@ var historyData = [
     time: '15:00',
     duration: '22:10',
     lang: 'zh',
-    words: ['assignment','submit','questions','notebooks','vocabulary','sunlight','energy','photosynthesis']
+    words: ['assignment','submit','questions','notebooks','vocabulary','sunlight','energy','photosynthesis'],
+    summary: {
+      en: 'The writing class covered academic essay structure. Students practiced using science vocabulary in written context, with emphasis on proper use of terms like photosynthesis and energy.',
+      zh: '寫作課講解了學術論文結構。學生練習在書面語境中使用科學詞彙，重點是正確使用光合作用、能量等術語。'
+    }
   },
   {
     name: 'Matemáticas Avanzadas',
@@ -269,7 +282,11 @@ var historyData = [
     time: '10:20',
     duration: '08:15',
     lang: 'es',
-    words: ['energy','sunlight','assignment','submit','questions']
+    words: ['energy','sunlight','assignment','submit','questions'],
+    summary: {
+      en: 'Advanced mathematics class conducted in Spanish. Covered energy-related word problems and assignment submission guidelines.',
+      es: 'Clase de matemáticas avanzadas. Se cubrieron problemas de palabras relacionados con energía y pautas para la entrega de tareas.'
+    }
   },
   {
     name: 'Science Lab Report',
@@ -277,7 +294,11 @@ var historyData = [
     time: '13:45',
     duration: '31:52',
     lang: 'zh',
-    words: ['photosynthesis','sunlight','energy','vocabulary','notebooks']
+    words: ['photosynthesis','sunlight','energy','vocabulary','notebooks'],
+    summary: {
+      en: 'Students completed a lab report on photosynthesis experiments, documenting how sunlight intensity affects plant energy production.',
+      zh: '學生完成了一份光合作用實驗報告，記錄了陽光強度如何影響植物的能量產生。'
+    }
   },
   {
     name: '數學課翻譯',
@@ -285,7 +306,11 @@ var historyData = [
     time: '11:00',
     duration: '18:42',
     lang: 'zh',
-    words: ['energy','questions','submit']
+    words: ['energy','questions','submit'],
+    summary: {
+      en: 'Math class with live translation support. Students worked on energy-related equations and submitted their answers.',
+      zh: '數學課搭配即時翻譯。學生做了能量相關的方程式，並提交了答案。'
+    }
   },
   {
     name: 'Biology Review',
@@ -293,7 +318,11 @@ var historyData = [
     time: '14:20',
     duration: '12:05',
     lang: 'zh',
-    words: ['photosynthesis','plant','sunlight','energy']
+    words: ['photosynthesis','plant','sunlight','energy'],
+    summary: {
+      en: 'Biology review session covering plant biology fundamentals, including photosynthesis process and energy conversion in plants.',
+      zh: '生物複習課程，涵蓋植物生物學基礎知識，包括光合作用過程和植物的能量轉換。'
+    }
   },
   {
     name: 'History Class',
@@ -301,7 +330,11 @@ var historyData = [
     time: '10:00',
     duration: '25:30',
     lang: 'zh',
-    words: ['democracy','revolution','civilization','paragraph']
+    words: ['democracy','revolution','civilization','paragraph'],
+    summary: {
+      en: 'History class exploring the relationship between revolution and democracy in the development of civilization. Students wrote summary paragraphs.',
+      zh: '歷史課探討了革命與民主在文明發展中的關係。學生撰寫了摘要段落。'
+    }
   },
   {
     name: 'Chemistry Lab',
@@ -309,6 +342,10 @@ var historyData = [
     time: '13:30',
     duration: '20:15',
     lang: 'zh',
-    words: ['hypothesis','experiment','conclusion','observation','temperature','equation']
+    words: ['hypothesis','experiment','conclusion','observation','temperature','equation'],
+    summary: {
+      en: 'Chemistry lab session where students formed hypotheses, conducted temperature experiments, recorded observations, and drew conclusions using equations.',
+      zh: '化學實驗課，學生提出假說、進行溫度實驗、記錄觀察結果，並使用方程式得出結論。'
+    }
   }
 ];
