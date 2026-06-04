@@ -33,7 +33,7 @@ function switchTab(tab) {
   showHomeBar();
   showBottomNav();
 
-  var titles = { record: '即時翻譯', wordbank: '單字庫', quiz: '測驗', history: '歷史紀錄' };
+  var titles = { record: '即時翻譯', wordbank: '單字庫', practice: '練習', history: '歷史紀錄' };
 
   if (tab === 'record') {
     updateHeaderTitle(titles[tab]);
@@ -43,10 +43,10 @@ function switchTab(tab) {
     updateHeaderTitle(titles[tab]);
     hideHeaderBack();
     if (typeof goToWordBank === 'function') goToWordBank();
-  } else if (tab === 'quiz') {
+  } else if (tab === 'practice') {
     updateHeaderTitle(titles[tab]);
     hideHeaderBack();
-    if (typeof goToQuiz === 'function') goToQuiz();
+    if (typeof goToPracticeSetup === 'function') goToPracticeSetup();
   } else if (tab === 'history') {
     updateHeaderTitle(titles[tab]);
     hideHeaderBack();
