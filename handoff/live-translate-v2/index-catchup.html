@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Translate — DAHUA AI</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/recording.css">
+  <link rel="stylesheet" href="styles/wordbank.css">
+  <link rel="stylesheet" href="styles/history.css">
+  <link rel="stylesheet" href="styles/practice.css">
+  <style>
+    /* CatchUP layout override: header full-width above sidebar */
+    .app-frame { flex-direction: column; }
+    .app-header { flex-shrink: 0; }
+    .app-body { display: flex; flex: 1; min-height: 0; }
+    .app-sidebar { padding-top: 12px; }
+    @media (max-width: 768px) {
+      .app-body { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Version link (Desktop only, CSS 控制顯示) -->
+<a class="page-version" href="#" title="Version history">
+  <span class="material-icons-round">schedule</span> v2 RWD
+</a>
+
+<div class="app-frame">
+
+  <!-- ── App Header (Desktop, 全寬最上層) ── -->
+  <header class="app-header">
+    <div class="header-left">
+      <button class="header-back-btn" id="header-back-btn" onclick="goBack()" aria-label="返回">
+        <span class="material-icons-round">arrow_back</span>
+      </button>
+      <img src="assets/catchup.png" alt="catch up" height="20" style="width:auto;">
+      <span class="header-title" id="header-title" style="display:none;"></span>
+    </div>
+    <div class="header-right">
+      <div class="timer-badge" id="timer-badge">
+        <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
+        <span id="timer-display">00:00</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════
+       BODY (Sidebar + Content)
+       ══════════════════════════════════ -->
+  <div class="app-body">
+
+    <!-- ── Sidebar (Desktop, > 768px) ── -->
+    <aside class="app-sidebar">
+      <div class="sidebar-nav">
+        <button class="sidebar-item active" data-tab="record" onclick="switchTab('record')">
+          <span class="material-icons-round">mic</span>
+          <span>錄音</span>
+        </button>
+        <button class="sidebar-item" data-tab="wordbank" onclick="switchTab('wordbank')">
+          <span class="material-icons-round">bookmarks</span>
+          <span>單字庫</span>
+        </button>
+        <button class="sidebar-item" data-tab="practice" onclick="switchTab('practice')">
+          <span class="material-icons-round">quiz</span>
+          <span>練習</span>
+        </button>
+        <button class="sidebar-item" data-tab="history" onclick="switchTab('history')">
+          <span class="material-icons-round">history</span>
+          <span>紀錄</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <div class="app-main">
+
+    <!-- ── Top Bar (Mobile, ≤ 768px) ── -->
+    <div class="top-bar">
+      <!-- Home state -->
+      <div class="topbar-home" id="topbar-home">
+        <div class="logo">
+          <img src="assets/catchup.png" alt="catch up" height="20" style="width:auto;">
+        </div>
+        <div class="top-bar-right">
+          <div class="timer-badge" id="timer-badge-mobile">
+            <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
+            <span id="timer-display-mobile">00:00</span>
+          </div>
+        </div>
+      </div>
+      <!-- Sub-screen state -->
+      <div class="topbar-sub" id="topbar-sub">
+        <button class="back-btn" onclick="goBack()" aria-label="返回">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <span class="sub-screen-title" id="sub-title">歷史紀錄</span>
+        <button class="sub-action-btn" aria-label="搜尋">
+          <span class="material-icons-round">search</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         CONTENT AREA
+         ══════════════════════════════════ -->
+    <div class="app-content">
+
+      <!-- ══ SCREEN 1: Start ══ -->
+      <div class="screen active" id="screen-1">
+        <div class="s1-body">
+          <div class="s1-inner">
+
+            <div class="lang-card">
+              <div class="lang-slot">
+                <button class="lang-btn disabled" disabled>
+                  <span class="lang-code">EN</span> English
+                </button>
+              </div>
+              <div class="lang-sep"></div>
+              <div class="lang-arrow-wrap"><span class="material-icons-round">arrow_forward</span></div>
+              <div class="lang-sep"></div>
+              <div class="lang-slot" id="target-wrap" style="position:relative;">
+                <button class="lang-btn" id="target-btn" onclick="toggleDropdown()">
+                  <span class="lang-code" id="target-code">ZH</span>
+                  <span id="target-label">中文</span>
+                  <span class="material-icons-round">expand_more</span>
+                </button>
+                <div class="lang-dropdown" id="lang-dropdown">
+                  <div class="lang-option selected" onclick="selectLang('ZH','中文','zh')">
+                    <span class="opt-code">ZH</span> 中文
+                  </div>
+                  <div class="lang-option" onclick="selectLang('ES','Español','es')">
+                    <span class="opt-code">ES</span> Español
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wave-section">
+              <p class="hint-text" id="hint-text">選擇語言，點擊開始收音<br>即時翻譯英語內容。</p>
+              <div class="waveform-idle" id="waveform-idle"></div>
+            </div>
+
+            <button class="btn-start" id="btn-start" onclick="startRecording()">
+              <span class="material-icons-round">mic</span>
+              <span id="start-label">開始收音</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 2: Recording ══ -->
+      <div class="screen" id="screen-2">
+        <div class="s2-body">
+          <div class="tap-hint">
+            <span class="material-icons-round">touch_app</span>
+            點擊單字即可保存
+          </div>
+          <div class="transcript-scroll" id="transcript-2" style="padding-top:10px;"></div>
+          <div class="live-wave-strip" id="live-wave"></div>
+          <div class="rec-controls">
+            <button class="btn-pause" id="pause-btn-2" onclick="togglePause(this)" title="暫停">
+              <span class="material-icons-round">pause</span>
+            </button>
+            <button class="btn-stop" onclick="endSession()">
+              <span class="material-icons-round">stop</span>
+              結束翻譯
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 4: Summary ══ -->
+      <div class="screen" id="screen-4">
+        <div class="s4-body">
+          <div class="s4-header">
+            <div class="s4-title">翻譯總結</div>
+            <div class="s4-stats">
+              <div class="stat-pill">
+                <span class="material-icons-round">schedule</span>
+                時長 <strong id="final-time">03:47</strong>
+              </div>
+              <div class="stat-pill">
+                <span class="material-icons-round">bookmark</span>
+                保存 <strong id="saved-count">0</strong> 個單字
+              </div>
+            </div>
+          </div>
+          <!-- Desktop: 左右分欄 / Mobile: 單欄堆疊 (CSS 控制) -->
+          <div class="s4-desktop-layout">
+            <div class="s4-left">
+              <div class="s4-fields">
+                <div>
+                  <label class="s4-field-label">名稱</label>
+                  <input class="s4-input" id="session-name" type="text" placeholder="Session name">
+                </div>
+                <div>
+                  <label class="s4-field-label">備註</label>
+                  <textarea class="s4-textarea" placeholder="加入備註..."></textarea>
+                </div>
+              </div>
+              <div style="flex:1;"></div>
+              <div class="s4-footer">
+                <button class="btn-again" onclick="resumeRecording()">
+                  <span class="material-icons-round">mic</span>
+                  再次收音
+                </button>
+                <button class="btn-done" onclick="finishSession()">完成</button>
+              </div>
+            </div>
+            <div class="s4-right">
+              <div class="s4-section-label">已保存單字</div>
+              <div class="s4-word-list" id="s4-word-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 5: 歷史紀錄 ══ -->
+      <div class="screen" id="screen-5">
+
+        <!-- Desktop: monthly calendar + split detail -->
+        <div class="hist-desktop">
+          <div class="hist-left">
+            <div class="cal-wrap" id="cal-wrap-desktop"></div>
+            <div class="hist-day-section-desktop" id="hist-day-section-desktop"></div>
+          </div>
+          <div class="hist-right" id="hist-right">
+            <div class="hist-right-empty">選擇一筆紀錄查看詳情</div>
+          </div>
+        </div>
+
+        <!-- Mobile: week strip + session list -->
+        <div class="hist-mobile">
+          <div class="cal-date-header" id="cal-date-header"></div>
+          <div class="cal-week-strip" id="cal-week-strip"></div>
+          <div class="hist-day-section-mobile" id="hist-day-section-mobile"></div>
+        </div>
+
+      </div>
+
+      <!-- ══ SCREEN 6: Session Detail (Mobile) ══ -->
+      <div class="screen" id="screen-6">
+        <div class="detail-body">
+          <div class="detail-meta-card" id="detail-meta"></div>
+          <div class="detail-tabs">
+            <div class="detail-tab active" data-tab="transcript" onclick="switchDetailTab('transcript')">
+              <span class="material-icons-round">description</span> 逐字稿
+            </div>
+            <div class="detail-tab" data-tab="words" onclick="switchDetailTab('words')">
+              <span class="material-icons-round">bookmark</span> 儲存單字
+            </div>
+          </div>
+          <div class="detail-tab-panel active" id="panel-transcript">
+            <div class="trans-toggle-bar">
+              <span class="trans-toggle-label">翻譯</span>
+              <button class="toggle-switch" id="trans-toggle-s6" onclick="toggleTranslationS6()"></button>
+            </div>
+            <div class="detail-scroll" id="detail-scroll"></div>
+          </div>
+          <div class="detail-tab-panel" id="panel-words">
+            <div class="words-scroll show-tl" id="words-scroll-s6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 7: Word Bank ══ -->
+      <div class="screen" id="screen-7">
+        <div class="detail-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f5f7f5;">
+
+          <!-- ── Desktop: Split-panel ── -->
+          <div class="wb-split">
+            <div class="wb-left-col">
+              <div class="wb-filters" id="wb-filters"></div>
+              <div class="wb-card" id="wb-detail-card"></div>
+            </div>
+            <div class="wb-wordlist">
+              <div class="wb-wordlist-header">Word List <span class="wb-wordlist-badge" id="wb-wl-count">0</span></div>
+              <div class="wb-wordlist-items" id="wb-wl-items"></div>
+              <div class="wb-pagination" id="wb-pagination"></div>
+            </div>
+          </div>
+
+          <!-- ── Mobile: Scrollable view ── -->
+          <div class="wb-mobile-view" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+            <div class="wb-header-row">
+              <div class="wb-stats" id="wb-stats-mobile"></div>
+              <span class="wb-sort-link" id="wb-sort-link-mobile" onclick="toggleWbSort()"></span>
+            </div>
+            <div class="wb-header-row">
+              <div class="wb-filters" id="wb-filters-mobile"></div>
+              <div class="wb-view-seg">
+                <button class="wb-view-btn active" data-view="card" onclick="setWbView('card')" title="卡片">
+                  <span class="material-icons-round">view_agenda</span>
+                </button>
+                <button class="wb-view-btn" data-view="list" onclick="setWbView('list')" title="清單">
+                  <span class="material-icons-round">view_list</span>
+                </button>
+              </div>
+            </div>
+            <div class="words-scroll show-tl" id="wb-scroll-mobile" style="flex:1;overflow-y:auto;"></div>
+          </div>
+
+        </div>
+      </div>
+      <!-- ══ SCREEN 8: 練習 ══ -->
+      <div class="screen" id="screen-8">
+        <div class="prac-body">
+          <div class="prac-progress"><div class="prac-progress-fill" id="prac-fill"></div></div>
+          <div class="prac-area" id="prac-area"></div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 9: 練習設定 ══ -->
+      <div class="screen" id="screen-9">
+        <div class="quiz-body">
+          <div class="quiz-hero">
+            <div class="quiz-hero-title">單字練習</div>
+            <div class="quiz-hero-sub">選擇練習方式，開始練習</div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">練習類型</div>
+            <div class="quiz-type-group">
+              <button class="quiz-type-check active" data-type="spelling" onclick="toggleQuizType('spelling',this)">
+                <div class="qt-box"><span class="material-icons-round">check</span></div> 拼寫
+              </button>
+              <button class="quiz-type-check" data-type="mirroring" onclick="toggleQuizType('mirroring',this)">
+                <div class="qt-box"><span class="material-icons-round">check</span></div> 跟讀
+              </button>
+            </div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">出題範圍</div>
+            <div class="quiz-source-group">
+              <button class="quiz-sel-btn active" data-mode="random" onclick="setQuizListMode('random',this)">隨機</button>
+              <button class="quiz-sel-btn" data-mode="mistakes" onclick="setQuizListMode('mistakes',this)">常錯</button>
+              <button class="quiz-sel-btn" data-mode="newest" onclick="setQuizListMode('newest',this)">新加入</button>
+            </div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">題數</div>
+            <div class="quiz-count-group" id="quiz-count-group"></div>
+          </div>
+          <div class="quiz-start-bar">
+            <button class="quiz-start-btn" id="quiz-start-btn" onclick="showQuizPreview()">開始練習</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 10: 練習預覽 ══ -->
+      <div class="screen" id="screen-10">
+        <div class="quiz-body">
+          <div class="quiz-hero">
+            <div class="quiz-hero-title">即將練習 <span style="color:#059669;" id="quiz-preview-count">5</span> 個單字</div>
+            <div class="quiz-hero-sub">在練習開始前請先複習這些單字</div>
+          </div>
+          <div class="quiz-word-list" id="quiz-preview-list"></div>
+          <div class="quiz-start-bar">
+            <button class="quiz-start-btn" onclick="startQuizPractice()">開始練習</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+    </div><!-- /app-content -->
+
+    <!-- ── Bottom Nav (Mobile, ≤ 768px) ── -->
+    <div class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-tab="record" onclick="switchTab('record')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">mic</span></div>
+        <span>錄音</span>
+      </button>
+      <button class="nav-item" data-tab="wordbank" onclick="switchTab('wordbank')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">bookmarks</span></div>
+        <span>單字庫</span>
+      </button>
+      <button class="nav-item" data-tab="practice" onclick="switchTab('practice')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">quiz</span></div>
+        <span>練習</span>
+      </button>
+      <button class="nav-item" data-tab="history" onclick="switchTab('history')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">history</span></div>
+        <span>紀錄</span>
+      </button>
+    </div>
+
+    </div><!-- /app-main -->
+  </div><!-- /app-body -->
+</div><!-- /app-frame -->
+
+<!-- Scripts (順序重要) -->
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/recording.js"></script>
+<script src="js/wordbank.js"></script>
+<script src="js/history.js"></script>
+<script src="js/practice.js"></script>
+
+</body>
+</html>
