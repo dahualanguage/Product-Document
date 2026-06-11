@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CatchUP — Live Translate</title>
+  <title>CatchUP — 首次使用</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,27 +19,13 @@
   <link rel="stylesheet" href="styles/practice.css">
   <style>
     /* CatchUP layout override: header full-width above sidebar */
-    .app-frame { flex-direction: column; flex: 1; }
-    body { display: flex; flex-direction: column; }
+    .app-frame { flex-direction: column; }
     .app-header { flex-shrink: 0; }
     .app-body { display: flex; flex: 1; min-height: 0; }
     .app-sidebar { padding-top: 12px; }
     @media (max-width: 768px) {
       .app-body { flex-direction: column; }
       .auth-card { margin: 0 16px; }
-    }
-
-    /* ── Paywall modal overlay ── */
-    .paywall-modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 10000;
-      background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
-      align-items: center; justify-content: center; padding: 20px;
-    }
-    .paywall-modal-overlay.open { display: flex; }
-    .paywall-modal-overlay .paywall-card { animation: modalIn .3s ease; }
-    @keyframes modalIn {
-      from { opacity: 0; transform: translateY(16px) scale(.97); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     /* ── Header avatar ── */
@@ -246,6 +232,63 @@
     }
     .profile-logout:hover { background: #fef2f2; }
 
+    /* ── Onboarding overlay ── */
+    .onboard-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: onboardFadeIn .3s ease;
+    }
+    @keyframes onboardFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .onboard-card {
+      width: 100%; max-width: 380px;
+      background: #fff; border-radius: 24px;
+      padding: 40px 32px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes onboardSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .onboard-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .onboard-icon .material-icons-round { font-size: 36px; }
+    .onboard-title {
+      font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;
+    }
+    .onboard-desc {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 28px;
+    }
+    .onboard-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;
+    }
+    .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0;
+      transition: all .2s;
+    }
+    .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s;
+    }
+    .onboard-next:hover { transform: translateY(-1px); }
+    .onboard-skip {
+      font-size: 13px; color: #94a3b8; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      margin-top: 14px;
+    }
+    .onboard-skip:hover { color: #64748b; }
+
     /* ── Demo switcher ── */
     .demo-switcher {
       position: fixed; top: 12px; right: 16px; z-index: 9999;
@@ -269,20 +312,8 @@
 <body>
 
 <!-- Demo 情境切換 -->
-<div class="demo-switcher">
-  <button class="demo-btn active" onclick="setDemo('new')">首次使用</button>
-  <button class="demo-btn" onclick="setDemo('free')">免費用戶</button>
-  <button class="demo-btn" onclick="setDemo('pro')">Pro 用戶</button>
-</div>
-
 <!-- Version link (Desktop only, CSS 控制顯示) -->
 
-<div id="time-banner" style="display:none;width:100%;background:#0f172a;padding:6px 16px;font-size:12px;font-weight:500;color:#e2e8f0;text-align:center;z-index:9999;flex-shrink:0;">
-  <span class="material-icons-round" style="font-size:13px;vertical-align:middle;color:#f59e0b;margin-right:4px;">schedule</span>
-  剩餘 <strong id="remaining-display" style="color:#fff;">45:00</strong>
-  <span style="color:#64748b;margin:0 6px;">·</span>
-  <a onclick="openPaywallModal()" style="color:#10b981;font-weight:600;cursor:pointer;text-decoration:none;">升級 Pro 享無限時間</a>
-</div>
 <div class="app-frame">
 
   <!-- ── App Header (Desktop, 全寬最上層) ── -->
@@ -299,7 +330,6 @@
         <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
         <span id="timer-display">00:00</span>
       </div>
-
       <button class="header-avatar" id="header-avatar" onclick="openProfile()">
         <span class="material-icons-round">person</span>
       </button>
@@ -468,10 +498,6 @@
                   <span class="material-icons-round">mic</span>
                   再次收音
                 </button>
-                <span id="s4-remaining" style="display:none;font-size:12px;color:#64748b;display:flex;align-items:center;gap:4px;">
-                  <span class="material-icons-round" style="font-size:14px;color:#94a3b8;">hourglass_bottom</span>
-                  剩餘 <strong id="s4-remaining-val" style="color:#0f172a;">45</strong> 分鐘
-                </span>
                 <button class="btn-done" onclick="finishSession()">完成</button>
               </div>
             </div>
@@ -690,11 +716,12 @@
           <div class="paywall-card">
             <div class="paywall-icon"><span class="material-icons-round">bolt</span></div>
             <div class="paywall-title" id="paywall-title">升級 CatchUP Pro</div>
-            <div class="paywall-sub" id="paywall-sub">解鎖無限錄音時間，讓學習不中斷。</div>
+            <div class="paywall-sub" id="paywall-sub">解鎖無限錄音與單字庫，讓學習不中斷。</div>
 
             <table class="paywall-compare">
               <tr><th></th><th>免費版</th><th>Pro</th></tr>
-              <tr><td>每日錄音</td><td>45 分鐘</td><td class="pro-col">無限</td></tr>
+              <tr><td>每日錄音</td><td>1 次</td><td class="pro-col">無限</td></tr>
+              <tr><td>單字庫</td><td>30 個</td><td class="pro-col">無限</td></tr>
               <tr><td>AI 摘要</td><td>✓</td><td class="pro-col">✓</td></tr>
               <tr><td>練習 & 複習</td><td>✓</td><td class="pro-col">✓</td></tr>
             </table>
@@ -743,9 +770,14 @@
             <div class="profile-section">
               <div class="profile-section-title">使用量（今日）</div>
               <div class="profile-item">
-                <span class="material-icons-round">schedule</span>
-                <span class="profile-item-label">錄音時間</span>
-                <span class="profile-item-value" id="profile-usage-time">0 分鐘 / 45 分鐘</span>
+                <span class="material-icons-round">mic</span>
+                <span class="profile-item-label">錄音次數</span>
+                <span class="profile-item-value" id="profile-usage-rec">0 / 1</span>
+              </div>
+              <div class="profile-item">
+                <span class="material-icons-round">bookmarks</span>
+                <span class="profile-item-label">單字庫</span>
+                <span class="profile-item-value" id="profile-usage-words">2 / 30</span>
               </div>
             </div>
 
@@ -785,18 +817,21 @@
   </div><!-- /app-body -->
 </div><!-- /app-frame -->
 
-<!-- Paywall Modal (non-blocking, recording continues) -->
-<div class="paywall-modal-overlay" id="paywall-modal">
-  <div class="paywall-card">
-    <div class="paywall-icon"><span class="material-icons-round">bolt</span></div>
-    <div class="paywall-title">升級 CatchUP Pro</div>
-    <div class="paywall-sub">錄音不中斷，升級後立即享有無限錄音時間。</div>
-    <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin-bottom:20px;">
-      <div style="font-size:32px;font-weight:800;color:#0f172a;"><span style="font-size:14px;font-weight:500;color:#64748b;">/月</span></div>
-      <div style="font-size:12px;color:#059669;font-weight:500;margin-top:2px;">隨時取消，無綁約</div>
+<!-- Onboarding popup -->
+<div class="onboard-overlay" id="onboard-overlay">
+  <div class="onboard-card">
+    <div class="onboard-icon" id="onboard-icon" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">
+      <span class="material-icons-round" id="onboard-icon-inner" style="color:#059669;">mic</span>
     </div>
-    <button class="paywall-cta" onclick="demoUpgradeModal()">立即訂閱</button>
-    <button class="paywall-skip" onclick="closePaywallModal()">暫時不用</button>
+    <div class="onboard-title" id="onboard-title">即時翻譯，輕鬆聽懂</div>
+    <div class="onboard-desc" id="onboard-desc">聽不懂外語？打開 CatchUP，<br>自動翻譯每一句話。</div>
+    <div class="onboard-dots">
+      <div class="onboard-dot active" id="dot-0"></div>
+      <div class="onboard-dot" id="dot-1"></div>
+      <div class="onboard-dot" id="dot-2"></div>
+    </div>
+    <button class="onboard-next" id="onboard-next" onclick="nextOnboard()">下一步</button>
+    <button class="onboard-skip" onclick="closeOnboard()">跳過</button>
   </div>
 </div>
 
@@ -815,11 +850,12 @@
 
 var isLoggedIn = false;
 var isPro = false;
-var todayUsedMin = 0;
-var maxFreeMin = 45;
+var todayRecCount = 0;
+var maxFreeRec = 1;
+var maxFreeWords = 30;
 var previousScreen = 'screen-1';
 
-/* ── Override startRecording to gate auth + time limit ── */
+/* ── Override startRecording to gate auth + paywall ── */
 var _origStartRecording = startRecording;
 startRecording = function() {
   if (!isLoggedIn) {
@@ -827,49 +863,33 @@ startRecording = function() {
     showScreen('screen-login');
     return;
   }
-  if (!isPro && todayUsedMin >= maxFreeMin) {
-    document.getElementById('paywall-title').textContent = '今日免費時間已用完';
-    document.getElementById('paywall-sub').textContent = '免費版每天可錄音 45 分鐘。升級 Pro 即享無限錄音時間。';
+  if (!isPro && todayRecCount >= maxFreeRec) {
+    document.getElementById('paywall-title').textContent = '今日免費次數已用完';
+    document.getElementById('paywall-sub').textContent = '免費版每天可錄音 1 次。升級 Pro 即享無限錄音。';
     previousScreen = 'screen-1';
     showScreen('screen-paywall');
     return;
   }
+  todayRecCount++;
   updateUsage();
   _origStartRecording();
 };
 
-/* ── Override resumeRecording to show remaining badge ── */
-var _origResumeRecording = resumeRecording;
-resumeRecording = function() {
-  var remBadge = document.getElementById('time-banner');
-  if (remBadge && !isPro) {
-    remBadge.style.display = 'block';
-    var remainSec = (maxFreeMin - todayUsedMin) * 60;
-    clearInterval(window._remainInterval);
-    window._remainInterval = setInterval(function() {
-      remainSec--;
-      if (remainSec <= 0) { clearInterval(window._remainInterval); remainSec = 0; }
-      var rm = String(Math.floor(remainSec / 60)).padStart(2, '0');
-      var rs = String(remainSec % 60).padStart(2, '0');
-      var el = document.getElementById('remaining-display');
-      if (el) el.textContent = rm + ':' + rs;
-      if (remainSec < 300 && remBadge) {
-        remBadge.style.color = '#ef4444';
-        remBadge.style.background = '#fef2f2';
-        remBadge.style.borderColor = '#fca5a5';
-      }
-    }, 1000);
+/* ── Override saveWord to gate word limit ── */
+var _origSaveWord = saveWord;
+saveWord = function(span, word) {
+  if (!isPro) {
+    var totalWords = getAllUniqueWords().length + savedWords.length;
+    if (totalWords >= maxFreeWords) {
+      document.getElementById('paywall-title').textContent = '單字庫已滿';
+      document.getElementById('paywall-sub').textContent = '免費版最多儲存 30 個單字。升級 Pro 即享無限單字庫。';
+      previousScreen = 'screen-2';
+      showScreen('screen-paywall');
+      return;
+    }
   }
-  _origResumeRecording();
-};
-
-/* ── Hide remaining badge on finish/reset ── */
-var _origFinishSession = finishSession;
-finishSession = function() {
-  clearInterval(window._remainInterval);
-  var remBadge = document.getElementById('time-banner');
-  if (remBadge) remBadge.style.display = 'none';
-  _origFinishSession();
+  _origSaveWord(span, word);
+  updateUsage();
 };
 
 /* ── Demo auth actions ── */
@@ -883,7 +903,7 @@ function demoLogin() {
 function demoLogout() {
   isLoggedIn = false;
   isPro = false;
-  todayUsedMin = 0;
+  todayRecCount = 0;
   document.getElementById('header-avatar').classList.remove('logged-in');
   showToast('已登出');
   switchTab('record');
@@ -919,8 +939,13 @@ function openProfile() {
 }
 
 function updateUsage() {
-  var timeEl = document.getElementById('profile-usage-time');
-  if (timeEl) timeEl.textContent = todayUsedMin + ' 分鐘 / ' + (isPro ? '無限' : maxFreeMin + ' 分鐘');
+  var recEl = document.getElementById('profile-usage-rec');
+  var wordEl = document.getElementById('profile-usage-words');
+  if (recEl) recEl.textContent = todayRecCount + ' / ' + (isPro ? '∞' : maxFreeRec);
+  if (wordEl) {
+    var total = getAllUniqueWords().length;
+    wordEl.textContent = total + ' / ' + (isPro ? '∞' : maxFreeWords);
+  }
 }
 
 /* ════════════════════════════════════════
@@ -930,7 +955,7 @@ function setDemo(mode) {
   /* Reset all state */
   isLoggedIn = false;
   isPro = false;
-  todayUsedMin = 0;
+  todayRecCount = 0;
   savedWords = [];
   isPaused = false;
   hasStartedSession = false;
@@ -951,10 +976,10 @@ function setDemo(mode) {
     showScreen('screen-1');
 
   } else if (mode === 'free') {
-    /* 免費用戶：已登入、已用 45 分鐘 */
+    /* 免費用戶：已登入、用過一次、有儲存單字 */
     isLoggedIn = true;
     isPro = false;
-    todayUsedMin = 45;
+    todayRecCount = 1;
     document.getElementById('header-avatar').classList.add('logged-in');
     document.getElementById('profile-name').textContent = 'Demo User';
     document.getElementById('profile-email').textContent = 'demo@catchup.app';
@@ -968,7 +993,7 @@ function setDemo(mode) {
     /* Pro 用戶：已登入已付費 */
     isLoggedIn = true;
     isPro = true;
-    todayUsedMin = 28;
+    todayRecCount = 3;
     document.getElementById('header-avatar').classList.add('logged-in');
     document.getElementById('profile-name').textContent = 'Kiki Lin';
     document.getElementById('profile-email').textContent = 'kiki@catchup.app';
@@ -981,38 +1006,64 @@ function setDemo(mode) {
 
   updateUsage();
 }
+/* Auto-init: 首次使用 */
+setDemo('new');
 
-/* ── Paywall modal (non-blocking) ── */
-function openPaywallModal() {
-  document.getElementById('paywall-modal').classList.add('open');
-}
-function closePaywallModal() {
-  document.getElementById('paywall-modal').classList.remove('open');
-}
-var _waitingStripe = false;
+/* ════════ Onboarding ════════ */
+var onboardStep = 0;
+var onboardData = [
+  {
+    icon: 'mic',
+    iconBg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)',
+    iconColor: '#059669',
+    title: '即時翻譯，輕鬆聽懂',
+    desc: '聽不懂外語？打開 CatchUP，<br>自動翻譯每一句話。'
+  },
+  {
+    icon: 'bookmarks',
+    iconBg: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+    iconColor: '#2563eb',
+    title: '點擊保存，建立單字庫',
+    desc: '看到不認識的單字？<br>點一下就存到你的專屬單字庫。'
+  },
+  {
+    icon: 'quiz',
+    iconBg: 'linear-gradient(135deg,#fef3c7,#fde68a)',
+    iconColor: '#d97706',
+    title: '拼寫練習，加深記憶',
+    desc: '用拼寫和跟讀練習，<br>下次看到就牢記。'
+  }
+];
 
-function demoUpgradeModal() {
-  /* Open Stripe Checkout in new tab */
-  window.open('https://checkout.stripe.com/pay/demo_catchup_pro', '_blank');
-  _waitingStripe = true;
-  closePaywallModal();
-  showToast('已開啟付款頁面，完成後返回即可');
+function nextOnboard() {
+  onboardStep++;
+  if (onboardStep >= onboardData.length) {
+    closeOnboard();
+    showScreen('screen-login');
+    return;
+  }
+  renderOnboard();
 }
 
-/* Detect user returning from Stripe tab */
-window.addEventListener('focus', function() {
-  if (!_waitingStripe) return;
-  _waitingStripe = false;
-  /* Simulate payment confirmed */
-  isPro = true;
-  var badge = document.getElementById('profile-plan-badge');
-  if (badge) { badge.textContent = 'Pro'; badge.className = 'profile-sub-badge pro'; }
-  var banner = document.getElementById('time-banner');
-  if (banner) banner.style.display = 'none';
-  clearInterval(window._remainInterval);
-  showToast('升級成功！已解鎖 Pro');
-  updateUsage();
-});
+function renderOnboard() {
+  var d = onboardData[onboardStep];
+  document.getElementById('onboard-icon').style.background = d.iconBg;
+  document.getElementById('onboard-icon-inner').textContent = d.icon;
+  document.getElementById('onboard-icon-inner').style.color = d.iconColor;
+  document.getElementById('onboard-title').textContent = d.title;
+  document.getElementById('onboard-desc').innerHTML = d.desc;
+  for (var i = 0; i < onboardData.length; i++) {
+    document.getElementById('dot-' + i).classList.toggle('active', i === onboardStep);
+  }
+  if (onboardStep === onboardData.length - 1) {
+    document.getElementById('onboard-next').textContent = '開始使用';
+  }
+}
+
+function closeOnboard() {
+  var el = document.getElementById('onboard-overlay');
+  if (el) el.style.display = 'none';
+}
 </script>
 
 </body>

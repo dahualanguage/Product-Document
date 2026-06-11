@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CatchUP — Live Translate</title>
+  <title>CatchUP — 單字庫已滿</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -269,11 +269,7 @@
 <body>
 
 <!-- Demo 情境切換 -->
-<div class="demo-switcher">
-  <button class="demo-btn active" onclick="setDemo('new')">首次使用</button>
-  <button class="demo-btn" onclick="setDemo('free')">免費用戶</button>
-  <button class="demo-btn" onclick="setDemo('pro')">Pro 用戶</button>
-</div>
+<!-- Demo: 免費用戶 -->
 
 <!-- Version link (Desktop only, CSS 控制顯示) -->
 
@@ -477,6 +473,15 @@
             </div>
             <div class="s4-right">
               <div class="s4-section-label">已保存單字</div>
+              <!-- Time limit banner -->
+              <div id="word-limit-banner" style="display:none; margin:0 24px 12px; padding:14px 18px; background:#fef2f2; border:1px solid #fca5a5; border-radius:12px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span class="material-icons-round" style="font-size:18px;color:#ef4444;">schedule</span>
+                  <span style="font-size:14px;font-weight:600;color:#991b1b;">今日免費時間已用完 (45/45 分鐘)</span>
+                </div>
+                <p style="font-size:12px;color:#991b1b;line-height:1.5;margin-bottom:12px;">免費版每天可錄音 45 分鐘。升級 Pro 即享無限錄音時間。</p>
+                <button onclick="showScreen('screen-paywall')" style="width:100%;padding:10px 0;border:none;border-radius:8px;background:#ef4444;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">升級 Pro 解鎖</button>
+              </div>
               <div class="s4-word-list" id="s4-word-list"></div>
             </div>
           </div>
@@ -695,6 +700,7 @@
             <table class="paywall-compare">
               <tr><th></th><th>免費版</th><th>Pro</th></tr>
               <tr><td>每日錄音</td><td>45 分鐘</td><td class="pro-col">無限</td></tr>
+              
               <tr><td>AI 摘要</td><td>✓</td><td class="pro-col">✓</td></tr>
               <tr><td>練習 & 複習</td><td>✓</td><td class="pro-col">✓</td></tr>
             </table>
@@ -743,10 +749,11 @@
             <div class="profile-section">
               <div class="profile-section-title">使用量（今日）</div>
               <div class="profile-item">
-                <span class="material-icons-round">schedule</span>
+                <span class="material-icons-round">mic</span>
                 <span class="profile-item-label">錄音時間</span>
                 <span class="profile-item-value" id="profile-usage-time">0 分鐘 / 45 分鐘</span>
               </div>
+
             </div>
 
             <button class="profile-logout" onclick="demoLogout()">
@@ -817,9 +824,10 @@ var isLoggedIn = false;
 var isPro = false;
 var todayUsedMin = 0;
 var maxFreeMin = 45;
+
 var previousScreen = 'screen-1';
 
-/* ── Override startRecording to gate auth + time limit ── */
+/* ── Override startRecording to gate auth + paywall ── */
 var _origStartRecording = startRecording;
 startRecording = function() {
   if (!isLoggedIn) {
@@ -835,7 +843,55 @@ startRecording = function() {
     return;
   }
   updateUsage();
+  /* Show remaining time countdown */
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge) {
+    if (!isPro) {
+      remBadge.style.display = 'block';
+      var remainSec = (maxFreeMin - todayUsedMin) * 60;
+      clearInterval(window._remainInterval);
+      window._remainInterval = setInterval(function() {
+        remainSec--;
+        if (remainSec <= 0) { clearInterval(window._remainInterval); remainSec = 0; }
+        var rm = String(Math.floor(remainSec / 60)).padStart(2, '0');
+        var rs = String(remainSec % 60).padStart(2, '0');
+        var el = document.getElementById('remaining-display');
+        if (el) el.textContent = rm + ':' + rs;
+        /* Turn red when < 5 min */
+        if (remainSec < 300 && remBadge) {
+          remBadge.style.color = '#ef4444';
+          remBadge.style.background = '#fef2f2';
+          remBadge.style.borderColor = '#fca5a5';
+        }
+      }, 1000);
+    } else {
+      remBadge.style.display = 'none';
+    }
+  }
   _origStartRecording();
+};
+
+/* ── Override endSession to show remaining time on S4 ── */
+var _origEndSession = endSession;
+endSession = function() {
+  clearInterval(window._remainInterval);
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge) remBadge.style.display = 'none';
+  _origEndSession();
+  /* Update S4 remaining display */
+  var s4rem = document.getElementById('s4-remaining');
+  var s4val = document.getElementById('s4-remaining-val');
+  if (s4rem && !isPro) {
+    var remain = maxFreeMin - todayUsedMin;
+    if (remain < 0) remain = 0;
+    s4val.textContent = remain;
+    s4rem.style.display = 'flex';
+    if (remain <= 5) { s4rem.style.color = '#ef4444'; s4val.style.color = '#ef4444'; }
+  }
+  if (s4rem && isPro) { s4rem.style.display = 'none'; }
+  /* Track used time (add recorded seconds) */
+  todayUsedMin += Math.ceil(timerSec / 60);
+  updateUsage();
 };
 
 /* ── Override resumeRecording to show remaining badge ── */
@@ -951,7 +1007,7 @@ function setDemo(mode) {
     showScreen('screen-1');
 
   } else if (mode === 'free') {
-    /* 免費用戶：已登入、已用 45 分鐘 */
+    /* 免費用戶：已登入、用過一次、有儲存單字 */
     isLoggedIn = true;
     isPro = false;
     todayUsedMin = 45;
@@ -981,6 +1037,36 @@ function setDemo(mode) {
 
   updateUsage();
 }
+/* Auto-init: 單字庫已滿情境 */
+(function() {
+  isLoggedIn = true;
+  isPro = false;
+  todayUsedMin = 0;
+  maxFreeWords = 30;
+  document.getElementById('header-avatar').classList.add('logged-in');
+  document.getElementById('profile-name').textContent = 'Demo User';
+  document.getElementById('profile-email').textContent = 'demo@catchup.app';
+
+  /* 模擬已保存 30 個單字 — 直接跳到 S4 總結頁 */
+  savedWords = [
+    { word: 'vocabulary', trans: '詞彙' },
+    { word: 'photosynthesis', trans: '光合作用' }
+  ];
+
+  /* Set session info */
+  document.getElementById('final-time').textContent = '08:32';
+  document.getElementById('saved-count').textContent = '2';
+  document.getElementById('session-name').value = '2026/06/11  09:55';
+  buildSummary();
+
+  /* Show word limit banner */
+  document.getElementById('word-limit-banner').style.display = 'block';
+
+  showBottomNav();
+  showHomeBar();
+  updateHeaderTitle('翻譯總結');
+  showScreen('screen-4');
+})();
 
 /* ── Paywall modal (non-blocking) ── */
 function openPaywallModal() {
