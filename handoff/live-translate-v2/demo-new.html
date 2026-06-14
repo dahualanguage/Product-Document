@@ -306,6 +306,88 @@
     }
     .onboard-skip:hover { color: #64748b; }
 
+    /* ── Survey ── */
+    .survey-overlay {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .survey-card {
+      width: 100%; max-width: 420px;
+      background: #fff; border-radius: 24px;
+      padding: 36px 32px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    .survey-logo { text-align: center; margin-bottom: 24px; }
+    .survey-logo img { height: 22px; width: auto; }
+    .survey-progress {
+      display: flex; gap: 6px; margin-bottom: 28px;
+    }
+    .survey-progress-bar {
+      flex: 1; height: 4px; border-radius: 2px; background: #e2e8f0;
+      transition: background .3s;
+    }
+    .survey-progress-bar.done { background: #10b981; }
+    .survey-progress-bar.current { background: #10b981; }
+    .survey-step { font-size: 11px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; }
+    .survey-question {
+      font-size: 18px; font-weight: 700; color: #0f172a;
+      margin-bottom: 20px; line-height: 1.4;
+    }
+    .survey-options {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .survey-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #334155;
+      background: #fff; transition: all .15s;
+      text-align: left;
+    }
+    .survey-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .survey-option.selected { border-color: #059669; background: #ecfdf5; color: #059669; }
+    .survey-option .survey-radio {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-radio {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-radio::after {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    }
+    /* Multi-select checkbox */
+    .survey-option .survey-check {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-check {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-check::after {
+      content: '✓'; color: #fff; font-size: 12px; font-weight: 700;
+    }
+    .survey-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: #e2e8f0; color: #94a3b8;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: default; transition: all .15s;
+    }
+    .survey-next.enabled {
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .survey-next.enabled:hover { transform: translateY(-1px); }
+
     /* ── Demo switcher ── */
     .demo-switcher {
       position: fixed; top: 12px; right: 16px; z-index: 9999;
@@ -799,6 +881,11 @@
                 <span class="profile-sub-badge free" id="profile-plan-badge">免費版</span>
                 <span class="material-icons-round profile-item-arrow">chevron_right</span>
               </div>
+              <div class="profile-item" onclick="showOrderHistory()">
+                <span class="material-icons-round">receipt_long</span>
+                <span class="profile-item-label">管理訂單</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
             </div>
 
             <div class="profile-section">
@@ -824,6 +911,56 @@
             <button class="profile-logout" onclick="demoLogout()">
               登出
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ORDER HISTORY ══ -->
+      <div class="screen" id="screen-orders">
+        <div class="profile-body">
+          <div class="profile-card">
+            <div class="profile-section">
+              <div class="profile-section-title">訂單紀錄</div>
+
+              <div class="profile-item" id="order-active" style="display:none;">
+                <span class="material-icons-round" style="color:#059669;">check_circle</span>
+                <div style="flex:1;">
+                  <span class="profile-item-label">Pro 方案</span>
+                  <div style="font-size:11px;color:#64748b;margin-top:2px;">$18/月 · 下次扣款 <span id="order-next-date">2026/07/15</span></div>
+                </div>
+                <span class="profile-sub-badge pro">生效中</span>
+              </div>
+
+              <div class="profile-item" id="order-free">
+                <span class="material-icons-round">info_outline</span>
+                <div style="flex:1;">
+                  <span class="profile-item-label">免費方案</span>
+                  <div style="font-size:11px;color:#64748b;margin-top:2px;">每日 45 分鐘錄音</div>
+                </div>
+                <span class="profile-sub-badge free">目前方案</span>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">付款紀錄</div>
+
+              <div id="order-list">
+                <div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:13px;">
+                  尚無付款紀錄
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">付款方式</div>
+              <div class="profile-item" onclick="showToast('開啟 Stripe 管理頁面')">
+                <span class="material-icons-round">account_balance</span>
+                <span class="profile-item-label">管理付款方式</span>
+                <span style="font-size:12px;color:#94a3b8;">Stripe</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -857,8 +994,29 @@
   </div><!-- /app-body -->
 </div><!-- /app-frame -->
 
+<!-- Survey -->
+<div class="survey-overlay" id="survey-overlay">
+  <div class="survey-card">
+    <div class="survey-logo"><img src="assets/catchup.png" alt="catch up" height="22"></div>
+    <div class="survey-progress" id="survey-progress">
+      <div class="survey-progress-bar current"></div>
+      <div class="survey-progress-bar"></div>
+      <div class="survey-progress-bar"></div>
+      <div class="survey-progress-bar"></div>
+    </div>
+    <div class="survey-step" id="survey-step">1 / 4</div>
+    <div class="survey-question" id="survey-question">你要將英文翻譯成</div>
+    <div class="survey-options" id="survey-options"></div>
+    <button class="survey-next" id="survey-next" onclick="nextSurvey()">下一步</button>
+    <div style="text-align:center;margin-top:16px;">
+      <span style="font-size:13px;color:#64748b;">已有帳號？</span>
+      <a onclick="skipSurveyToLogin()" style="font-size:13px;color:#059669;font-weight:600;cursor:pointer;text-decoration:none;">直接登入</a>
+    </div>
+  </div>
+</div>
+
 <!-- Onboarding popup -->
-<div class="onboard-overlay" id="onboard-overlay">
+<div class="onboard-overlay" id="onboard-overlay" style="display:none;">
   <div class="onboard-card">
     <div class="onboard-icon" id="onboard-icon" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">
       <span class="material-icons-round" id="onboard-icon-inner" style="color:#059669;">mic</span>
@@ -1141,6 +1299,190 @@ function setDemo(mode) {
 }
 /* Auto-init: 首次使用 */
 setDemo('new');
+
+/* ── Order History ── */
+function showOrderHistory() {
+  showSubBar('管理訂單');
+  var prevScreen = 'screen-profile';
+  currentBackAction = function() {
+    showSubBar('個人設定');
+    currentBackAction = function() { showHomeBar(); showScreen(previousScreen); };
+    showScreen('screen-profile');
+  };
+
+  /* Update order display based on Pro status */
+  var activeEl = document.getElementById('order-active');
+  var freeEl = document.getElementById('order-free');
+  var listEl = document.getElementById('order-list');
+
+  if (isPro) {
+    if (activeEl) activeEl.style.display = 'flex';
+    if (freeEl) freeEl.style.display = 'none';
+    if (listEl) listEl.innerHTML =
+      '<div class="profile-item" style="border-bottom:1px solid #f1f5f9;">' +
+        '<span class="material-icons-round" style="color:#059669;">receipt</span>' +
+        '<div style="flex:1;">' +
+          '<span class="profile-item-label">Pro 方案 — $18.00</span>' +
+          '<div style="font-size:11px;color:#64748b;margin-top:2px;">2026/06/15 · Visa •••• 4242</div>' +
+        '</div>' +
+        '<span style="font-size:11px;color:#059669;font-weight:600;">已付款</span>' +
+      '</div>';
+  } else {
+    if (activeEl) activeEl.style.display = 'none';
+    if (freeEl) freeEl.style.display = 'flex';
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:13px;">尚無付款紀錄</div>';
+  }
+
+  showScreen('screen-orders');
+}
+
+/* ════════ Survey ════════ */
+var surveyStep = 0;
+var surveyAnswers = {};
+var surveyData = [
+  {
+    question: '你要將英文翻譯成',
+    type: 'single',
+    options: ['繁體中文', '简体中文', 'Español', 'Français', 'Deutsch', 'Tiếng Việt']
+  },
+  {
+    question: '你目前的角色是',
+    type: 'single',
+    options: ['學生', '上班族', '創辦人/負責人', '自由工作者', '其他']
+  },
+  {
+    question: '你最常的翻譯情境（可複選）',
+    type: 'multi',
+    options: ['日常生活', '會議', '演講', '上課', '看影片', '其他'],
+    hasOther: true
+  },
+  {
+    question: '你從哪裡知道 CatchUP',
+    type: 'single',
+    options: ['社群廣告', '朋友推薦', '搜尋引擎', '其他']
+  }
+];
+
+function renderSurvey() {
+  var s = surveyData[surveyStep];
+  document.getElementById('survey-step').textContent = (surveyStep + 1) + ' / ' + surveyData.length;
+  document.getElementById('survey-question').textContent = s.question;
+
+  /* Progress bars */
+  var bars = document.querySelectorAll('.survey-progress-bar');
+  bars.forEach(function(bar, i) {
+    bar.className = 'survey-progress-bar';
+    if (i < surveyStep) bar.classList.add('done');
+    if (i === surveyStep) bar.classList.add('current');
+  });
+
+  /* Options */
+  var container = document.getElementById('survey-options');
+  container.innerHTML = '';
+  s.options.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'survey-option';
+    var indicator = s.type === 'multi' ? '<div class="survey-check"></div>' : '<div class="survey-radio"></div>';
+    btn.innerHTML = indicator + '<span>' + opt + '</span>';
+    btn.onclick = function() {
+      if (s.type === 'single') {
+        container.querySelectorAll('.survey-option').forEach(function(el) { el.classList.remove('selected'); });
+        btn.classList.add('selected');
+        surveyAnswers[surveyStep] = opt;
+      } else {
+        btn.classList.toggle('selected');
+        var selected = [];
+        container.querySelectorAll('.survey-option.selected').forEach(function(el) {
+          selected.push(el.querySelector('span').textContent);
+        });
+        /* Include other input if filled */
+        var otherInput = document.getElementById('survey-other-input');
+        if (otherInput && otherInput.value.trim()) {
+          selected.push(otherInput.value.trim());
+        }
+        surveyAnswers[surveyStep] = selected;
+      }
+      updateSurveyNext();
+    };
+    container.appendChild(btn);
+  });
+
+  /* Add text input for "其他" in multi-select with hasOther */
+  if (s.hasOther) {
+    var otherWrap = document.createElement('div');
+    otherWrap.style.cssText = 'margin-top:4px;';
+    otherWrap.innerHTML = '<input id="survey-other-input" type="text" placeholder="其他，請輸入..." style="width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-family:inherit;font-size:14px;color:#0f172a;outline:none;box-sizing:border-box;" oninput="updateSurveyOther()">';
+    container.appendChild(otherWrap);
+  }
+
+  updateSurveyNext();
+}
+
+function updateSurveyNext() {
+  var btn = document.getElementById('survey-next');
+  var answer = surveyAnswers[surveyStep];
+  var hasAnswer = answer && (Array.isArray(answer) ? answer.length > 0 : true);
+  btn.className = hasAnswer ? 'survey-next enabled' : 'survey-next';
+  if (surveyStep === surveyData.length - 1) {
+    btn.textContent = '完成';
+  } else {
+    btn.textContent = '下一步';
+  }
+}
+
+function nextSurvey() {
+  var answer = surveyAnswers[surveyStep];
+  if (!answer || (Array.isArray(answer) && answer.length === 0)) return;
+
+  surveyStep++;
+  if (surveyStep >= surveyData.length) {
+    /* Survey done — apply language setting */
+    var langMap = {
+      '繁體中文': { code: 'ZH', label: '中文', locale: 'zh' },
+      '简体中文': { code: 'ZH', label: '中文', locale: 'zh' },
+      'Español': { code: 'ES', label: 'Español', locale: 'es' },
+      'Français': { code: 'FR', label: 'Français', locale: 'fr' },
+      'Deutsch': { code: 'DE', label: 'Deutsch', locale: 'de' },
+      'Tiếng Việt': { code: 'VI', label: 'Tiếng Việt', locale: 'vi' }
+    };
+    var chosen = surveyAnswers[0];
+    var lang = langMap[chosen];
+    if (lang) {
+      var codeEl = document.getElementById('target-code');
+      var labelEl = document.getElementById('target-label');
+      if (codeEl) codeEl.textContent = lang.code;
+      if (labelEl) labelEl.textContent = lang.label;
+    }
+
+    /* Hide survey, show onboarding */
+    document.getElementById('survey-overlay').style.display = 'none';
+    document.getElementById('onboard-overlay').style.display = 'flex';
+    return;
+  }
+  renderSurvey();
+}
+
+function updateSurveyOther() {
+  var otherInput = document.getElementById('survey-other-input');
+  var container = document.getElementById('survey-options');
+  var selected = [];
+  container.querySelectorAll('.survey-option.selected').forEach(function(el) {
+    selected.push(el.querySelector('span').textContent);
+  });
+  if (otherInput && otherInput.value.trim()) {
+    selected.push(otherInput.value.trim());
+  }
+  surveyAnswers[surveyStep] = selected;
+  updateSurveyNext();
+}
+
+function skipSurveyToLogin() {
+  document.getElementById('survey-overlay').style.display = 'none';
+  showScreen('screen-login');
+}
+
+/* Init survey */
+renderSurvey();
 
 /* ════════ Onboarding ════════ */
 var onboardStep = 0;
