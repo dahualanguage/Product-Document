@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CatchUP — Primera vez v2 · Blue</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/recording.css">
+  <link rel="stylesheet" href="styles/wordbank.css">
+  <link rel="stylesheet" href="styles/history.css">
+  <link rel="stylesheet" href="styles/practice.css">
+  <style>
+    /* CatchUP layout override: header full-width above sidebar */
+    .app-frame { flex-direction: column; flex: 1; }
+    body { display: flex; flex-direction: column; }
+    .app-header { flex-shrink: 0; }
+    .app-body { display: flex; flex: 1; min-height: 0; }
+    .app-sidebar { padding-top: 12px; }
+    @media (max-width: 768px) {
+      .app-body { flex-direction: column; }
+      .auth-card { margin: 0 16px; }
+      .s4-split { flex-direction: column !important; }
+      .s4-split-left { width: 100% !important; flex: 1 !important; border-right: none !important; overflow-y: auto !important; }
+      .s4-split-right { display: none !important; }
+    }
+
+    /* ── Paywall modal overlay ── */
+    .paywall-modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .paywall-modal-overlay.open { display: flex; }
+    .paywall-modal-overlay .paywall-card { animation: modalIn .3s ease; }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Header avatar ── */
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #e2e8f0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s; border: none; flex-shrink: 0;
+    }
+    .header-avatar:hover { background: #d1d5db; }
+    .header-avatar .material-icons-round { font-size: 18px; color: #64748b; }
+    .header-avatar.logged-in { background: #059669; }
+    .header-avatar.logged-in .material-icons-round { color: #fff; }
+
+    /* ════════ Auth screens ════════ */
+    .auth-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px; background: #f5f7f5;
+      overflow-y: auto;
+    }
+    .auth-card {
+      width: 100%; max-width: 400px;
+      background: #fff; border-radius: 20px;
+      padding: 36px 32px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.07);
+    }
+    .auth-logo { margin-bottom: 24px; }
+    .auth-logo img { height: 24px; width: auto; }
+    .auth-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .auth-sub { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+    .auth-google {
+      width: 100%; padding: 12px 0; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      background: #fff; cursor: pointer; font-family: inherit;
+      font-size: 14px; font-weight: 500; color: #0f172a;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all .15s; margin-bottom: 16px;
+    }
+    .auth-google:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .auth-google svg { width: 18px; height: 18px; }
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; color: #94a3b8; font-size: 12px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+    .auth-field {
+      width: 100%; margin-bottom: 12px; text-align: left;
+    }
+    .auth-field label {
+      display: block; font-size: 12px; font-weight: 500;
+      color: #475569; margin-bottom: 5px;
+    }
+    .auth-field input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-family: inherit; font-size: 14px; color: #0f172a;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .auth-field input:focus { border-color: #10b981; }
+    .auth-submit {
+      width: 100%; padding: 13px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s; margin-top: 8px;
+    }
+    .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .auth-switch {
+      font-size: 13px; color: #64748b; margin-top: 20px;
+    }
+    .auth-switch a {
+      color: #059669; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .auth-switch a:hover { text-decoration: underline; }
+
+    /* ════════ Paywall ════════ */
+    .paywall-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 40px 20px;
+      background: #f5f7f5; overflow-y: auto;
+    }
+    .paywall-card {
+      width: 100%; max-width: 440px;
+      background: #fff; border-radius: 20px;
+      padding: 32px 28px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.07);
+    }
+    .paywall-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .paywall-icon .material-icons-round { font-size: 28px; color: #f59e0b; }
+    .paywall-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .paywall-sub { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+    .paywall-plans { display: flex; gap: 12px; margin-bottom: 24px; }
+    .paywall-plan {
+      flex: 1; padding: 20px 16px; border-radius: 14px;
+      border: 1.5px solid #e2e8f0; background: #fff;
+      text-align: center; cursor: pointer; transition: all .15s;
+      position: relative;
+    }
+    .paywall-plan:hover { border-color: #10b981; }
+    .paywall-plan.selected { border-color: #059669; background: #ecfdf5; }
+    .paywall-plan-badge {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; font-weight: 700; color: #fff;
+      background: #059669; padding: 2px 12px; border-radius: 10px;
+      display: none;
+    }
+    .paywall-plan.selected .paywall-plan-badge { display: block; }
+    .paywall-plan-price { font-size: 28px; font-weight: 800; color: #0f172a; }
+    .paywall-plan-price span { font-size: 14px; font-weight: 500; color: #64748b; }
+    .paywall-plan-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .paywall-features {
+      text-align: left; margin-bottom: 24px;
+    }
+    .paywall-feature {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #334155; padding: 6px 0;
+    }
+    .paywall-feature .material-icons-round { font-size: 18px; color: #10b981; }
+    .paywall-cta {
+      width: 100%; padding: 14px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s; margin-bottom: 10px;
+    }
+    .paywall-cta:hover { transform: translateY(-1px); }
+    .paywall-skip {
+      font-size: 13px; color: #94a3b8; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+    }
+    .paywall-skip:hover { color: #64748b; }
+    /* Free vs Pro comparison */
+    .paywall-compare { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .paywall-compare th {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 8px 12px; text-align: center;
+    }
+    .paywall-compare th:first-child { text-align: left; }
+    .paywall-compare td {
+      font-size: 13px; color: #475569; padding: 8px 12px;
+      border-top: 1px solid #f1f5f9; text-align: center;
+    }
+    .paywall-compare td:first-child { text-align: left; font-weight: 500; color: #0f172a; }
+    .paywall-compare .pro-col { color: #059669; font-weight: 600; }
+
+    /* ════════ Profile ════════ */
+    .profile-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 32px 20px;
+      background: #f5f7f5; overflow-y: auto;
+    }
+    .profile-card {
+      width: 100%; max-width: 440px;
+    }
+    .profile-header {
+      background: #fff; border-radius: 16px; padding: 24px;
+      text-align: center; margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .profile-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #059669; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .profile-avatar .material-icons-round { font-size: 32px; color: #fff; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .profile-email { font-size: 13px; color: #64748b; }
+    .profile-section {
+      background: #fff; border-radius: 16px; overflow: hidden;
+      margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .profile-section-title {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 14px 18px 8px;
+    }
+    .profile-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; cursor: pointer; transition: background .1s;
+    }
+    .profile-item:hover { background: #f8fafc; }
+    .profile-item .material-icons-round { font-size: 20px; color: #64748b; }
+    .profile-item-label { flex: 1; font-size: 14px; font-weight: 500; color: #0f172a; }
+    .profile-item-value { font-size: 13px; color: #64748b; }
+    .profile-item-arrow { font-size: 18px; color: #cbd5e1; }
+    .profile-sub-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px;
+    }
+    .profile-sub-badge.free { background: #f1f5f9; color: #64748b; }
+    .profile-sub-badge.pro { background: #ecfdf5; color: #059669; }
+    .profile-logout {
+      width: 100%; padding: 13px 0; border: 1.5px solid #fca5a5; border-radius: 12px;
+      background: #fff; color: #ef4444; font-family: inherit;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all .15s; margin-top: 8px;
+    }
+    .profile-logout:hover { background: #fef2f2; }
+
+    /* ── Onboarding overlay ── */
+    .onboard-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: onboardFadeIn .3s ease;
+    }
+    @keyframes onboardFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .onboard-card {
+      width: 100%; max-width: 380px;
+      background: #fff; border-radius: 24px;
+      padding: 40px 32px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes onboardSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .onboard-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .onboard-icon .material-icons-round { font-size: 36px; }
+    .onboard-title {
+      font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;
+    }
+    .onboard-desc {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 28px;
+    }
+    .onboard-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;
+    }
+    .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0;
+      transition: all .2s;
+    }
+    .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s;
+    }
+    .onboard-next:hover { transform: translateY(-1px); }
+    .onboard-skip {
+      font-size: 13px; color: #94a3b8; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      margin-top: 14px;
+    }
+    .onboard-skip:hover { color: #64748b; }
+
+    /* ── Survey ── */
+    .survey-overlay {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .survey-card {
+      width: 100%; max-width: 420px;
+      background: #fff; border-radius: 24px;
+      padding: 36px 32px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    .survey-logo { text-align: center; margin-bottom: 24px; }
+    .survey-logo img { height: 22px; width: auto; }
+    .survey-progress {
+      display: flex; gap: 6px; margin-bottom: 28px;
+    }
+    .survey-progress-bar {
+      flex: 1; height: 4px; border-radius: 2px; background: #e2e8f0;
+      transition: background .3s;
+    }
+    .survey-progress-bar.done { background: #10b981; }
+    .survey-progress-bar.current { background: #10b981; }
+    .survey-step { font-size: 11px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; }
+    .survey-question {
+      font-size: 18px; font-weight: 700; color: #0f172a;
+      margin-bottom: 20px; line-height: 1.4;
+    }
+    .survey-options {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .survey-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #334155;
+      background: #fff; transition: all .15s;
+      text-align: left;
+    }
+    .survey-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .survey-option.selected { border-color: #059669; background: #ecfdf5; color: #059669; }
+    .survey-option .survey-radio {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-radio {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-radio::after {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    }
+    /* Multi-select checkbox */
+    .survey-option .survey-check {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-check {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-check::after {
+      content: '✓'; color: #fff; font-size: 12px; font-weight: 700;
+    }
+    .survey-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: #e2e8f0; color: #94a3b8;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: default; transition: all .15s;
+    }
+    .survey-next.enabled {
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .survey-next.enabled:hover { transform: translateY(-1px); }
+
+    /* ══════════════ NEW: Flow popup (Hero + Survey/Onboard) ══════════════ */
+    .flow-overlay {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: onboardFadeIn .3s ease;
+    }
+    .flow-popup {
+      width: 100%; max-width: 880px;
+      height: 560px;
+      background: #fff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+      display: flex; flex-direction: row;
+    }
+    @media (max-width: 720px) {
+      .flow-popup { flex-direction: column; max-width: 440px; height: 720px; }
+    }
+    .hero {
+      background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 100%);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      width: 50%; flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    @media (max-width: 720px) {
+      .hero { width: 100%; height: 240px; padding: 22px 24px 24px; }
+      #flow-overlay .flow-popup { height: 680px; max-height: calc(100vh - 24px); }
+      #flow-overlay .flow-content { padding: 18px 22px 18px; }
+      .survey-options { gap: 6px; margin-bottom: 14px; }
+      .survey-option { padding: 10px 14px; font-size: 13px; }
+      .survey-question { font-size: 16px; margin-bottom: 12px; }
+      .hero-pill { height: 40px; font-size: 14px; padding: 0 18px 0 14px; margin-bottom: 12px; }
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(16,185,129,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 80% 80%, rgba(0,184,217,.10) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-stage {
+      position: relative; z-index: 1;
+      display: none;
+      animation: stageIn .5s ease;
+    }
+    .hero-stage.active { display: block; }
+    @keyframes stageIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 999px;
+      padding: 0 21px 0 18px;
+      height: 48px; line-height: 1;
+      font-size: 16px; font-weight: 600; color: #64748b;
+      box-shadow: 0 6px 22px rgba(16,185,129,.16);
+      margin-bottom: 18px;
+    }
+    .hero-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(0,184,217,.18);
+      animation: pulseDuo 2s ease-in-out infinite;
+    }
+    @keyframes pulseGreen { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+    @keyframes pulseDuo {
+      0%, 100% { background: #10b981; box-shadow: 0 0 0 3px rgba(0,184,217,.18); }
+      50% { background: #00B8D9; box-shadow: 0 0 0 5px rgba(16,185,129,.18); }
+    }
+    .lang-flip {
+      position: relative; display: inline-block;
+      min-width: 80px; height: 18px; overflow: hidden; vertical-align: middle;
+    }
+    #hero-q1 .lang-flip {
+      min-width: 140px; height: 22px;
+    }
+    .lang-flip .item {
+      position: absolute; inset: 0; color: #059669; font-weight: 700;
+      opacity: 0; transform: translateY(100%);
+      animation: langCycle 9s infinite;
+    }
+    #hero-q1 .lang-flip .item {
+      font-size: 20px; line-height: 22px; letter-spacing: -.01em;
+    }
+    .lang-flip .item:nth-child(1) { animation-delay: 0s; }
+    .lang-flip .item:nth-child(2) { animation-delay: 1.5s; color: #00B8D9; }
+    .lang-flip .item:nth-child(3) { animation-delay: 3s; }
+    .lang-flip .item:nth-child(4) { animation-delay: 4.5s; color: #00B8D9; }
+    .lang-flip .item:nth-child(5) { animation-delay: 6s; }
+    .lang-flip .item:nth-child(6) { animation-delay: 7.5s; color: #00B8D9; }
+    @keyframes langCycle {
+      0% { opacity: 0; transform: translateY(100%); }
+      4% { opacity: 1; transform: translateY(0); }
+      12% { opacity: 1; transform: translateY(0); }
+      18% { opacity: 0; transform: translateY(-100%); }
+      100% { opacity: 0; transform: translateY(-100%); }
+    }
+    .chat-stack { display: flex; flex-direction: column; gap: 10px; }
+    .chat-bubble {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 16px;
+      padding: 12px 14px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    }
+    .chat-en { font-size: 13px; font-weight: 500; color: #0f172a; line-height: 1.5; margin-bottom: 6px; }
+    .chat-arrow { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .chat-arrow .material-icons-round { font-size: 12px; color: #00B8D9; }
+    .chat-zh { font-size: 13px; color: #475569; line-height: 1.6; padding-left: 8px; border-left: 2px solid #00B8D9; min-height: 22px; }
+    .typing-cursor { display: inline-block; width: 2px; height: 12px; background: #00B8D9; vertical-align: middle; animation: blink 1s infinite; }
+    @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+
+    /* Q2 role avatars */
+    .role-stage { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px 0; }
+    .role-avatar {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: 1px solid #d1fae5;
+      box-shadow: 0 2px 12px rgba(16,185,129,.1);
+      opacity: 0; transform: scale(.8);
+      animation: rolePop 9s infinite;
+    }
+    .role-avatar:nth-child(1) { animation-delay: 0s; }
+    .role-avatar:nth-child(2) { animation-delay: 1.8s; }
+    .role-avatar:nth-child(3) { animation-delay: 3.6s; }
+    .role-avatar:nth-child(4) { animation-delay: 5.4s; }
+    .role-avatar:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes rolePop {
+      0% { opacity: 0; transform: scale(.8); }
+      3% { opacity: 1; transform: scale(1.05); }
+      8% { opacity: 1; transform: scale(1); }
+      18% { opacity: 1; transform: scale(1); }
+      22% { opacity: 0; transform: scale(.9); }
+      100% { opacity: 0; transform: scale(.8); }
+    }
+    .role-avatar .material-icons-round { font-size: 36px; color: #059669; }
+    .role-label {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-size: 14px; font-weight: 700; color: #059669;
+      background: #fff; border: 1px solid #d1fae5; padding: 6px 14px;
+      border-radius: 20px; box-shadow: 0 2px 8px rgba(16,185,129,.1);
+      opacity: 0; animation: roleLabel 9s infinite;
+    }
+    .role-label:nth-child(1) { animation-delay: 0s; }
+    .role-label:nth-child(2) { animation-delay: 1.8s; }
+    .role-label:nth-child(3) { animation-delay: 3.6s; }
+    .role-label:nth-child(4) { animation-delay: 5.4s; }
+    .role-label:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes roleLabel {
+      0%,2% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      6% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      22% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+      100% { opacity: 0; }
+    }
+
+    /* Q3 scene grid */
+    .scene-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .scene-card {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 14px 10px; text-align: center;
+      box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      animation: scenePulse 4s ease-in-out infinite;
+    }
+    .scene-card:nth-child(1) { animation-delay: 0s; }
+    .scene-card:nth-child(2) { animation-delay: .4s; }
+    .scene-card:nth-child(3) { animation-delay: .8s; }
+    .scene-card:nth-child(4) { animation-delay: 1.2s; }
+    .scene-card:nth-child(5) { animation-delay: 1.6s; }
+    @keyframes scenePulse {
+      0%,100% { transform: translateY(0); box-shadow: 0 2px 8px rgba(16,185,129,.08); }
+      50% { transform: translateY(-4px); box-shadow: 0 6px 14px rgba(16,185,129,.15); }
+    }
+    .scene-card .material-icons-round { font-size: 22px; color: #10b981; }
+    .scene-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px; }
+
+    /* Q4 source */
+    .source-grid { display: flex; flex-direction: column; gap: 8px; }
+    .source-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 6px rgba(16,185,129,.06);
+    }
+    .source-row .material-icons-round { font-size: 18px; color: #10b981; }
+    .source-text { font-size: 13px; font-weight: 600; color: #334155; flex: 1; }
+    .source-arrow {
+      width: 12px; height: 12px; border-right: 2px solid #10b981; border-bottom: 2px solid #10b981;
+      transform: rotate(-45deg);
+      animation: arrowDraw 2s ease-in-out infinite;
+    }
+    @keyframes arrowDraw { 0%,100%{opacity:.3;} 50%{opacity:1;} }
+
+    /* Q2 (role) SVG/PNG */
+    .svg-stage {
+      position: relative; height: 260px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .svg-stage img { width: 100%; max-width: 360px; height: 100%; object-fit: contain; position: relative; z-index: 1; }
+    @keyframes svgFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+
+    /* Q2 (role) — image fills entire left hero container */
+    #hero-ob1.hero-stage.active {
+      position: absolute; inset: 0;
+      padding: 0; margin: 0;
+      display: block;
+    }
+    #hero-ob1 .hero-pill {
+      position: absolute; top: 32px; left: 28px;
+      z-index: 2; margin: 0;
+    }
+    #hero-ob1 .svg-stage {
+      position: absolute; inset: 0;
+      height: 100%; animation: none;
+    }
+    #hero-ob1 .svg-stage img {
+      width: 100%; max-width: none; height: 100%;
+      object-fit: cover;
+    }
+
+    /* Tap stage (onboard 2) */
+    .tap-stage {
+      position: relative; background: #fff;
+      border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 18px 16px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+    }
+    .tap-sentence { font-size: 13px; line-height: 1.7; color: #334155; }
+    .word-tap {
+      position: relative; display: inline-block; cursor: pointer;
+      color: #334155; font-weight: inherit; padding: 1px 4px;
+      background: transparent; border-radius: 6px;
+      animation: wordTap 3s ease-in-out infinite;
+    }
+    @keyframes wordTap {
+      0%,40%,100% { background: transparent; color: #334155; font-weight: 400; }
+      50%,90% { background: rgba(0,184,217,.22); color: #00B8D9; font-weight: 700; }
+    }
+    .tap-finger { position: absolute; color: #00B8D9; }
+    .tap-finger .material-icons-round { font-size: 24px; animation: tapMove 3s ease-in-out infinite; }
+    @keyframes tapMove {
+      0%,40%,100% { transform: translate(0,0); opacity: 0; }
+      45% { transform: translate(-4px,-4px); opacity: 1; }
+      55% { transform: translate(0,0); opacity: 1; }
+      85% { transform: translate(0,0); opacity: 1; }
+      90% { opacity: 0; }
+    }
+    .save-pop {
+      position: absolute; top: -6px; right: 12px;
+      background: linear-gradient(135deg, #059669, #00B8D9);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,184,217,.3);
+      opacity: 0; animation: savePopAnim 3s ease-in-out infinite;
+    }
+    .save-pop .material-icons-round { font-size: 12px; }
+    @keyframes savePopAnim {
+      0%,55%,100% { opacity: 0; transform: translateY(8px); }
+      65%,90% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Practice stage (onboard 3) */
+    .practice-stage {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 18px 16px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      text-align: center;
+    }
+    .practice-zh { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+    .practice-input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #d1fae5;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 600; color: #059669; text-align: center;
+      background: #ecfdf5; margin-bottom: 10px;
+    }
+    .practice-check {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: #059669;
+    }
+    .practice-check .material-icons-round { font-size: 16px; }
+
+    /* Q4: Daily free 45 min stage (no card container) */
+    .free-stage {
+      position: relative;
+      padding: 0; text-align: center;
+    }
+    .free-badge {
+      display: inline-block;
+      background: #10b981;
+      color: #fff; font-size: 16px; font-weight: 700;
+      padding: 8px 22px; border-radius: 999px;
+      letter-spacing: .5px; margin-bottom: 18px;
+      box-shadow: 0 6px 18px rgba(16,185,129,.3);
+      position: relative; z-index: 1;
+    }
+    .free-number {
+      display: flex; align-items: baseline; justify-content: center;
+      gap: 4px; margin-bottom: 6px;
+      position: relative; z-index: 1;
+      animation: numPop .8s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes numPop {
+      from { transform: scale(.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .free-num {
+      font-size: 56px; font-weight: 800; line-height: 1;
+      color: #10b981;
+      letter-spacing: -.02em;
+    }
+    .free-unit { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .free-desc {
+      font-size: 11px; color: #64748b; font-weight: 500;
+      margin-top: 10px; position: relative; z-index: 1;
+    }
+    .free-bar {
+      width: 100%; height: 6px; border-radius: 4px;
+      background: #ecfdf5; overflow: hidden;
+      margin-top: 16px; position: relative; z-index: 1;
+    }
+    .free-bar-fill {
+      width: 100%; height: 100%; border-radius: 4px;
+      background: #10b981;
+      transform-origin: left;
+      animation: barFill 3s ease-out forwards;
+    }
+    @keyframes barFill {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .free-tick {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #059669;
+      position: relative; z-index: 1;
+    }
+    .free-tick .material-icons-round {
+      font-size: 13px;
+      animation: tickRotate 4s linear infinite;
+    }
+    @keyframes tickRotate {
+      from { transform: rotate(0); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Right side content */
+    .flow-content {
+      padding: 32px 32px 28px; flex: 1;
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    @media (max-width: 720px) { .flow-content { padding: 24px 28px 24px; } }
+    .flow-content .survey-options { flex: 1; }
+    .flow-content .survey-next { margin-top: auto; }
+
+    /* Onboard content (within right side) */
+    .flow-onboard {
+      flex: 1; display: flex; flex-direction: column;
+      text-align: left;
+    }
+    .flow-onboard .onboard-title {
+      font-size: 22px; font-weight: 700; color: #0f172a;
+      margin-bottom: 10px; letter-spacing: -.01em;
+    }
+    .flow-onboard .onboard-desc {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 20px;
+    }
+    .flow-onboard .onboard-dots {
+      display: flex; gap: 8px; margin-top: auto; margin-bottom: 16px;
+    }
+    .flow-onboard .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: all .2s;
+    }
+    .flow-onboard .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .flow-onboard .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3); transition: all .15s;
+    }
+    .flow-onboard .onboard-next:hover { transform: translateY(-1px); }
+    .flow-onboard .onboard-skip {
+      margin-top: 10px; background: none; border: none;
+      color: #94a3b8; font-family: inherit; font-size: 13px; cursor: pointer;
+    }
+    .flow-onboard .onboard-skip:hover { color: #64748b; }
+
+    /* ── Login: left intro + right form ── */
+    .login-hero {
+      padding: 0; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    /* Top 40% — cover image with white overlay */
+    .login-intro-cover {
+      position: relative; width: 100%; height: 40%;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .login-intro-cover > img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .login-intro-cover::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(15,23,42,.45) 0%, rgba(15,23,42,.15) 45%, rgba(15,23,42,.55) 100%);
+    }
+    .login-intro-cover-content {
+      position: absolute; inset: 0; z-index: 1;
+      padding: 32px 36px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .login-intro-logo { margin-bottom: 0; }
+    .login-intro-logo img { display: block; }
+    .login-intro-title {
+      font-size: 24px; font-weight: 800; color: #fff;
+      line-height: 1.35; letter-spacing: -.01em; margin-bottom: 10px;
+    }
+    .login-intro-sub {
+      font-size: 22px; font-weight: 700; color: #fff;
+      line-height: 1.45; letter-spacing: -.01em;
+      text-shadow: 0 2px 12px rgba(0,0,0,.35);
+    }
+    /* Bottom 60% — feature cards */
+    .login-intro-body {
+      flex: 1; min-height: 0;
+      padding: 24px 36px; overflow-y: auto;
+    }
+    .login-intro-feats {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .login-intro-feats li {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 12px 14px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      transform: translateY(8px); opacity: 0;
+      animation: featIn .6s cubic-bezier(.2,.9,.3,1) forwards;
+    }
+    .login-intro-feats li:nth-child(1) { animation-delay: .15s; }
+    .login-intro-feats li:nth-child(2) { animation-delay: .3s; }
+    .login-intro-feats li:nth-child(3) { animation-delay: .45s; }
+    @keyframes featIn {
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .login-intro-feats li .feat-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #ecfdf5;
+    }
+    .login-intro-feats li .feat-icon .material-icons-round {
+      font-size: 20px; color: #059669;
+    }
+    .login-intro-feats li div.feat-text { display: flex; flex-direction: column; }
+    .login-intro-feats li b { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .login-intro-feats li span { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .login-content { overflow-y: auto; }
+    .login-content .auth-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .login-content .auth-sub { font-size: 13px; color: #64748b; }
+    @media (max-width: 720px) {
+      /* Login popup — compact, fits viewport without scrolling */
+      #login-popup .flow-popup {
+        max-width: 420px; height: auto; max-height: calc(100vh - 24px);
+      }
+      .login-hero { height: 180px; padding: 0; flex-shrink: 0; }
+      .login-intro-cover { height: 100%; }
+      .login-intro-cover-content { padding: 18px 22px; }
+      .login-intro-logo img { height: 22px; }
+      .login-intro-sub { font-size: 15px; line-height: 1.4; }
+      .login-intro-body { display: none; }
+      /* Tighten form spacing on mobile */
+      #login-popup .flow-content { padding: 18px 22px 20px; overflow-y: auto; }
+      .login-content .auth-title { font-size: 18px; }
+      .login-content .auth-sub { font-size: 12px; margin-bottom: 12px !important; }
+      #login-mode-tabs { margin-bottom: 12px !important; }
+      .login-content .auth-google { padding: 10px 0; margin-bottom: 10px; }
+      .login-content .auth-divider { margin-bottom: 10px; }
+      .login-content .auth-field { margin-bottom: 8px; }
+      .login-content .auth-field input { padding: 9px 12px; }
+      .login-content .auth-submit { padding: 12px 0; margin-top: 4px; }
+    }
+
+    /* ── Demo switcher ── */
+    .demo-switcher {
+      position: fixed; top: 12px; right: 16px; z-index: 9999;
+      display: flex; gap: 6px;
+    }
+    .demo-btn {
+      font-size: 11px; font-weight: 600; padding: 6px 14px;
+      border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .demo-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .demo-btn.active { background: #059669; color: #fff; border-color: #059669; }
+    @media (max-width: 768px) {
+      .demo-switcher { top: auto; bottom: 84px; right: 8px; left: 8px; justify-content: center; }
+      .demo-btn { font-size: 10px; padding: 5px 10px; }
+    }
+
+    /* ── Mobile final overrides (must come AFTER all base rules) ── */
+    @media (max-width: 720px) {
+      /* Hide progress bar on mobile to give more vertical space */
+      #flow-overlay .survey-progress { display: none; }
+      /* Q2 pill: move to bottom-left so face isn't covered */
+      #hero-ob1 .hero-pill {
+        top: auto; bottom: 16px; left: 16px;
+      }
+      /* Q4 free stage: no card, larger badge */
+      #hero-ob3 { padding: 24px 28px; }
+      #hero-ob3 .free-num { font-size: 48px; }
+      #hero-ob3 .free-unit { font-size: 14px; }
+      #hero-ob3 .free-badge { font-size: 14px; padding: 6px 18px; margin-bottom: 14px; }
+      #hero-ob3 .free-bar { margin-top: 12px; height: 5px; }
+      #hero-ob3 .free-desc { font-size: 11px; margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Demo Cambio de escenario -->
+<!-- Version link (Desktop only, CSS control de visualización) -->
+
+<div id="time-banner" style="display:none;width:100%;background:#0f172a;padding:6px 16px;font-size:12px;font-weight:500;color:#e2e8f0;text-align:center;z-index:9999;flex-shrink:0;">
+  <span class="material-icons-round" style="font-size:13px;vertical-align:middle;color:#f59e0b;margin-right:4px;">schedule</span>
+  Restante <strong id="remaining-display" style="color:#fff;">45:00</strong>
+  <span style="color:#64748b;margin:0 6px;">·</span>
+  <a onclick="openPaywallModal()" style="color:#10b981;font-weight:600;cursor:pointer;text-decoration:none;">Pasa a Pro para tiempo ilimitado</a>
+</div>
+<div class="app-frame">
+
+  <!-- ── App Header (Desktop, ancho completo en la capa superior) ── -->
+  <header class="app-header">
+    <div class="header-left">
+      <button class="header-back-btn" id="header-back-btn" onclick="goBack()" aria-label="Atrás">
+        <span class="material-icons-round">arrow_back</span>
+      </button>
+      <img src="assets/catchup.svg" alt="catch up" height="20" style="width:auto;">
+      <span class="header-title" id="header-title" style="display:none;"></span>
+    </div>
+    <div class="header-right">
+      <div class="timer-badge" id="timer-badge">
+        <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
+        <span id="timer-display">00:00</span>
+      </div>
+
+      <button class="header-avatar" id="header-avatar" onclick="openProfile()">
+        <span class="material-icons-round">person</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════
+       BODY (Sidebar + Content)
+       ══════════════════════════════════ -->
+  <div class="app-body">
+
+    <!-- ── Sidebar (Desktop, > 768px) ── -->
+    <aside class="app-sidebar">
+      <div class="sidebar-nav">
+        <button class="sidebar-item active" data-tab="record" onclick="switchTab('record')">
+          <span class="material-icons-round">mic</span>
+          <span>Grabar</span>
+        </button>
+        <button class="sidebar-item" data-tab="wordbank" onclick="switchTab('wordbank')">
+          <span class="material-icons-round">bookmarks</span>
+          <span>Biblioteca</span>
+        </button>
+        <button class="sidebar-item" data-tab="practice" onclick="switchTab('practice')">
+          <span class="material-icons-round">quiz</span>
+          <span>Práctica</span>
+        </button>
+        <button class="sidebar-item" data-tab="history" onclick="switchTab('history')">
+          <span class="material-icons-round">history</span>
+          <span>Historial</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <div class="app-main">
+
+    <!-- ── Top Bar (Mobile, ≤ 768px) ── -->
+    <div class="top-bar">
+      <!-- Home state -->
+      <div class="topbar-home" id="topbar-home">
+        <div class="logo">
+          <img src="assets/catchup.svg" alt="catch up" height="20" style="width:auto;">
+        </div>
+        <div class="top-bar-right">
+          <div class="timer-badge" id="timer-badge-mobile">
+            <span class="material-icons-round" style="font-size:13px;vertical-align:middle;">fiber_manual_record</span>
+            <span id="timer-display-mobile">00:00</span>
+          </div>
+        </div>
+      </div>
+      <!-- Sub-screen state -->
+      <div class="topbar-sub" id="topbar-sub">
+        <button class="back-btn" onclick="goBack()" aria-label="Atrás">
+          <span class="material-icons-round">arrow_back</span>
+        </button>
+        <span class="sub-screen-title" id="sub-title">Historial</span>
+        <button class="sub-action-btn" aria-label="Buscar">
+          <span class="material-icons-round">search</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         CONTENT AREA
+         ══════════════════════════════════ -->
+    <div class="app-content">
+
+      <!-- ══ SCREEN 1: Start ══ -->
+      <div class="screen active" id="screen-1">
+        <div class="s1-body">
+          <div class="s1-inner">
+
+            <div class="lang-card">
+              <div class="lang-slot">
+                <button class="lang-btn disabled" disabled>
+                  <span class="lang-code">EN</span> English
+                </button>
+              </div>
+              <div class="lang-sep"></div>
+              <div class="lang-arrow-wrap"><span class="material-icons-round">arrow_forward</span></div>
+              <div class="lang-sep"></div>
+              <div class="lang-slot" id="target-wrap" style="position:relative;">
+                <button class="lang-btn" id="target-btn" onclick="toggleDropdown()">
+                  <span class="lang-code" id="target-code">ZH</span>
+                  <span id="target-label">Chino</span>
+                  <span class="material-icons-round">expand_more</span>
+                </button>
+                <div class="lang-dropdown" id="lang-dropdown">
+                  <div class="lang-option selected" onclick="selectLang('ZH','Chino','zh')">
+                    <span class="opt-code">ZH</span> Chino
+                  </div>
+                  <div class="lang-option" onclick="selectLang('ES','Español','es')">
+                    <span class="opt-code">ES</span> Español
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wave-section">
+              <p class="hint-text" id="hint-text">Elige un idioma y toca para empezar<br>Traduce inglés en vivo.</p>
+              <div class="waveform-idle" id="waveform-idle"></div>
+            </div>
+
+            <button class="btn-start" id="btn-start" onclick="startRecording()">
+              <span class="material-icons-round">mic</span>
+              <span id="start-label">Iniciar grabación</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 2: Recording ══ -->
+      <div class="screen" id="screen-2">
+        <div class="s2-body">
+          <div class="tap-hint">
+            <span class="material-icons-round">touch_app</span>
+            Toca cualquier palabra para guardarla
+          </div>
+          <div class="transcript-scroll" id="transcript-2" style="padding-top:10px;"></div>
+          <div class="live-wave-strip" id="live-wave"></div>
+          <div class="rec-controls">
+            <button class="btn-pause" id="pause-btn-2" onclick="togglePause(this)" title="Pausa">
+              <span class="material-icons-round">pause</span>
+            </button>
+            <button class="btn-stop" onclick="endSession()">
+              <span class="material-icons-round">stop</span>
+              Finalizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 4: Summary ══ -->
+      <div class="screen" id="screen-4">
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff;">
+
+          <!-- Top: barra de título de resumen de traducción -->
+          <div style="padding:16px 24px 12px;border-bottom:1px solid #eef0ef;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="s4-title" style="margin:0;font-size:18px;">Resumen de traducción</div>
+              <div class="stat-pill">
+                <span class="material-icons-round">schedule</span>
+                Duración <strong id="final-time">03:47</strong>
+              </div>
+              <div class="stat-pill">
+                <span class="material-icons-round">bookmark</span>
+                Guardar <strong id="saved-count">0</strong> palabras
+              </div>
+              <span id="s4-remaining" class="stat-pill" style="display:none;color:#ef4444;border-color:#fca5a5;background:#fef2f2;margin-left:auto;">
+                <span class="material-icons-round" style="color:#ef4444;">schedule</span>
+                Restante <strong id="s4-remaining-val" style="color:#ef4444;">45</strong> minutos
+              </span>
+            </div>
+          </div>
+
+          <!-- Middle: Diseño en dos columnas (Nombre+Nota+Palabra | Transcripción) -->
+          <div class="s4-split" style="flex:1;display:flex;overflow:hidden;min-height:0;">
+
+            <!-- Left: Nombre + Nota + Palabras guardadas -->
+            <div class="s4-split-left" style="width:660px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #eef0ef;">
+              <div style="padding:16px 16px 0;flex-shrink:0;">
+                <div style="margin-bottom:12px;">
+                  <label class="s4-field-label" style="padding-left:2px;">Nombre</label>
+                  <input class="s4-input" id="session-name" type="text" placeholder="Session name" style="border:1px solid #eef0ef;border-radius:14px;padding:14px 16px;background:#fff;width:100%;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label class="s4-field-label" style="padding-left:2px;">Nota</label>
+                  <textarea class="s4-textarea" placeholder="Añadir nota..." style="height:100px;border:1px solid #eef0ef;border-radius:14px;padding:14px 16px;background:#fff;width:100%;box-sizing:border-box;"></textarea>
+                </div>
+              </div>
+              <div class="s4-section-label">Palabras guardadas · <span style="color:#059669;">20 </span></div>
+              <div class="s4-word-list" id="s4-word-list" style="flex:1;overflow-y:auto;"></div>
+            </div>
+
+            <!-- Right: Transcripción -->
+            <div class="s4-split-right" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;">
+              <div style="padding:10px 16px 4px;flex-shrink:0;background:#f5f7f5;">
+                <span style="font-size:11px;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;">Transcripción</span>
+              </div>
+              <div style="flex:1;overflow-y:auto;padding:8px 16px 16px;display:flex;flex-direction:column;gap:8px;background:#f5f7f5;" id="s4-transcript">
+                <!-- filled by JS -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom: Tiempo restante | Listo -->
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 24px;border-top:1px solid #e2e8f0;flex-shrink:0;background:#fff;">
+<span id="s4-remaining" style="display:none;font-size:12px;font-weight:600;color:#ef4444;align-items:center;gap:4px;">
+              <span class="material-icons-round" style="font-size:14px;">schedule</span>
+              Restante <strong id="s4-remaining-val">45</strong> minutos
+            </span>
+            <button class="btn-done" onclick="finishSession()" style="margin-left:auto;">Listo</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 5: Historial ══ -->
+      <div class="screen" id="screen-5">
+
+        <!-- Desktop: monthly calendar + split detail -->
+        <div class="hist-desktop">
+          <div class="hist-left">
+            <div class="cal-wrap" id="cal-wrap-desktop"></div>
+            <div class="hist-day-section-desktop" id="hist-day-section-desktop"></div>
+          </div>
+          <div class="hist-right" id="hist-right">
+            <div class="hist-right-empty">Selecciona un registro para ver detalles</div>
+          </div>
+        </div>
+
+        <!-- Mobile: week strip + session list -->
+        <div class="hist-mobile">
+          <div class="cal-date-header" id="cal-date-header"></div>
+          <div class="cal-week-strip" id="cal-week-strip"></div>
+          <div class="hist-day-section-mobile" id="hist-day-section-mobile"></div>
+        </div>
+
+      </div>
+
+      <!-- ══ SCREEN 6: Session Detail (Mobile) ══ -->
+      <div class="screen" id="screen-6">
+        <div class="detail-body">
+          <div class="detail-meta-card" id="detail-meta"></div>
+          <div class="detail-tabs">
+            <div class="detail-tab active" data-tab="transcript" onclick="switchDetailTab('transcript')">
+              <span class="material-icons-round">description</span> Transcripción
+            </div>
+            <div class="detail-tab" data-tab="words" onclick="switchDetailTab('words')">
+              <span class="material-icons-round">bookmark</span> Palabras guardadas
+            </div>
+          </div>
+          <div class="detail-tab-panel active" id="panel-transcript">
+            <div class="trans-toggle-bar">
+              <span class="trans-toggle-label">Traducir</span>
+              <button class="toggle-switch" id="trans-toggle-s6" onclick="toggleTranslationS6()"></button>
+            </div>
+            <div class="detail-scroll" id="detail-scroll"></div>
+          </div>
+          <div class="detail-tab-panel" id="panel-words">
+            <div class="words-scroll show-tl" id="words-scroll-s6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 7: Word Bank ══ -->
+      <div class="screen" id="screen-7">
+        <div class="detail-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f5f7f5;">
+
+          <!-- ── Desktop: Split-panel ── -->
+          <div class="wb-split">
+            <div class="wb-left-col">
+              <div class="wb-filters" id="wb-filters"></div>
+              <div class="wb-card" id="wb-detail-card"></div>
+            </div>
+            <div class="wb-wordlist">
+              <div class="wb-wordlist-header">Word List <span class="wb-wordlist-badge" id="wb-wl-count">0</span></div>
+              <div class="wb-wordlist-items" id="wb-wl-items"></div>
+              <div class="wb-pagination" id="wb-pagination"></div>
+            </div>
+          </div>
+
+          <!-- ── Mobile: Scrollable view ── -->
+          <div class="wb-mobile-view" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+            <div class="wb-header-row">
+              <div class="wb-stats" id="wb-stats-mobile"></div>
+              <span class="wb-sort-link" id="wb-sort-link-mobile" onclick="toggleWbSort()"></span>
+            </div>
+            <div class="wb-header-row">
+              <div class="wb-filters" id="wb-filters-mobile"></div>
+              <div class="wb-view-seg">
+                <button class="wb-view-btn active" data-view="card" onclick="setWbView('card')" title="Tarjetas">
+                  <span class="material-icons-round">view_agenda</span>
+                </button>
+                <button class="wb-view-btn" data-view="list" onclick="setWbView('list')" title="Listas">
+                  <span class="material-icons-round">view_list</span>
+                </button>
+              </div>
+            </div>
+            <div class="words-scroll show-tl" id="wb-scroll-mobile" style="flex:1;overflow-y:auto;"></div>
+          </div>
+
+        </div>
+      </div>
+      <!-- ══ SCREEN 8: Práctica ══ -->
+      <div class="screen" id="screen-8">
+        <div class="prac-body">
+          <div class="prac-progress"><div class="prac-progress-fill" id="prac-fill"></div></div>
+          <div class="prac-area" id="prac-area"></div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 9: Ajustes de práctica ══ -->
+      <div class="screen" id="screen-9">
+        <div class="quiz-body">
+          <div class="quiz-hero">
+            <div class="quiz-hero-title">Práctica de palabras</div>
+            <div class="quiz-hero-sub">Elige un modo de práctica para empezar</div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">Tipo de práctica</div>
+            <div class="quiz-type-group">
+              <button class="quiz-type-check active" data-type="spelling" onclick="toggleQuizType('spelling',this)">
+                <div class="qt-box"><span class="material-icons-round">check</span></div> Ortografía
+              </button>
+              <button class="quiz-type-check" data-type="mirroring" onclick="toggleQuizType('mirroring',this)">
+                <div class="qt-box"><span class="material-icons-round">check</span></div> Repetición
+              </button>
+            </div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">Rango de palabras</div>
+            <div class="quiz-source-group">
+              <button class="quiz-sel-btn active" data-mode="random" onclick="setQuizListMode('random',this)">Aleatorio</button>
+              <button class="quiz-sel-btn" data-mode="mistakes" onclick="setQuizListMode('mistakes',this)">Más fallados</button>
+              <button class="quiz-sel-btn" data-mode="newest" onclick="setQuizListMode('newest',this)">Recién añadidos</button>
+            </div>
+          </div>
+          <div class="quiz-card">
+            <div class="quiz-card-label">Número de preguntas</div>
+            <div class="quiz-count-group" id="quiz-count-group"></div>
+          </div>
+          <div class="quiz-start-bar">
+            <button class="quiz-start-btn" id="quiz-start-btn" onclick="showQuizPreview()">Empezar práctica</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 10: Vista previa de práctica ══ -->
+      <div class="screen" id="screen-10">
+        <div class="quiz-body">
+          <div class="quiz-hero">
+            <div class="quiz-hero-title">Próxima práctica <span style="color:#059669;" id="quiz-preview-count">5</span> palabras</div>
+            <div class="quiz-hero-sub">Repasa estas palabras antes de empezar</div>
+          </div>
+          <div class="quiz-word-list" id="quiz-preview-list"></div>
+          <div class="quiz-start-bar">
+            <button class="quiz-start-btn" onclick="startQuizPractice()">Empezar práctica</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LOGIN ══ -->
+      <div class="screen" id="screen-login">
+        <div class="auth-body">
+          <div class="auth-card">
+            <div class="auth-logo"><img src="assets/catchup.svg" alt="catch up" height="28"></div>
+            <div class="auth-title">Bienvenido de nuevo</div>
+            <div class="auth-sub">Inicia sesión para empezar la traducción en vivo</div>
+            <button class="auth-google" onclick="demoLogin()">
+              <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continuar con Google
+            </button>
+            <div class="auth-divider">o</div>
+            <div class="auth-field">
+              <label>Email</label>
+              <input type="email" placeholder="your@email.com" id="login-email">
+            </div>
+            <div class="auth-field">
+              <label>Contraseña</label>
+              <input type="password" placeholder="Introduce tu contraseña" id="login-password">
+            </div>
+            <button class="auth-submit" onclick="demoLogin()">Iniciar sesión</button>
+            <div class="auth-switch">¿No tienes cuenta?<a onclick="showScreen('screen-signup')">Crear cuenta</a></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SIGNUP ══ -->
+      <div class="screen" id="screen-signup">
+        <div class="auth-body">
+          <div class="auth-card">
+            <div class="auth-logo"><img src="assets/catchup.svg" alt="catch up" height="28"></div>
+            <div class="auth-title">Crear cuenta</div>
+            <div class="auth-sub">Empieza gratis, 1 traducción en vivo al día</div>
+            <button class="auth-google" onclick="demoLogin()">
+              <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continuar con Google
+            </button>
+            <div class="auth-divider">o</div>
+            <div class="auth-field">
+              <label>Nombre</label>
+              <input type="text" placeholder="Tu nombre" id="signup-name">
+            </div>
+            <div class="auth-field">
+              <label>Email</label>
+              <input type="email" placeholder="your@email.com" id="signup-email">
+            </div>
+            <div class="auth-field">
+              <label>Contraseña</label>
+              <input type="password" placeholder="8 caracteres o más" id="signup-password">
+            </div>
+            <button class="auth-submit" onclick="demoLogin()">Crear cuenta</button>
+            <div class="auth-switch">¿Ya tienes cuenta?<a onclick="showScreen('screen-login')">Iniciar sesión</a></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAYWALL ══ -->
+      <div class="screen" id="screen-paywall">
+        <div class="paywall-body">
+          <div class="paywall-card">
+            <div class="paywall-icon"><span class="material-icons-round">bolt</span></div>
+            <div class="paywall-title" id="paywall-title">Actualiza a CatchUP Pro</div>
+            <div class="paywall-sub" id="paywall-sub">Tiempo ilimitado para que no se interrumpa tu aprendizaje.</div>
+
+            <table class="paywall-compare">
+              <tr><th></th><th>Gratis</th><th>Pro</th></tr>
+              <tr><td>Grabación diaria</td><td>45 minutos</td><td class="pro-col">Ilimitado</td></tr>
+              
+              <tr><td>AI Resumen</td><td>✓</td><td class="pro-col">✓</td></tr>
+              <tr><td>Práctica & Repasar</td><td>✓</td><td class="pro-col">✓</td></tr>
+            </table>
+
+            <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin-bottom:20px;">
+              <div style="font-size:32px;font-weight:800;color:#0f172a;">$18<span style="font-size:14px;font-weight:500;color:#64748b;">/mes</span></div>
+              <div style="font-size:12px;color:#059669;font-weight:500;margin-top:2px;">Cancela cuando quieras, sin compromiso</div>
+            </div>
+
+            <button class="paywall-cta" onclick="demoUpgrade()">Suscribirse</button>
+            <button class="paywall-skip" onclick="closePaywall()">Ahora no</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PROFILE ══ -->
+      <div class="screen" id="screen-profile">
+        <div class="profile-body">
+          <div class="profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar"><span class="material-icons-round">person</span></div>
+              <div class="profile-name" id="profile-name">Demo User</div>
+              <div class="profile-email" id="profile-email">demo@catchup.app</div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">Cuenta</div>
+              <div class="profile-item" onclick="showScreen('screen-paywall')">
+                <span class="material-icons-round">credit_card</span>
+                <span class="profile-item-label">Plan de suscripción</span>
+                <span class="profile-sub-badge free" id="profile-plan-badge">Gratis</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
+              <div class="profile-item" onclick="showOrderHistory()">
+                <span class="material-icons-round">receipt_long</span>
+                <span class="profile-item-label">Gestionar suscripción</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">Preferencias</div>
+              <div class="profile-item">
+                <span class="material-icons-round">translate</span>
+                <span class="profile-item-label">Idioma de traducción</span>
+                <span class="profile-item-value">Chino</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">Uso (hoy)</div>
+              <div class="profile-item">
+                <span class="material-icons-round">mic</span>
+                <span class="profile-item-label">Tiempo de grabación</span>
+                <span class="profile-item-value" id="profile-usage-time">0 minutos / 45 minutos</span>
+              </div>
+
+            </div>
+
+            <button class="profile-logout" onclick="demoLogout()">
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ORDER HISTORY ══ -->
+      <div class="screen" id="screen-orders">
+        <div class="profile-body">
+          <div class="profile-card">
+            <div class="profile-section">
+              <div class="profile-section-title">Historial de pedidos</div>
+
+              <div class="profile-item" id="order-active" style="display:none;">
+                <span class="material-icons-round" style="color:#059669;">check_circle</span>
+                <div style="flex:1;">
+                  <span class="profile-item-label">Pro Plan</span>
+                  <div style="font-size:11px;color:#64748b;margin-top:2px;">$18/mes · Próximo cobro <span id="order-next-date">2026/07/15</span></div>
+                </div>
+                <span class="profile-sub-badge pro">Activo</span>
+              </div>
+
+              <div class="profile-item" id="order-free">
+                <span class="material-icons-round">info_outline</span>
+                <div style="flex:1;">
+                  <span class="profile-item-label">Plan gratuito</span>
+                  <div style="font-size:11px;color:#64748b;margin-top:2px;">45 min de grabación al día</div>
+                </div>
+                <span class="profile-sub-badge free">Plan actual</span>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">Historial de pago</div>
+
+              <div id="order-list">
+                <div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:13px;">
+                  Aún sin pagos
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <div class="profile-section-title">Método de pago</div>
+              <div class="profile-item" onclick="showToast('Abrir página de Stripe')">
+                <span class="material-icons-round">account_balance</span>
+                <span class="profile-item-label">Gestionar método de pago</span>
+                <span style="font-size:12px;color:#94a3b8;">Stripe</span>
+                <span class="material-icons-round profile-item-arrow">chevron_right</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+    </div><!-- /app-content -->
+
+    <!-- ── Bottom Nav (Mobile, ≤ 768px) ── -->
+    <div class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" data-tab="record" onclick="switchTab('record')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">mic</span></div>
+        <span>Grabar</span>
+      </button>
+      <button class="nav-item" data-tab="wordbank" onclick="switchTab('wordbank')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">bookmarks</span></div>
+        <span>Biblioteca</span>
+      </button>
+      <button class="nav-item" data-tab="practice" onclick="switchTab('practice')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">quiz</span></div>
+        <span>Práctica</span>
+      </button>
+      <button class="nav-item" data-tab="history" onclick="switchTab('history')">
+        <div class="nav-icon-wrap"><span class="material-icons-round">history</span></div>
+        <span>Historial</span>
+      </button>
+    </div>
+
+    </div><!-- /app-main -->
+  </div><!-- /app-body -->
+</div><!-- /app-frame -->
+
+<!-- Login Popup (shows first for new users) — left intro + right login -->
+<div class="flow-overlay" id="login-popup">
+  <div class="flow-popup">
+
+    <!-- LEFT: CatchUP intro -->
+    <div class="hero login-hero">
+      <!-- Top 40%: cover image with white logo + title overlaid -->
+      <div class="login-intro-cover">
+        <img src="assets/login-screenshot.png" alt="CatchUP en uso" />
+        <div class="login-intro-cover-content">
+          <div class="login-intro-logo"><img src="assets/catchup-white.svg" alt="catch up" height="28"></div>
+          <div class="login-intro-sub">Entiende cada frase en inglés,<br>desde hoy</div>
+        </div>
+      </div>
+      <!-- Bottom 60%: feature cards -->
+      <div class="login-intro-body">
+        <ul class="login-intro-feats">
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">mic</span></span>
+            <div class="feat-text"><b>Traducción en vivo</b><span>Escucha y traduce a la vez,sigue cada frase.</span></div>
+          </li>
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">bookmarks</span></span>
+            <div class="feat-text"><b>Guardar palabras</b><span>Un toque,cada palabra nueva va a tu biblioteca.</span></div>
+          </li>
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">quiz</span></span>
+            <div class="feat-text"><b>Práctica de ortografía</b><span>mini quiz para recordar las palabras del día.</span></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RIGHT: Login form -->
+    <div class="flow-content login-content">
+      <div class="auth-title">Crea tu cuenta</div>
+      <div class="auth-sub" style="margin-bottom:18px;">Regístrate y empieza a traducir al instante</div>
+      <div id="login-mode-tabs" style="display:flex;gap:6px;margin-bottom:18px;background:#f1f5f9;border-radius:10px;padding:3px;">
+        <button id="tab-signup" onclick="switchLoginMode('signup')" style="flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);">Registrarse</button>
+        <button id="tab-login" onclick="switchLoginMode('login')" style="flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">Iniciar sesión</button>
+      </div>
+      <button class="auth-google" onclick="popupLogin()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <span id="popup-google-text">Continuar con Google</span>
+      </button>
+      <div class="auth-divider">o</div>
+      <div class="auth-field" id="popup-name-field">
+        <label>Nombre</label>
+        <input type="text" placeholder="Tu nombre">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" placeholder="your@email.com">
+      </div>
+      <div class="auth-field">
+        <label>Contraseña</label>
+        <input type="password" placeholder="8 caracteres o más" id="popup-password">
+      </div>
+      <button class="auth-submit" id="popup-submit" onclick="popupLogin()">Crear cuenta</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Flow popup: hero animation (left) + survey/onboard (right) -->
+<div class="flow-overlay" id="flow-overlay" style="display:none;">
+  <div class="flow-popup">
+
+    <!-- LEFT: Hero animations -->
+    <div class="hero">
+
+      <!-- Q1 / Onboard 1: Translation -->
+      <div class="hero-stage" id="hero-q1">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          Traduce al instante a
+          <span class="lang-flip">
+            <span class="item">Chino tradicional</span>
+            <span class="item">Chino simplificado</span>
+            <span class="item">Español</span>
+            <span class="item">Français</span>
+            <span class="item">Deutsch</span>
+            <span class="item">Tiếng Việt</span>
+          </span>
+        </div>
+        <div class="chat-stack">
+          <div class="chat-bubble">
+            <div class="chat-en">"Today we will focus on photosynthesis."</div>
+            <div class="chat-arrow"><span class="material-icons-round">south_east</span>AI Traduciendo</div>
+            <div class="chat-zh" id="typing-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 (Role): Workspace illustration -->
+      <div class="hero-stage" id="hero-ob1">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          Hecho para tu trabajo
+        </div>
+        <div class="svg-stage">
+          <img src="assets/hero-role-v2.png" alt="Ilustración del rol" />
+        </div>
+      </div>
+
+      <!-- Q3 / Onboard 2: Scene / Tap to save -->
+      <div class="hero-stage" id="hero-ob2">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          Toca para guardar
+        </div>
+        <div class="tap-stage">
+          <div class="save-pop"><span class="material-icons-round">bookmark</span>Guardada: photosynthesis</div>
+          <div class="tap-sentence">
+            Today we will focus on <span class="word-tap">photosynthesis<span class="tap-finger" style="top:18px;right:-6px;"><span class="material-icons-round">touch_app</span></span></span> and energy.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4: Daily free 45 min -->
+      <div class="hero-stage" id="hero-ob3">
+        <div class="free-stage">
+          <div class="free-badge">Gratis cada día</div>
+          <div class="free-number">
+            <span class="free-num">45</span>
+            <span class="free-unit">minutos</span>
+          </div>
+          <div class="free-bar">
+            <div class="free-bar-fill"></div>
+          </div>
+          <div class="free-desc">Traducción en vivo · Reinicio diario · Sin tarjeta</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Survey OR Onboard content -->
+    <div class="flow-content">
+
+      <!-- Survey -->
+      <div id="flow-survey">
+        <div class="survey-progress" id="survey-progress">
+          <div class="survey-progress-bar current"></div>
+          <div class="survey-progress-bar"></div>
+          <div class="survey-progress-bar"></div>
+          <div class="survey-progress-bar"></div>
+        </div>
+        <div class="survey-step" id="survey-step">1 / 4</div>
+        <div class="survey-question" id="survey-question">¿A qué idioma quieres traducir?</div>
+        <div class="survey-options" id="survey-options"></div>
+        <button class="survey-next" id="survey-next" onclick="nextSurvey()">Siguiente</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Paywall Modal (non-blocking, recording continues) -->
+<div class="paywall-modal-overlay" id="paywall-modal">
+  <div class="paywall-card">
+    <div class="paywall-icon"><span class="material-icons-round">bolt</span></div>
+    <div class="paywall-title">Actualiza a CatchUP Pro</div>
+    <div class="paywall-sub">Sigue grabando: con Pro tendrás tiempo ilimitado al instante.</div>
+    <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:32px;font-weight:800;color:#0f172a;"><span style="font-size:14px;font-weight:500;color:#64748b;">/mes</span></div>
+      <div style="font-size:12px;color:#059669;font-weight:500;margin-top:2px;">Cancela cuando quieras, sin compromiso</div>
+    </div>
+    <button class="paywall-cta" onclick="demoUpgradeModal()">Suscribirse</button>
+    <button class="paywall-skip" onclick="closePaywallModal()">Ahora no</button>
+  </div>
+</div>
+
+<!-- Scripts (El orden importa) -->
+<script src="js/es/data.js"></script>
+<script src="js/es/app.js"></script>
+<script src="js/es/recording.js"></script>
+<script src="js/es/wordbank.js"></script>
+<script src="js/es/history.js"></script>
+<script src="js/es/practice.js"></script>
+
+<script>
+/* ════════════════════════════════════════
+   AUTH + PAYWALL + PROFILE (CatchUP demo)
+   ════════════════════════════════════════ */
+
+var isLoggedIn = false;
+var isPro = false;
+var todayUsedMin = 0;
+var maxFreeMin = 45;
+
+var previousScreen = 'screen-1';
+
+/* ── Override startRecording to gate auth + paywall ── */
+var _origStartRecording = startRecording;
+startRecording = function() {
+  if (!isLoggedIn) {
+    previousScreen = 'screen-1';
+    showScreen('screen-login');
+    return;
+  }
+  if (!isPro && todayUsedMin >= maxFreeMin) {
+    document.getElementById('paywall-title').textContent = 'Tiempo gratis de hoy agotado';
+    document.getElementById('paywall-sub').textContent = 'El plan gratis permite 45 min al día. Pasa a Pro para tiempo ilimitado.';
+    previousScreen = 'screen-1';
+    showScreen('screen-paywall');
+    return;
+  }
+  updateUsage();
+  /* Show remaining time countdown */
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge) {
+    if (!isPro) {
+      remBadge.style.display = 'block';
+      var remainSec = (maxFreeMin - todayUsedMin) * 60;
+      clearInterval(window._remainInterval);
+      window._remainInterval = setInterval(function() {
+        remainSec--;
+        if (remainSec <= 0) { clearInterval(window._remainInterval); remainSec = 0; }
+        var rm = String(Math.floor(remainSec / 60)).padStart(2, '0');
+        var rs = String(remainSec % 60).padStart(2, '0');
+        var el = document.getElementById('remaining-display');
+        if (el) el.textContent = rm + ':' + rs;
+        /* Turn red when < 5 min */
+        if (remainSec < 300 && remBadge) {
+          remBadge.style.color = '#ef4444';
+          remBadge.style.background = '#fef2f2';
+          remBadge.style.borderColor = '#fca5a5';
+        }
+      }, 1000);
+    } else {
+      remBadge.style.display = 'none';
+    }
+  }
+  _origStartRecording();
+};
+
+/* ── Override endSession to show remaining time on S4 ── */
+var _origEndSession = endSession;
+endSession = function() {
+  clearInterval(window._remainInterval);
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge) remBadge.style.display = 'none';
+  _origEndSession();
+  /* Fill transcript in new S4 layout */
+  var transEl = document.getElementById('s4-transcript');
+  if (transEl && transEl.children.length === 0) {
+    transcriptData.forEach(function(item) {
+      var block = document.createElement('div');
+      block.className = 'trans-block';
+      block.style.margin = '0';
+      block.style.width = '100%';
+      var enDiv = document.createElement('div');
+      enDiv.className = 'trans-en';
+      enDiv.textContent = item.en;
+      var zhDiv = document.createElement('div');
+      zhDiv.className = 'trans-native';
+      zhDiv.textContent = item.zh;
+      block.appendChild(enDiv);
+      block.appendChild(zhDiv);
+      transEl.appendChild(block);
+    });
+  }
+  /* Update S4 remaining display */
+  var s4rem = document.getElementById('s4-remaining');
+  var s4val = document.getElementById('s4-remaining-val');
+  if (s4rem && !isPro) {
+    var remain = maxFreeMin - todayUsedMin;
+    if (remain < 0) remain = 0;
+    s4val.textContent = remain;
+    s4rem.style.display = 'flex';
+    if (remain <= 5) { s4rem.style.color = '#ef4444'; s4val.style.color = '#ef4444'; }
+  }
+  if (s4rem && isPro) { s4rem.style.display = 'none'; }
+  /* Track used time (add recorded seconds) */
+  todayUsedMin += Math.ceil(timerSec / 60);
+  updateUsage();
+};
+
+/* ── Override resumeRecording to show remaining badge ── */
+var _origResumeRecording = resumeRecording;
+resumeRecording = function() {
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge && !isPro) {
+    remBadge.style.display = 'block';
+    var remainSec = (maxFreeMin - todayUsedMin) * 60;
+    clearInterval(window._remainInterval);
+    window._remainInterval = setInterval(function() {
+      remainSec--;
+      if (remainSec <= 0) { clearInterval(window._remainInterval); remainSec = 0; }
+      var rm = String(Math.floor(remainSec / 60)).padStart(2, '0');
+      var rs = String(remainSec % 60).padStart(2, '0');
+      var el = document.getElementById('remaining-display');
+      if (el) el.textContent = rm + ':' + rs;
+      if (remainSec < 300 && remBadge) {
+        remBadge.style.color = '#ef4444';
+        remBadge.style.background = '#fef2f2';
+        remBadge.style.borderColor = '#fca5a5';
+      }
+    }, 1000);
+  }
+  _origResumeRecording();
+};
+
+/* ── Hide remaining badge on finish/reset ── */
+var _origFinishSession = finishSession;
+finishSession = function() {
+  clearInterval(window._remainInterval);
+  var remBadge = document.getElementById('time-banner');
+  if (remBadge) remBadge.style.display = 'none';
+  _origFinishSession();
+};
+
+/* ── Demo auth actions ── */
+function demoLogin() {
+  isLoggedIn = true;
+  document.getElementById('header-avatar').classList.add('logged-in');
+  showToast('Sesión iniciada');
+  showScreen(previousScreen);
+}
+
+function demoLogout() {
+  isLoggedIn = false;
+  isPro = false;
+  todayUsedMin = 0;
+  document.getElementById('header-avatar').classList.remove('logged-in');
+  showToast('Sesión cerrada');
+  switchTab('record');
+}
+
+function demoUpgrade() {
+  isPro = true;
+  var badge = document.getElementById('profile-plan-badge');
+  if (badge) { badge.textContent = 'Pro'; badge.className = 'profile-sub-badge pro'; }
+  showToast('¡Ya eres Pro!');
+  showScreen(previousScreen);
+  updateUsage();
+}
+
+function closePaywall() {
+  showScreen(previousScreen);
+}
+
+/* ── Profile ── */
+function openProfile() {
+  if (!isLoggedIn) {
+    showScreen('screen-login');
+    return;
+  }
+  previousScreen = document.querySelector('.screen.active') ? document.querySelector('.screen.active').id : 'screen-1';
+  showSubBar('Ajustes personales');
+  currentBackAction = function() {
+    showHomeBar();
+    showScreen(previousScreen);
+  };
+  updateUsage();
+  showScreen('screen-profile');
+}
+
+function updateUsage() {
+  var timeEl = document.getElementById('profile-usage-time');
+  if (timeEl) timeEl.textContent = todayUsedMin + ' minutos / ' + (isPro ? 'Ilimitado' : maxFreeMin + ' minutos');
+}
+
+/* ════════════════════════════════════════
+   DEMO Cambio de escenario
+   ════════════════════════════════════════ */
+function setDemo(mode) {
+  /* Reset all state */
+  isLoggedIn = false;
+  isPro = false;
+  todayUsedMin = 0;
+  savedWords = [];
+  isPaused = false;
+  hasStartedSession = false;
+  document.getElementById('header-avatar').classList.remove('logged-in');
+
+  /* Update switcher buttons */
+  document.querySelectorAll('.demo-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  if (typeof event !== 'undefined' && event && event.target) {
+    event.target.classList.add('active');
+  }
+
+  if (mode === 'new') {
+    /* Primera vez: sin sesión, todo vacío */
+    showBottomNav();
+    showHomeBar();
+    showScreen('screen-1');
+
+  } else if (mode === 'free') {
+    /* Usuario gratuito: con sesión, usado una vez, palabras guardadas */
+    isLoggedIn = true;
+    isPro = false;
+    todayUsedMin = 45;
+    document.getElementById('header-avatar').classList.add('logged-in');
+    document.getElementById('profile-name').textContent = 'Demo User';
+    document.getElementById('profile-email').textContent = 'demo@catchup.app';
+    var badge = document.getElementById('profile-plan-badge');
+    if (badge) { badge.textContent = 'Gratis'; badge.className = 'profile-sub-badge free'; }
+    showBottomNav();
+    showHomeBar();
+    showScreen('screen-1');
+
+  } else if (mode === 'pro') {
+    /* Pro Usuario: con sesión y pago */
+    isLoggedIn = true;
+    isPro = true;
+    todayUsedMin = 28;
+    document.getElementById('header-avatar').classList.add('logged-in');
+    document.getElementById('profile-name').textContent = 'Kiki Lin';
+    document.getElementById('profile-email').textContent = 'kiki@catchup.app';
+    var badge = document.getElementById('profile-plan-badge');
+    if (badge) { badge.textContent = 'Pro'; badge.className = 'profile-sub-badge pro'; }
+    showBottomNav();
+    showHomeBar();
+    showScreen('screen-1');
+  }
+
+  updateUsage();
+}
+/* Auto-init: Primera vez */
+setDemo('new');
+
+/* ── Order History ── */
+function showOrderHistory() {
+  showSubBar('Gestionar suscripción');
+  var prevScreen = 'screen-profile';
+  currentBackAction = function() {
+    showSubBar('Ajustes personales');
+    currentBackAction = function() { showHomeBar(); showScreen(previousScreen); };
+    showScreen('screen-profile');
+  };
+
+  /* Update order display based on Pro status */
+  var activeEl = document.getElementById('order-active');
+  var freeEl = document.getElementById('order-free');
+  var listEl = document.getElementById('order-list');
+
+  if (isPro) {
+    if (activeEl) activeEl.style.display = 'flex';
+    if (freeEl) freeEl.style.display = 'none';
+    if (listEl) listEl.innerHTML =
+      '<div class="profile-item" style="border-bottom:1px solid #f1f5f9;">' +
+        '<span class="material-icons-round" style="color:#059669;">receipt</span>' +
+        '<div style="flex:1;">' +
+          '<span class="profile-item-label">Pro Plan — $18.00</span>' +
+          '<div style="font-size:11px;color:#64748b;margin-top:2px;">2026/06/15 · Visa •••• 4242</div>' +
+        '</div>' +
+        '<span style="font-size:11px;color:#059669;font-weight:600;">Pagado</span>' +
+      '</div>';
+  } else {
+    if (activeEl) activeEl.style.display = 'none';
+    if (freeEl) freeEl.style.display = 'flex';
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:13px;">Aún sin pagos</div>';
+  }
+
+  showScreen('screen-orders');
+}
+
+/* ════════ Flow popup hero switching ════════ */
+function showHero(id) {
+  document.querySelectorAll('.hero-stage').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  var target = document.getElementById(id);
+  if (target) target.classList.add('active');
+}
+
+/* Typing animation for Q1 */
+function typeText(elId, text, delay) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '<span class="typing-cursor"></span>';
+  setTimeout(function() {
+    var i = 0;
+    el.innerHTML = '';
+    var interval = setInterval(function() {
+      el.textContent += text.charAt(i);
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 40);
+  }, delay);
+}
+function startTypingLoop() {
+  typeText('typing-1', 'Hoy nos centraremos en la fotosíntesis.', 500);
+  setTimeout(startTypingLoop, 9000);
+}
+startTypingLoop();
+
+/* ════════ Survey ════════ */
+var surveyStep = 0;
+var surveyAnswers = {};
+var surveyData = [
+  {
+    hero: 'hero-q1',
+    question: '¿A qué idioma quieres traducir?',
+    type: 'single',
+    options: ['Chino tradicional', 'Chino simplificado', 'Español', 'Français', 'Deutsch', 'Tiếng Việt']
+  },
+  {
+    hero: 'hero-ob1',
+    question: '¿Cuál es tu rol?',
+    type: 'single',
+    options: ['Estudiante', 'Profesional', 'Fundador/Director', 'Freelance', 'Otro']
+  },
+  {
+    hero: 'hero-ob2',
+    question: '¿En qué contexto traduces más? (puedes elegir varios)',
+    type: 'multi',
+    options: ['Vida diaria', 'Reuniones', 'Conferencias', 'Clases', 'Otro'],
+    hasOther: true
+  },
+  {
+    hero: 'hero-ob3',
+    question: '¿Cómo conociste CatchUP?',
+    type: 'single',
+    options: ['Anuncio en redes', 'Recomendación', 'Buscador', 'Otro']
+  }
+];
+
+function renderSurvey() {
+  var s = surveyData[surveyStep];
+  showHero(s.hero);
+  document.getElementById('survey-step').textContent = (surveyStep + 1) + ' / ' + surveyData.length;
+  document.getElementById('survey-question').textContent = s.question;
+
+  /* Progress bars */
+  var bars = document.querySelectorAll('.survey-progress-bar');
+  bars.forEach(function(bar, i) {
+    bar.className = 'survey-progress-bar';
+    if (i < surveyStep) bar.classList.add('done');
+    if (i === surveyStep) bar.classList.add('current');
+  });
+
+  /* Options */
+  var container = document.getElementById('survey-options');
+  container.innerHTML = '';
+  s.options.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'survey-option';
+    var indicator = s.type === 'multi' ? '<div class="survey-check"></div>' : '<div class="survey-radio"></div>';
+    btn.innerHTML = indicator + '<span>' + opt + '</span>';
+    btn.onclick = function() {
+      if (s.type === 'single') {
+        container.querySelectorAll('.survey-option').forEach(function(el) { el.classList.remove('selected'); });
+        btn.classList.add('selected');
+        surveyAnswers[surveyStep] = opt;
+      } else {
+        btn.classList.toggle('selected');
+        var selected = [];
+        container.querySelectorAll('.survey-option.selected').forEach(function(el) {
+          selected.push(el.querySelector('span').textContent);
+        });
+        /* Include other input if filled */
+        var otherInput = document.getElementById('survey-other-input');
+        if (otherInput && otherInput.value.trim()) {
+          selected.push(otherInput.value.trim());
+        }
+        surveyAnswers[surveyStep] = selected;
+      }
+      updateSurveyNext();
+    };
+    container.appendChild(btn);
+  });
+
+  /* Add text input for "Otro" in multi-select with hasOther */
+  if (s.hasOther) {
+    var otherWrap = document.createElement('div');
+    otherWrap.style.cssText = 'margin-top:4px;';
+    otherWrap.innerHTML = '<input id="survey-other-input" type="text" placeholder="Otro, escribe aquí..." style="width:100%;padding:12px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-family:inherit;font-size:14px;color:#0f172a;outline:none;box-sizing:border-box;" oninput="updateSurveyOther()">';
+    container.appendChild(otherWrap);
+  }
+
+  updateSurveyNext();
+}
+
+function updateSurveyNext() {
+  var btn = document.getElementById('survey-next');
+  var answer = surveyAnswers[surveyStep];
+  var hasAnswer = answer && (Array.isArray(answer) ? answer.length > 0 : true);
+  btn.className = hasAnswer ? 'survey-next enabled' : 'survey-next';
+  if (surveyStep === surveyData.length - 1) {
+    btn.textContent = 'Comenzar ahora';
+  } else {
+    btn.textContent = 'Siguiente';
+  }
+}
+
+function nextSurvey() {
+  var answer = surveyAnswers[surveyStep];
+  if (!answer || (Array.isArray(answer) && answer.length === 0)) return;
+
+  surveyStep++;
+  if (surveyStep >= surveyData.length) {
+    /* Survey done — apply language setting */
+    var langMap = {
+      'Chino tradicional': { code: 'ZH', label: 'Chino', locale: 'zh' },
+      'Chino simplificado': { code: 'ZH', label: 'Chino', locale: 'zh' },
+      'Español': { code: 'ES', label: 'Español', locale: 'es' },
+      'Français': { code: 'FR', label: 'Français', locale: 'fr' },
+      'Deutsch': { code: 'DE', label: 'Deutsch', locale: 'de' },
+      'Tiếng Việt': { code: 'VI', label: 'Tiếng Việt', locale: 'vi' }
+    };
+    var chosen = surveyAnswers[0];
+    var lang = langMap[chosen];
+    if (lang) {
+      var codeEl = document.getElementById('target-code');
+      var labelEl = document.getElementById('target-label');
+      if (codeEl) codeEl.textContent = lang.code;
+      if (labelEl) labelEl.textContent = lang.label;
+    }
+
+    /* Survey done — close popup and enter app directly */
+    document.getElementById('flow-overlay').style.display = 'none';
+    showToast('Empezar a usar CatchUP');
+    showScreen('screen-1');
+    return;
+  }
+  renderSurvey();
+}
+
+function updateSurveyOther() {
+  var otherInput = document.getElementById('survey-other-input');
+  var container = document.getElementById('survey-options');
+  var selected = [];
+  container.querySelectorAll('.survey-option.selected').forEach(function(el) {
+    selected.push(el.querySelector('span').textContent);
+  });
+  if (otherInput && otherInput.value.trim()) {
+    selected.push(otherInput.value.trim());
+  }
+  surveyAnswers[surveyStep] = selected;
+  updateSurveyNext();
+}
+
+/* ════════ Login popup ════════ */
+var loginMode = 'signup';
+
+function switchLoginMode(mode) {
+  loginMode = mode;
+  var signupTab = document.getElementById('tab-signup');
+  var loginTab = document.getElementById('tab-login');
+  var nameField = document.getElementById('popup-name-field');
+  var googleText = document.getElementById('popup-google-text');
+  var submitBtn = document.getElementById('popup-submit');
+  var pwInput = document.getElementById('popup-password');
+
+  if (mode === 'signup') {
+    signupTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);';
+    loginTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;';
+    if (nameField) nameField.style.display = 'block';
+    if (googleText) googleText.textContent = 'Continuar con Google';
+    if (submitBtn) submitBtn.textContent = 'Crear cuenta';
+    if (pwInput) pwInput.placeholder = '8 caracteres o más';
+  } else {
+    loginTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);';
+    signupTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;';
+    if (nameField) nameField.style.display = 'none';
+    if (googleText) googleText.textContent = 'Continuar con Google';
+    if (submitBtn) submitBtn.textContent = 'Iniciar sesión';
+    if (pwInput) pwInput.placeholder = 'Introduce tu contraseña';
+  }
+}
+
+function popupLogin() {
+  /* Simulate auth complete */
+  isLoggedIn = true;
+  document.getElementById('header-avatar').classList.add('logged-in');
+  document.getElementById('login-popup').style.display = 'none';
+
+  if (loginMode === 'signup') {
+    /* New user — show flow popup (survey only) */
+    document.getElementById('flow-survey').style.display = 'block';
+    surveyStep = 0; surveyAnswers = {};
+    document.getElementById('flow-overlay').style.display = 'flex';
+    renderSurvey();
+  } else {
+    /* Existing user — skip survey + onboarding */
+    showToast('Sesión iniciada');
+    showScreen('screen-1');
+  }
+}
+
+/* ════════ Onboarding ════════ */
+var onboardStep = 0;
+var onboardData = [
+  {
+    hero: 'hero-q1',
+    title: 'Traducción en vivo, fácil de entender',
+    desc: '¿No entiendes el idioma? Abre CatchUP,<br>traduce cada frase por ti.'
+  },
+  {
+    hero: 'hero-ob2',
+    title: 'Toca para crear tu biblioteca',
+    desc: '¿Una palabra nueva?<br>Tócala y se guarda en tu biblioteca.'
+  },
+  {
+    hero: 'hero-ob3',
+    title: 'Práctica de ortografía para reforzar',
+    desc: 'Con ortografía y repetición,<br>la recordarás la próxima vez.'
+  }
+];
+
+function nextOnboard() {
+  onboardStep++;
+  if (onboardStep >= onboardData.length) {
+    closeOnboard();
+    showToast('Empezar a usar CatchUP');
+    showScreen('screen-1');
+    return;
+  }
+  renderOnboard();
+}
+
+function renderOnboard() {
+  var d = onboardData[onboardStep];
+  showHero(d.hero);
+  document.getElementById('onboard-title').textContent = d.title;
+  document.getElementById('onboard-desc').innerHTML = d.desc;
+  for (var i = 0; i < onboardData.length; i++) {
+    document.getElementById('dot-' + i).classList.toggle('active', i === onboardStep);
+  }
+  document.getElementById('onboard-next').textContent =
+    (onboardStep === onboardData.length - 1) ? 'Empezar' : 'Siguiente';
+}
+
+function closeOnboard() {
+  var el = document.getElementById('flow-overlay');
+  if (el) el.style.display = 'none';
+}
+
+/* ── Paywall modal (non-blocking) ── */
+function openPaywallModal() {
+  document.getElementById('paywall-modal').classList.add('open');
+}
+function closePaywallModal() {
+  document.getElementById('paywall-modal').classList.remove('open');
+}
+var _waitingStripe = false;
+
+function demoUpgradeModal() {
+  /* Open Stripe Checkout in new tab */
+  window.open('https://checkout.stripe.com/pay/demo_catchup_pro', '_blank');
+  _waitingStripe = true;
+  closePaywallModal();
+  showToast('Página de pago abierta, vuelve cuando termines');
+}
+
+/* Detect user returning from Stripe tab */
+window.addEventListener('focus', function() {
+  if (!_waitingStripe) return;
+  _waitingStripe = false;
+  /* Simulate payment confirmed */
+  isPro = true;
+  var badge = document.getElementById('profile-plan-badge');
+  if (badge) { badge.textContent = 'Pro'; badge.className = 'profile-sub-badge pro'; }
+  var banner = document.getElementById('time-banner');
+  if (banner) banner.style.display = 'none';
+  clearInterval(window._remainInterval);
+  showToast('¡Bienvenido a Pro!');
+  updateUsage();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CatchUP — Onboarding v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: #f5f7f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .popup {
+      width: 100%; max-width: 880px;
+      height: 560px;
+      background: #fff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.15);
+      animation: fadeIn .4s ease;
+      display: flex; flex-direction: row;
+    }
+    @media (max-width: 720px) {
+      .popup {
+        flex-direction: column;
+        max-width: 440px;
+        height: 720px;
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════ Visual hero (left) ═══════════ */
+    .hero {
+      background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 100%);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      width: 50%;
+      flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    @media (max-width: 720px) {
+      .hero {
+        width: 100%;
+        height: 320px;
+        padding: 28px 28px 32px;
+      }
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(16,185,129,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 80% 80%, rgba(16,185,129,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-stage {
+      position: relative; z-index: 1;
+      display: none;
+      animation: stageIn .5s ease;
+    }
+    .hero-stage.active { display: block; }
+    @keyframes stageIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Shared pill ─── */
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 20px;
+      padding: 6px 14px 6px 12px;
+      font-size: 12px; font-weight: 600;
+      color: #64748b;
+      box-shadow: 0 2px 8px rgba(16,185,129,.1);
+      margin-bottom: 18px;
+    }
+    .hero-pill .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #10b981;
+      animation: pulseGreen 1.5s ease-in-out infinite;
+    }
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ─── Q1: language flip + chat ─── */
+    .lang-flip {
+      position: relative; display: inline-block;
+      min-width: 80px; height: 18px;
+      overflow: hidden; vertical-align: middle;
+    }
+    .lang-flip .item {
+      position: absolute; inset: 0;
+      color: #059669; font-weight: 700;
+      opacity: 0; transform: translateY(100%);
+      animation: langCycle 9s infinite;
+    }
+    .lang-flip .item:nth-child(1) { animation-delay: 0s; }
+    .lang-flip .item:nth-child(2) { animation-delay: 1.5s; }
+    .lang-flip .item:nth-child(3) { animation-delay: 3s; }
+    .lang-flip .item:nth-child(4) { animation-delay: 4.5s; }
+    .lang-flip .item:nth-child(5) { animation-delay: 6s; }
+    .lang-flip .item:nth-child(6) { animation-delay: 7.5s; }
+    @keyframes langCycle {
+      0% { opacity: 0; transform: translateY(100%); }
+      4% { opacity: 1; transform: translateY(0); }
+      12% { opacity: 1; transform: translateY(0); }
+      18% { opacity: 0; transform: translateY(-100%); }
+      100% { opacity: 0; transform: translateY(-100%); }
+    }
+    .chat-stack { display: flex; flex-direction: column; gap: 10px; }
+    .chat-bubble {
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    }
+    .chat-en {
+      font-size: 13px; font-weight: 500; color: #0f172a;
+      line-height: 1.5; margin-bottom: 6px;
+    }
+    .chat-arrow {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px;
+    }
+    .chat-arrow .material-icons-round { font-size: 12px; color: #10b981; }
+    .chat-zh {
+      font-size: 13px; color: #475569; line-height: 1.6;
+      padding-left: 8px; border-left: 2px solid #6ee7b7; min-height: 22px;
+    }
+    .typing-cursor {
+      display: inline-block;
+      width: 2px; height: 12px; background: #10b981;
+      vertical-align: middle;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* ─── Q2: Role avatars rotating ─── */
+    .role-stage {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px;
+      padding: 16px 0;
+    }
+    .role-avatar {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+      border: 1px solid #d1fae5;
+      box-shadow: 0 2px 12px rgba(16,185,129,.1);
+      opacity: 0; transform: scale(.8);
+      animation: rolePop 9s infinite;
+    }
+    .role-avatar:nth-child(1) { animation-delay: 0s; }
+    .role-avatar:nth-child(2) { animation-delay: 1.8s; }
+    .role-avatar:nth-child(3) { animation-delay: 3.6s; }
+    .role-avatar:nth-child(4) { animation-delay: 5.4s; }
+    .role-avatar:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes rolePop {
+      0% { opacity: 0; transform: scale(.8); }
+      3% { opacity: 1; transform: scale(1.05); }
+      8% { opacity: 1; transform: scale(1); }
+      18% { opacity: 1; transform: scale(1); }
+      22% { opacity: 0; transform: scale(.9); }
+      100% { opacity: 0; transform: scale(.8); }
+    }
+    .role-avatar .material-icons-round {
+      font-size: 36px; color: #059669;
+    }
+    .role-label {
+      position: absolute;
+      bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-size: 14px; font-weight: 700; color: #059669;
+      background: #fff;
+      border: 1px solid #d1fae5;
+      padding: 6px 14px;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(16,185,129,.1);
+      opacity: 0;
+      animation: roleLabel 9s infinite;
+    }
+    .role-label:nth-child(1) { animation-delay: 0s; }
+    .role-label:nth-child(2) { animation-delay: 1.8s; }
+    .role-label:nth-child(3) { animation-delay: 3.6s; }
+    .role-label:nth-child(4) { animation-delay: 5.4s; }
+    .role-label:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes roleLabel {
+      0%, 2% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      6% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      22% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+      100% { opacity: 0; }
+    }
+
+    /* ─── Q3: Scenario cards ─── */
+    .scene-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .scene-card {
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      animation: sceneFloat 3s ease-in-out infinite;
+    }
+    .scene-card:nth-child(1) { animation-delay: 0s; }
+    .scene-card:nth-child(2) { animation-delay: .3s; }
+    .scene-card:nth-child(3) { animation-delay: .6s; }
+    .scene-card:nth-child(4) { animation-delay: .9s; }
+    .scene-card:nth-child(5) { animation-delay: 1.2s; }
+    @keyframes sceneFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .scene-card .material-icons-round {
+      font-size: 26px; color: #059669;
+      margin-bottom: 4px;
+    }
+    .scene-card .scene-label {
+      font-size: 11px; font-weight: 600; color: #334155;
+    }
+
+    /* ─── Q4: Source channels ─── */
+    .source-grid {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .source-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      animation: sourceSlide .6s ease both;
+    }
+    .source-row:nth-child(1) { animation-delay: .2s; }
+    .source-row:nth-child(2) { animation-delay: .35s; }
+    .source-row:nth-child(3) { animation-delay: .5s; }
+    @keyframes sourceSlide {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .source-row .material-icons-round {
+      font-size: 22px; color: #059669;
+      background: #ecfdf5;
+      padding: 6px;
+      border-radius: 50%;
+    }
+    .source-row .source-text { font-size: 13px; font-weight: 500; color: #334155; flex: 1; }
+    .source-row .source-arrow {
+      width: 22px; height: 2px;
+      background: linear-gradient(90deg, transparent, #10b981);
+      animation: arrowDraw 2s ease-in-out infinite;
+    }
+    @keyframes arrowDraw {
+      0%, 100% { opacity: .3; }
+      50% { opacity: 1; }
+    }
+
+    /* ─── Q2: SVG illustration ─── */
+    .svg-stage {
+      position: relative;
+      height: 260px;
+      display: flex; align-items: center; justify-content: center;
+      animation: svgFloat 4s ease-in-out infinite;
+    }
+    .svg-stage svg,
+    .svg-stage img {
+      width: 100%; max-width: 360px; height: 100%; object-fit: contain;
+    }
+    @keyframes svgFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    /* (legacy classes kept for cleanup safety) */
+    .desk-stage {
+      position: relative;
+      height: 180px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .laptop {
+      position: relative;
+      width: 140px; height: 90px;
+      animation: laptopFloat 4s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes laptopFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .laptop-screen {
+      width: 140px; height: 80px;
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      border: 2.5px solid #1e293b;
+      border-radius: 10px 10px 4px 4px;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .laptop-base {
+      width: 168px; height: 8px;
+      background: #e2e8f0;
+      border: 2.5px solid #1e293b;
+      border-radius: 0 0 12px 12px;
+      margin: 0 -14px;
+      position: relative;
+    }
+    .laptop-base::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px; height: 3px;
+      background: #1e293b;
+      border-radius: 2px;
+    }
+    /* Screen content: typing lines */
+    .screen-line {
+      height: 5px;
+      background: #10b981;
+      border-radius: 3px;
+      margin-bottom: 5px;
+      animation: lineType 3s ease-in-out infinite;
+    }
+    .screen-line.l1 { width: 80%; animation-delay: 0s; }
+    .screen-line.l2 { width: 60%; animation-delay: .3s; background: #6ee7b7; }
+    .screen-line.l3 { width: 75%; animation-delay: .6s; background: #10b981; }
+    .screen-line.l4 { width: 50%; animation-delay: .9s; background: #6ee7b7; }
+    @keyframes lineType {
+      0% { width: 0; opacity: 0; }
+      30% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    .screen-cursor {
+      position: absolute;
+      bottom: 14px; right: 14px;
+      width: 2px; height: 8px;
+      background: #059669;
+      animation: blink 1s infinite;
+    }
+    /* Floating items around laptop */
+    .desk-item {
+      position: absolute;
+      animation: itemFloat 5s ease-in-out infinite;
+    }
+    .desk-item .material-icons-round {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.08));
+    }
+    @keyframes itemFloat {
+      0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+      50% { transform: translateY(-6px) rotate(var(--rot, 0deg)); }
+    }
+    .desk-item.bulb {
+      top: 6px; left: 22px; --rot: -8deg;
+      font-size: 28px; color: #fbbf24;
+      animation-delay: 0s;
+    }
+    .desk-item.coffee {
+      bottom: 28px; left: 14px; --rot: 5deg;
+      font-size: 24px; color: #92400e;
+      animation-delay: 1s;
+    }
+    .desk-item.notes {
+      top: 14px; right: 18px; --rot: 6deg;
+      font-size: 26px; color: #0ea5e9;
+      animation-delay: .5s;
+    }
+    .desk-item.chart {
+      bottom: 24px; right: 22px; --rot: -4deg;
+      font-size: 24px; color: #10b981;
+      animation-delay: 1.5s;
+    }
+    /* Sparkles */
+    .desk-spark {
+      position: absolute;
+      font-size: 10px;
+      color: #fbbf24;
+      animation: sparkPop 2s ease-in-out infinite;
+    }
+    .desk-spark.sp1 { top: 30px; left: 60px; animation-delay: 0s; }
+    .desk-spark.sp2 { top: 50%; right: 50px; animation-delay: .8s; color: #10b981; }
+    .desk-spark.sp3 { bottom: 50px; left: 50%; animation-delay: 1.4s; color: #3b82f6; }
+    @keyframes sparkPop {
+      0%, 100% { opacity: 0; transform: scale(.6); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* ─── Onboarding 2: Tap to save ─── */
+    .tap-stage {
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 16px;
+      padding: 18px;
+      position: relative;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    }
+    .tap-sentence {
+      font-size: 14px; line-height: 1.7; color: #0f172a;
+    }
+    .tap-sentence .word-tap {
+      display: inline-block;
+      color: #00B8D9;
+      font-weight: 600;
+      position: relative;
+      animation: wordHighlight 3s ease-in-out infinite;
+    }
+    @keyframes wordHighlight {
+      0%, 100% { background: rgba(0,184,217,0); }
+      50% { background: rgba(0,184,217,.15); }
+    }
+    .tap-finger {
+      position: absolute;
+      animation: fingerTap 3s ease-in-out infinite;
+    }
+    .tap-finger .material-icons-round {
+      font-size: 28px; color: #0f172a;
+    }
+    @keyframes fingerTap {
+      0%, 100% { opacity: 0; transform: translate(0, 0); }
+      40% { opacity: 1; transform: translate(0, 0); }
+      55% { opacity: 1; transform: translate(2px, 2px) scale(.9); }
+      70% { opacity: 1; transform: translate(0, 0); }
+      85% { opacity: 0; }
+    }
+    .save-pop {
+      position: absolute;
+      top: -8px; right: 12px;
+      background: #dcfce7;
+      color: #059669;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 16px;
+      display: flex; align-items: center; gap: 4px;
+      box-shadow: 0 2px 6px rgba(16,185,129,.2);
+      opacity: 0;
+      animation: savePop 3s ease-in-out infinite;
+    }
+    .save-pop .material-icons-round { font-size: 13px; }
+    @keyframes savePop {
+      0%, 50% { opacity: 0; transform: translateY(8px); }
+      60% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-4px); }
+    }
+
+    /* ─── Onboarding 3: Practice card ─── */
+    .practice-stage {
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 16px;
+      padding: 20px 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+      text-align: center;
+    }
+    .practice-zh {
+      font-size: 22px; font-weight: 700; color: #0f172a;
+      margin-bottom: 14px;
+    }
+    .practice-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #10b981;
+      background: #f0fdf4;
+      border-radius: 10px;
+      font-size: 16px; font-weight: 600;
+      color: #059669; letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+    .practice-check {
+      font-size: 12px; font-weight: 600; color: #059669;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      animation: checkBounce 2s ease infinite;
+    }
+    .practice-check .material-icons-round { font-size: 16px; }
+    @keyframes checkBounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* ═══════════ Content (right) ═══════════ */
+    .survey-content {
+      padding: 32px 32px 28px;
+      flex: 1;
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .survey-options { flex: 1; }
+    .survey-next { margin-top: auto; }
+    @media (max-width: 720px) {
+      .survey-content { padding: 24px 28px 24px; }
+    }
+    .survey-progress {
+      display: flex; gap: 6px; margin-bottom: 18px;
+    }
+    .survey-progress-bar {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: #e2e8f0; transition: background .3s;
+    }
+    .survey-progress-bar.done,
+    .survey-progress-bar.current { background: #10b981; }
+    .survey-step {
+      font-size: 11px; color: #94a3b8; font-weight: 500; margin-bottom: 6px;
+    }
+    .survey-question {
+      font-size: 17px; font-weight: 700; color: #0f172a;
+      margin-bottom: 16px; line-height: 1.4;
+    }
+    .survey-options {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .survey-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #334155;
+      background: #fff; transition: all .15s;
+      text-align: left;
+    }
+    .survey-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .survey-option.selected { border-color: #059669; background: #ecfdf5; color: #059669; }
+    .survey-radio {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .survey-option.selected .survey-radio {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-radio::after {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff;
+    }
+    .survey-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: #e2e8f0; color: #94a3b8;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: default; transition: all .15s;
+    }
+    .survey-next.enabled {
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .survey-next.enabled:hover { transform: translateY(-1px); }
+
+    /* Onboarding section */
+    .onboard-content {
+      padding: 28px 28px 24px;
+      text-align: center;
+      flex: 1;
+      display: flex; flex-direction: column;
+    }
+    .onboard-content .onboard-dots { margin-top: auto; }
+    .onboard-title {
+      font-size: 22px; font-weight: 700; color: #0f172a;
+      margin-bottom: 10px; letter-spacing: -0.01em;
+    }
+    .onboard-desc {
+      font-size: 14px; color: #64748b;
+      line-height: 1.7; margin-bottom: 20px;
+    }
+    .onboard-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+    }
+    .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #e2e8f0; transition: all .2s;
+    }
+    .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .onboard-next:hover { transform: translateY(-1px); }
+    .onboard-skip {
+      margin-top: 14px; background: none; border: none;
+      color: #94a3b8; font-family: inherit;
+      font-size: 13px; cursor: pointer;
+    }
+    .onboard-skip:hover { color: #64748b; }
+
+    /* Mode switcher */
+    .mode-switch {
+      position: fixed; top: 16px; right: 16px;
+      display: flex; gap: 6px; z-index: 100;
+    }
+    .mode-btn {
+      font-size: 11px; font-weight: 600; padding: 6px 12px;
+      border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer;
+      font-family: inherit;
+    }
+    .mode-btn.active { background: #059669; color: #fff; border-color: #059669; }
+  </style>
+</head>
+<body>
+
+
+<div class="popup">
+
+  <!-- Hero stages -->
+  <div class="hero">
+
+    <!-- Q1: Translation -->
+    <div class="hero-stage" id="hero-q1">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        即時翻譯為
+        <span class="lang-flip">
+          <span class="item">繁體中文</span>
+          <span class="item">简体中文</span>
+          <span class="item">Español</span>
+          <span class="item">Français</span>
+          <span class="item">Deutsch</span>
+          <span class="item">Tiếng Việt</span>
+        </span>
+      </div>
+      <div class="chat-stack">
+        <div class="chat-bubble">
+          <div class="chat-en">"Today we will focus on photosynthesis."</div>
+          <div class="chat-arrow"><span class="material-icons-round">south_east</span>AI 翻譯中</div>
+          <div class="chat-zh" id="typing-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2: Role -->
+    <div class="hero-stage" id="hero-q2">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        每種角色都適用
+      </div>
+      <div class="role-stage" style="position:relative;height:140px;">
+        <div style="position:relative;width:96px;height:96px;">
+          <div class="role-avatar" style="position:absolute;inset:0;"><span class="material-icons-round">school</span></div>
+          <div class="role-avatar" style="position:absolute;inset:0;"><span class="material-icons-round">work</span></div>
+          <div class="role-avatar" style="position:absolute;inset:0;"><span class="material-icons-round">rocket_launch</span></div>
+          <div class="role-avatar" style="position:absolute;inset:0;"><span class="material-icons-round">laptop_mac</span></div>
+          <div class="role-avatar" style="position:absolute;inset:0;"><span class="material-icons-round">person</span></div>
+        </div>
+        <div class="role-label">學生</div>
+        <div class="role-label">上班族</div>
+        <div class="role-label">創辦人</div>
+        <div class="role-label">自由工作者</div>
+        <div class="role-label">其他</div>
+      </div>
+    </div>
+
+    <!-- Q3: Scenario -->
+    <div class="hero-stage" id="hero-q3">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        各種場景都罩得住
+      </div>
+      <div class="scene-grid">
+        <div class="scene-card"><span class="material-icons-round">forum</span><div class="scene-label">日常</div></div>
+        <div class="scene-card"><span class="material-icons-round">groups</span><div class="scene-label">會議</div></div>
+        <div class="scene-card"><span class="material-icons-round">campaign</span><div class="scene-label">演講</div></div>
+        <div class="scene-card"><span class="material-icons-round">school</span><div class="scene-label">上課</div></div>
+        <div class="scene-card"><span class="material-icons-round">play_circle</span><div class="scene-label">看片</div></div>
+      </div>
+    </div>
+
+    <!-- Q4: Source -->
+    <div class="hero-stage" id="hero-q4">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        讓更多人聽懂世界
+      </div>
+      <div class="source-grid">
+        <div class="source-row">
+          <span class="material-icons-round">campaign</span>
+          <span class="source-text">社群廣告</span>
+          <span class="source-arrow"></span>
+        </div>
+        <div class="source-row">
+          <span class="material-icons-round">favorite</span>
+          <span class="source-text">朋友推薦</span>
+          <span class="source-arrow"></span>
+        </div>
+        <div class="source-row">
+          <span class="material-icons-round">search</span>
+          <span class="source-text">搜尋引擎</span>
+          <span class="source-arrow"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 (Role): Workspace illustration -->
+    <div class="hero-stage" id="hero-ob1">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        為你的工作場景而生
+      </div>
+      <div class="svg-stage">
+        <img src="assets/hero-role.png" alt="角色情境" />
+      </div>
+    </div>
+
+
+    <!-- Onboarding 2: Tap to save -->
+    <div class="hero-stage" id="hero-ob2">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        點擊單字即保存
+      </div>
+      <div class="tap-stage">
+        <div class="save-pop"><span class="material-icons-round">bookmark</span>已保存 photosynthesis</div>
+        <div class="tap-sentence">
+          Today we will focus on <span class="word-tap">photosynthesis<span class="tap-finger" style="top:18px;right:-6px;"><span class="material-icons-round">touch_app</span></span></span> and energy.
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding 3: Practice -->
+    <div class="hero-stage" id="hero-ob3">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        拼寫練習加深記憶
+      </div>
+      <div class="practice-stage">
+        <div class="practice-zh">光合作用</div>
+        <input class="practice-input" value="photosynthesis" readonly>
+        <div class="practice-check"><span class="material-icons-round">check_circle</span>正確！</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Survey content -->
+  <div class="survey-content" id="survey-section">
+    <div class="survey-progress" id="survey-progress">
+      <div class="survey-progress-bar current"></div>
+      <div class="survey-progress-bar"></div>
+      <div class="survey-progress-bar"></div>
+      <div class="survey-progress-bar"></div>
+    </div>
+    <div class="survey-step" id="survey-step">1 / 4</div>
+    <div class="survey-question" id="survey-question">你要將英文翻譯成</div>
+    <div class="survey-options" id="survey-options"></div>
+    <button class="survey-next" id="survey-next" onclick="nextSurvey()">下一步</button>
+  </div>
+
+
+</div>
+
+<script>
+/* Typing for Q1 */
+function typeText(elId, text, delay) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '<span class="typing-cursor"></span>';
+  setTimeout(function() {
+    var i = 0;
+    el.innerHTML = '';
+    var interval = setInterval(function() {
+      el.textContent += text.charAt(i);
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 40);
+  }, delay);
+}
+
+function startTypingLoop() {
+  typeText('typing-1', '今天我們將重點學習光合作用。', 500);
+  setTimeout(startTypingLoop, 9000);
+}
+startTypingLoop();
+
+/* Switch hero stage */
+function showHero(id) {
+  document.querySelectorAll('.hero-stage').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  var target = document.getElementById(id);
+  if (target) target.classList.add('active');
+}
+
+/* Survey */
+var surveyStep = 0;
+var surveyAnswers = {};
+var surveyData = [
+  { hero: 'hero-q1', question: '你要將英文翻譯成', options: ['繁體中文', '简体中文', 'Español', 'Français', 'Deutsch', 'Tiếng Việt'] },
+  { hero: 'hero-ob1', question: '你目前的角色是', options: ['學生', '上班族', '創辦人/負責人', '自由工作者', '其他'] },
+  { hero: 'hero-ob2', question: '你最常的翻譯情境', options: ['日常生活', '會議', '演講', '上課', '看影片'] },
+  { hero: 'hero-ob3', question: '你從哪裡知道 CatchUP', options: ['社群廣告', '朋友推薦', '搜尋引擎', '其他'] }
+];
+
+function renderSurvey() {
+  var s = surveyData[surveyStep];
+  showHero(s.hero);
+  document.getElementById('survey-step').textContent = (surveyStep + 1) + ' / ' + surveyData.length;
+  document.getElementById('survey-question').textContent = s.question;
+
+  document.querySelectorAll('.survey-progress-bar').forEach(function(bar, i) {
+    bar.className = 'survey-progress-bar';
+    if (i < surveyStep) bar.classList.add('done');
+    if (i === surveyStep) bar.classList.add('current');
+  });
+
+  var container = document.getElementById('survey-options');
+  container.innerHTML = '';
+  s.options.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'survey-option';
+    btn.innerHTML = '<div class="survey-radio"></div><span>' + opt + '</span>';
+    btn.onclick = function() {
+      container.querySelectorAll('.survey-option').forEach(function(el) { el.classList.remove('selected'); });
+      btn.classList.add('selected');
+      surveyAnswers[surveyStep] = opt;
+      updateSurveyNext();
+    };
+    container.appendChild(btn);
+  });
+  updateSurveyNext();
+}
+
+function updateSurveyNext() {
+  var btn = document.getElementById('survey-next');
+  btn.className = surveyAnswers[surveyStep] ? 'survey-next enabled' : 'survey-next';
+  btn.textContent = (surveyStep === surveyData.length - 1) ? '完成' : '下一步';
+}
+
+function nextSurvey() {
+  if (!surveyAnswers[surveyStep]) return;
+  surveyStep++;
+  if (surveyStep >= surveyData.length) { alert('完成！進入 App'); return; }
+  renderSurvey();
+}
+
+/* Onboarding */
+var onboardStep = 0;
+var onboardData = [
+  { hero: 'hero-ob1', title: '即時翻譯，輕鬆聽懂', desc: '聽不懂外語？打開 CatchUP，<br>自動翻譯每一句話。' },
+  { hero: 'hero-ob2', title: '點擊保存，建立單字庫', desc: '看到不認識的單字？<br>點一下就存到你的專屬單字庫。' },
+  { hero: 'hero-ob3', title: '拼寫練習，加深記憶', desc: '用拼寫和跟讀練習，<br>下次看到就牢記。' }
+];
+
+function nextOnboard() {
+  onboardStep++;
+  if (onboardStep >= onboardData.length) { alert('完成！進入 App'); return; }
+  renderOnboard();
+}
+
+function renderOnboard() {
+  var d = onboardData[onboardStep];
+  showHero(d.hero);
+  document.getElementById('onboard-title').textContent = d.title;
+  document.getElementById('onboard-desc').innerHTML = d.desc;
+  for (var i = 0; i < onboardData.length; i++) {
+    document.getElementById('dot-' + i).classList.toggle('active', i === onboardStep);
+  }
+  document.getElementById('onboard-next').textContent =
+    (onboardStep === onboardData.length - 1) ? '開始使用' : '下一步';
+}
+
+function skipOnboard() { alert('跳過'); }
+
+function setMode(mode) {
+  document.getElementById('survey-section').style.display = (mode === 'survey') ? 'block' : 'none';
+  document.getElementById('onboard-section').style.display = (mode === 'onboard') ? 'block' : 'none';
+  document.getElementById('m-survey').classList.toggle('active', mode === 'survey');
+  document.getElementById('m-onboard').classList.toggle('active', mode === 'onboard');
+
+  if (mode === 'survey') {
+    surveyStep = 0; surveyAnswers = {};
+    renderSurvey();
+  } else {
+    onboardStep = 0;
+    renderOnboard();
+  }
+}
+
+renderSurvey();
+</script>
+
+</body>
+</html>

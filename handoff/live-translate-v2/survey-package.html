@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CatchUP — 登入 + Onboarding 問卷（前端交付版）</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/recording.css">
+  <link rel="stylesheet" href="styles/wordbank.css">
+  <link rel="stylesheet" href="styles/history.css">
+  <link rel="stylesheet" href="styles/practice.css">
+  <style>
+    /* CatchUP layout override: header full-width above sidebar */
+    .app-frame { flex-direction: column; flex: 1; }
+    body { display: flex; flex-direction: column; }
+    .app-header { flex-shrink: 0; }
+    .app-body { display: flex; flex: 1; min-height: 0; }
+    .app-sidebar { padding-top: 12px; }
+    @media (max-width: 768px) {
+      .app-body { flex-direction: column; }
+      .auth-card { margin: 0 16px; }
+      .s4-split { flex-direction: column !important; }
+      .s4-split-left { width: 100% !important; flex: 1 !important; border-right: none !important; overflow-y: auto !important; }
+      .s4-split-right { display: none !important; }
+    }
+
+    /* ── Paywall modal overlay ── */
+    .paywall-modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .paywall-modal-overlay.open { display: flex; }
+    .paywall-modal-overlay .paywall-card { animation: modalIn .3s ease; }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Header avatar ── */
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #e2e8f0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s; border: none; flex-shrink: 0;
+    }
+    .header-avatar:hover { background: #d1d5db; }
+    .header-avatar .material-icons-round { font-size: 18px; color: #64748b; }
+    .header-avatar.logged-in { background: #059669; }
+    .header-avatar.logged-in .material-icons-round { color: #fff; }
+
+    /* ════════ Auth screens ════════ */
+    .auth-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px; background: #f5f7f5;
+      overflow-y: auto;
+    }
+    .auth-card {
+      width: 100%; max-width: 400px;
+      background: #fff; border-radius: 20px;
+      padding: 36px 32px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.07);
+    }
+    .auth-logo { margin-bottom: 24px; }
+    .auth-logo img { height: 24px; width: auto; }
+    .auth-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .auth-sub { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+    .auth-google {
+      width: 100%; padding: 12px 0; border: 1.5px solid #e2e8f0; border-radius: 12px;
+      background: #fff; cursor: pointer; font-family: inherit;
+      font-size: 14px; font-weight: 500; color: #0f172a;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all .15s; margin-bottom: 16px;
+    }
+    .auth-google:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .auth-google svg { width: 18px; height: 18px; }
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; color: #94a3b8; font-size: 12px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+    .auth-field {
+      width: 100%; margin-bottom: 12px; text-align: left;
+    }
+    .auth-field label {
+      display: block; font-size: 12px; font-weight: 500;
+      color: #475569; margin-bottom: 5px;
+    }
+    .auth-field input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-family: inherit; font-size: 14px; color: #0f172a;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .auth-field input:focus { border-color: #10b981; }
+    .auth-submit {
+      width: 100%; padding: 13px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s; margin-top: 8px;
+    }
+    .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+    .auth-switch {
+      font-size: 13px; color: #64748b; margin-top: 20px;
+    }
+    .auth-switch a {
+      color: #059669; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .auth-switch a:hover { text-decoration: underline; }
+
+    /* ════════ Paywall ════════ */
+    .paywall-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 40px 20px;
+      background: #f5f7f5; overflow-y: auto;
+    }
+    .paywall-card {
+      width: 100%; max-width: 440px;
+      background: #fff; border-radius: 20px;
+      padding: 32px 28px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.07);
+    }
+    .paywall-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .paywall-icon .material-icons-round { font-size: 28px; color: #f59e0b; }
+    .paywall-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .paywall-sub { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+    .paywall-plans { display: flex; gap: 12px; margin-bottom: 24px; }
+    .paywall-plan {
+      flex: 1; padding: 20px 16px; border-radius: 14px;
+      border: 1.5px solid #e2e8f0; background: #fff;
+      text-align: center; cursor: pointer; transition: all .15s;
+      position: relative;
+    }
+    .paywall-plan:hover { border-color: #10b981; }
+    .paywall-plan.selected { border-color: #059669; background: #ecfdf5; }
+    .paywall-plan-badge {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; font-weight: 700; color: #fff;
+      background: #059669; padding: 2px 12px; border-radius: 10px;
+      display: none;
+    }
+    .paywall-plan.selected .paywall-plan-badge { display: block; }
+    .paywall-plan-price { font-size: 28px; font-weight: 800; color: #0f172a; }
+    .paywall-plan-price span { font-size: 14px; font-weight: 500; color: #64748b; }
+    .paywall-plan-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .paywall-features {
+      text-align: left; margin-bottom: 24px;
+    }
+    .paywall-feature {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #334155; padding: 6px 0;
+    }
+    .paywall-feature .material-icons-round { font-size: 18px; color: #10b981; }
+    .paywall-cta {
+      width: 100%; padding: 14px 0; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s; margin-bottom: 10px;
+    }
+    .paywall-cta:hover { transform: translateY(-1px); }
+    .paywall-skip {
+      font-size: 13px; color: #94a3b8; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+    }
+    .paywall-skip:hover { color: #64748b; }
+    /* Free vs Pro comparison */
+    .paywall-compare { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .paywall-compare th {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 8px 12px; text-align: center;
+    }
+    .paywall-compare th:first-child { text-align: left; }
+    .paywall-compare td {
+      font-size: 13px; color: #475569; padding: 8px 12px;
+      border-top: 1px solid #f1f5f9; text-align: center;
+    }
+    .paywall-compare td:first-child { text-align: left; font-weight: 500; color: #0f172a; }
+    .paywall-compare .pro-col { color: #059669; font-weight: 600; }
+
+    /* ════════ Profile ════════ */
+    .profile-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 32px 20px;
+      background: #f5f7f5; overflow-y: auto;
+    }
+    .profile-card {
+      width: 100%; max-width: 440px;
+    }
+    .profile-header {
+      background: #fff; border-radius: 16px; padding: 24px;
+      text-align: center; margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .profile-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #059669; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .profile-avatar .material-icons-round { font-size: 32px; color: #fff; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .profile-email { font-size: 13px; color: #64748b; }
+    .profile-section {
+      background: #fff; border-radius: 16px; overflow: hidden;
+      margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .profile-section-title {
+      font-size: 11px; font-weight: 600; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 14px 18px 8px;
+    }
+    .profile-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; cursor: pointer; transition: background .1s;
+    }
+    .profile-item:hover { background: #f8fafc; }
+    .profile-item .material-icons-round { font-size: 20px; color: #64748b; }
+    .profile-item-label { flex: 1; font-size: 14px; font-weight: 500; color: #0f172a; }
+    .profile-item-value { font-size: 13px; color: #64748b; }
+    .profile-item-arrow { font-size: 18px; color: #cbd5e1; }
+    .profile-sub-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px;
+    }
+    .profile-sub-badge.free { background: #f1f5f9; color: #64748b; }
+    .profile-sub-badge.pro { background: #ecfdf5; color: #059669; }
+    .profile-logout {
+      width: 100%; padding: 13px 0; border: 1.5px solid #fca5a5; border-radius: 12px;
+      background: #fff; color: #ef4444; font-family: inherit;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all .15s; margin-top: 8px;
+    }
+    .profile-logout:hover { background: #fef2f2; }
+
+    /* ── Onboarding overlay ── */
+    .onboard-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: onboardFadeIn .3s ease;
+    }
+    @keyframes onboardFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .onboard-card {
+      width: 100%; max-width: 380px;
+      background: #fff; border-radius: 24px;
+      padding: 40px 32px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes onboardSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .onboard-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .onboard-icon .material-icons-round { font-size: 36px; }
+    .onboard-title {
+      font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;
+    }
+    .onboard-desc {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 28px;
+    }
+    .onboard-dots {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;
+    }
+    .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0;
+      transition: all .2s;
+    }
+    .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3);
+      transition: all .15s;
+    }
+    .onboard-next:hover { transform: translateY(-1px); }
+    .onboard-skip {
+      font-size: 13px; color: #94a3b8; cursor: pointer;
+      background: none; border: none; font-family: inherit;
+      margin-top: 14px;
+    }
+    .onboard-skip:hover { color: #64748b; }
+
+    /* ── Survey ── */
+    .survey-overlay {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .survey-card {
+      width: 100%; max-width: 420px;
+      background: #fff; border-radius: 24px;
+      padding: 36px 32px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+    }
+    .survey-logo { text-align: center; margin-bottom: 24px; }
+    .survey-logo img { height: 22px; width: auto; }
+    .survey-progress {
+      display: flex; gap: 6px; margin-bottom: 28px;
+    }
+    .survey-progress-bar {
+      flex: 1; height: 4px; border-radius: 2px; background: #e2e8f0;
+      transition: background .3s;
+    }
+    .survey-progress-bar.done { background: #10b981; }
+    .survey-progress-bar.current { background: #10b981; }
+    .survey-step { font-size: 11px; color: #94a3b8; font-weight: 500; }
+    .survey-step-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; min-height: 22px;
+    }
+    .survey-back {
+      display: inline-flex; align-items: center; gap: 2px;
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      color: #64748b; padding: 4px 8px 4px 4px; border-radius: 8px;
+      transition: all .15s;
+    }
+    .survey-back:hover { background: #f1f5f9; color: #0f172a; }
+    .survey-back .material-icons-round { font-size: 14px; }
+    .survey-question {
+      font-size: 18px; font-weight: 700; color: #0f172a;
+      margin-bottom: 20px; line-height: 1.4;
+    }
+    .survey-options {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .survey-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: #334155;
+      background: #fff; transition: all .15s;
+      text-align: left;
+    }
+    .survey-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .survey-option.selected { border-color: #059669; background: #ecfdf5; color: #059669; }
+    .survey-option .survey-radio {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-radio {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-radio::after {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    }
+    /* Multi-select checkbox */
+    .survey-option .survey-check {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .survey-option.selected .survey-check {
+      border-color: #059669; background: #059669;
+    }
+    .survey-option.selected .survey-check::after {
+      content: '✓'; color: #fff; font-size: 12px; font-weight: 700;
+    }
+    .survey-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: #e2e8f0; color: #94a3b8;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: default; transition: all .15s;
+    }
+    .survey-next.enabled {
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    }
+    .survey-next.enabled:hover { transform: translateY(-1px); }
+
+    /* ══════════════ NEW: Flow popup (Hero + Survey/Onboard) ══════════════ */
+    .flow-overlay {
+      position: fixed; inset: 0; z-index: 10001;
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: onboardFadeIn .3s ease;
+    }
+    .flow-popup {
+      width: 100%; max-width: 880px;
+      height: 560px;
+      background: #fff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      animation: onboardSlideUp .4s cubic-bezier(.2,.9,.3,1);
+      display: flex; flex-direction: row;
+    }
+    @media (max-width: 720px) {
+      .flow-popup { flex-direction: column; max-width: 440px; height: 720px; }
+    }
+    .hero {
+      background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 100%);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      width: 50%; flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    @media (max-width: 720px) {
+      .hero { width: 100%; height: 240px; padding: 22px 24px 24px; }
+      #flow-overlay .flow-popup { height: 680px; max-height: calc(100vh - 24px); }
+      #flow-overlay .flow-content { padding: 18px 22px 18px; }
+      .survey-options { gap: 6px; margin-bottom: 14px; }
+      .survey-option { padding: 10px 14px; font-size: 13px; }
+      .survey-question { font-size: 16px; margin-bottom: 12px; }
+      .hero-pill { height: 40px; font-size: 14px; padding: 0 18px 0 14px; margin-bottom: 12px; }
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(16,185,129,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 80% 80%, rgba(0,184,217,.10) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-stage {
+      position: relative; z-index: 1;
+      display: none;
+      animation: stageIn .5s ease;
+    }
+    .hero-stage.active { display: block; }
+    @keyframes stageIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 999px;
+      padding: 0 21px 0 18px;
+      height: 48px; line-height: 1;
+      font-size: 16px; font-weight: 600; color: #64748b;
+      box-shadow: 0 6px 22px rgba(16,185,129,.16);
+      margin-bottom: 18px;
+    }
+    .hero-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(0,184,217,.18);
+      animation: pulseDuo 2s ease-in-out infinite;
+    }
+    @keyframes pulseGreen { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+    @keyframes pulseDuo {
+      0%, 100% { background: #10b981; box-shadow: 0 0 0 3px rgba(0,184,217,.18); }
+      50% { background: #00B8D9; box-shadow: 0 0 0 5px rgba(16,185,129,.18); }
+    }
+    .lang-flip {
+      position: relative; display: inline-block;
+      min-width: 80px; height: 18px; overflow: hidden; vertical-align: middle;
+    }
+    #hero-q1 .lang-flip {
+      min-width: 140px; height: 22px;
+    }
+    .lang-flip .item {
+      position: absolute; inset: 0; color: #059669; font-weight: 700;
+      opacity: 0; transform: translateY(100%);
+      animation: langCycle 9s infinite;
+    }
+    #hero-q1 .lang-flip .item {
+      font-size: 20px; line-height: 22px; letter-spacing: -.01em;
+    }
+    .lang-flip .item:nth-child(1) { animation-delay: 0s; }
+    .lang-flip .item:nth-child(2) { animation-delay: 1.5s; color: #00B8D9; }
+    .lang-flip .item:nth-child(3) { animation-delay: 3s; }
+    .lang-flip .item:nth-child(4) { animation-delay: 4.5s; color: #00B8D9; }
+    .lang-flip .item:nth-child(5) { animation-delay: 6s; }
+    .lang-flip .item:nth-child(6) { animation-delay: 7.5s; color: #00B8D9; }
+    @keyframes langCycle {
+      0% { opacity: 0; transform: translateY(100%); }
+      4% { opacity: 1; transform: translateY(0); }
+      12% { opacity: 1; transform: translateY(0); }
+      18% { opacity: 0; transform: translateY(-100%); }
+      100% { opacity: 0; transform: translateY(-100%); }
+    }
+    .chat-stack { display: flex; flex-direction: column; gap: 10px; }
+    .chat-bubble {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 16px;
+      padding: 12px 14px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    }
+    .chat-en { font-size: 13px; font-weight: 500; color: #0f172a; line-height: 1.5; margin-bottom: 6px; }
+    .chat-arrow { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .chat-arrow .material-icons-round { font-size: 12px; color: #00B8D9; }
+    .chat-zh { font-size: 13px; color: #475569; line-height: 1.6; padding-left: 8px; border-left: 2px solid #00B8D9; min-height: 22px; }
+    .typing-cursor { display: inline-block; width: 2px; height: 12px; background: #00B8D9; vertical-align: middle; animation: blink 1s infinite; }
+    @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+
+    /* Q2 role avatars */
+    .role-stage { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px 0; }
+    .role-avatar {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; border: 1px solid #d1fae5;
+      box-shadow: 0 2px 12px rgba(16,185,129,.1);
+      opacity: 0; transform: scale(.8);
+      animation: rolePop 9s infinite;
+    }
+    .role-avatar:nth-child(1) { animation-delay: 0s; }
+    .role-avatar:nth-child(2) { animation-delay: 1.8s; }
+    .role-avatar:nth-child(3) { animation-delay: 3.6s; }
+    .role-avatar:nth-child(4) { animation-delay: 5.4s; }
+    .role-avatar:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes rolePop {
+      0% { opacity: 0; transform: scale(.8); }
+      3% { opacity: 1; transform: scale(1.05); }
+      8% { opacity: 1; transform: scale(1); }
+      18% { opacity: 1; transform: scale(1); }
+      22% { opacity: 0; transform: scale(.9); }
+      100% { opacity: 0; transform: scale(.8); }
+    }
+    .role-avatar .material-icons-round { font-size: 36px; color: #059669; }
+    .role-label {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-size: 14px; font-weight: 700; color: #059669;
+      background: #fff; border: 1px solid #d1fae5; padding: 6px 14px;
+      border-radius: 20px; box-shadow: 0 2px 8px rgba(16,185,129,.1);
+      opacity: 0; animation: roleLabel 9s infinite;
+    }
+    .role-label:nth-child(1) { animation-delay: 0s; }
+    .role-label:nth-child(2) { animation-delay: 1.8s; }
+    .role-label:nth-child(3) { animation-delay: 3.6s; }
+    .role-label:nth-child(4) { animation-delay: 5.4s; }
+    .role-label:nth-child(5) { animation-delay: 7.2s; }
+    @keyframes roleLabel {
+      0%,2% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      6% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      22% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+      100% { opacity: 0; }
+    }
+
+    /* Q3 scene grid */
+    .scene-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .scene-card {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 14px 10px; text-align: center;
+      box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      animation: scenePulse 4s ease-in-out infinite;
+    }
+    .scene-card:nth-child(1) { animation-delay: 0s; }
+    .scene-card:nth-child(2) { animation-delay: .4s; }
+    .scene-card:nth-child(3) { animation-delay: .8s; }
+    .scene-card:nth-child(4) { animation-delay: 1.2s; }
+    .scene-card:nth-child(5) { animation-delay: 1.6s; }
+    @keyframes scenePulse {
+      0%,100% { transform: translateY(0); box-shadow: 0 2px 8px rgba(16,185,129,.08); }
+      50% { transform: translateY(-4px); box-shadow: 0 6px 14px rgba(16,185,129,.15); }
+    }
+    .scene-card .material-icons-round { font-size: 22px; color: #10b981; }
+    .scene-label { font-size: 11px; font-weight: 600; color: #475569; margin-top: 4px; }
+
+    /* Q4 source */
+    .source-grid { display: flex; flex-direction: column; gap: 8px; }
+    .source-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 6px rgba(16,185,129,.06);
+    }
+    .source-row .material-icons-round { font-size: 18px; color: #10b981; }
+    .source-text { font-size: 13px; font-weight: 600; color: #334155; flex: 1; }
+    .source-arrow {
+      width: 12px; height: 12px; border-right: 2px solid #10b981; border-bottom: 2px solid #10b981;
+      transform: rotate(-45deg);
+      animation: arrowDraw 2s ease-in-out infinite;
+    }
+    @keyframes arrowDraw { 0%,100%{opacity:.3;} 50%{opacity:1;} }
+
+    /* Q2 (role) SVG/PNG */
+    .svg-stage {
+      position: relative; height: 260px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .svg-stage img { width: 100%; max-width: 360px; height: 100%; object-fit: contain; position: relative; z-index: 1; }
+    @keyframes svgFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+
+    /* Q2 (role) — image fills entire left hero container */
+    #hero-ob1.hero-stage.active {
+      position: absolute; inset: 0;
+      padding: 0; margin: 0;
+      display: block;
+    }
+    #hero-ob1 .hero-pill {
+      position: absolute; top: 32px; left: 28px;
+      z-index: 2; margin: 0;
+    }
+    #hero-ob1 .svg-stage {
+      position: absolute; inset: 0;
+      height: 100%; animation: none;
+    }
+    #hero-ob1 .svg-stage img {
+      width: 100%; max-width: none; height: 100%;
+      object-fit: cover;
+    }
+
+    /* Tap stage (onboard 2) */
+    .tap-stage {
+      position: relative; background: #fff;
+      border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 18px 16px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+    }
+    .tap-sentence { font-size: 13px; line-height: 1.7; color: #334155; }
+    .word-tap {
+      position: relative; display: inline-block; cursor: pointer;
+      color: #334155; font-weight: inherit; padding: 1px 4px;
+      background: transparent; border-radius: 6px;
+      animation: wordTap 3s ease-in-out infinite;
+    }
+    @keyframes wordTap {
+      0%,40%,100% { background: transparent; color: #334155; font-weight: 400; }
+      50%,90% { background: rgba(0,184,217,.22); color: #00B8D9; font-weight: 700; }
+    }
+    .tap-finger { position: absolute; color: #00B8D9; }
+    .tap-finger .material-icons-round { font-size: 24px; animation: tapMove 3s ease-in-out infinite; }
+    @keyframes tapMove {
+      0%,40%,100% { transform: translate(0,0); opacity: 0; }
+      45% { transform: translate(-4px,-4px); opacity: 1; }
+      55% { transform: translate(0,0); opacity: 1; }
+      85% { transform: translate(0,0); opacity: 1; }
+      90% { opacity: 0; }
+    }
+    .save-pop {
+      position: absolute; top: -6px; right: 12px;
+      background: linear-gradient(135deg, #059669, #00B8D9);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,184,217,.3);
+      opacity: 0; animation: savePopAnim 3s ease-in-out infinite;
+    }
+    .save-pop .material-icons-round { font-size: 12px; }
+    @keyframes savePopAnim {
+      0%,55%,100% { opacity: 0; transform: translateY(8px); }
+      65%,90% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Practice stage (onboard 3) */
+    .practice-stage {
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 18px 16px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      text-align: center;
+    }
+    .practice-zh { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+    .practice-input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #d1fae5;
+      border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 600; color: #059669; text-align: center;
+      background: #ecfdf5; margin-bottom: 10px;
+    }
+    .practice-check {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: #059669;
+    }
+    .practice-check .material-icons-round { font-size: 16px; }
+
+    /* Q4: Daily free 45 min stage (no card container) */
+    .free-stage {
+      position: relative;
+      padding: 0; text-align: center;
+    }
+    .free-badge {
+      display: inline-block;
+      background: #10b981;
+      color: #fff; font-size: 16px; font-weight: 700;
+      padding: 8px 22px; border-radius: 999px;
+      letter-spacing: .5px; margin-bottom: 18px;
+      box-shadow: 0 6px 18px rgba(16,185,129,.3);
+      position: relative; z-index: 1;
+    }
+    .free-number {
+      display: flex; align-items: baseline; justify-content: center;
+      gap: 4px; margin-bottom: 6px;
+      position: relative; z-index: 1;
+      animation: numPop .8s cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes numPop {
+      from { transform: scale(.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .free-num {
+      font-size: 56px; font-weight: 800; line-height: 1;
+      color: #10b981;
+      letter-spacing: -.02em;
+    }
+    .free-unit { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .free-desc {
+      font-size: 11px; color: #64748b; font-weight: 500;
+      margin-top: 10px; position: relative; z-index: 1;
+    }
+    .free-bar {
+      width: 100%; height: 6px; border-radius: 4px;
+      background: #ecfdf5; overflow: hidden;
+      margin-top: 16px; position: relative; z-index: 1;
+    }
+    .free-bar-fill {
+      width: 100%; height: 100%; border-radius: 4px;
+      background: #10b981;
+      transform-origin: left;
+      animation: barFill 3s ease-out forwards;
+    }
+    @keyframes barFill {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .free-tick {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #059669;
+      position: relative; z-index: 1;
+    }
+    .free-tick .material-icons-round {
+      font-size: 13px;
+      animation: tickRotate 4s linear infinite;
+    }
+    @keyframes tickRotate {
+      from { transform: rotate(0); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Right side content */
+    .flow-content {
+      padding: 32px 32px 28px; flex: 1;
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    @media (max-width: 720px) { .flow-content { padding: 24px 28px 24px; } }
+    .flow-content .survey-options { flex: 1; }
+    .flow-content .survey-next { margin-top: auto; }
+
+    /* Onboard content (within right side) */
+    .flow-onboard {
+      flex: 1; display: flex; flex-direction: column;
+      text-align: left;
+    }
+    .flow-onboard .onboard-title {
+      font-size: 22px; font-weight: 700; color: #0f172a;
+      margin-bottom: 10px; letter-spacing: -.01em;
+    }
+    .flow-onboard .onboard-desc {
+      font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 20px;
+    }
+    .flow-onboard .onboard-dots {
+      display: flex; gap: 8px; margin-top: auto; margin-bottom: 16px;
+    }
+    .flow-onboard .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: all .2s;
+    }
+    .flow-onboard .onboard-dot.active { background: #059669; width: 24px; border-radius: 4px; }
+    .flow-onboard .onboard-next {
+      width: 100%; padding: 14px 0; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16,185,129,.3); transition: all .15s;
+    }
+    .flow-onboard .onboard-next:hover { transform: translateY(-1px); }
+    .flow-onboard .onboard-skip {
+      margin-top: 10px; background: none; border: none;
+      color: #94a3b8; font-family: inherit; font-size: 13px; cursor: pointer;
+    }
+    .flow-onboard .onboard-skip:hover { color: #64748b; }
+
+    /* ── Login: left intro + right form ── */
+    .login-hero {
+      padding: 0; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    /* Top 40% — cover image with white overlay */
+    .login-intro-cover {
+      position: relative; width: 100%; height: 40%;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .login-intro-cover > img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .login-intro-cover::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(15,23,42,.45) 0%, rgba(15,23,42,.15) 45%, rgba(15,23,42,.55) 100%);
+    }
+    .login-intro-cover-content {
+      position: absolute; inset: 0; z-index: 1;
+      padding: 32px 36px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .login-intro-logo { margin-bottom: 0; }
+    .login-intro-logo img { display: block; }
+    .login-intro-title {
+      font-size: 24px; font-weight: 800; color: #fff;
+      line-height: 1.35; letter-spacing: -.01em; margin-bottom: 10px;
+    }
+    .login-intro-sub {
+      font-size: 22px; font-weight: 700; color: #fff;
+      line-height: 1.45; letter-spacing: -.01em;
+      text-shadow: 0 2px 12px rgba(0,0,0,.35);
+    }
+    /* Bottom 60% — feature cards */
+    .login-intro-body {
+      flex: 1; min-height: 0;
+      padding: 24px 36px; overflow-y: auto;
+    }
+    .login-intro-feats {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .login-intro-feats li {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: #fff; border: 1px solid #d1fae5; border-radius: 14px;
+      padding: 12px 14px; box-shadow: 0 2px 8px rgba(16,185,129,.08);
+      transform: translateY(8px); opacity: 0;
+      animation: featIn .6s cubic-bezier(.2,.9,.3,1) forwards;
+    }
+    .login-intro-feats li:nth-child(1) { animation-delay: .15s; }
+    .login-intro-feats li:nth-child(2) { animation-delay: .3s; }
+    .login-intro-feats li:nth-child(3) { animation-delay: .45s; }
+    @keyframes featIn {
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .login-intro-feats li .feat-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #ecfdf5;
+    }
+    .login-intro-feats li .feat-icon .material-icons-round {
+      font-size: 20px; color: #059669;
+    }
+    .login-intro-feats li div.feat-text { display: flex; flex-direction: column; }
+    .login-intro-feats li b { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .login-intro-feats li span { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .login-content { overflow-y: auto; }
+    .login-content .auth-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .login-content .auth-sub { font-size: 13px; color: #64748b; }
+    @media (max-width: 720px) {
+      /* Login popup — compact, fits viewport without scrolling */
+      #login-popup .flow-popup {
+        max-width: 420px; height: auto; max-height: calc(100vh - 24px);
+      }
+      .login-hero { height: 180px; padding: 0; flex-shrink: 0; }
+      .login-intro-cover { height: 100%; }
+      .login-intro-cover-content { padding: 18px 22px; }
+      .login-intro-logo img { height: 22px; }
+      .login-intro-sub { font-size: 15px; line-height: 1.4; }
+      .login-intro-body { display: none; }
+      /* Tighten form spacing on mobile */
+      #login-popup .flow-content { padding: 18px 22px 20px; overflow-y: auto; }
+      .login-content .auth-title { font-size: 18px; }
+      .login-content .auth-sub { font-size: 12px; margin-bottom: 12px !important; }
+      #login-mode-tabs { margin-bottom: 12px !important; }
+      .login-content .auth-google { padding: 10px 0; margin-bottom: 10px; }
+      .login-content .auth-divider { margin-bottom: 10px; }
+      .login-content .auth-field { margin-bottom: 8px; }
+      .login-content .auth-field input { padding: 9px 12px; }
+      .login-content .auth-submit { padding: 12px 0; margin-top: 4px; }
+    }
+
+    /* ── Demo switcher ── */
+    .demo-switcher {
+      position: fixed; top: 12px; right: 16px; z-index: 9999;
+      display: flex; gap: 6px;
+    }
+    .demo-btn {
+      font-size: 11px; font-weight: 600; padding: 6px 14px;
+      border-radius: 8px; border: 1px solid #e2e8f0;
+      background: #fff; color: #64748b; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .demo-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .demo-btn.active { background: #059669; color: #fff; border-color: #059669; }
+    @media (max-width: 768px) {
+      .demo-switcher { top: auto; bottom: 84px; right: 8px; left: 8px; justify-content: center; }
+      .demo-btn { font-size: 10px; padding: 5px 10px; }
+    }
+
+    /* ── Mobile final overrides (must come AFTER all base rules) ── */
+    @media (max-width: 720px) {
+      /* Hide progress bar on mobile to give more vertical space */
+      #flow-overlay .survey-progress { display: none; }
+      /* Q2 pill: move to bottom-left so face isn't covered */
+      #hero-ob1 .hero-pill {
+        top: auto; bottom: 16px; left: 16px;
+      }
+      /* Q4 free stage: no card, larger badge */
+      #hero-ob3 { padding: 24px 28px; }
+      #hero-ob3 .free-num { font-size: 48px; }
+      #hero-ob3 .free-unit { font-size: 14px; }
+      #hero-ob3 .free-badge { font-size: 14px; padding: 6px 18px; margin-bottom: 14px; }
+      #hero-ob3 .free-bar { margin-top: 12px; height: 5px; }
+      #hero-ob3 .free-desc { font-size: 11px; margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!--
+  ════════════════════════════════════════════════════════════════════
+  CatchUP — Login + Onboarding Survey (standalone handoff package)
+
+  HTML structure:
+    1. #login-popup     — login / signup popup (left intro + right form)
+    2. #flow-overlay    — survey popup (left hero animation + right Q&A)
+
+  Flow:
+    Page load → login popup
+    Sign up   → opens survey overlay → 4 questions → alert + answers JSON
+    Log in    → alert (replace with redirect to your app home)
+
+  Assets needed:
+    assets/catchup.svg, assets/catchup-white.svg,
+    assets/login-screenshot.png, assets/hero-role-v2.png
+
+  TODO for engineer (search "TODO" in <script>):
+    - Hook up real auth in popupLogin()
+    - Submit surveyAnswers to backend in nextSurvey()'s "Survey done" branch
+    - Replace alert() with router/redirect
+
+  Survey state shape (handed to your handler):
+    { 0: '繁體中文', 1: '學生', 2: '會議', 3: '朋友推薦' }
+  ════════════════════════════════════════════════════════════════════
+-->
+
+<!-- Login Popup (shows first for new users) — left intro + right login -->
+<div class="flow-overlay" id="login-popup">
+  <div class="flow-popup">
+
+    <!-- LEFT: CatchUP intro -->
+    <div class="hero login-hero">
+      <!-- Top 40%: cover image with white logo + title overlaid -->
+      <div class="login-intro-cover">
+        <img src="assets/login-screenshot.png" alt="CatchUP 使用情境" />
+        <div class="login-intro-cover-content">
+          <div class="login-intro-logo"><img src="assets/catchup-white.svg" alt="catch up" height="28"></div>
+          <div class="login-intro-sub">聽得懂每一句英文,<br>從今天開始</div>
+        </div>
+      </div>
+      <!-- Bottom 60%: feature cards -->
+      <div class="login-intro-body">
+        <ul class="login-intro-feats">
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">mic</span></span>
+            <div class="feat-text"><b>即時翻譯</b><span>邊聽邊翻,跟得上每一句。</span></div>
+          </li>
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">bookmarks</span></span>
+            <div class="feat-text"><b>單字保存</b><span>點一下,陌生字直接進單字庫。</span></div>
+          </li>
+          <li>
+            <span class="feat-icon"><span class="material-icons-round">quiz</span></span>
+            <div class="feat-text"><b>拼寫練習</b><span>用小測幫你記住今天聽到的字。</span></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RIGHT: Login form -->
+    <div class="flow-content login-content">
+      <div class="auth-title">建立你的帳號</div>
+      <div class="auth-sub" style="margin-bottom:18px;">註冊後立即開始即時翻譯</div>
+      <div id="login-mode-tabs" style="display:flex;gap:6px;margin-bottom:18px;background:#f1f5f9;border-radius:10px;padding:3px;">
+        <button id="tab-signup" onclick="switchLoginMode('signup')" style="flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);">註冊</button>
+        <button id="tab-login" onclick="switchLoginMode('login')" style="flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">登入</button>
+      </div>
+      <button class="auth-google" onclick="popupLogin()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <span id="popup-google-text">使用 Google 註冊</span>
+      </button>
+      <div class="auth-divider">或</div>
+      <div class="auth-field" id="popup-name-field">
+        <label>名稱</label>
+        <input type="text" placeholder="你的名字">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" placeholder="your@email.com">
+      </div>
+      <div class="auth-field">
+        <label>密碼</label>
+        <input type="password" placeholder="8 個字元以上" id="popup-password">
+      </div>
+      <button class="auth-submit" id="popup-submit" onclick="popupLogin()">建立帳號</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Flow popup: hero animation (left) + survey/onboard (right) -->
+<div class="flow-overlay" id="flow-overlay" style="display:none;">
+  <div class="flow-popup">
+
+    <!-- LEFT: Hero animations -->
+    <div class="hero">
+
+      <!-- Q1 / Onboard 1: Translation -->
+      <div class="hero-stage" id="hero-q1">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          即時翻譯為
+          <span class="lang-flip">
+            <span class="item">繁體中文</span>
+            <span class="item">简体中文</span>
+            <span class="item">Español</span>
+            <span class="item">Français</span>
+            <span class="item">Deutsch</span>
+            <span class="item">Tiếng Việt</span>
+          </span>
+        </div>
+        <div class="chat-stack">
+          <div class="chat-bubble">
+            <div class="chat-en">"Today we will focus on photosynthesis."</div>
+            <div class="chat-arrow"><span class="material-icons-round">south_east</span>AI 翻譯中</div>
+            <div class="chat-zh" id="typing-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 (Role): Workspace illustration -->
+      <div class="hero-stage" id="hero-ob1">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          為你的工作場景而生
+        </div>
+        <div class="svg-stage">
+          <img src="assets/hero-role-v2.png" alt="角色情境" />
+        </div>
+      </div>
+
+      <!-- Q3 / Onboard 2: Scene / Tap to save -->
+      <div class="hero-stage" id="hero-ob2">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          點擊單字即保存
+        </div>
+        <div class="tap-stage">
+          <div class="save-pop"><span class="material-icons-round">bookmark</span>已保存 photosynthesis</div>
+          <div class="tap-sentence">
+            Today we will focus on <span class="word-tap">photosynthesis<span class="tap-finger" style="top:18px;right:-6px;"><span class="material-icons-round">touch_app</span></span></span> and energy.
+          </div>
+        </div>
+      </div>
+
+      <!-- Q4: Daily free 45 min -->
+      <div class="hero-stage" id="hero-ob3">
+        <div class="free-stage">
+          <div class="free-badge">每日免費</div>
+          <div class="free-number">
+            <span class="free-num">45</span>
+            <span class="free-unit">分鐘</span>
+          </div>
+          <div class="free-bar">
+            <div class="free-bar-fill"></div>
+          </div>
+          <div class="free-desc">即時翻譯 · 每天重置 · 無需綁卡</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Survey OR Onboard content -->
+    <div class="flow-content">
+
+      <!-- Survey -->
+      <div id="flow-survey">
+        <div class="survey-progress" id="survey-progress">
+          <div class="survey-progress-bar current"></div>
+          <div class="survey-progress-bar"></div>
+          <div class="survey-progress-bar"></div>
+          <div class="survey-progress-bar"></div>
+        </div>
+        <div class="survey-step-row">
+          <button class="survey-back" id="survey-back" onclick="prevSurvey()" style="display:none;" aria-label="上一題">
+            <span class="material-icons-round">arrow_back</span> 上一題
+          </button>
+          <div class="survey-step" id="survey-step">1 / 4</div>
+        </div>
+        <div class="survey-question" id="survey-question">你要將英文翻譯成</div>
+        <div class="survey-options" id="survey-options"></div>
+        <button class="survey-next" id="survey-next" onclick="nextSurvey()">下一步</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+/* ════════════════════════════════════════
+   CatchUP — Survey Package
+   - Login popup (signup / login tabs)
+   - 4-question survey with hero animations (Q1-Q4)
+   - Auto-advance + back navigation + state restoration
+   ════════════════════════════════════════ */
+
+/* ── Hero stage switcher ── */
+function showHero(id) {
+  document.querySelectorAll('.hero-stage').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  var target = document.getElementById(id);
+  if (target) target.classList.add('active');
+}
+
+/* ── Q1 typing animation ── */
+function typeText(elId, text, delay) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '<span class="typing-cursor"></span>';
+  setTimeout(function() {
+    var i = 0;
+    el.innerHTML = '';
+    var interval = setInterval(function() {
+      el.textContent += text.charAt(i);
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 40);
+  }, delay);
+}
+function startTypingLoop() {
+  typeText('typing-1', '今天我們將重點學習光合作用。', 500);
+  setTimeout(startTypingLoop, 9000);
+}
+startTypingLoop();
+
+/* ════════ Survey ════════ */
+var surveyStep = 0;
+var surveyAnswers = {};
+var surveyData = [
+  {
+    hero: 'hero-q1',
+    question: '你要將英文翻譯成',
+    type: 'single',
+    options: ['繁體中文', '简体中文', 'Español', 'Français', 'Deutsch', 'Tiếng Việt']
+  },
+  {
+    hero: 'hero-ob1',
+    question: '你目前的角色是',
+    type: 'single',
+    options: ['學生', '上班族', '創辦人/負責人', '自由工作者', '其他']
+  },
+  {
+    hero: 'hero-ob2',
+    question: '你最常的翻譯情境',
+    type: 'single',
+    options: ['日常生活', '會議', '演講', '上課', '其他']
+  },
+  {
+    hero: 'hero-ob3',
+    question: '你從哪裡知道 CatchUP',
+    type: 'single',
+    options: ['社群廣告', '朋友推薦', '搜尋引擎', '其他']
+  }
+];
+
+function prevSurvey() {
+  if (surveyStep <= 0) return;
+  surveyStep--;
+  renderSurvey();
+}
+
+function renderSurvey() {
+  var s = surveyData[surveyStep];
+  showHero(s.hero);
+  document.getElementById('survey-step').textContent = (surveyStep + 1) + ' / ' + surveyData.length;
+  document.getElementById('survey-question').textContent = s.question;
+
+  /* Back button visible from Q2 onwards */
+  var backBtn = document.getElementById('survey-back');
+  if (backBtn) backBtn.style.display = surveyStep > 0 ? 'inline-flex' : 'none';
+
+  /* Progress bars */
+  document.querySelectorAll('.survey-progress-bar').forEach(function(bar, i) {
+    bar.className = 'survey-progress-bar';
+    if (i < surveyStep) bar.classList.add('done');
+    if (i === surveyStep) bar.classList.add('current');
+  });
+
+  /* Options */
+  var container = document.getElementById('survey-options');
+  container.innerHTML = '';
+  var prevAnswer = surveyAnswers[surveyStep];
+  s.options.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'survey-option';
+    btn.innerHTML = '<div class="survey-radio"></div><span>' + opt + '</span>';
+    if (prevAnswer === opt) btn.classList.add('selected');
+    btn.onclick = function() {
+      container.querySelectorAll('.survey-option').forEach(function(el) { el.classList.remove('selected'); });
+      btn.classList.add('selected');
+      surveyAnswers[surveyStep] = opt;
+      updateSurveyNext();
+      /* Auto-advance to next question (except on the final step) */
+      if (surveyStep < surveyData.length - 1) {
+        setTimeout(function() { nextSurvey(); }, 350);
+      }
+    };
+    container.appendChild(btn);
+  });
+
+  updateSurveyNext();
+}
+
+function updateSurveyNext() {
+  var btn = document.getElementById('survey-next');
+  var answer = surveyAnswers[surveyStep];
+  btn.className = answer ? 'survey-next enabled' : 'survey-next';
+  btn.textContent = (surveyStep === surveyData.length - 1) ? '立即開始體驗' : '下一步';
+}
+
+function nextSurvey() {
+  var answer = surveyAnswers[surveyStep];
+  if (!answer) return;
+
+  surveyStep++;
+  if (surveyStep >= surveyData.length) {
+    /* Survey done — TODO: front-end engineer to handle submit / next step */
+    document.getElementById('flow-overlay').style.display = 'none';
+    alert('問卷完成！\n\n' + JSON.stringify(surveyAnswers, null, 2));
+    /* You can replace this with: window.location.href = '/your-next-page'; */
+    return;
+  }
+  renderSurvey();
+}
+
+/* ════════ Login popup ════════ */
+var loginMode = 'signup';
+
+function switchLoginMode(mode) {
+  loginMode = mode;
+  var signupTab = document.getElementById('tab-signup');
+  var loginTab = document.getElementById('tab-login');
+  var nameField = document.getElementById('popup-name-field');
+  var googleText = document.getElementById('popup-google-text');
+  var submitBtn = document.getElementById('popup-submit');
+  var pwInput = document.getElementById('popup-password');
+
+  if (mode === 'signup') {
+    signupTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);';
+    loginTab.style.cssText  = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;';
+    if (nameField) nameField.style.display = 'block';
+    if (googleText) googleText.textContent = '使用 Google 註冊';
+    if (submitBtn) submitBtn.textContent = '建立帳號';
+    if (pwInput) pwInput.placeholder = '8 個字元以上';
+  } else {
+    loginTab.style.cssText  = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06);';
+    signupTab.style.cssText = 'flex:1;padding:8px 0;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;';
+    if (nameField) nameField.style.display = 'none';
+    if (googleText) googleText.textContent = '使用 Google 登入';
+    if (submitBtn) submitBtn.textContent = '登入';
+    if (pwInput) pwInput.placeholder = '輸入密碼';
+  }
+}
+
+function popupLogin() {
+  /* TODO: replace with real auth */
+  document.getElementById('login-popup').style.display = 'none';
+
+  if (loginMode === 'signup') {
+    /* New user — show survey flow */
+    surveyStep = 0; surveyAnswers = {};
+    document.getElementById('flow-overlay').style.display = 'flex';
+    renderSurvey();
+  } else {
+    /* Existing user — skip survey, hand off to next page */
+    alert('登入成功（請接續導向主畫面）');
+    /* You can replace with: window.location.href = '/your-app-home'; */
+  }
+}
+</script>
+
+</body>
+</html>
