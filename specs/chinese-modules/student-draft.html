@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Draft — Chinese Modules · Student (new features &amp; flows)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #d97706; font-weight: 700; }
+    .topbar .draft-chip { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #d97706; border-left-color: #d97706; font-weight: 700; background: #fffbeb; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #d97706; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    .todo { color: #a16207; font-style: italic; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card.tmpl { border-style: dashed; border-color: #cbd5e1; background: #fcfcfd; }
+    .card h4 { margin-top: 0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-draft { background: #fff7ed; border: 1px dashed #fdba74; color: #9a3412; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-new { background: #e0e7ff; color: #4338ca; }
+    .vision-map { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 12px 0 16px; overflow-x: auto; }
+    .vision-map .mermaid { display: block; }
+    .vision-map .mermaid svg { width: 100%; height: auto; max-width: none; }
+
+    /* ── embedded wireframe (scoped to .wf so it doesn't touch doc styles) ── */
+    .wf { margin: 12px 0 6px; }
+    .wf .bar { height: 11px; border-radius: 4px; background: #e2e8f0; }
+    .wf .bar.sm { height: 8px; }
+    .wf .row { display: flex; align-items: center; gap: 8px; }
+    .wf .col { display: flex; flex-direction: column; gap: 8px; }
+    .wf .box { border: 1px dashed #cbd5e1; border-radius: 9px; background: #f8fafc; }
+    .wf .pill { display: inline-flex; align-items: center; gap: 4px; height: 24px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; padding: 0 11px; font-size: 12px; font-weight: 800; color: #475569; }
+    .wf .card { border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 12px; box-shadow: none; margin: 0; }
+    .wf .circ { border-radius: 50%; background: #e2e8f0; flex: none; }
+    .wf .btn { border-radius: 12px; background: #cbd5e1; color: #334155; font-size: 13px; font-weight: 800; padding: 12px; text-align: center; }
+    .wf .lbl { font-size: 11px; color: #94a3b8; font-weight: 700; margin: 0; }
+    .wf .screen { border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 12px 34px -16px rgba(15,23,42,.4); }
+    .wf .chrome { height: 30px; background: #e2e8f0; display: flex; align-items: center; gap: 7px; padding: 0 13px; }
+    .wf .chrome i { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+    .wf .chrome .url { margin-left: 10px; height: 15px; flex: 1; max-width: 260px; border-radius: 6px; background: #f1f5f9; }
+    .wf .app { display: flex; }
+    .wf .side { width: 176px; flex: none; border-right: 1px solid #e2e8f0; background: #fff; padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; }
+    .wf .side .brand { font-size: 12px; font-weight: 800; color: #94a3b8; padding: 4px 8px 12px; }
+    .wf .side .nav { display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 9px; }
+    .wf .side .nav .i { width: 18px; height: 18px; border-radius: 5px; background: #e2e8f0; flex: none; }
+    .wf .side .nav .tx { font-size: 11px; color: #94a3b8; font-weight: 700; }
+    .wf .side .nav.on { background: #eef1f5; box-shadow: inset 0 0 0 1px #cbd5e1; }
+    .wf .side .nav.on .i { background: #cbd5e1; }
+    .wf .side .spacer { flex: 1; min-height: 12px; }
+    .wf .side .stat2 { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+    .wf .side .stat2 .i { width: 20px; height: 20px; border-radius: 6px; background: #e2e8f0; flex: none; }
+    .wf .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .wf .apphdr { height: 42px; border-bottom: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: flex-end; padding: 0 16px; }
+    .wf .apphdr .av { width: 27px; height: 27px; border-radius: 50%; background: #e2e8f0; }
+    .wf .gp { position: relative; min-height: 500px; padding: 16px 22px 22px; background: repeating-linear-gradient(135deg, #eef2f7 0 14px, #f3f6fa 14px 28px); }
+    .wf .gp .bg-note { position: absolute; top: 12px; right: 20px; font-size: 10px; color: #b0b7c0; font-style: italic; }
+    .wf .gp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .wf .stat { height: 32px; }
+    .wf .gp-inner { display: flex; gap: 22px; align-items: stretch; }
+    .wf .gp-main { flex: 1.7; display: flex; flex-direction: column; align-items: center; }
+    .wf .gp-side { flex: 1; max-width: 300px; }
+    .wf .dc-banner { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; padding: 12px 16px; margin-bottom: 8px; }
+    .wf .ring { position: relative; width: 300px; height: 290px; margin: 6px auto 6px; }
+    .wf .node { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: #fff; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #64748b; text-align: center; line-height: 1.1; box-shadow: 0 3px 0 #e2e8f0; }
+    .wf .node.reward { background: #fdf6e3; border-color: #e7d9a8; }
+    .wf .node.n-top { top: 0; left: 50%; transform: translateX(-50%); }
+    .wf .node.n-right { top: 40%; right: 6px; transform: translateY(-50%); }
+    .wf .node.n-br { bottom: 26px; right: 40px; }
+    .wf .node.n-bl { bottom: 26px; left: 40px; }
+    .wf .node.n-left { top: 40%; left: 6px; transform: translateY(-50%); }
+    .wf .mascot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 84px; height: 84px; border-radius: 50%; background: #dfe4ea; border: 2px dashed #b8bfc9; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #94a3b8; font-weight: 700; }
+    .wf .wcap { text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; margin-top: 8px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <span class="current">Student · Design Draft</span>
+    <span class="draft-chip">Draft</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#context" class="active">1 · Context &amp; goals</a></li>
+        <li><a href="#features">2 · New features</a></li>
+        <li><a href="#flows">3 · User flows</a></li>
+        <li><a href="#decisions">4 · Open questions</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Student — Design Draft</h1>
+        <p class="subtitle">Working canvas for <strong>new</strong> student features &amp; user flows. Forward-looking design, not the current build.</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>Role: STUDENT</span>
+          <span>Status: DRAFT · design</span>
+          <span>Updated: Jul 2026</span>
+        </div>
+      </div>
+
+      <div class="callout callout-draft"><strong>This is a design draft.</strong> It captures features/flows we <em>want to build</em>, not what exists today. For the current build see <a href="student.html" style="color:#9a3412;font-weight:700">Student — Practice (as-built)</a> and the <a href="student-wireframes.html" style="color:#9a3412;font-weight:700">current wireframes</a> · <a href="student-prototype.html" style="color:#9a3412;font-weight:700">clickable prototype ↗</a>. Fill sections below as we iterate; move items into the as-built spec once shipped.</div>
+
+      <!-- 1 -->
+      <h2 id="context"><span class="num">1</span> Context &amp; goals</h2>
+      <h3>1.1 · Why</h3>
+      <p>Today a student only practises what a <strong>teacher assigns</strong>. There's no self-directed daily habit and no place to own vocabulary between assignments. This round adds a <strong>self-study loop</strong>: a daily challenge that cycles the four practice types, a Chinese word bank as its content home, and a gaming layer that motivates coming back.</p>
+      <div class="callout callout-info"><strong>The three pieces work together.</strong> <strong>Daily Challenge</strong> is the engine · <strong>Word Bank</strong> is the content source · <strong>Gaming</strong> is the motivation layer. Design them as one system, ship them incrementally.</div>
+
+      <h3>The shape — student vision map</h3>
+      <p style="font-size:13px;color:#64748b">From the hand sketch: the student splits into <strong>Gaming</strong> (self-directed) and <strong>Class · Assignment</strong> (teacher). Both kinds of practice earn <strong>score</strong> — Hearts &amp; Stars — which is spent on Hints and avatar.</p>
+      <div class="vision-map">
+        <pre class="mermaid">
+graph TD
+  S["Student"]
+  S --> G["Gaming"]
+  S --> C["Class · Assignment"]
+
+  G --> DC["Daily Challenge"]
+  DC --> PR["Practice"]
+  G --> WG["Word Game"]
+  G --> WB["Word Bank"]
+  G --> LB["Leaderboard"]
+  G --> SC["score"]
+
+  SC --> HE["Hearts"]
+  SC --> STR["Stars"]
+  HE --> HN["Hints"]
+  STR --> AV["Update avatar"]
+
+  C --> MD["Mandatory"]
+  C --> OP["Optional"]
+  MD --> CP["Choose Practice Type"]
+  OP --> CP
+  CP --> SB["Submit"]
+
+  PR -->|earns| SC
+  SB -->|earns| SC
+
+  classDef self fill:#dcfce7,stroke:#22c55e,color:#166534;
+  classDef optional fill:#ffedd5,stroke:#f59e0b,color:#9a3412;
+  classDef score fill:#e0e7ff,stroke:#6366f1,color:#3730a3;
+  class DC,PR self;
+  class OP optional;
+  class SC,HE,STR score;
+        </pre>
+      </div>
+
+      <h3>1.2 · Goals</h3>
+      <ul>
+        <li><strong>Daily habit</strong> — students practise on their own most days (measure: daily-active + streak length)</li>
+        <li><strong>Vocabulary retention</strong> — words a student meets get revisited to mastery (measure: mastery growth)</li>
+        <li><strong>Motivation</strong> — the gaming layer makes practice feel rewarding (measure: return rate, sessions/week)</li>
+      </ul>
+      <h3>1.3 · Non-goals / constraints</h3>
+      <ul>
+        <li>Does <strong>not</strong> replace teacher-assigned practice — it sits alongside <a class="inline" href="student.html">My Assignments</a></li>
+        <li>Reuses <strong>existing</strong> practice engines (Q&amp;A / Mirroring / Vocabulary / MC) — no new practice type this round</li>
+        <li>Chinese product only (a Chinese Word Bank already exists <em>inside the Word Game</em> — preset; this round is about its <strong>source</strong>, not building it from scratch)</li>
+      </ul>
+
+      <!-- 2 -->
+      <h2 id="features"><span class="num">2</span> New features</h2>
+
+      <h3>The Gaming page — where they live</h3>
+      <p>The self-directed features share one <strong>Gaming hub page</strong> (desktop, inside the dashboard shell): Daily Challenge is the hero; Word Game modes, Word Bank and an always-on mini-Leaderboard sit in the side panel; Streak / Stars / Hearts in the left rail. Interactive version: <a href="student-prototype.html" style="color:#d97706;font-weight:700;text-decoration:none">clickable prototype ↗</a>.</p>
+      <div class="wf">
+        <div class="screen">
+          <div class="chrome"><i></i><i></i><i></i><div class="url"></div></div>
+          <div class="app">
+            <aside class="side">
+              <div class="brand">DAHUA AI</div>
+              <div class="nav"><span class="i"></span><span class="tx">Assignments</span></div>
+              <div class="nav"><span class="i"></span><span class="tx">Leaderboard</span></div>
+              <div class="nav on"><span class="i"></span><span class="tx" style="color:#475569">Word Game</span></div>
+              <div class="nav"><span class="i"></span><span class="tx">History</span></div>
+              <div class="nav"><span class="i"></span><span class="tx">Submitted</span></div>
+              <div class="spacer"></div>
+              <div class="stat2"><span class="i"></span><span class="col" style="gap:3px;flex:1"><span class="lbl">🔥 Streak · 持續天數</span><span class="bar sm" style="width:40%"></span></span></div>
+              <div class="stat2"><span class="i"></span><span class="col" style="gap:3px;flex:1"><span class="lbl">★ Stars</span><span class="bar sm" style="width:44%"></span></span></div>
+              <div class="stat2"><span class="i"></span><span class="col" style="gap:3px;flex:1"><span class="lbl">❤ Hearts</span><span class="bar sm" style="width:44%"></span></span></div>
+            </aside>
+            <div class="main">
+              <div class="apphdr"><span class="av"></span></div>
+              <div class="gp">
+                <div class="bg-note">illustrated background</div>
+                <div class="gp-top" style="justify-content:flex-end">
+                  <div class="row" style="gap:8px">
+                    <div class="pill stat">❤ 30</div>
+                    <div class="pill stat">🔥 389</div>
+                    <div class="pill stat">★ 560</div>
+                    <div class="pill stat">🔊</div>
+                  </div>
+                </div>
+                <div class="gp-inner">
+                  <div class="gp-main">
+                    <div class="dc-banner">
+                      <div class="lbl">Nov 4</div>
+                      <div class="bar" style="width:40%;margin-top:6px"></div>
+                      <div class="lbl" style="margin-top:5px">Daily Challenge · 每日挑戰</div>
+                    </div>
+                    <div class="ring">
+                      <div class="mascot">mascot</div>
+                      <div class="node n-top">Q&amp;A</div>
+                      <div class="node n-right">Mirror</div>
+                      <div class="node n-br">Vocab</div>
+                      <div class="node n-bl">MC</div>
+                      <div class="node reward n-left">🎁<br>reward</div>
+                    </div>
+                    <div class="btn" style="width:240px">Start today's challenge</div>
+                  </div>
+                  <div class="gp-side">
+                    <div class="lbl" style="margin-bottom:8px">Word Game</div>
+                    <div class="card" style="margin-bottom:10px"><div class="row"><div class="circ" style="width:38px;height:38px"></div><div class="col" style="flex:1;gap:6px"><div class="bar" style="width:70%"></div><div class="bar sm" style="width:50%;background:#eef1f5"></div></div><div class="pill">▸</div></div><div class="lbl" style="margin-top:8px">New Challenge</div></div>
+                    <div class="card" style="margin-bottom:14px"><div class="row"><div class="circ" style="width:38px;height:38px"></div><div class="col" style="flex:1;gap:6px"><div class="bar" style="width:70%"></div><div class="bar sm" style="width:50%;background:#eef1f5"></div></div><div class="pill">▸</div></div><div class="lbl" style="margin-top:8px">Smart Review</div></div>
+                    <div class="lbl" style="margin-bottom:8px">More</div>
+                    <div class="box" style="padding:12px;margin-bottom:10px"><div class="row"><div class="circ" style="width:26px;height:26px"></div><div class="lbl">Word Bank · 507</div><div class="pill" style="margin-left:auto">▸</div></div></div>
+                    <div class="card" style="padding:11px">
+                      <div class="row"><div class="lbl" style="color:#64748b;font-weight:800">🏆 Leaderboard</div><span class="pill" style="margin-left:auto">this week ▸</span></div>
+                      <div class="col" style="margin-top:9px;gap:7px">
+                        <div class="row"><div class="lbl" style="color:#64748b;font-weight:800;width:12px">1</div><div class="circ" style="width:20px;height:20px"></div><div class="bar sm" style="width:46%"></div><span class="pill" style="margin-left:auto">★</span></div>
+                        <div class="row"><div class="lbl" style="color:#64748b;font-weight:800;width:12px">2</div><div class="circ" style="width:20px;height:20px"></div><div class="bar sm" style="width:40%"></div><span class="pill" style="margin-left:auto">★</span></div>
+                        <div class="row"><div class="lbl" style="color:#64748b;font-weight:800;width:12px">3</div><div class="circ" style="width:20px;height:20px"></div><div class="bar sm" style="width:44%"></div><span class="pill" style="margin-left:auto">★</span></div>
+                        <div class="row" style="background:#eef1f5;border-radius:8px;padding:5px 6px;box-shadow:inset 0 0 0 1px #cbd5e1"><div class="lbl" style="color:#64748b;font-weight:800;width:12px">5</div><div class="circ" style="width:20px;height:20px"></div><div class="bar sm" style="width:34%"></div><span class="pill" style="margin-left:auto">You</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wcap">Inside the dashboard shell · left sidebar (Word Game active) + app header · content area = gaming hub</div>
+      </div>
+
+      <div class="card">
+        <h4>2.1 · Self-directed practice — Daily Challenge <span class="pill p-new">New</span> <span class="pill p-gray">status: proposed</span></h4>
+        <p><strong>What:</strong> A daily, self-initiated challenge that runs one round through the four practice types — <strong>Q&amp;A → Mirroring → Vocabulary → Multiple Choice</strong> — then rewards the student.</p>
+        <p><strong>Why:</strong> Builds a daily habit and lets students practise without waiting to be assigned.</p>
+        <p><strong>Where it lives:</strong> on the <strong>Gaming hub page</strong> shown above — the ring is the daily loop; each node opens an existing practice session.</p>
+        <p><strong>Content source:</strong> <span class="todo">auto-selected from — Word Bank words? recent assigned projects? a curated pool? (see §4)</span></p>
+        <p><strong>Key states:</strong> available today · in progress (step 1–4) · completed today (locked until tomorrow) · streak count.</p>
+        <p><strong>Rewards:</strong> stars / coins / streak++ on completion (defined in 2.3).</p>
+        <p><strong>Open questions:</strong> fixed 4 steps or configurable? · retry same day? · what if a type has no content available?</p>
+      </div>
+
+      <div class="card">
+        <h4>2.2 · Chinese Word Bank <span class="pill p-green">exists (in Word Game)</span> <span class="pill p-gray">preset today</span></h4>
+        <p><strong>Reality check:</strong> a Chinese Word Bank <strong>already exists</strong> inside the Word Game — a <strong>preset</strong> fixed list (~507 words), each word showing 1–5 star mastery (Learned / All Words / Mastered tabs). Word Game draws its practice words from it. This is <em>separate</em> from the ESL <code>/student/word-bank</code> (ESL-only).</p>
+        <p><strong>What (design):</strong> a student's Chinese vocabulary home — word + pinyin + translation + audio, with mastery — and the content source for Daily Challenge &amp; Word Game.</p>
+        <p><strong>Key design question — where do the words come from?</strong></p>
+        <table>
+          <thead><tr><th style="width:150px">Option</th><th>Source</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A · Preset</strong> <span class="pill p-gray">today</span></td><td>Fixed official word list (current behaviour)</td><td>Simplest, already works; but disconnected from what the student is actually assigned</td></tr>
+            <tr><td><strong>B · Dynamic</strong></td><td>Words from the student's assigned content (projects / practices), teacher-set, or student-added</td><td>Matches the learner's real path; needs a data source + dedupe / levelling</td></tr>
+            <tr><td><strong>C · Hybrid</strong></td><td>Preset official list <strong>+</strong> words auto-collected from assignments</td><td>Most complete, most complex</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Also open:</strong> does Daily Challenge draw from this same bank? · does Word Bank get its own page, or stay inside Word Game? · keep the existing per-word 1–5★ mastery model?</p>
+      </div>
+
+      <div class="card">
+        <h4>2.3 · Gaming system <span class="pill p-new">New</span> <span class="pill p-gray">status: needs full plan</span></h4>
+        <p><strong>What:</strong> The cross-cutting gamification layer that ties everything together. This is the <strong>complete</strong> plan — but first, the accurate baseline of what already exists.</p>
+
+        <h4>Current baseline (verified against code)</h4>
+        <table>
+          <thead><tr><th style="width:220px">Element</th><th style="width:150px">Status</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>Stars (in Word Game)</td><td><span class="pill p-green">✅ built</span></td><td>1 per exercise, max 5 / word — the only in-game currency</td></tr>
+            <tr><td>Mastery</td><td><span class="pill p-green">✅ built</span></td><td>1–4 stars = Learned · 5 = Mastered</td></tr>
+            <tr><td>Leaderboard</td><td><span class="pill p-green">✅ built</span></td><td>per-<strong>class</strong>, backend <code>totalPoints</code>, Summer-Program gated</td></tr>
+            <tr><td>Account ⭐ / ❤️ (sidebar)</td><td><span class="pill p-green">✅ built</span></td><td>backend <code>totalPoints</code> / <code>incentivePoints</code> — opaque formula, not a game mechanic</td></tr>
+            <tr><td>Time limit · Difficulty</td><td><span class="pill p-amber">⚠️ defined, unused</span></td><td>TIME_OPTIONS / EASY-HARD enums exist but aren't wired to the UI</td></tr>
+            <tr><td>Hearts as a game mechanic</td><td><span class="pill" style="background:#fee2e2;color:#b91c1c">❌ not built</span></td><td>no lose-on-wrong / game-over in Word Game</td></tr>
+            <tr><td>Coins · Shop · Streak · Levels</td><td><span class="pill" style="background:#fee2e2;color:#b91c1c">❌ not built</span></td><td><code>coin.wav</code> is only a sound; no currency / economy</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:13px;color:#64748b">→ so the plan below is mostly <strong>net-new</strong> on top of Stars + Mastery + (class) Leaderboard.</p>
+
+        <h4>Economy — decided</h4>
+        <div class="callout callout-tip"><strong>Three currencies, one shop.</strong> Coins are dropped (not implemented — only a sound effect); Stars is the single spendable currency.</div>
+        <table>
+          <thead><tr><th style="width:130px">Currency</th><th style="width:170px">Purpose</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td><strong>❤ Hearts</strong></td><td>Daily Challenge <strong>hints</strong></td><td>Spend a heart to reveal a hint and help finish the day's challenge. <strong>Not finishing = no daily reward.</strong></td></tr>
+            <tr><td><strong>★ Stars</strong></td><td><strong>Shop</strong> currency</td><td>Earned from practice; spent on <strong>mascot accessories</strong> (cosmetic).</td></tr>
+            <tr><td><strong>🔥 Streak</strong></td><td><strong>Habit</strong> motivation</td><td>Consecutive days completing the Daily Challenge.</td></tr>
+          </tbody>
+        </table>
+
+        <h4>The complete plan (to build)</h4>
+        <table>
+          <thead><tr><th style="width:150px">Pillar</th><th>Elements</th><th>Notes / open</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Currency</strong></td><td>❤ Hearts <span class="pill p-new">hints</span> · ★ Stars <span class="pill p-green">shop</span> · <s>Coins</s></td><td>Purposes decided (see Economy above). Open: how Hearts are earned / refilled &amp; cost per hint.</td></tr>
+            <tr><td><strong>Progression</strong></td><td>Mastery <span class="pill p-green">have</span> · Streak <span class="pill p-new">new</span> · Levels <span class="pill p-new">?</span></td><td class="todo">streak rules (grace days?) · Levels — needed or redundant?</td></tr>
+            <tr><td><strong>Competition</strong></td><td>Leaderboard <span class="pill p-green">class only</span></td><td class="todo">add school / global? weekly reset? un-gate from Summer Program?</td></tr>
+            <tr><td><strong>Rewards</strong></td><td>Shop — mascot accessories, bought with ★ Stars <span class="pill p-new">new</span></td><td class="todo">cosmetic only? · which items?</td></tr>
+            <tr><td><strong>Feedback</strong></td><td>Mascot · animations · SFX <span class="pill p-green">have</span></td><td>reuse Word Game assets</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Open questions:</strong> keep Summer-Program gating or open to all Chinese students? · does the economy risk pay-to-win / grinding?</p>
+      </div>
+
+      <div class="callout callout-info"><strong>Tip.</strong> Copy a card above to add more features. If one grows large (e.g. the full gaming economy), split it into its own draft page.</div>
+
+      <!-- 3 -->
+      <h2 id="flows"><span class="num">3</span> User flows</h2>
+
+      <h3>3.1 · Daily Challenge loop <span class="pill p-amber">core</span></h3>
+      <div class="formula">Home / sidebar ─▶ Start challenge ─▶ 1 Q&A ─▶ 2 Mirroring ─▶ 3 Vocabulary ─▶ 4 Multiple Choice ─▶ Result ─▶ back
+   (see "today's                (content auto-selected)      record / speak / answer            (score +
+    challenge" card)                                                                            stars · coins · streak++)</div>
+      <ul>
+        <li><strong>Entry</strong> — student sees "Today's challenge" (not yet done) with current streak.</li>
+        <li><strong>Round</strong> — 4 steps, one per practice type, using existing session UIs; a progress indicator shows 1/4 … 4/4.</li>
+        <li><strong>Result</strong> — summary score + rewards earned; streak increments; challenge locks until tomorrow.</li>
+        <li><strong>Edge cases</strong> — <span class="todo">already done today (show recap + tomorrow countdown) · a type has no content (skip or substitute?) · quit mid-round (resume or lose progress?) · hearts run out</span></li>
+      </ul>
+
+      <h3>3.2 · Word Bank → practice <span class="pill p-gray">supporting</span></h3>
+      <div class="formula">Word Bank ─▶ pick word(s) / "review weak" ─▶ practice (mirroring / quiz) ─▶ mastery updates ─▶ back to bank</div>
+      <ul>
+        <li class="todo">Detail how a student starts practice from the bank, and how mastery feeds Smart Review / Daily Challenge.</li>
+      </ul>
+
+      <!-- 4 -->
+      <h2 id="decisions"><span class="num">4</span> Open questions &amp; decisions</h2>
+      <table>
+        <thead><tr><th style="width:42%">Question</th><th>Options / notes</th><th style="width:120px">Decision</th></tr></thead>
+        <tbody>
+          <tr><td>Where does Daily Challenge live?</td><td>Gaming hub page (Word Game + Daily Challenge on one page)</td><td><span class="pill p-green">decided</span></td></tr>
+          <tr><td>Ring = the 4-type cycle, or a variable daily set?</td><td>fixed Q&amp;A→Mirror→Vocab→MC · variable</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Does finishing the ring feed the class Leaderboard?</td><td>yes · no · separate points</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Reward node — per day or per node? what does 🎁 give?</td><td>coins / hearts / cosmetic</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Top-bar / rail currencies to show?</td><td>Hearts · Streak · Stars · Coins (which?)</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Daily Challenge content source?</td><td>Word Bank words · recent assigned projects · curated pool · mix</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Word Bank source?</td><td><strong>A</strong> Preset (today) · <strong>B</strong> Dynamic (from assignments) · <strong>C</strong> Hybrid</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Word Bank — own page or stay inside Word Game?</td><td>standalone sidebar item · keep inside Word Game only</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Gaming: keep Summer-Program gating?</td><td>keep gated · open to all Chinese students</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Currencies</td><td>❤ Hearts = hints · ★ Stars = shop · 🔥 Streak = habit · Coins dropped</td><td><span class="pill p-green">decided</span></td></tr>
+          <tr><td>Hearts — how earned / refilled? cost per hint?</td><td>daily refill · earn from practice · buy · N per hint · run-out = no hints (still playable?)</td><td><span class="pill p-gray">open</span></td></tr>
+          <tr><td>Stars — accumulated (rank/level) vs spendable balance?</td><td>two counters (earn only for rank, balance for shop) · one counter</td><td><span class="pill p-gray">open</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn"><strong>Draft v1.</strong> First pass at the three features + core flow. Everything tagged <span class="pill p-gray">open</span> / <span class="todo">TODO</span> is up for us to decide — pick one and we'll go deeper.</div>
+
+      <footer>DAHUA AI · Design Draft · Chinese Modules · Student · July 2026</footer>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { fontFamily: 'ui-sans-serif, system-ui, sans-serif', fontSize: '15px', lineColor: '#94a3b8', primaryColor: '#ffffff', primaryBorderColor: '#cbd5e1', primaryTextColor: '#1e293b' } });
+
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const map = links.map((a) => ({ a, el: document.querySelector(a.getAttribute('href')) }));
+    const onScroll = () => { let cur = map[0]; for (const m of map) { if (m.el && m.el.getBoundingClientRect().top <= 80) cur = m; } links.forEach((a) => a.classList.remove('active')); if (cur) cur.a.classList.add('active'); };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  </script>
+</body>
+</html>
