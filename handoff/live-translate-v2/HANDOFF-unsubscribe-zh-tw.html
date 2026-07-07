@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>退訂流程 — 交接文件 (v3 zh-tw)</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--green:#059669;--green-l:#10b981;--green-bg:#ecfdf5;--ink:#0f172a;
+    --muted:#64748b;--faint:#94a3b8;--border:#e2e8f0;--danger:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Public Sans','PingFang TC','Microsoft JhengHei',sans-serif;
+    color:var(--ink);background:#f8fafc;line-height:1.7;padding:40px 20px}
+  .wrap{max-width:900px;margin:0 auto}
+  header{border-left:4px solid var(--green);padding:4px 0 4px 18px;margin-bottom:8px}
+  header h1{font-size:26px;font-weight:800}
+  header .sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .status{display:inline-block;margin-top:12px;font-size:12px;font-weight:700;
+    background:#dcfce7;color:#166534;padding:4px 12px;border-radius:999px}
+  section{background:#fff;border:1px solid var(--border);border-radius:14px;
+    padding:22px 24px;margin-top:20px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  h2 .ic{width:26px;height:26px;flex:none;border-radius:8px;background:var(--green);
+    color:#fff;font-size:15px;font-weight:800;display:grid;place-items:center}
+  h3{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;margin:16px 0 6px}
+  p,li{font-size:14.5px}
+  ul{margin:2px 0 2px 20px}li{margin:3px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:#f1f5f9;padding:1px 6px;border-radius:5px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  td code{white-space:nowrap}
+  .flow{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:18px 20px;margin-top:10px;
+    font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.9;overflow:auto}
+  .flow b{color:#34d399}.flow .d{color:#fca5a5}
+  .demo{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .demo a{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#fff;
+    background:var(--green);padding:9px 16px;border-radius:8px;text-decoration:none}
+  .demo a.star{background:#f59e0b}
+  .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-top:12px}
+  .note b{color:#c2410c}
+  footer{text-align:center;color:var(--faint);font-size:12px;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>退訂流程 — 交接文件</h1>
+    <div class="sub">CatchUP Demo v3 (zh-tw)｜訂閱方案 + 管理訂單「整合為單一頁」+ 退訂問卷</div>
+    <div class="status">已實作 · 可打包交付</div>
+  </header>
+
+  <!-- 概述 -->
+  <section>
+    <h2><span class="ic">i</span> 概述</h2>
+    <p>「訂閱方案」與「管理訂單」整合成單一「<b>訂閱與帳單</b>」頁，依訂閱狀態切換：</p>
+    <ul>
+      <li><b>免費</b>：方案比較表 + $18/月 + 「立即訂閱」。</li>
+      <li><b>Pro</b>：目前方案卡 + 付款紀錄（多筆可展開/收合） + 「取消訂閱」入口。</li>
+    </ul>
+    <p><b>退訂</b>：取消訂閱 → 退訂原因問卷（可複選 + 其他填字） → 確認頁（列出將失去項目 + 輕挽留） → 降回免費版。</p>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">全部做在 demo HTML 內（inline JS）+ 共用 <code>styles/v3.css</code>，<b>未動</b> <code>js/v3/*</code> 等共用邏輯檔。</p>
+  </section>
+
+  <!-- 流程 -->
+  <section>
+    <h2><span class="ic">→</span> 流程</h2>
+    <div class="flow">
+Profile「訂閱與帳單」 <b>openPaywall()</b><br>
+&nbsp;&nbsp;├─ 免費 → 「立即訂閱」 <b>demoUpgrade()</b> → 同頁刷新為 Pro<br>
+&nbsp;&nbsp;└─ Pro → 付款紀錄(可開合) + <span class="d">「取消訂閱」</span> <b>openUnsub()</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ 退訂問卷(可複選) <b>goUnsubConfirm()</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ <b>confirmUnsub()</b> → 降回免費 → 回訂閱與帳單頁<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <b>keepPro()</b> → 保留 → 回訂閱與帳單頁(Pro)
+    </div>
+    <div class="note"><b>導航情境</b> <code>paywallContext</code>：<code>'billing'</code>（個人設定進入，header 返回）／<code>'limit'</code>（今日免費時間用完，保留「暫時不用」回錄音頁）。升級／退訂／保留後皆回同頁刷新。</div>
+  </section>
+
+  <!-- 畫面 -->
+  <section>
+    <h2><span class="ic">1</span> 畫面（screens）</h2>
+    <table>
+      <tr><th>ID</th><th>說明</th></tr>
+      <tr><td><code>screen-paywall</code></td><td>訂閱與帳單整合頁（免費／Pro 切換）。內含 <code>#paywall-price</code>、<code>#paywall-active</code>、<code>#paywall-cta</code>、<code>#paywall-billing</code>（Pro 才顯示：付款紀錄 <code>#order-list</code> + 取消訂閱）。</td></tr>
+      <tr><td><code>screen-unsub</code></td><td>退訂原因問卷（可複選 + <code>#unsub-other</code> 其他填字；選了才可繼續）。</td></tr>
+      <tr><td><code>screen-unsub-confirm</code></td><td>確認退訂（列「你將失去」：無限翻譯次數、無限次練習單字複習 + 確認/保留）。</td></tr>
+    </table>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">入口：Profile（<code>screen-profile</code>）「帳號」區 → 「訂閱與帳單」<code>onclick="openPaywall()"</code>。原獨立的 <code>screen-orders</code> 已移除。</p>
+  </section>
+
+  <!-- 函式 -->
+  <section>
+    <h2><span class="ic">2</span> 函式（inline JS）</h2>
+    <table>
+      <tr><th>函式</th><th>作用</th></tr>
+      <tr><td><code>openPaywall()</code></td><td>開訂閱與帳單頁，依 <code>isPro</code> 切換版面 + 設 <code>paywallContext='billing'</code> + 返回導航。</td></tr>
+      <tr><td><code>demoUpgrade()</code></td><td>升級為 Pro；<code>billing</code> 情境停留同頁刷新，<code>limit</code> 情境回上一頁。</td></tr>
+      <tr><td><code>closePaywall()</code></td><td>「暫時不用」→ 回 <code>previousScreen</code>（僅 limit 情境顯示此鈕）。</td></tr>
+      <tr><td><code>renderBillingHistory()</code> / <code>billingRowHTML()</code> / <code>toggleBilling()</code></td><td>付款紀錄渲染；超過 <code>BILLING_COLLAPSE_AFTER</code>(2) 筆即收合，附展開/收合。</td></tr>
+      <tr><td><code>openUnsub()</code></td><td>開退訂問卷，重建原因選項，返回 <code>openPaywall</code>。</td></tr>
+      <tr><td><code>buildUnsubReasons()</code> / <code>updateUnsubSelected()</code></td><td>渲染複選原因 + 其他填字；控制「繼續退訂」啟用狀態。</td></tr>
+      <tr><td><code>goUnsubConfirm()</code></td><td>進確認頁。</td></tr>
+      <tr><td><code>confirmUnsub()</code></td><td>設 <code>isPro=false</code>、更新方案徽章、toast，回訂閱與帳單頁（免費）。</td></tr>
+      <tr><td><code>keepPro()</code></td><td>挽留：toast + 回訂閱與帳單頁（Pro）。</td></tr>
+    </table>
+    <h3>狀態變數</h3>
+    <p><code>isPro</code>、<code>isLoggedIn</code>、<code>previousScreen</code>、<code>paywallContext</code>、<code>billingRecords[]</code>、<code>BILLING_COLLAPSE_AFTER</code>、<code>billingExpanded</code>、<code>unsubReasonsData[]</code>、<code>unsubSelected[]</code></p>
+  </section>
+
+  <!-- 檔案 -->
+  <section>
+    <h2><span class="ic">3</span> 檔案</h2>
+    <table>
+      <tr><th>檔案</th><th>內容</th></tr>
+      <tr><td><a href="demo-new-v3-zh-tw.html">demo-new-v3-zh-tw.html</a></td><td>三個 screen 的 HTML + 上述所有 inline JS。</td></tr>
+      <tr><td><a href="styles/v3.css">styles/v3.css</a></td><td>退訂樣式（<code>.unsub-*</code>）、付款紀錄開合（<code>.billing-toggle</code>）。</td></tr>
+    </table>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">星等版 <a href="demo-new-v3-zh-tw-star.html">demo-new-v3-zh-tw-star.html</a> 的退訂/帳單完全相同（僅練習呈現不同）。</p>
+    <div class="note"><b>串接後端時</b>：<code>isPro</code> 換成訂閱狀態 API；<code>billingRecords</code> 換成付款紀錄 API；<code>confirmUnsub</code> 內呼叫取消訂閱 API（實務通常「期末生效」）；退訂原因（<code>unsubSelected</code>）送分析/後端。</div>
+  </section>
+
+  <!-- Demo -->
+  <section>
+    <h2><span class="ic">▶</span> Demo</h2>
+    <p>測試路徑：登入 → 頭像 → 個人設定 → 訂閱與帳單 → 立即訂閱（變 Pro）→ 取消訂閱 → 問卷 → 確認。</p>
+    <div class="demo">
+      <a href="demo-new-v3-zh-tw.html">▶ 開啟 Demo（過／不過版）</a>
+      <a class="star" href="demo-new-v3-zh-tw-star.html">★ 開啟 Demo（星等版）</a>
+    </div>
+  </section>
+
+  <footer>CatchUP · Live Translate v3 · 退訂流程交接</footer>
+</div>
+</body>
+</html>
