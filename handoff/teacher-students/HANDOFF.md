@@ -1,0 +1,129 @@
+# Teacher · Students Page — Engineer Handoff
+
+Chinese-module **CLASS_TEACHER** 的「學生」頁設計交接（master-detail：左側名冊 + 右側學生詳情）。這裡的檔案是 **高擬真互動原型（reference mockup）**，工程師以 **Next.js 14 / React 18 / MUI v5 / Apollo** 在正式 app（`dahua-dash`）重寫 —— 不是直接搬 HTML。行為、狀態、配色以原型為準。
+
+---
+
+## 本次打包範圍
+
+| 畫面 | 檔案 | 內容 |
+|------|------|------|
+| **Students** | `teacher-students.html` | 學生名冊（搜尋 + class/HSK 篩選）、Word Game Level、Assignment Status、Assignment History + 練習細節 popup + Reminder/Skip popup |
+
+目前設計版本：**Redesign v3**。
+
+---
+
+## 目錄結構
+
+```
+handoff/teacher-students/
+├── index.html            ← 入口
+├── HANDOFF.md            ← 本文件
+└── teacher-students.html ← Students 原型（自包含，inline CSS/JS）
+```
+
+技術：HTML 自包含，CSS 寫在 `<style>`、JS 是單一 IIFE、**純 vanilla JS、無外部 library**。假資料寫在 JS 頂部常數，替換成 GraphQL 即可。
+
+> 這頁也可從 Dashboard 深連結進來：`teacher-students.html?s=<學生姓名>` 會自動選取並捲動到該生。
+
+---
+
+## 外部依賴
+
+| 資源 | CDN |
+|------|-----|
+| Plus Jakarta Sans 字型 | `fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800` |
+| Material Icons Round | `fonts.googleapis.com/icon?family=Material+Icons+Round` |
+
+正式 app 請改用專案既有的 MUI 字型設定與 icon 方案（Material Icons 名稱可沿用）。
+
+---
+
+## 色彩 Token 速查
+
+### 基礎
+| Hex | 用途 |
+|-----|------|
+| `#059669` | Primary — 主按鈕、active、進度 |
+| `#0f172a` / `#475569` / `#64748b` | 文字：主 / 次 / 弱 |
+| `#e6ebf1` / `#eef2f7` | 邊框、分隔線 |
+| `#f4f7fb` | 頁面底 |
+| `#d97706` / `#e11d48` | amber（提醒）/ rose（逾期・危險）|
+
+### 練習類型色系（**跨學生端／教師端共用，務必一致**）
+| 類型 | key | 文字色 | 底色 |
+|------|-----|--------|------|
+| Q&A | `qa` | `#2563EB` | `#e8f0ff` |
+| Mirroring | `mirror` | `#EA7A21` | `#fdeede` |
+| Vocabulary | `vocab` | `#0B7A3B` | `#e6f7ec` |
+| **Follow the Pattern**（原 Multiple Choice）| `mc` | `#7C3AED` | `#f1e9ff` |
+
+### Word Game Level 四格主題色
+| 格 | 文字/icon 色 | 卡片底（漸層）| Material icon |
+|----|------|------|------|
+| Level | `#7c3aed` | `#f5f3ff → #ede9fe` | `military_tech` |
+| Stage | `#0d9488` | `#f0fdfa → #ccfbf1` | `flag` |
+| Stars | `#d97706` | `#fffbeb → #fef3c7` | `star` |
+| Hearts | `#e11d48` | `#fff1f2 → #ffe4e6` | `favorite` |
+
+區塊標題前的彩色圖示徽章：Word Game（紫 `sports_esports`）、Assignment Status（琥珀 `fact_check`）、Assignment History（藍 `history`）。
+
+---
+
+## 元件對照
+
+| 區塊 | 說明 |
+|------|------|
+| **名冊（左）** | 24 筆學生，搜尋 + class / HSK 篩選；點選切換右側詳情；`?s=<name>` 可直接選取。 |
+| **Word Game Level** | 四格彩色卡：Level / Stage / Stars / Hearts + Level Progress 進度條（綠→青→靛漸層）。 |
+| **Assignment Status** | **只列未繳交**；欄位 Assignment / Type / Date / 動作。 |
+| **Assignment History** | 欄位 Assignment / Type / Date / Score / **Detail**；欄序與 Assignment Status 對齊（共用 Type/Date 寬度）。 |
+| **練習細節 popup** | 由 Assignment History 每列 **Detail** 開啟；依類型渲染（語音＝逐字發音評分 + Score breakdown；`mc`＝逐題批閱 + X/Y correct）。 |
+| **Reminder / Skip popup** | 與 Dashboard 同款確認 popup（綠色信封寄信 / 紅色 Skip 確認）。 |
+
+---
+
+## 關鍵互動規則（rebuild 時務必保留）
+
+- **Assignment Status 只顯示未繳交**，並分兩種狀態：
+  - **期限內未繳**（`pend`）→ 日期中性 + 「Not submitted」，動作只有 **Remind**（寄提醒信）。
+  - **逾期未繳**（`over`）→ 日期紅色 + 「Overdue」，動作為 **Skip** + **Remind**。
+  - 全部繳交完 → 顯示空狀態文案。
+- **Remind** → 開寄信 popup（訊息預填、可編輯）→ 送出 toast「Reminder sent to …」。
+- **Skip** → 紅色確認 popup → 確認後該筆自名單移除並重繪、toast「Skipped …」。
+- **練習細節 popup 依類型分流**：語音類（qa / mirror / vocab）= 逐字拼音 + ✓/!/✕ + 星等 + Play Audio + Score breakdown；`mc` = 逐題（Q 徽章、對錯、學生答案 vs 正解、X / Y correct 摘要）。
+- **重要（實作細節）**：所有 modal / toast 的 DOM 必須放在存取它們的 `<script>` **之前**，否則初始化時抓不到元素會中斷點擊事件（原型踩過這個坑，已修正）。React 版用 state 控制即可，不受此限。
+
+---
+
+## Demo 假資料 → API 替換指引
+
+假資料都在 `teacher-students.html` 的 `<script>` 頂部常數：
+
+| 變數 | 結構 | 替換為 |
+|------|------|--------|
+| `STUDENTS[]` | 學生 + `hsk` + `cls` + word-game 統計（`w.master` / `w.learn`）+ `avg` | 學生 query |
+| `ASSIGN(s)` | `{ n, t, due, st:'sub'｜'pend'｜'over', skipped? }` | 該生作業狀態 query（前端只顯示非 `sub`）|
+| `history(s)` | `{ d, t, name, sc }` | 該生練習/作業歷史 query |
+| Word Game 數值 | `level / stage / stars / hearts` 由 `s.hsk`、`s.avg`、`s.w` 推算 | 後端 word-game 進度 API |
+
+送出動作 → mutation：**Send reminder**（寄提醒）、**Skip**（略過該生該作業）。GraphQL 層位置：`src/api/graphql/`（`queries/`、`mutations/`）。
+
+---
+
+## 建議放置位置（`dahua-dash` repo）
+
+| 內容 | 目錄 |
+|------|------|
+| 頁面 route | `src/app/teacher/students/...` |
+| 版面（roster + detail）| `src/sections/teacher/students/...` |
+| 可複用元件（type pill、practice-detail modal、reminder/skip modal、word-game tiles）| `src/components/...` |
+| GraphQL query / mutation | `src/api/graphql/queries`、`.../mutations` |
+| i18n | 所有文案走 i18next key（原型是英文 demo 文案）|
+
+---
+
+## 交接後的溝通
+
+有設計疑問或不清楚的互動規則，請找設計者確認，不要自行臆測。
