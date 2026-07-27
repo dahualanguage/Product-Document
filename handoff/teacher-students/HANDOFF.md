@@ -69,6 +69,23 @@ handoff/teacher-students/
 
 區塊標題前的彩色圖示徽章：Word Game（紫 `sports_esports`）、Assignment Status（琥珀 `fact_check`）、Assignment History（藍 `history`）。
 
+### 頭像顏色規則（名冊 + 詳情表頭）
+
+學生頭像用「姓名雜湊」從固定 6 色調色盤挑一色：
+
+| index | Hex | 色 |
+|---|---|---|
+| 0 | `#2563EB` | 藍 |
+| 1 | `#0B7A3B` | 綠 |
+| 2 | `#EA7A21` | 橘 |
+| 3 | `#7C3AED` | 紫 |
+| 4 | `#e11d48` | 玫瑰 |
+| 5 | `#0369a1` | 深藍 |
+
+- **選色公式**：`AV[(name.charCodeAt(0) + name.length) % 6]`（首字元碼 + 姓名長度，取 6 的餘數）。
+- **呈現**：`linear-gradient(145deg, 色+cc, 色)`（左上稍淡、右下實色）＋ 姓名縮寫（每個字取首字母，最多 2 個，大寫）。
+- **特性**：deterministic（同一姓名永遠同色），但**不保證相鄰列不撞色**。正式版若要更均勻，可改雜湊整個姓名，或改以 class / HSK 決定顏色（比隨機更有意義）。
+
 ---
 
 ## 元件對照
