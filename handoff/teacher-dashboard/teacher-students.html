@@ -35,6 +35,8 @@
   .brand .bt b{ display:block; font-weight:800; font-size:15.5px; color:var(--ink); letter-spacing:-.2px; line-height:1.1; }
   .brand .bt span{ font-size:11px; font-weight:700; color:var(--emerald); letter-spacing:.6px; text-transform:uppercase; }
   .nav-grp{ padding:0 8px; margin:14px 0 6px; font-size:10.5px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--faint); }
+  .report-issue{ display:block; text-align:center; padding:12px 8px 4px; color:#b91c1c; font-size:13px; font-weight:800; text-decoration:underline; text-underline-offset:2px; }
+  .report-issue:hover{ color:#991b1b; }
   .nav{ display:flex; flex-direction:column; gap:2px; }
   .nav a{ display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:10px; cursor:pointer; color:var(--slate-2); font-weight:600; font-size:13.5px; text-decoration:none; transition:.14s; position:relative; }
   .nav a .material-icons-round{ font-size:19px; width:18px; text-align:center; flex:none; color:var(--faint); transition:.14s; }
@@ -227,16 +229,86 @@
   .mc-ans.good{ background:#ecfdf5; color:var(--emerald-d); }
   .mc-ans.wrong{ background:#fef2f2; color:#dc2626; }
   .mc-ans b{ font-weight:800; }
+
+  /* ============================================================
+     RWD  —  平板完整優化，手機求不爆版
+     ≤1024px 側邊欄改抽屜 · ≤900px 單欄 · ≤820/700px 表格卡片化
+     ============================================================ */
+  .navtoggle{ display:none; }
+  .nav-scrim{ display:none; }
+  @media (max-width:1024px){
+    .app{ grid-template-columns:1fr; }
+    .side{ position:fixed; top:0; left:0; z-index:92; width:264px; height:100vh;
+      transform:translateX(-100%); transition:transform .22s cubic-bezier(.2,.7,.3,1);
+      box-shadow:0 24px 60px -24px rgba(15,23,42,.45); }
+    .side.open{ transform:none; }
+    .nav-scrim{ display:block; position:fixed; inset:0; z-index:88; background:rgba(15,23,42,.42);
+      opacity:0; pointer-events:none; transition:opacity .2s; }
+    .nav-scrim.on{ opacity:1; pointer-events:auto; }
+    body.nav-open{ overflow:hidden; }
+    .navtoggle{ display:grid; place-items:center; width:40px; height:40px; flex:none; cursor:pointer;
+      border:1px solid var(--line); border-radius:11px; background:#fff; color:var(--slate-2); }
+    .navtoggle:hover{ border-color:#cbd5e1; background:#f8fafc; }
+    .navtoggle .material-icons-round{ font-size:22px; }
+  }
+
+  .backbtn{ display:none; width:40px; height:40px; border-radius:11px; border:1px solid var(--line);
+    background:#fff; cursor:pointer; place-items:center; color:var(--slate-2); flex:none; }
+  .backbtn:hover{ border-color:#cbd5e1; background:#f8fafc; }
+  .backbtn .material-icons-round{ font-size:20px; }
+  @media (max-width:1100px){ .main{ grid-template-columns:330px 1fr; } }
+  @media (max-width:900px){
+    /* 名冊 ↔ 詳情：整頁切換 */
+    .main{ grid-template-columns:1fr; }
+    .list-pane{ height:auto; position:static; border-right:none; border-bottom:1px solid var(--line); }
+    .stu-list{ overflow:visible; }
+    .detail{ display:none; height:auto; overflow:visible; }
+    .main.detail-open .list-pane{ display:none; }
+    .main.detail-open .detail{ display:block; }
+    .backbtn{ display:grid; }
+    .lp-head{ padding:16px 16px 12px; }
+    .topbar{ padding:12px 16px; }
+    .dbody{ padding:18px 16px 48px; }
+  }
+  @media (max-width:700px){
+    .vtiles{ grid-template-columns:repeat(2,1fr); }
+    .topbar .av{ width:40px; height:40px; font-size:15px; }
+    .topbar .dt b{ font-size:16px; }
+    .lp-filters{ flex-wrap:wrap; }
+  }
+  @media (max-width:760px){
+    /* Assignment Status / History 兩張表 → 卡片
+       （原本 table-layout:fixed + 150/110/200px 固定欄寬，窄螢幕會疊在一起） */
+    .dbody table{ display:block; table-layout:auto; }
+    .dbody thead{ display:none; }
+    .dbody tbody{ display:block; }
+    .dbody tbody tr{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px;
+      padding:13px 16px; border-bottom:1px solid var(--line-2); }
+    .dbody tbody tr:last-child{ border-bottom:none; }
+    .dbody tbody tr:hover{ background:#f9fbfd; }
+    .dbody tbody tr:hover td{ background:transparent; }
+    .dbody tbody td{ display:block; width:auto; padding:0; border:none; }
+    .dbody tbody td:first-child{ flex:1 0 100%; font-size:14.5px; }
+    .dbody tbody td:last-child{ flex:1 0 100%; }
+    .dbody tbody td .tnum{ display:inline; }
+    .asg-st{ display:inline; margin-left:2px; }
+    .asg-st::before{ content:"· "; color:var(--faint); }
+    .asg-act{ display:flex; flex-wrap:wrap; gap:8px; }
+    /* 只有 History 表（5 欄）的分數需要標籤，Status 表第 4 欄是動作鈕 */
+    .dbody tbody td:nth-child(4):not(:last-child)::before{
+      content:"Score "; font-size:11px; font-weight:700; color:var(--faint); }
+  }
 </style>
 </head>
 <body>
 <div class="app">
+<div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
 
   <!-- sidebar -->
   <aside class="side">
     <div class="brand">
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
-      <div class="bt"><b>DAHUA AI</b><span>Teacher</span></div>
+      <div class="bt"><b>DAHUA AI</b></div>
     </div>
     <nav class="nav" style="margin-top:4px">
       <a href="teacher-redesign.html"><span class="material-icons-round">space_dashboard</span> Dashboard</a>
@@ -249,15 +321,17 @@
     <div class="nav-grp">Practice</div>
     <nav class="nav">
       <a><span class="material-icons-round">assignment</span> Practice List</a>
+      <a href="../teacher-wordgame/teacher-wordgame.html"><span class="material-icons-round">sports_esports</span> Word Game</a>
     </nav>
     <div class="nav-grp">Overview</div>
     <nav class="nav">
       <a><span class="material-icons-round">groups</span> Program</a>
       <a><span class="material-icons-round">school</span> Classes</a>
+      <a><span class="material-icons-round">emoji_events</span> Leaderboard</a>
       <a class="on"><span class="material-icons-round">people</span> Students</a>
     </nav>
     <div class="grow"></div>
-    <div class="me"><div class="av">WC</div><div class="mt"><b>Wei Chen</b><span>陳老師 · Class Teacher</span></div></div>
+    <a class="report-issue" href="#">Report Issue</a>
   </aside>
 
   <div class="main">
@@ -265,8 +339,8 @@
     <aside class="list-pane">
       <div class="lp-head">
         <div class="top">
+          <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
           <h1>Students</h1><span class="cnt" id="stuCount">(0)</span>
-          <button class="manage"><span class="material-icons-round">settings</span> Manage</button>
         </div>
         <p>Select a student to view details</p>
         <div class="lp-search">
@@ -275,7 +349,6 @@
         </div>
         <div class="lp-filters">
           <button class="fsel">All classes <span class="material-icons-round">expand_more</span></button>
-          <button class="fsel">All HSK <span class="material-icons-round">expand_more</span></button>
         </div>
       </div>
       <div class="stu-list" id="stuList"></div>
@@ -284,9 +357,9 @@
     <!-- detail -->
     <div class="detail">
       <div class="topbar">
+        <button class="backbtn" id="detailBack" aria-label="Back to student list"><span class="material-icons-round">arrow_back</span></button>
         <div class="av" id="dAv">EC</div>
         <div class="dt"><b id="dName">—</b><br><span id="dSub">—</span></div>
-        <button class="edit"><span class="material-icons-round">edit</span></button>
       </div>
       <div class="dbody" id="dBody"></div>
     </div>
@@ -422,7 +495,7 @@
     const level=s.hsk, stage=Math.max(1,Math.min(54,Math.round(s.avg/100*54))), stars=s.w.master*5+s.w.learn*2, hearts=Math.max(1,Math.min(10,Math.round(s.avg/10))), spct=Math.round(stage/54*100);
     const hist=history(s), asg=getAsg(s), outstanding=asg.filter(a=>a.st!=='sub' && !a.skipped);
     document.getElementById('dBody').innerHTML=
-      '<div class="sec-t"><span class="sic sic-game"><span class="material-icons-round">sports_esports</span></span>Word Game Level</div>'+
+      '<div class="sec-t"><span class="sic sic-game"><span class="material-icons-round">sports_esports</span></span>Word Game and Achievement</div>'+
       '<div class="panel game"><div class="vtiles">'+
         '<div class="vtile lv"><div class="v"><span class="material-icons-round vic">military_tech</span>'+level+'</div><div class="k">Level</div></div>'+
         '<div class="vtile st"><div class="v tnum"><span class="material-icons-round vic">flag</span>'+stage+'/54</div><div class="k">Stage</div></div>'+
@@ -544,6 +617,36 @@
   document.getElementById('detItems').addEventListener('click',(e)=>{ if(e.target.closest('.itaudio')) say('▶ Playing audio'); });
   document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeDetail(); });
   { const on=listEl.querySelector('.srow.on'); if(on) on.scrollIntoView({block:'center'}); }
+})();
+</script>
+
+<script>
+/* RWD — 側邊欄抽屜（≤1024px） */
+(function(){
+  const side=document.querySelector('.side'), scrim=document.getElementById('navScrim');
+  if(!side||!scrim) return;
+  const toggles=[...document.querySelectorAll('[data-navtoggle]')];
+  const setOpen=(on)=>{
+    side.classList.toggle('open',on); scrim.classList.toggle('on',on);
+    document.body.classList.toggle('nav-open',on);
+    toggles.forEach(t=>t.setAttribute('aria-expanded',String(on)));
+  };
+  toggles.forEach(t=>t.addEventListener('click',()=>setOpen(!side.classList.contains('open'))));
+  scrim.addEventListener('click',()=>setOpen(false));
+  side.addEventListener('click',(e)=>{ if(e.target.closest('a')) setOpen(false); });
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') setOpen(false); });
+  window.addEventListener('resize',()=>{ if(window.innerWidth>1024) setOpen(false); });
+})();
+</script>
+
+<script>
+/* RWD — ≤900px：點學生整頁切到詳情，返回鈕回名冊 */
+(function(){
+  const main=document.querySelector('.main'), list=document.getElementById('stuList'), back=document.getElementById('detailBack');
+  if(!main||!list||!back) return;
+  list.addEventListener('click',(e)=>{ if(e.target.closest('.srow')) main.classList.add('detail-open'); });
+  back.addEventListener('click',()=>main.classList.remove('detail-open'));
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') main.classList.remove('detail-open'); });
 })();
 </script>
 </body>

@@ -579,11 +579,68 @@
   @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
 
   @media (max-width:1160px){ .cols{ grid-template-columns:1fr; } .row2{ grid-template-columns:1fr; } }
-  @media (max-width:820px){ .app{ grid-template-columns:1fr; } .side{ display:none; } .search{ display:none; } .search-go{ display:none; } }
+
+  /* ============================================================
+     RWD  —  平板完整優化，手機求不爆版
+     ≤1024px 側邊欄改抽屜 · ≤900px 單欄 · ≤820/700px 表格卡片化
+     ============================================================ */
+  .navtoggle{ display:none; }
+  .nav-scrim{ display:none; }
+  @media (max-width:1024px){
+    .app{ grid-template-columns:1fr; }
+    .side{ position:fixed; top:0; left:0; z-index:92; width:264px; height:100vh;
+      transform:translateX(-100%); transition:transform .22s cubic-bezier(.2,.7,.3,1);
+      box-shadow:0 24px 60px -24px rgba(15,23,42,.45); }
+    .side.open{ transform:none; }
+    .nav-scrim{ display:block; position:fixed; inset:0; z-index:88; background:rgba(15,23,42,.42);
+      opacity:0; pointer-events:none; transition:opacity .2s; }
+    .nav-scrim.on{ opacity:1; pointer-events:auto; }
+    body.nav-open{ overflow:hidden; }
+    .navtoggle{ display:grid; place-items:center; width:40px; height:40px; flex:none; cursor:pointer;
+      border:1px solid var(--line); border-radius:11px; background:#fff; color:var(--slate-2); }
+    .navtoggle:hover{ border-color:#cbd5e1; background:#f8fafc; }
+    .navtoggle .material-icons-round{ font-size:22px; }
+  }
+
+  @media (max-width:1024px){
+    .topbar{ padding:12px 18px; gap:10px; }
+    .dash{ padding:20px 18px 48px; }
+    .stats{ grid-template-columns:repeat(2,1fr); gap:13px; }
+  }
+  @media (max-width:700px){
+    .topbar{ padding:10px 14px; gap:8px; }
+    .search input{ height:38px; font-size:13px; }
+    .search-go{ height:38px; padding:0 13px; font-size:0; gap:0; }
+    .search-go svg{ width:17px; height:17px; }
+    .dash{ padding:16px 14px 44px; }
+    .page-head{ flex-direction:column; align-items:flex-start; gap:12px; }
+    .page-head h1{ font-size:22px; }
+    .head-actions{ flex-wrap:wrap; }
+    .stats{ gap:10px; }
+    .stat{ padding:14px 15px; }
+    .stat .si{ width:32px; height:32px; margin-bottom:10px; }
+    .stat .v{ font-size:25px; }
+    /* 作業表 → 卡片：一列變一張卡 */
+    .dgrid{ grid-template-columns:auto 1fr; gap:7px 10px; padding:14px 16px; align-items:center;
+      grid-template-areas:"t t" "ty cls" "due left" "act act"; }
+    .drow > b{ grid-area:t; font-size:14.5px; }
+    .drow > span:nth-child(2){ grid-area:ty; justify-self:start; }
+    .drow > span:nth-child(3){ grid-area:cls; justify-self:start; }
+    .drow > .due{ grid-area:due; justify-self:start; }
+    .drow > .left{ grid-area:left; justify-self:start; }
+    .drow > .left::before{ content:"Not submitted · "; font-size:11px; font-weight:700; color:var(--faint); }
+    .drow > .dact{ grid-area:act; display:flex; justify-content:flex-end; gap:8px; }
+    .drow > .dact:empty{ display:none; }
+    .dhead{ display:block; }
+    .dhead > span:not(.ghd){ display:none; }
+    .dw-scores{ grid-template-columns:1fr; }
+    .qa-grid{ grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); }
+  }
 </style>
 </head>
 <body>
 <div class="app">
+<div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
 
   <!-- ============ SIDEBAR ============ -->
   <aside class="side">
@@ -605,6 +662,7 @@
     <div class="nav-grp">Practice</div>
     <nav class="nav">
       <a data-nav="Practice List"><span class="material-icons-round">assignment</span> Practice List</a>
+      <a href="../teacher-wordgame/teacher-wordgame.html"><span class="material-icons-round">sports_esports</span> Word Game</a>
     </nav>
 
     <div class="nav-grp">Overview</div>
@@ -626,6 +684,7 @@
   <div class="main">
     <!-- topbar -->
     <header class="topbar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
       <div class="search" id="searchWrap">
         <input id="searchInput" autocomplete="off" placeholder="Search by keyword — projects, question banks, practices…" />
         <div class="search-menu" id="searchMenu"></div>
@@ -778,10 +837,8 @@
     mirror: { label:'Mirroring',  c:'var(--mir)', bg:'var(--mir-bg)' },
     vocab:  { label:'Vocabulary', c:'var(--voc)', bg:'var(--voc-bg)' },
     mc:     { label:'Follow the Pattern', c:'var(--mc)',  bg:'var(--mc-bg)'  },
+    wg:     { label:'Word Game', c:'#0d9488', bg:'#ccfbf1' },
   };
-  const AV = [['#e8f0ff','#2563EB'],['#fdeede','#EA7A21'],['#e6f7ec','#0B7A3B'],['#f1e9ff','#7C3AED'],['#ffe4e6','#e11d48'],['#e0f2fe','#0369a1']];
-  const avColor = (s)=> AV[(s.charCodeAt(0)+s.length)%AV.length];
-  const initials = (n)=> n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
   let REVIEWS = [
     {name:'Lena Ho', cls:'4A', type:'qa', practice:'Ordering Food', ago:'Jul 21, 15:42', ai:90, attempt:2, isNew:true, items:[
@@ -853,6 +910,12 @@
     {t:'Numbers 1–100', type:'mc', classes:[
       {cls:'6A', due:'Jul 20', duec:'over', done:22, total:25},
     ]},
+    {t:'Reach Level 2', type:'wg', classes:[
+      {cls:'4A', due:'Jul 22', duec:'today', done:15, total:26},
+    ]},
+    {t:'Play 15 min / day', type:'wg', classes:[
+      {cls:'4A', due:'Jul 29', duec:'soon', done:7, total:26},
+    ]},
   ];
 
 
@@ -876,7 +939,7 @@
     rlist.innerHTML='';
     if(!rows.length){ rlist.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><b>'+(view==='reviewed'?'Nothing reviewed yet':'All caught up!')+'</b><span>'+(view==='reviewed'?'Reviewed submissions show here.':'No submissions to review.')+'</span></div>'; renderCounts(); return; }
     rows.forEach((r,i)=>{
-      const t=TYPE[r.type], [bg,fg]=avColor(r.name);
+      const t=TYPE[r.type];
       const el=document.createElement('div'); el.className='rrow'+(r.reviewed?' done':''); el.style.animationDelay=(i*35)+'ms';
       el.innerHTML=
         '<div class="rm"><div class="rtop"><b>'+r.name+'</b><span class="cls">'+r.cls+'</span>'+
@@ -1293,6 +1356,25 @@
   document.addEventListener('keydown',(e)=>{ if(e.key!=='Escape') return; if(document.getElementById('detOv').classList.contains('open')) closeDetail(); else closeDrawer(); });
 
   renderReviews(); syncPending();
+})();
+</script>
+
+<script>
+/* RWD — 側邊欄抽屜（≤1024px） */
+(function(){
+  const side=document.querySelector('.side'), scrim=document.getElementById('navScrim');
+  if(!side||!scrim) return;
+  const toggles=[...document.querySelectorAll('[data-navtoggle]')];
+  const setOpen=(on)=>{
+    side.classList.toggle('open',on); scrim.classList.toggle('on',on);
+    document.body.classList.toggle('nav-open',on);
+    toggles.forEach(t=>t.setAttribute('aria-expanded',String(on)));
+  };
+  toggles.forEach(t=>t.addEventListener('click',()=>setOpen(!side.classList.contains('open'))));
+  scrim.addEventListener('click',()=>setOpen(false));
+  side.addEventListener('click',(e)=>{ if(e.target.closest('a')) setOpen(false); });
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') setOpen(false); });
+  window.addEventListener('resize',()=>{ if(window.innerWidth>1024) setOpen(false); });
 })();
 </script>
 </body>

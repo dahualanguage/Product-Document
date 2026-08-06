@@ -11,7 +11,7 @@ Chinese-module **CLASS_TEACHER** 教師端設計交接。這裡的檔案是 **�
 | **Dashboard** | `teacher-redesign.html` | 側邊欄、頂部搜尋、Active Assignments、To Review 面板 + 批閱抽屜 + 練習細節 popup |
 | **Students** | `teacher-students.html` | 學生名冊（master-detail）、Word Game Level、Assignment Status、Assignment History + 練習細節 popup |
 
-目前設計版本：**Redesign v3**。
+目前設計版本：**Redesign v8**（2026-08-06）—— 在 v3 的基礎上加上**響應式（RWD）**，見下方章節。
 
 ---
 
@@ -128,6 +128,27 @@ handoff/teacher-dashboard/
 | 可複用元件（type pill、review drawer、practice-detail modal、reminder/skip modal）| `src/components/...` |
 | GraphQL query / mutation | `src/api/graphql/queries`、`.../mutations` |
 | i18n | 所有文案走 i18next key（原型是英文 demo 文案）|
+
+---
+
+## 響應式（RWD）— 2026-08-06 新增
+
+支援策略：**平板完整優化；手機求可讀、可操作、不橫向捲動**（不追求像素級精緻）。
+
+| 斷點 | 行為 |
+|------|------|
+| **≤1024px** | 側邊欄改**抽屜**：topbar 左側出現漢堡鈕，側邊欄疊在半透明遮罩上滑出。關閉方式：點遮罩、點任一導覽連結、Escape、視窗拉回 >1024px。內距整體縮小 |
+| **≤700px** | Active Assignments 表格 → **卡片**：欄位標題收起，一列變一張卡（作業名整寬 → 類型＋班級 → 日期＋未繳數 → 動作鈕）。未繳數補上行內標籤 `Not submitted ·`，避免變成孤兒數字 |
+| **≤700px** | 統計卡 4 欄 → 2 欄；page-head 直排；批閱抽屜的分數區 2 欄 → 1 欄 |
+
+> **注意（行為變更）**：舊版在 ≤820px 直接 `.side{display:none}` 把側邊欄整個藏掉，**藏了之後沒有任何導覽入口**；同時也把頂部 Search 一起藏掉。新版移除該規則 —— 側邊欄走抽屜，**Search 在所有寬度都保留**（手機縮成 icon-only 按鈕）。Search 是已定案的功能，重寫時不要再把它在窄螢幕拿掉。
+
+### 實作方式（rebuild 時的對應）
+
+- 原型的 RWD **全部集中在 `<style>` 最末端一段註解為 `RWD` 的區塊**，桌機樣式完全沒動 —— 要比對「桌機 vs 響應式」看那一段即可。
+- 抽屜 JS 是 `</body>` 前的獨立 IIFE，只靠兩個 hook：`[data-navtoggle]`（漢堡鈕，可有多顆）與 `#navScrim`（遮罩）。狀態 = `.side.open` + `.nav-scrim.on` + `body.nav-open`（鎖背景捲動），並同步 `aria-expanded`。
+- **React 版建議**：抽屜用 MUI `<Drawer variant="temporary">` + `useMediaQuery(theme.breakpoints.down('lg'))`；不要照抄 `position:fixed + transform` 的手刻版本。斷點值（1024 / 900 / 820 / 760 / 700）可對應到專案既有的 MUI breakpoints，數字不必完全一致，但**行為與順序要一致**。
+- 表格卡片化在原型是純 CSS（`grid-template-areas` / `flex-wrap`）。React 版若改用 MUI `Table`，請在 `sm` 以下改渲染卡片元件，不要靠 CSS 硬擠。
 
 ---
 

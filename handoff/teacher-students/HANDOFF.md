@@ -10,7 +10,7 @@ Chinese-module **CLASS_TEACHER** 的「學生」頁設計交接（master-detail�
 |------|------|------|
 | **Students** | `teacher-students.html` | 學生名冊（搜尋 + class/HSK 篩選）、Word Game Level、Assignment Status、Assignment History + 練習細節 popup + Reminder/Skip popup |
 
-目前設計版本：**Redesign v3**。
+目前設計版本：**Redesign v8**（2026-08-06）—— v7 移除了 Manage 按鈕 / HSK 等級篩選 / 單一學生編輯（此頁回到「查看」定位），v8 再加上**響應式（RWD）**。舊版（含 Manage + HSK 篩選）保留在 `specs/chinese-modules/versions/redesign-v0-students.html`。
 
 ---
 
@@ -138,6 +138,29 @@ handoff/teacher-students/
 | 可複用元件（type pill、practice-detail modal、reminder/skip modal、word-game tiles）| `src/components/...` |
 | GraphQL query / mutation | `src/api/graphql/queries`、`.../mutations` |
 | i18n | 所有文案走 i18next key（原型是英文 demo 文案）|
+
+---
+
+## 響應式（RWD）— 2026-08-06 新增
+
+支援策略：**平板完整優化；手機求可讀、可操作、不橫向捲動**（不追求像素級精緻）。
+
+| 斷點 | 行為 |
+|------|------|
+| **≤1024px** | 側邊欄改**抽屜**：topbar 左側出現漢堡鈕，側邊欄疊在半透明遮罩上滑出。關閉方式：點遮罩、點任一導覽連結、Escape、視窗拉回 >1024px。內距整體縮小 |
+| **≤1100px** | 名冊欄 380px → 330px |
+| **≤900px** | master-detail → **整頁切換**：只顯示名冊，點學生整頁換到詳情，詳情 topbar 左上出現**返回鈕**回名冊（Escape 亦可）。狀態＝ `.main.detail-open`，名冊/詳情互斥顯示 |
+| **≤760px** | Assignment Status / Assignment History 兩張表 → **卡片**：表頭收起、作業名整寬、`類型 · 日期 · 狀態` 併一行、動作鈕整寬 |
+| **≤700px** | Word Game 四格 tiles 4 欄 → 2 欄 |
+
+> **踩過的雷**：這兩張表原本是 `table-layout:fixed` + 三個固定 px 欄寬（150 / 110 / 200，合計 460px），手機寬度不足時欄位會**直接疊在一起**（標題和內容重疊）。重寫時若沿用 `<table>`，窄螢幕務必改成卡片或讓欄寬彈性化。
+
+### 實作方式（rebuild 時的對應）
+
+- 原型的 RWD **全部集中在 `<style>` 最末端一段註解為 `RWD` 的區塊**，桌機樣式完全沒動 —— 要比對「桌機 vs 響應式」看那一段即可。
+- 抽屜 JS 是 `</body>` 前的獨立 IIFE，只靠兩個 hook：`[data-navtoggle]`（漢堡鈕，可有多顆）與 `#navScrim`（遮罩）。狀態 = `.side.open` + `.nav-scrim.on` + `body.nav-open`（鎖背景捲動），並同步 `aria-expanded`。
+- **React 版建議**：抽屜用 MUI `<Drawer variant="temporary">` + `useMediaQuery(theme.breakpoints.down('lg'))`；不要照抄 `position:fixed + transform` 的手刻版本。斷點值（1024 / 900 / 820 / 760 / 700）可對應到專案既有的 MUI breakpoints，數字不必完全一致，但**行為與順序要一致**。
+- 表格卡片化在原型是純 CSS（`grid-template-areas` / `flex-wrap`）。React 版若改用 MUI `Table`，請在 `sm` 以下改渲染卡片元件，不要靠 CSS 硬擠。
 
 ---
 
