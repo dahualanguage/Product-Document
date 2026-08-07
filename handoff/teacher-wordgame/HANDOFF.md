@@ -14,7 +14,7 @@ Chinese-module **CLASS_TEACHER** 的 **Practice ▸ Word Game** 頁設計交接�
 |------|------|------|
 | **Word Game** | `teacher-wordgame.html` | 兩欄版面（Assignments / Student Levels / Game Content）、Assign 對話框（班級複選 + 日曆區間 + 三種目標）、Manage 對話框（Edit / Delete）、關卡頁（搜尋 / 型別 filter / 分頁） |
 
-目前設計版本：**Redesign v8**（2026-08-06）＝ v7 的設計 + **響應式（RWD）**。凍結快照見 `specs/chinese-modules/versions/redesign-v7-wordgame.html`。
+目前設計版本：**Redesign v8**（原型最後更新 2026-08-07）＝ v7 的設計 + **響應式（RWD）** + 本次的**未達標提醒**與**作業歷史（History）**。凍結快照見 `specs/chinese-modules/versions/redesign-v7-wordgame.html`。
 
 ---
 
@@ -90,8 +90,9 @@ handoff/teacher-wordgame/
 
 | 區塊 | 說明 |
 |------|------|
-| **Assignments 列** | `Start – Due` 期間（依急迫上色）· 班徽 · Goal · `Reached X / total` + 展開箭頭。整列可點展開 |
-| **展開：未達標名單** | Reach / Complete 目標 → `Student · Level · Stage · To goal`；min/day 目標 → `This week · 區間 · Goal N days` + 每生**缺幾天**。全員達標 → 「Everyone reached this goal」 |
+| **Assignments 列** | `Start – Due` 期間（依急迫上色）· 班徽 · Goal · **`Pending X / total`**（**尚未完成**人數，非已完成人數）+ 展開箭頭。整列可點展開；**全班完成時顯示 `All complete`、不渲染箭頭且整列不可點**（沒有可展開的內容就不給展開的暗示）|
+| **展開：未達標名單** | Reach / Complete 目標 → `Student · Level · Stage · To goal`；min/day 目標 → `This week · 區間 · Goal N days` + 每生**缺幾天**。每一列右端有 **Remind** 鈕（見下方互動規則）|
+| **History 對話框** | 兩層：作業清單（含**已結束**的作業）→ 點入看**逐位學生的成績**。見下方「作業歷史」章節 |
 | **Manage 對話框** | 每個作業一張卡：班級 · 期間 + 天數（`Jul 24 – Jul 29 · 6d`）· 三顆膠囊（目標型別 / 目標值 / N students）+ **Edit** / **Delete**。刻意沒有 New（走主按鈕）與 End early |
 | **Assign 對話框** | Assign to（班級複選）→ When（日曆區間）→ Goal Type → （min/day 才有）Days |
 | **Student Levels** | 班級複選下拉（含 All students 全選）+ 排序切換鈕（進度低→高 / 高→低）；`Content` 欄＝該生**目前所在關卡的名稱** |
@@ -119,6 +120,25 @@ handoff/teacher-wordgame/
 - **達標是布林，不是百分比** —— 個人層級沒有進度 %、不畫個人進度條；`Reached X / total` 只存在於班級層級。
 - 已移除的東西**不要加回來**：`Just play` 純遊玩模式、`Earn stars` 目標、leaderboard / 星星、關卡頁的 Insights 三榜、右欄的 per-stage cohort 統計。
 
+### 未達標提醒
+- 未達標名單每一列右端一顆 **Remind**（綠框信封，與 Dashboard / Students 的寄信鈕同款）。
+- 點擊開確認 popup：標題顯示「學生 · Class X」，訊息**依該筆作業的目標預填**且可編輯，送出後 toast「Reminder sent to …」。
+- 按鈕要 `stopPropagation`，否則點提醒會順帶把整列摺疊起來。
+
+### 作業歷史（History）
+- 進入點：`Word Game Assignments` 面板標題右側的 **History** 鈕，與 Manage 並列。
+- **清單頁**：同時列出**進行中**（`Active`）與**已結束**（`Ended`）的作業 —— 這是唯一看得到已結束作業的地方，主面板只顯示進行中。每張卡右側是 `N / M complete` 結果摘要。
+- **詳情頁**：標題列左側出現返回鍵回清單（同一個 modal 內換頁，不另開視窗）。表格依目標型別切換欄位，一律呈現「**數值 ＋ 超出／不足**」（超出綠、不足紅）：
+  | 目標型別 | 欄位 |
+  |------|------|
+  | `Complete N stages` | Student · Stages cleared · vs goal（**不顯示 Level**）|
+  | `Reach a level` | Student · Level · Stages cleared · vs goal（差距以**關數**表示）|
+  | `Play a set time each day` | Student · **每週一欄** · Total |
+- **逐週歷史（min/day 專屬）**：作業橫跨幾週就開幾欄，欄名帶日期區間（`W1 · Jun 22–26`）；每格是該週**實際時數 + 差距**（`88 min` `+13 min`），最後一欄 `Total` 是整期總時數與總差距。
+- **一致性要求**：「該週時數 ≥ 週目標」必須與「指定日全數達成」等價，否則會出現「時數超標卻標紅」的矛盾（例如三天各衝 30 分鐘）。原型用 `達標天數 × 每日分鐘 + 小於每日分鐘的餘數` 保證兩者等價；**正式版請以每日布林為準來上色，時數只是呈現**。
+- **排序**：Student 欄標題內建高低切換鈕，依表格對應「總時數」或「累計關數」；狀態在整個 History 視窗內保留，切換作業不重設。
+- 寬表格以 `overflow-x:auto` 在 modal 內橫向捲動。**已知限制**：週數多時（實測 11 週約 1620px）捲動時 Student 欄會跟著捲走，正式版建議把姓名欄 `position:sticky; left:0`，或超過一定週數改用摘要 + 展開。
+
 ### 其他
 - **刪除為軟刪**：畫面不顯示、日曆不再占用，資料保留。原型用 `skipped:true` 模擬。
 - **提早結束不做**：要提早結束就 Edit 把 End date 改到今天。
@@ -129,12 +149,13 @@ handoff/teacher-wordgame/
 
 ## ⚠️ 原型與定案的差異（實作前必看）
 
-原型停在 v7 的實作，以下四點**已經拍板但尚未改進原型**。請**以本文件的定義為準**，不要照抄原型行為：
+以下兩點**已經拍板但原型仍未改**。請**以本文件的定義為準**，不要照抄原型行為：
 
-1. **`Complete N stages` 目前用「跨世界累計前綴和（絕對值）」算 `To goal`** → 應改為**相對 baseline**（`目前已清關數 − 指派當下的 baseline ≥ N`）。
+1. **`Complete N stages` 目前用「跨世界累計前綴和（絕對值）」算差距** → 應改為**相對 baseline**（`目前已清關數 − 指派當下的 baseline ≥ N`）。
+   > 這也是原型 demo 資料看起來怪的原因：因為比的是累計值，門檻要灌水到 100 關才會有人未達成。正式版用相對 baseline 後，「25 關」這種正常目標就會自然產生未達成者。
 2. **Assign 對話框的 Level 下拉仍列出 L0–L6** → 應只留 **L0 / L1**（不可指派到未開放等級）。
-3. **未達標名單沒有提醒按鈕** → 需補上「提醒未達標學生」，**比照 Dashboard 的「提醒未繳交」**沿用同一套通知管道與文案結構。
-4. **min/day 展開只呈現「到期日所在那一週」** → 應為**逐週（Mon–Sun）結算**，作業橫跨幾週就每週都要達標。
+
+（2026-08-07 更新：原本列在這裡的另外兩點已處理 —— **未達標提醒鈕**已實作，見上方「未達標提醒」；**逐週 Mon–Sun 結算**在展開名單本來就已是週制，完整的逐週歷史則由新的 **History** 提供。展開名單刻意只呈現「當週」，因為它回答的是「現在誰落後」；要看整期每一週請走 History。）
 
 ---
 
@@ -170,6 +191,11 @@ handoff/teacher-wordgame/
 | **≤820px** | Assignments / 未達標名單 / 名冊三張表 → **卡片**（表頭收起）：作業列變成「班徽＋期間 → Goal → Reached＋箭頭」三行；名單列以 `flex-wrap` 讓姓名獨佔一行 |
 | **≤820px** | 日曆**兩個月 → 一個月**（第二個月與其標題隱藏，翻月鈕仍可用）；Manage 卡片可換行、拖曳把手隱藏 |
 | **≤700px** | Assign / Manage / 細節對話框 → **全螢幕 sheet**（`border-radius:0`、滿版高度）；Assign 按鈕整寬 |
+
+### 實作陷阱（原型踩過，重寫時同樣會遇到）
+- **大寫容器裡不能放 Material Icons**：`text-transform:uppercase`（和 `letter-spacing`）會破壞 icon font 的連字比對，圖示會變成字面文字（`swap_vert` 顯示成「SWAP VERT」）。表頭類元件放 icon 時要在 icon 上覆寫 `text-transform:none; letter-spacing:normal`。MUI 用 `<Typography textTransform="uppercase">` 包表頭時同樣會中招。
+- **不要用位置選擇器排版對話框標題列**：原型的 `.cmodal-hd > div:nth-child(2){flex:1}` 在標題列前面加了一顆返回鈕之後就套錯元素，把圖示徽章拉成一條長條。改用 class 指定。
+- **表頭與資料列是各自獨立的 grid**：只有兩者 `grid-template-columns` 完全一致才會對齊，欄位用 `auto` 寬度時（例如表頭那格是空的、資料列那格有按鈕）就會錯位，要給固定寬度。
 
 ### 實作方式（rebuild 時的對應）
 
