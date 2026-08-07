@@ -88,6 +88,13 @@
   .sec-t{ font-size:13px; font-weight:800; color:var(--ink); letter-spacing:-.1px; margin:26px 0 12px; display:flex; align-items:center; gap:9px; }
   .sec-t:first-child{ margin-top:6px; }
   .sec-t .chip{ font-size:11px; font-weight:800; color:var(--muted); background:#eef2f7; padding:2px 9px; border-radius:999px; }
+  .sec-t.clps{ cursor:pointer; user-select:none; }
+  .sec-t.clps:focus-visible{ outline:2px solid var(--emerald-ring); outline-offset:4px; border-radius:8px; }
+  .sec-t .gchev{ margin-left:auto; width:28px; height:28px; padding:5px; flex:none; border-radius:9px; background:#fff;
+    color:var(--slate-2); box-shadow:0 0 0 1px var(--line), 0 1px 2px rgba(15,23,42,.05);
+    transition:transform .2s, box-shadow .13s, background .13s; }
+  .sec-t.clps:hover .gchev{ background:var(--bg); box-shadow:0 0 0 1px currentColor, 0 2px 5px rgba(15,23,42,.08); }
+  .sec-t.open .gchev{ transform:rotate(180deg); }
   .panel{ background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--sh-sm); }
 
   /* KPI goal */
@@ -95,11 +102,9 @@
   .kpi .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
   .kpi .top .g{ font-size:13.5px; font-weight:700; color:var(--slate); } .kpi .top .g b{ color:var(--ink); }
   .kpi .top .frac{ font-size:14px; font-weight:800; color:var(--ink); }
-  .gbar{ height:9px; border-radius:99px; background:#eef2f7; overflow:hidden; position:relative; }
-  .gbar > i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#22c55e,#14b8a6,#6366f1); }
 
   /* vocab tiles */
-  .vtiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px 16px 4px; }
+  .vtiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; }
   .vtile{ background:#f8fafc; border:1px solid var(--line-2); border-radius:12px; padding:14px; text-align:center; }
   .vtile .v{ font-size:24px; font-weight:800; color:var(--ink); letter-spacing:-.5px; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
   .vtile .v.up{ color:var(--qa); }
@@ -118,10 +123,6 @@
   .sic-stat{ background:#fef3c7; color:#d97706; }
   .sic-hist{ background:#dbeafe; color:#2563eb; }
   .vtile .k{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
-  .mastery{ padding:6px 16px 16px; }
-  .mastery .mtop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
-  .mastery .mtop b{ font-size:12.5px; font-weight:800; color:var(--slate); }
-  .mastery .mtop span{ font-size:12.5px; font-weight:800; color:var(--ink); }
   .mbar{ height:9px; border-radius:99px; overflow:hidden; display:flex; }
   .mbar .seg1{ background:#34d399; } .mbar .seg2{ background:#fbbf24; }
   .mleg{ display:flex; gap:16px; margin-top:8px; font-size:11.5px; font-weight:700; color:var(--muted); }
@@ -252,6 +253,7 @@
     .navtoggle .material-icons-round{ font-size:22px; }
   }
 
+  .ava{ width:36px; height:36px; border-radius:50%; background:#f59e0b; color:#fff; font-weight:800; font-size:12.5px; letter-spacing:.3px; display:grid; place-items:center; flex:none; margin-left:auto; }
   .backbtn{ display:none; width:40px; height:40px; border-radius:11px; border:1px solid var(--line);
     background:#fff; cursor:pointer; place-items:center; color:var(--slate-2); flex:none; }
   .backbtn:hover{ border-color:#cbd5e1; background:#f8fafc; }
@@ -272,6 +274,7 @@
   }
   @media (max-width:700px){
     .vtiles{ grid-template-columns:repeat(2,1fr); }
+    .ava{ display:none; }
     .topbar .av{ width:40px; height:40px; font-size:15px; }
     .topbar .dt b{ font-size:16px; }
     .lp-filters{ flex-wrap:wrap; }
@@ -360,6 +363,7 @@
         <button class="backbtn" id="detailBack" aria-label="Back to student list"><span class="material-icons-round">arrow_back</span></button>
         <div class="av" id="dAv">EC</div>
         <div class="dt"><b id="dName">—</b><br><span id="dSub">—</span></div>
+        <div class="ava">WC</div>
       </div>
       <div class="dbody" id="dBody"></div>
     </div>
@@ -487,12 +491,25 @@
     listEl.querySelectorAll('.srow').forEach(r=>r.addEventListener('click',()=>{ cur=STUDENTS.find(x=>x.n===r.dataset.n); renderList(); renderDetail(); }));
   }
 
+  const SEC_CHEV='<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const SEC_COLLAPSED=new Set();
+  function wireSections(){
+    document.querySelectorAll('#dBody .sec-t.clps').forEach(h=>{
+      const key=h.dataset.sec, body=document.querySelector('#dBody .sec-body[data-sec="'+key+'"]');
+      if(!body) return;
+      const apply=open=>{ h.classList.toggle('open',open); body.hidden=!open; h.setAttribute('aria-expanded',open?'true':'false'); };
+      apply(!SEC_COLLAPSED.has(key));
+      const toggle=()=>{ const willOpen=SEC_COLLAPSED.has(key); willOpen?SEC_COLLAPSED.delete(key):SEC_COLLAPSED.add(key); apply(willOpen); };
+      h.addEventListener('click',toggle);
+      h.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+    });
+  }
   function renderDetail(){
     const s=cur, [hb,hf]=HSKC[s.hsk], fg=avc(s.n);
     const av=document.getElementById('dAv'); av.textContent=initials(s.n); av.style.background='linear-gradient(145deg,'+fg+'cc,'+fg+')';
     document.getElementById('dName').textContent=s.n;
     document.getElementById('dSub').textContent='HSK '+s.hsk+' · Class '+s.cls;
-    const level=s.hsk, stage=Math.max(1,Math.min(54,Math.round(s.avg/100*54))), stars=s.w.master*5+s.w.learn*2, hearts=Math.max(1,Math.min(10,Math.round(s.avg/10))), spct=Math.round(stage/54*100);
+    const level=s.hsk, stage=Math.max(1,Math.min(54,Math.round(s.avg/100*54))), stars=s.w.master*5+s.w.learn*2, hearts=Math.max(1,Math.min(10,Math.round(s.avg/10)));
     const hist=history(s), asg=getAsg(s), outstanding=asg.filter(a=>a.st!=='sub' && !a.skipped);
     document.getElementById('dBody').innerHTML=
       '<div class="sec-t"><span class="sic sic-game"><span class="material-icons-round">sports_esports</span></span>Word Game and Achievement</div>'+
@@ -501,10 +518,10 @@
         '<div class="vtile st"><div class="v tnum"><span class="material-icons-round vic">flag</span>'+stage+'/54</div><div class="k">Stage</div></div>'+
         '<div class="vtile gd"><div class="v tnum"><span class="material-icons-round vic">star</span>'+stars+'</div><div class="k">Stars</div></div>'+
         '<div class="vtile ht"><div class="v tnum"><span class="material-icons-round vic">favorite</span>'+hearts+'</div><div class="k">Hearts</div></div>'+
-      '</div><div class="mastery"><div class="mtop"><b>Level Progress</b><span class="tnum">'+stage+' / 54 stages</span></div>'+
-        '<div class="gbar"><i style="width:'+spct+'%"></i></div></div></div>'+
+      '</div></div>'+
 
-      '<div class="sec-t"><span class="sic sic-stat"><span class="material-icons-round">fact_check</span></span>Assignment Status <span class="chip">'+outstanding.length+' not submitted</span></div>'+
+      '<div class="sec-t clps" data-sec="status" role="button" tabindex="0"><span class="sic sic-stat"><span class="material-icons-round">fact_check</span></span>Assignment Status <span class="chip">'+outstanding.length+' not submitted</span>'+SEC_CHEV+'</div>'+
+      '<div class="sec-body" data-sec="status">'+
       (outstanding.length
         ? '<div class="panel"><table><thead><tr><th>Assignment</th><th style="width:150px">Type</th><th style="width:110px">Date</th><th style="width:200px"></th></tr></thead><tbody>'+
           outstanding.map(a=>{ const t=TYPE[a.t]; const over=a.st==='over';
@@ -514,16 +531,19 @@
               '<td><div class="tnum" style="color:'+(over?'var(--rose)':'var(--slate-2)')+';font-weight:700">'+a.due+'</div><div class="asg-st '+(over?'over':'pend')+'">'+(over?'Overdue':'Not submitted')+'</div></td>'+
               '<td><div class="asg-act">'+acts+'</div></td></tr>'; }).join('')+
           '</tbody></table></div>'
-        : '<div class="panel empty-asg">All assignments submitted &mdash; nothing outstanding.</div>')+
+        : '<div class="panel empty-asg">All assignments submitted &mdash; nothing outstanding.</div>')+'</div>'+
 
-      '<div class="sec-t"><span class="sic sic-hist"><span class="material-icons-round">history</span></span>Assignment History <span class="chip">'+hist.length+' records</span></div>'+
+      '<div class="sec-t clps" data-sec="history" role="button" tabindex="0"><span class="sic sic-hist"><span class="material-icons-round">history</span></span>Assignment History <span class="chip">'+hist.length+' records</span>'+SEC_CHEV+'</div>'+
+      '<div class="sec-body" data-sec="history">'+
       '<div class="panel"><table><thead><tr><th>Assignment</th><th style="width:150px">Type</th><th style="width:110px">Date</th><th style="width:70px">Score</th><th style="width:130px"></th></tr></thead><tbody>'+
         hist.map(h=>{ const t=TYPE[h.t]; return '<tr><td style="color:var(--ink);font-weight:700">'+h.name+'</td>'+
           '<td><span class="ttag" style="background:'+t[2]+';color:'+t[1]+'">'+t[0]+'</span></td>'+
           '<td class="tnum" style="color:var(--slate-2);font-weight:700">'+h.d+'</td>'+
           '<td><b class="tnum" style="color:var(--ink);font-size:14px">'+h.sc+'</b></td>'+
           '<td><button class="revdet" data-p="'+h.name+'" data-date="'+h.d+'" data-score="'+h.sc+'" data-type="'+h.t+'">Detail <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button></td></tr>'; }).join('')+
-      '</tbody></table></div>';
+      '</tbody></table></div>'+
+      '</div>';
+    wireSections();
   }
 
   const _sq=new URLSearchParams(location.search).get('s');
