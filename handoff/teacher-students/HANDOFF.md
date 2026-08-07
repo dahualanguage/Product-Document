@@ -93,9 +93,9 @@ handoff/teacher-students/
 | 區塊 | 說明 |
 |------|------|
 | **名冊（左）** | 24 筆學生，搜尋 + class / HSK 篩選；點選切換右側詳情；`?s=<name>` 可直接選取。 |
-| **Word Game Level** | 四格彩色卡：Level / Stage / Stars / Hearts + Level Progress 進度條（綠→青→靛漸層）。 |
-| **Assignment Status** | **只列未繳交**；欄位 Assignment / Type / Date / 動作。 |
-| **Assignment History** | 欄位 Assignment / Type / Date / Score / **Detail**；欄序與 Assignment Status 對齊（共用 Type/Date 寬度）。 |
+| **Word Game Level** | 四格彩色卡：Level / Stage / Stars / Hearts。**Level Progress 進度條已於 2026-08-07 移除** —— Stage 卡本身就是 `N/54`，進度條屬重複資訊；移除後面板 padding 補為四邊一致的 16px（原本底部只有 4px，靠進度條那塊補足）。 |
+| **Assignment Status** | **只列未繳交**；欄位 Assignment / Type / Date / 動作。區塊標題可收合（見下方互動規則）。 |
+| **Assignment History** | 欄位 Assignment / Type / Date / Score / **Detail**；欄序與 Assignment Status 對齊（共用 Type/Date 寬度）。區塊標題可收合。 |
 | **練習細節 popup** | 由 Assignment History 每列 **Detail** 開啟；依類型渲染（語音＝逐字發音評分 + Score breakdown；`mc`＝逐題批閱 + X/Y correct）。 |
 | **Reminder / Skip popup** | 與 Dashboard 同款確認 popup（綠色信封寄信 / 紅色 Skip 確認）。 |
 
@@ -107,6 +107,7 @@ handoff/teacher-students/
   - **期限內未繳**（`pend`）→ 日期中性 + 「Not submitted」，動作只有 **Remind**（寄提醒信）。
   - **逾期未繳**（`over`）→ 日期紅色 + 「Overdue」，動作為 **Skip** + **Remind**。
   - 全部繳交完 → 顯示空狀態文案。
+- **區塊收合**：Assignment Status / Assignment History 兩個區塊標題整條可點收合，亦支援鍵盤（`role="button"` + `tabindex="0"` + Enter / Space + `aria-expanded`），收合鈕與 Dashboard 分區收合同款（28px 帶框按鈕）。**切換學生時收合狀態必須保留** —— 原型的 `renderDetail()` 每次都重建整個 `innerHTML`，所以狀態記在 module 層級的 `SEC_COLLAPSED` Set，重繪後再套回去。Word Game 區塊不可收合。
 - **Remind** → 開寄信 popup（訊息預填、可編輯）→ 送出 toast「Reminder sent to …」。
 - **Skip** → 紅色確認 popup → 確認後該筆自名單移除並重繪、toast「Skipped …」。
 - **練習細節 popup 依類型分流**：語音類（qa / mirror / vocab）= 逐字拼音 + ✓/!/✕ + 星等 + Play Audio + Score breakdown；`mc` = 逐題（Q 徽章、對錯、學生答案 vs 正解、X / Y correct 摘要）。
@@ -161,6 +162,19 @@ handoff/teacher-students/
 - 抽屜 JS 是 `</body>` 前的獨立 IIFE，只靠兩個 hook：`[data-navtoggle]`（漢堡鈕，可有多顆）與 `#navScrim`（遮罩）。狀態 = `.side.open` + `.nav-scrim.on` + `body.nav-open`（鎖背景捲動），並同步 `aria-expanded`。
 - **React 版建議**：抽屜用 MUI `<Drawer variant="temporary">` + `useMediaQuery(theme.breakpoints.down('lg'))`；不要照抄 `position:fixed + transform` 的手刻版本。斷點值（1024 / 900 / 820 / 760 / 700）可對應到專案既有的 MUI breakpoints，數字不必完全一致，但**行為與順序要一致**。
 - 表格卡片化在原型是純 CSS（`grid-template-areas` / `flex-wrap`）。React 版若改用 MUI `Table`，請在 `sm` 以下改渲染卡片元件，不要靠 CSS 硬擠。
+
+---
+
+## 2026-08-07 更新
+
+| 變更 | 頁面 | 說明 |
+|------|------|------|
+| 側邊欄統一 | Dashboard | Overview 補上 **Leaderboard**；底部使用者卡片改為紅色 **Report Issue** 連結；brand 拿掉 `Teacher` 副標。三頁側邊欄自此完全一致。 |
+| 頂列頭像 | Dashboard / Students | 右上角 36px 圓形教師頭像（琥珀底），與 Word Game 頁一致；≤700px 隱藏。 |
+| 分區可收合 | Dashboard | Active Assignments 的 Overdue / Today / Tomorrow / Later 標題可收合，狀態跨重繪保留。 |
+| 資料範圍提示 | Dashboard | Active Assignments 標題旁新增 ⓘ hover 說明：只呈現近半年資料。 |
+| 移除 Level Progress | Students | Word Game 面板的進度條移除（Stage 卡已含 `N/54`），面板 padding 補為四邊一致。 |
+| 區塊可收合 | Students | Assignment Status / Assignment History 兩個區塊標題可收合，切換學生時保留狀態。 |
 
 ---
 
