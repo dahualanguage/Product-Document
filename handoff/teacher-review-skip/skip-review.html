@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skip Review — v2 提案 B（側邊抽屜）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 B —— 內容跟提案 A 一樣（可多選、skip 完併進 Reviewed），
+   差別只有一件事：改成從右側滑出的抽屜，跟批改抽屜同一種開法。
+   出處：dahua-dash origin/develop @ 1cca25a6
+     src/sections/teacher/dashboard/index.js
+     src/sections/teacher/dashboard/active-assignments-panel.js
+     src/sections/teacher/dashboard/review-panel.js
+     src/sections/teacher/dashboard/review-drawer.js
+     src/sections/teacher/shared/skip-popup.js
+     src/sections/teacher/shared/practice-type-config.js
+   顏色、字級、圓角、間距逐項照抄 sx，不做自由發揮。
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:#0f172a; line-height:1.5; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding:24px 30px 60px;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+
+/* ---------- layout ---------- */
+.grid{ display:grid; grid-template-columns:1fr 400px; gap:18px; align-items:start; max-width:1500px; margin:0 auto; }
+@media (max-width:1160px){ .grid{ grid-template-columns:1fr; } }
+
+.panel{ background:#fff; border:1px solid #e6ebf1; border-radius:16px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05); overflow:hidden; }
+.panel-head{ display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid #eef2f7; }
+.panel-head h2{ font-size:18px; font-weight:800; color:#0f172a; letter-spacing:-.2px; }
+.panel-head .mi{ font-size:22px; color:#94a3b8; cursor:pointer; }
+
+/* ---------- active assignments ---------- */
+.sec-head{ display:grid; grid-template-columns:2fr 1.2fr 1.2fr .8fr .5fr 100px; align-items:center;
+  gap:12px; padding:13px 18px; cursor:pointer; }
+.sec-head:hover{ filter:brightness(.98); }
+.sec-head.overdue{ background:#fdeef0; box-shadow:inset 4px 0 0 #e11d48; }
+.sec-head.today{ background:#fdeef0; box-shadow:inset 4px 0 0 #e11d48; border-top:7px solid #f4f7fb; }
+.sec-head.tomorrow{ background:#fdf6ea; box-shadow:inset 4px 0 0 #d97706; border-top:7px solid #f4f7fb; }
+.sec-head.later{ background:#eef2f7; box-shadow:inset 4px 0 0 #475569; border-top:7px solid #f4f7fb; }
+.sec-l{ display:flex; align-items:center; gap:7px; }
+.sec-l b{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+.sec-n{ background:#fff; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800;
+  box-shadow:0 0 0 1px #e6ebf1; }
+.overdue .sec-l, .overdue .sec-n, .today .sec-l, .today .sec-n{ color:#e11d48; }
+.tomorrow .sec-l, .tomorrow .sec-n{ color:#d97706; }
+.later .sec-l, .later .sec-n{ color:#475569; }
+.col{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#94a3b8; }
+.sec-tog{ display:flex; justify-content:flex-end; }
+.sec-tog span{ width:32px; height:32px; border-radius:9px; border:1px solid; background:#fff;
+  display:grid; place-items:center; font-size:18px; transition:transform .2s; }
+.overdue .sec-tog span, .today .sec-tog span{ border-color:#e11d48; color:#e11d48; }
+.tomorrow .sec-tog span{ border-color:#d97706; color:#d97706; }
+.later .sec-tog span{ border-color:#475569; color:#475569; }
+.sec-body.collapsed{ display:none; }
+.sec-head.collapsed .sec-tog span{ transform:rotate(180deg); }
+
+.arow{ background:#fff; border-top:1px solid #eef2f7; transition:.13s; }
+.arow:hover{ background:#ecfdf5; box-shadow:inset 4px 0 0 #6ee7b7 !important; }
+.arow.overdue, .arow.today{ box-shadow:inset 4px 0 0 #fbc4cb; }
+.arow.tomorrow{ box-shadow:inset 4px 0 0 #f8d69a; }
+.arow.later{ box-shadow:inset 4px 0 0 #dde5ee; }
+.arow-main{ display:grid; grid-template-columns:2fr 1.2fr 1.2fr .8fr .5fr 100px;
+  align-items:center; gap:12px; padding:17px 18px; cursor:pointer; }
+.aname{ font-size:14px; font-weight:700; color:#0f172a; }
+.ttag{ font-size:11px; font-weight:800; padding:2px 9px; border-radius:7px; white-space:nowrap; }
+.ctag{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:#eef2f7; color:#475569; }
+.due{ font-size:12.5px; font-weight:800; white-space:nowrap; }
+.arow.overdue .due, .arow.today .due{ color:#e11d48; }
+.arow.tomorrow .due{ color:#d97706; }
+.arow.later .due{ color:#64748b; }
+.pend{ font-size:11.5px; font-weight:800; white-space:nowrap; }
+.acts{ display:flex; align-items:center; justify-content:flex-end; gap:8px; min-width:94px; }
+.skip-btn{ border:1px solid #e6ebf1; background:#fff; color:#64748b; border-radius:8px;
+  padding:5px 13px; font-size:12px; font-weight:700; cursor:pointer; transition:.13s; }
+.skip-btn:hover{ border-color:#e11d48; color:#e11d48; }
+.chev{ color:#94a3b8; font-size:16px; transition:transform .2s; }
+.arow.open .chev{ transform:rotate(180deg); }
+.arow-sub{ display:none; padding-bottom:14px; }
+.arow.open .arow-sub{ display:block; }
+.notsub{ margin:0 18px; background:#fff; border:1px solid #e6ebf1; border-radius:12px;
+  padding:12px 14px; display:flex; align-items:center; gap:12px; }
+.notsub .names{ flex:1; display:flex; flex-wrap:wrap; gap:6px; }
+.notsub .names a{ font-size:11.5px; font-weight:700; color:#334155; background:#fff;
+  border:1px solid #e6ebf1; border-radius:7px; padding:4px 9px; text-decoration:none; }
+.notsub .names a:hover{ border-color:#6ee7b7; color:#047857; background:#ecfdf5; }
+.remind{ flex-shrink:0; background:linear-gradient(145deg,#10b981,#059669); color:#fff;
+  border:0; border-radius:9px; padding:9px 16px; font-size:12.5px; font-weight:800; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; }
+.remind:hover{ filter:brightness(.96); }
+.remind .mi{ font-size:15px; }
+.allsub{ padding:8px 32px; color:#047857; font-weight:700; font-size:13px; }
+
+/* ---------- to review ---------- */
+.tabs{ display:flex; gap:6px; padding:12px 18px 4px; flex-wrap:wrap; }
+.tab{ border:1px solid #e6ebf1; background:#fff; border-radius:9px; padding:6px 12px; cursor:pointer;
+  font-size:12.5px; font-weight:700; color:#64748b; transition:.13s;
+  display:inline-flex; align-items:center; gap:6px; }
+.tab:hover{ border-color:#d0dae6; color:#334155; }
+.tab.on{ border:none; background:linear-gradient(145deg,#10b981,#059669); color:#fff; }
+.tab i{ font-size:11px; opacity:.8; font-style:normal; }
+.filter{ padding:4px 18px 10px; }
+.filter select{ width:100%; border:1px solid #e6ebf1; border-radius:10px; font-size:13px;
+  font-weight:700; color:#334155; background:#fff; padding:9px 13px; font-family:inherit;
+  outline:none; appearance:none; cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 9px center; background-size:20px; }
+.filter select:hover{ border-color:#d0dae6; }
+.filter select:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.rlist{ padding:8px 10px 12px; display:flex; flex-direction:column; }
+.rrow{ display:flex; align-items:center; gap:13px; padding:12px; border-radius:12px;
+  cursor:pointer; transition:.14s; position:relative; }
+.rrow:hover{ background:#f6f9fc; }
+.rrow:hover .rarrow{ color:#059669; transform:translateX(2px); }
+.rrow .body{ flex:1; min-width:0; }
+.rline{ display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
+.rname{ font-size:14px; font-weight:700; color:#0f172a; }
+.rmeta{ font-size:12.5px; color:#64748b; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rmeta .dot{ color:#94a3b8; margin:0 5px; }
+.rdone{ display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800;
+  color:#047857; background:#ecfdf5; border:1px solid #6ee7b7; padding:1px 7px; border-radius:999px; }
+.rarrow{ flex-shrink:0; color:#94a3b8; font-size:18px; transition:.14s; }
+.empty{ text-align:center; padding:40px 20px; color:#64748b; }
+.empty b{ font-size:15px; font-weight:800; color:#334155; display:block; }
+.empty p{ font-size:13px; color:#64748b; }
+
+/* ---------- 提案 B：Skip review 側邊抽屜 ---------- */
+.sr-open{ margin-left:auto; border:1px solid #e6ebf1; background:#fff; color:#64748b;
+  border-radius:9px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer;
+  transition:.13s; display:inline-flex; align-items:center; gap:6px; }
+.sr-open:hover{ border-color:#e11d48; color:#e11d48; }
+.sr-open .mi{ font-size:15px; }
+
+.sr-drawer{ position:fixed; top:0; right:0; height:100vh; width:440px; max-width:94vw;
+  background:#fff; display:flex; flex-direction:column; z-index:903;
+  transform:translateX(100%); transition:transform .24s cubic-bezier(.4,0,.2,1);
+  box-shadow:-16px 0 40px rgba(15,23,42,.12); }
+.sr-drawer.on{ transform:none; }
+.sr-head{ padding:18px 20px; background:#fff; border-bottom:1px solid #e6ebf1;
+  display:flex; align-items:center; gap:13px; flex-shrink:0; }
+.sr-head b{ font-size:16px; font-weight:800; color:#0f172a; display:block; }
+.sr-head span{ font-size:12.5px; font-weight:600; color:#94a3b8; }
+
+.sr-tools{ display:flex; align-items:center; gap:10px; padding:12px 18px 4px; flex-wrap:wrap;
+  flex-shrink:0; }
+.cbx{ width:19px; height:19px; border-radius:6px; border:1.5px solid #cbd5e1; background:#fff;
+  display:grid; place-items:center; flex-shrink:0; transition:.12s; position:relative; }
+.cbx .mi{ font-size:15px; color:#fff; opacity:0; }
+.cbx.on{ background:#059669; border-color:#059669; }
+.cbx.on .mi{ opacity:1; }
+.cbx.some{ background:#fff; border-color:#059669; }
+.cbx.some::after{ content:''; width:9px; height:2px; border-radius:1px; background:#059669; position:absolute; }
+.sr-all{ display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-size:13px;
+  font-weight:800; color:#334155; user-select:none; }
+.sr-quick{ margin-left:auto; border:1px solid #e6ebf1; background:#fff; border-radius:8px;
+  padding:5px 11px; font-size:12px; font-weight:700; color:#64748b; cursor:pointer; transition:.13s; }
+.sr-quick:hover{ border-color:#d0dae6; color:#334155; }
+.sr-filter{ padding:8px 18px 10px; flex-shrink:0; }
+.sr-filter select{ width:100%; border:1px solid #e6ebf1; border-radius:10px; font-size:13px;
+  font-weight:700; color:#334155; background:#fff; padding:9px 13px; font-family:inherit;
+  outline:none; appearance:none; cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 9px center; background-size:20px; }
+.sr-filter select:hover{ border-color:#d0dae6; }
+.sr-filter select:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+
+.sr-list{ flex:1; overflow-y:auto; padding:2px 10px 12px; }
+.srow{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px;
+  cursor:pointer; transition:.12s; }
+.srow:hover{ background:#f6f9fc; }
+.srow.on{ background:#f1f5f9; }
+.srow .body{ flex:1; min-width:0; }
+.srow .age{ font-weight:800; }
+.srow.stale .age{ color:#059669; }
+.sr-empty{ text-align:center; padding:34px 20px; color:#94a3b8; font-size:13px; font-weight:600; }
+
+.sr-note{ padding:12px 20px; font-size:12.5px; color:#64748b; font-weight:500; line-height:1.6;
+  background:#f8fafc; border-top:1px solid #eef2f7; flex-shrink:0; }
+.sr-foot{ display:flex; gap:10px; padding:14px 20px; border-top:1px solid #e6ebf1;
+  background:#fff; flex-shrink:0; }
+.sr-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; }
+.sr-foot .btn-danger:disabled{ background:#eef2f7; color:#94a3b8; cursor:default; }
+.sr-foot .btn-danger:disabled:hover{ background:#eef2f7; }
+
+.rskip{ display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800;
+  color:#64748b; background:#f1f5f9; border:1px solid #dde5ee; padding:1px 7px; border-radius:999px; }
+.d-skip{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 0 8px; }
+.d-skip .mi{ font-size:34px; color:#cbd5e1; }
+.d-skip b{ font-size:13.5px; font-weight:800; color:#64748b; letter-spacing:.3px; }
+.d-skip span{ font-size:12px; font-weight:600; color:#94a3b8; }
+
+/* ---------- drawer ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(15,23,42,.42); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity .22s; z-index:900; }
+.scrim.on{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100vh; width:440px; max-width:94vw;
+  background:#f4f7fb; display:flex; flex-direction:column; z-index:901;
+  transform:translateX(100%); transition:transform .24s cubic-bezier(.4,0,.2,1);
+  box-shadow:-16px 0 40px rgba(15,23,42,.12); }
+.drawer.on{ transform:none; }
+.d-head{ padding:18px 20px; background:#fff; border-bottom:1px solid #e6ebf1;
+  display:flex; align-items:center; gap:13px; flex-shrink:0; }
+.d-head .who{ flex:1; min-width:0; }
+.d-head .who b{ font-size:16px; font-weight:800; color:#0f172a; display:block; }
+.d-head .who span{ font-size:12.5px; color:#94a3b8; font-weight:600; }
+.d-x{ width:34px; height:34px; border-radius:10px; border:1px solid #e6ebf1; background:#fff;
+  color:#94a3b8; cursor:pointer; display:grid; place-items:center; }
+.d-x:hover{ background:#f5f8fb; color:#0f172a; }
+.d-body{ flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:16px; }
+.d-body > *{ flex-shrink:0; }
+.card{ background:#fff; border:1px solid #e6ebf1; border-radius:14px; padding:16px; }
+.card-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+  color:#94a3b8; display:flex; align-items:center; gap:8px; }
+.card-lbl .pname{ text-transform:none; letter-spacing:0; color:#94a3b8; font-weight:700; font-size:12px; }
+.qs{ display:flex; flex-direction:column; gap:8px; margin-top:13px; }
+.q{ border:1px solid #e6ebf1; border-radius:11px; background:#fbfcfe; overflow:hidden; }
+.q-t{ display:flex; align-items:center; gap:9px; padding:11px 12px; cursor:pointer; font-size:13px;
+  font-weight:600; color:#334155; }
+.q-t .txt{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.badge{ font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; }
+.b4{ background:#d1fae5; color:#047857; } .b3{ background:#fef3c7; color:#d97706; }
+.b2{ background:#ffe4e6; color:#e11d48; }
+.q-b{ display:none; padding:0 12px 12px; font-size:12.5px; color:#475569; }
+.q.open .q-b{ display:block; }
+.q .zh{ font-size:14px; font-weight:700; color:#0f172a; }
+.q .py{ font-size:12px; color:#94a3b8; font-weight:600; }
+.audio{ margin-top:8px; display:flex; align-items:center; gap:9px; background:#fff;
+  border:1px solid #e6ebf1; border-radius:9px; padding:8px 11px; }
+.audio .mi{ color:#059669; font-size:20px; }
+.wave{ flex:1; height:4px; border-radius:2px; background:linear-gradient(90deg,#6ee7b7 42%,#e6ebf1 42%); }
+.detail-btn{ width:100%; background:#fff; border:1px solid #e6ebf1; border-radius:12px; padding:12px;
+  display:flex; align-items:center; justify-content:center; gap:7px; font-size:13px; font-weight:700;
+  color:#475569; cursor:pointer; }
+.detail-btn:hover{ border-color:#d0dae6; }
+.detail-btn .mi{ font-size:15px; color:#94a3b8; }
+.scores{ display:grid; grid-template-columns:1fr 1fr; background:#fff; border:1px solid #e6ebf1;
+  border-radius:14px; overflow:hidden; }
+.scores > div{ padding:15px 16px; }
+.scores > div + div{ border-left:1px solid #eef2f7; }
+.s-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#94a3b8; margin-bottom:6px; }
+.s-val{ font-size:26px; font-weight:800; color:#047857; letter-spacing:-.5px; }
+.s-of{ font-size:13px; color:#94a3b8; font-weight:600; margin-left:4px; }
+.s-in{ width:66px; font-size:26px; font-weight:800; color:#0f172a; border:1px solid #e6ebf1;
+  border-radius:9px; padding:2px 6px; font-family:inherit; text-align:center; letter-spacing:-.5px; outline:none; }
+.s-in:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.quick{ display:flex; flex-direction:column; gap:8px; }
+.quick button{ text-align:left; border:1px solid #e6ebf1; background:#fbfcfe; border-radius:11px;
+  padding:11px 13px; cursor:pointer; font-size:13.5px; font-weight:700; color:#475569; transition:.13s;
+  display:flex; align-items:center; gap:9px; }
+.quick button::before{ content:'\2713'; color:#059669; font-weight:900; }
+.quick button:hover, .quick button.on{ border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+.orline{ text-align:center; font-size:11px; font-weight:700; color:#94a3b8; margin:2px 0; }
+.note{ width:100%; border:1px solid #e6ebf1; border-radius:11px; padding:11px 13px;
+  font-family:inherit; font-size:13px; color:#0f172a; resize:vertical; min-height:74px; outline:none; }
+.note:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.send{ width:100%; height:44px; margin-top:13px; border:0; border-radius:12px; font-weight:800;
+  font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+  background:linear-gradient(145deg,#10b981,#059669); color:#fff; box-shadow:0 8px 18px -8px rgba(5,150,105,.75); }
+.send:hover{ filter:brightness(1.05); }
+.send:disabled{ background:#eef2f7; color:#94a3b8; border:1px solid #e6ebf1; box-shadow:none;
+  cursor:default; filter:none; }
+.seal{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0; }
+.seal b{ font-size:13.5px; font-weight:800; color:#047857; letter-spacing:.3px; }
+.d-foot{ padding:14px 20px; background:#fff; border-top:1px solid #e6ebf1; display:flex; gap:10px; flex-shrink:0; }
+.d-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px;
+  border:1px solid #e6ebf1; background:#fff; color:#475569; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:5px; }
+.d-foot button:disabled{ color:#94a3b8; cursor:default; }
+.d-foot .next{ background:#ecfdf5; color:#065f46; border-color:#6ee7b7; }
+.d-foot .next:disabled{ background:#fff; color:#94a3b8; border-color:#e6ebf1; }
+
+/* ---------- skip popup ---------- */
+.modal{ position:fixed; inset:0; display:none; place-items:center; z-index:1000;
+  background:rgba(15,23,42,.42); backdrop-filter:blur(2px); }
+.modal.on{ display:grid; }
+.modal-box{ width:440px; max-width:92vw; background:#fff; border-radius:16px;
+  box-shadow:0 25px 50px -12px rgba(15,23,42,.25); }
+.modal-head{ display:flex; align-items:center; gap:14px; padding:18px 20px; border-bottom:1px solid #eef2f7; }
+.modal-ic{ width:40px; height:40px; border-radius:11px; background:#ffe4e6; display:grid;
+  place-items:center; flex-shrink:0; color:#e11d48; }
+.modal-ic .mi{ font-size:21px; }
+.modal-head b{ font-size:16px; font-weight:800; color:#0f172a; display:block; }
+.modal-head span{ font-size:12.5px; font-weight:600; color:#94a3b8; }
+.modal-body{ padding:18px 20px; font-size:13.5px; font-weight:500; color:#475569; line-height:1.65; }
+.modal-foot{ display:flex; gap:10px; padding:14px 20px; border-top:1px solid #eef2f7; }
+.modal-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; }
+.btn-cancel{ border:1px solid #e6ebf1; background:#fff; color:#475569; }
+.btn-danger{ border:0; background:#e11d48; color:#fff; display:flex; align-items:center;
+  justify-content:center; gap:6px; }
+.btn-danger:hover{ background:#be123c; }
+.btn-danger .mi{ font-size:16px; }
+
+/* ---------- toast ---------- */
+.toast{ position:fixed; left:50%; bottom:28px; transform:translate(-50%,20px); opacity:0;
+  background:#0f172a; color:#fff; font-size:13px; font-weight:700; padding:11px 18px;
+  border-radius:10px; z-index:1100; pointer-events:none; transition:.2s; }
+.toast.on{ opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+
+<div class="grid">
+  <!-- ============ LEFT: Active Assignments ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Active Assignments</h2>
+      <span class="mi" title="Only assignments from the last 6 months are shown.">info</span>
+    </div>
+    <div id="assign"></div>
+  </section>
+
+  <!-- ============ RIGHT: To Review ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>To Review</h2>
+      <button class="sr-open" id="srOpen"><span class="mi">block</span>Skip review</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="toreview">To Review <i id="c-toreview">0</i></button>
+      <button class="tab" data-tab="reviewed">Reviewed <i id="c-reviewed">0</i></button>
+    </div>
+    <div class="filter">
+      <select id="typeFilter">
+        <option value="all">All practice types</option>
+        <option value="QA">Q&amp;A</option>
+        <option value="MIRRORING">Mirroring</option>
+        <option value="VOCABULARY">Vocabulary</option>
+        <option value="FOLLOW_PATTERN">Follow the Pattern</option>
+      </select>
+    </div>
+    <div class="rlist" id="rlist"></div>
+  </section>
+</div>
+
+<!-- ============ Review drawer ============ -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="d-head">
+    <div class="who"><b id="d-name"></b><span id="d-sub"></span></div>
+    <button class="d-x" id="d-close"><span class="mi">close</span></button>
+  </div>
+  <div class="d-body">
+    <div class="card">
+      <div class="card-lbl">
+        <span class="ttag" id="d-type"></span>
+        <span class="pname" id="d-practice"></span>
+        <span class="rdone" id="d-seal-tag" style="margin-left:auto; display:none;">Reviewed</span>
+      </div>
+      <div class="qs" id="d-qs"></div>
+    </div>
+
+    <button class="detail-btn"><span class="mi">description</span>View practice detail<span class="mi">chevron_right</span></button>
+
+    <div class="scores">
+      <div>
+        <div class="s-lbl">AI Score</div>
+        <div><span class="s-val" id="d-ai">—</span><span class="s-of">/ 100</span></div>
+      </div>
+      <div>
+        <div class="s-lbl">Teacher Score</div>
+        <div style="display:flex; align-items:baseline; gap:5px;">
+          <input class="s-in" id="d-teacher" type="number" min="0" max="100"><span class="s-of" style="margin:0">/ 100</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="s-lbl" style="margin-bottom:11px">Quick review</div>
+      <div class="quick" id="d-quick"></div>
+      <div class="orline">or leave a custom note</div>
+      <textarea class="note" id="d-note" placeholder="Write a note for the student..."></textarea>
+      <div class="d-skip" id="d-skipMark" style="display:none">
+        <span class="mi">block</span>
+        <b>Skipped</b>
+        <span>No feedback was sent. Write a note to review it after all.</span>
+      </div>
+      <div class="seal" id="d-seal" style="display:none">
+        <svg width="56" height="56" viewBox="0 0 14 14" fill="none" style="filter:drop-shadow(0 5px 10px rgba(40,89,197,.22))">
+          <path fill="#8fbffa" d="M1.25 2.5A1.5 1.5 0 0 1 2.75 1h8.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1 -1.5 1.5h-8.5a1.5 1.5 0 0 1 -1.5 -1.5v-10Z"/>
+          <path fill="#2859c5" fill-rule="evenodd" d="M5.5 0a1 1 0 0 0 -1 1v0.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1 -1V1a1 1 0 0 0 -1 -1h-3Zm4.6 6.95a0.75 0.75 0 0 0 -1.2 -0.9L6.326 9.482l-0.91 -0.606a0.75 0.75 0 0 0 -0.832 1.248l1.5 1A0.75 0.75 0 0 0 7.1 10.95l3 -4Z" clip-rule="evenodd"/>
+        </svg>
+        <b>Reviewed</b>
+      </div>
+      <button class="send" id="d-send" disabled><span class="mi" style="font-size:17px">check</span><span id="d-send-l">Send review</span></button>
+    </div>
+  </div>
+  <div class="d-foot">
+    <button id="d-prev"><span class="mi" style="font-size:17px">chevron_left</span>Previous</button>
+    <button class="next" id="d-next">Next student<span class="mi" style="font-size:17px">chevron_right</span></button>
+  </div>
+</aside>
+
+<!-- ============ 提案 B：Skip review（右側抽屜） ============ -->
+<div class="scrim" id="srScrim"></div>
+<aside class="sr-drawer" id="srDrawer">
+  <div class="sr-head">
+    <div style="flex:1; min-width:0">
+      <b>Skip review</b>
+      <span>Pick the submissions you are not going to review.</span>
+    </div>
+    <button class="d-x" id="srClose"><span class="mi">close</span></button>
+  </div>
+
+  <div class="sr-tools">
+    <label class="sr-all" id="srAll">
+      <span class="cbx" id="srAllBox"><span class="mi">check</span></span>
+      <span id="srAllLabel">Select all</span>
+    </label>
+    <button class="sr-quick" id="srStale">Older than 30 days</button>
+  </div>
+  <div class="sr-filter">
+    <select id="srFilter">
+      <option value="all">All practice types</option>
+      <option value="QA">Q&amp;A</option>
+      <option value="MIRRORING">Mirroring</option>
+      <option value="VOCABULARY">Vocabulary</option>
+      <option value="FOLLOW_PATTERN">Follow the Pattern</option>
+    </select>
+  </div>
+
+  <div class="sr-list" id="srList"></div>
+
+  <div class="sr-note">
+    Skipped submissions move to the <strong>Reviewed</strong> tab, marked <em>Skipped</em>.
+    Students keep their score — they just will not get a teacher comment for this one.
+  </div>
+
+  <div class="sr-foot">
+    <button class="btn-cancel" id="srCancel">Cancel</button>
+    <button class="btn-danger" id="srOk" disabled><span class="mi">block</span><span id="srOkLabel">Skip review</span></button>
+  </div>
+</aside>
+
+<!-- ============ Skip assignment popup（現行產品既有） ============ -->
+<div class="modal" id="skipModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-ic"><span class="mi">block</span></div>
+      <div style="flex:1; min-width:0">
+        <b>Skip assignment</b>
+        <span id="skipSub"></span>
+      </div>
+    </div>
+    <div class="modal-body">
+      This overdue assignment will be removed from Active Assignments — students won't be
+      chased for it anymore. You can still see it in the class history.
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="skipCancel">Cancel</button>
+      <button class="btn-danger" id="skipOk"><span class="mi">block</span>Skip assignment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===========================================================================
+   資料 —— 依截圖與 getTeacherAssignmentOverview 的欄位形狀捏的假資料。
+   =========================================================================== */
+const TYPE = {
+  QA:              { label:'Q&A',                color:'#2563EB', bg:'#e8f0ff' },
+  MIRRORING:       { label:'Mirroring',          color:'#EA7A21', bg:'#fdeede' },
+  VOCABULARY:      { label:'Vocabulary',         color:'#0B7A3B', bg:'#e6f7ec' },
+  MULTIPLE_CHOICE: { label:'Multiple Choice',    color:'#3B82F6', bg:'#e8f0ff' },
+  FOLLOW_PATTERN:  { label:'Follow the Pattern', color:'#7C3AED', bg:'#f1e9ff' },
+  SENTENCE_SCRAMBLE:{label:'Sentence Scramble',  color:'#DB2777', bg:'#fce7f3' },
+  WORD_GAME:       { label:'Word Game',          color:'#0d9488', bg:'#ccfbf1' },
+};
+const NO_REVIEW = new Set(['MULTIPLE_CHOICE','SENTENCE_SCRAMBLE','WORD_GAME']);
+
+const QUICK = {
+  MIRRORING:      ['Great pronunciation — well done!','Practice your tones a bit more.','Clear pronunciation, keep it up!'],
+  VOCABULARY:     ['Good grasp of the vocabulary!','A little more work on pronunciation.','Well done — passed!'],
+  FOLLOW_PATTERN: ['Most answers correct — well done!','Review the ones you missed.','All correct — excellent!'],
+  QA:             ['Thoughtful answer — nice work!','Try to give a fuller answer next time.','Well answered!'],
+};
+
+const ASSIGNMENTS = [
+  { sec:'overdue',  name:'聖誕節',       type:'MIRRORING',      cls:'Novice',       due:'12 Aug', total:8,  sub:3,
+    pending:['Student1 Test','Student123 Test','Amy Chen','Ben Wu','Cara Lin'] },
+  { sec:'overdue',  name:'中國神話測試',  type:'FOLLOW_PATTERN', cls:'Novice',       due:'14 Aug', total:8,  sub:6,
+    pending:['Ben Wu','Cara Lin'] },
+  { sec:'today',    name:'全球暖化',     type:'MIRRORING',      cls:'Advance',      due:'20 Aug', total:6,  sub:2,
+    pending:['Student3 Test','Dennis Ko','Ella Hsu','Frank Yang'] },
+  { sec:'today',    name:'認識自己的優點', type:'FOLLOW_PATTERN', cls:'Novice',      due:'20 Aug', total:8,  sub:7,
+    pending:['Student123 Test'] },
+  { sec:'tomorrow', name:'test practice', type:'VOCABULARY',     cls:'Intermediate', due:'21 Aug', total:7,  sub:5,
+    pending:['Student2 Test','Grace Tsai'] },
+  { sec:'later',    name:'Level 1 · 每天玩 15 分鐘', type:'WORD_GAME', cls:'Novice', due:'25 Aug', total:8, sub:8, pending:[], wordGame:true },
+  { sec:'later',    name:'節日詞彙小考',  type:'MULTIPLE_CHOICE',cls:'Intermediate', due:'27 Aug', total:7,  sub:1,
+    pending:['Student2 Test','Grace Tsai','Henry Lo','Ivy Chang','Jack Su','Kenny Ma'] },
+];
+
+/* 15 to review + 11 reviewed —— 與截圖的分頁計數一致 */
+const SUBS = [
+  ['Student123 Test','Novice','FOLLOW_PATTERN','認識自己的優點','6 days ago',0],
+  ['Student123 Test','Novice','FOLLOW_PATTERN','中國神話測試','6 days ago',0],
+  ['Student123 Test','Novice','MIRRORING','聖誕節','6 days ago',0],
+  ['Student1 Test','Novice','VOCABULARY','test','58 days ago',0],
+  ['Student1 Test','Novice','VOCABULARY','聖誕節','58 days ago',0],
+  ['Student2 Test','Intermediate','VOCABULARY','test practice','59 days ago',0],
+  ['Student3 Test','Advance','MIRRORING','全球暖化','59 days ago',0],
+  ['Student2 Test','Intermediate','MIRRORING','全球暖化','59 days ago',0],
+  ['Student1 Test','Novice','MIRRORING','全球暖化','59 days ago',0],
+  ['Amy Chen','Novice','QA','聖誕節','61 days ago',0],
+  ['Ben Wu','Novice','MIRRORING','聖誕節','61 days ago',0],
+  ['Cara Lin','Novice','VOCABULARY','test','72 days ago',0],
+  ['Dennis Ko','Advance','QA','全球暖化','74 days ago',0],
+  ['Ella Hsu','Advance','FOLLOW_PATTERN','中國神話測試','88 days ago',0],
+  ['Frank Yang','Advance','MIRRORING','全球暖化','103 days ago',0],
+  ['Grace Tsai','Intermediate','VOCABULARY','test practice','2 days ago',1],
+  ['Henry Lo','Intermediate','MIRRORING','聖誕節','2 days ago',1],
+  ['Ivy Chang','Intermediate','QA','test practice','3 days ago',1],
+  ['Jack Su','Intermediate','FOLLOW_PATTERN','中國神話測試','3 days ago',1],
+  ['Kenny Ma','Novice','MIRRORING','聖誕節','4 days ago',1],
+  ['Lily Kuo','Novice','VOCABULARY','test','4 days ago',1],
+  ['Mona Hsieh','Advance','MIRRORING','全球暖化','5 days ago',1],
+  ['Nick Pan','Advance','QA','全球暖化','6 days ago',1],
+  ['Olive Tan','Novice','FOLLOW_PATTERN','認識自己的優點','7 days ago',1],
+  ['Peter Kao','Novice','MIRRORING','聖誕節','8 days ago',1],
+  ['Queenie Hu','Intermediate','VOCABULARY','test practice','9 days ago',1],
+].map((r,i) => ({
+  id:'s'+i, studentName:r[0], className:r[1], practiceType:r[2], practiceName:r[3],
+  timeAgo:r[4], reviewed:!!r[5], ai:[72,80,85,88,91,64,77,95][i%8],
+}));
+
+const QUESTIONS = [
+  { zh:'今天天氣很好。',   py:'jīntiān tiānqì hěn hǎo.',   en:"The weather is nice today.",  score:4 },
+  { zh:'我喜歡吃水餃。',   py:'wǒ xǐhuān chī shuǐjiǎo.',   en:'I like eating dumplings.',    score:5 },
+  { zh:'聖誕節快樂！',     py:'shèngdàn jié kuàilè!',      en:'Merry Christmas!',            score:3 },
+];
+
+/* ===========================================================================
+   Active Assignments
+   =========================================================================== */
+const SEC_LABEL = { overdue:'Overdue', today:'Today', tomorrow:'Tomorrow', later:'Later' };
+let assignments = ASSIGNMENTS.slice();
+
+function renderAssignments(){
+  const wrap = document.getElementById('assign');
+  const order = ['overdue','today','tomorrow','later'];
+  wrap.innerHTML = order.filter(s => assignments.some(a => a.sec === s)).map(sec => {
+    const items = assignments.filter(a => a.sec === sec)
+      .sort((a,b) => (b.total-b.sub) - (a.total-a.sub));
+    const rows = items.map(a => {
+      const pending = a.total - a.sub;
+      const t = TYPE[a.type];
+      // Skip 只出現在 overdue，而且 Word Game 沒有可寫的 assignment row（見 active-assignments-panel.js:258）
+      const canSkip = sec === 'overdue' && !a.wordGame;
+      const leftColor = pending === 0 ? '#047857'
+        : (sec==='overdue'||sec==='today') ? '#e11d48' : sec==='tomorrow' ? '#d97706' : '#475569';
+      return `<div class="arow ${sec}" data-name="${a.name}" data-cls="${a.cls}">
+        <div class="arow-main">
+          <div class="aname">${a.name}</div>
+          <div><span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span></div>
+          <div><span class="ctag">${a.cls}</span></div>
+          <div class="due">${a.due}</div>
+          <div class="pend" style="color:${leftColor}">${pending === 0 ? '—' : pending}</div>
+          <div class="acts">
+            ${canSkip ? '<button class="skip-btn">Skip</button>' : ''}
+            ${pending > 0 ? '<span class="mi chev">expand_more</span>' : ''}
+          </div>
+        </div>
+        <div class="arow-sub">${
+          pending > 0
+            ? `<div class="notsub"><div class="names">${a.pending.map(n=>`<a href="#">${n}</a>`).join('')}</div>
+                 <button class="remind"><span class="mi">email</span>Send reminder</button></div>`
+            : '<div class="allsub">All submitted</div>'
+        }</div>
+      </div>`;
+    }).join('');
+    return `<div>
+      <div class="sec-head ${sec}">
+        <div class="sec-l"><b>${SEC_LABEL[sec]}</b><span class="sec-n">${items.length}</span></div>
+        <span class="col">Practice</span><span class="col">Class</span>
+        <span class="col">Due</span><span class="col">Pending</span>
+        <div class="sec-tog"><span class="mi">expand_less</span></div>
+      </div>
+      <div class="sec-body">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('assign').addEventListener('click', (e) => {
+  const secHead = e.target.closest('.sec-head');
+  if (secHead){
+    secHead.classList.toggle('collapsed');
+    secHead.nextElementSibling.classList.toggle('collapsed');
+    return;
+  }
+  const skip = e.target.closest('.skip-btn');
+  if (skip){
+    e.stopPropagation();
+    const row = skip.closest('.arow');
+    skipTarget = row;
+    document.getElementById('skipSub').textContent = `${row.dataset.name} - ${row.dataset.cls}`;
+    document.getElementById('skipModal').classList.add('on');
+    return;
+  }
+  const row = e.target.closest('.arow');
+  if (row && row.querySelector('.chev')) row.classList.toggle('open');
+});
+
+let skipTarget = null;
+document.getElementById('skipCancel').onclick = () => {
+  document.getElementById('skipModal').classList.remove('on'); skipTarget = null;
+};
+document.getElementById('skipOk').onclick = () => {
+  if (skipTarget){
+    const name = skipTarget.dataset.name, cls = skipTarget.dataset.cls;
+    assignments = assignments.filter(a => !(a.name === name && a.cls === cls));
+    renderAssignments();
+    toast(`Skipped "${name}" for ${cls}`);
+  }
+  document.getElementById('skipModal').classList.remove('on'); skipTarget = null;
+};
+
+/* ===========================================================================
+   To Review
+   =========================================================================== */
+let subs = SUBS.slice();
+let tab = 'toreview';
+let typeFilter = 'all';
+
+const matchesType = (s) => typeFilter === 'all' || s.practiceType === typeFilter;
+const reviewable  = () => subs.filter(s => !NO_REVIEW.has(s.practiceType));
+
+function renderReview(){
+  const list = reviewable().filter(s => matchesType(s));
+  const toReviewCount = list.filter(s => !s.reviewed).length;
+  const reviewedCount = list.filter(s =>  s.reviewed).length;
+  document.getElementById('c-toreview').textContent = toReviewCount;
+  document.getElementById('c-reviewed').textContent = reviewedCount;
+
+  const shown = list.filter(s => tab === 'reviewed' ? s.reviewed : !s.reviewed);
+  const box = document.getElementById('rlist');
+  if (!shown.length){
+    box.innerHTML = `<div class="empty">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px">
+        <path d="M9 11l3 3L22 4" stroke-width="2.4"/>
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <b>${tab === 'reviewed' ? 'Nothing reviewed yet' : 'All caught up!'}</b>
+      <p>${tab === 'reviewed' ? 'Reviewed submissions show here.' : 'No submissions to review.'}</p>
+    </div>`;
+    return;
+  }
+  box.innerHTML = shown.map(s => {
+    const t = TYPE[s.practiceType];
+    return `<div class="rrow" data-id="${s.id}">
+      <div class="body">
+        <div class="rline">
+          <span class="rname">${s.studentName}</span>
+          <span class="ctag">${s.className}</span>
+          <span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span>
+          ${s.skipped ? '<span class="rskip">Skipped</span>' : s.reviewed ? '<span class="rdone">Reviewed</span>' : ''}
+        </div>
+        <div class="rmeta">${s.practiceName}<span class="dot">·</span>${s.timeAgo}</div>
+      </div>
+      <span class="mi rarrow">chevron_right</span>
+    </div>`;
+  }).join('');
+}
+
+/* ===========================================================================
+   提案 A：Skip review —— 面板標頭的按鈕 + 可多選的 modal
+   =========================================================================== */
+const daysAgo = (t) => { const m = /^(\d+)\s+day/.exec(t); return m ? +m[1] : 0; };
+let picked = new Set();
+let srFilter = 'all';
+
+const srCandidates = () => reviewable()
+  .filter(s => !s.reviewed)
+  .filter(s => srFilter === 'all' || s.practiceType === srFilter)
+  .sort((a,b) => daysAgo(b.timeAgo) - daysAgo(a.timeAgo));   // 最舊的排最上面
+
+function renderSkipReview(){
+  const list = srCandidates();
+  const box = document.getElementById('srList');
+  box.innerHTML = list.length ? list.map(s => {
+    const t = TYPE[s.practiceType];
+    const stale = daysAgo(s.timeAgo) >= 30;
+    const on = picked.has(s.id);
+    return `<div class="srow${on?' on':''}${stale?' stale':''}" data-id="${s.id}">
+      <span class="cbx${on?' on':''}"><span class="mi">check</span></span>
+      <div class="body">
+        <div class="rline">
+          <span class="rname">${s.studentName}</span>
+          <span class="ctag">${s.className}</span>
+          <span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span>
+        </div>
+        <div class="rmeta">${s.practiceName}<span class="dot">·</span><span class="age">${s.timeAgo}</span></div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="sr-empty">No submissions waiting for review.</div>';
+
+  const inView = list.filter(s => picked.has(s.id)).length;
+  const allBox = document.getElementById('srAllBox');
+  allBox.classList.toggle('on',   list.length > 0 && inView === list.length);
+  allBox.classList.toggle('some', inView > 0 && inView < list.length);
+  document.getElementById('srAllLabel').textContent =
+    picked.size ? `${picked.size} selected` : `Select all (${list.length})`;
+
+  // 按鈕一律叫 Skip review —— 跟標頭的觸發鈕同名，也就不會跟左欄現行的 Skip 撞名。
+  // 要 skip 幾筆由左上的「N selected」交代，不掛在按鈕上。
+  document.getElementById('srOk').disabled = picked.size === 0;
+}
+
+function openSkipReview(){
+  picked = new Set();
+  srFilter = typeFilter;                       // 沿用面板當下的型別過濾
+  document.getElementById('srFilter').value = srFilter;
+  renderSkipReview();
+  document.getElementById('srDrawer').classList.add('on');
+  document.getElementById('srScrim').classList.add('on');
+}
+function closeSkipReview(){
+  document.getElementById('srDrawer').classList.remove('on');
+  document.getElementById('srScrim').classList.remove('on');
+}
+document.getElementById('srScrim').onclick = closeSkipReview;
+
+document.getElementById('srOpen').onclick  = openSkipReview;
+document.getElementById('srClose').onclick = closeSkipReview;
+document.getElementById('srCancel').onclick= closeSkipReview;
+
+document.getElementById('srList').addEventListener('click', (e) => {
+  const row = e.target.closest('.srow'); if (!row) return;
+  const id = row.dataset.id;
+  if (picked.has(id)) picked.delete(id); else picked.add(id);
+  renderSkipReview();
+});
+
+document.getElementById('srAll').onclick = (e) => {
+  e.preventDefault();
+  const list = srCandidates();
+  const allOn = list.length > 0 && list.every(s => picked.has(s.id));
+  if (allOn) list.forEach(s => picked.delete(s.id));
+  else list.forEach(s => picked.add(s.id));
+  renderSkipReview();
+};
+
+document.getElementById('srStale').onclick = () => {
+  srCandidates().filter(s => daysAgo(s.timeAgo) >= 30).forEach(s => picked.add(s.id));
+  renderSkipReview();
+};
+
+document.getElementById('srFilter').onchange = (e) => { srFilter = e.target.value; renderSkipReview(); };
+
+document.getElementById('srOk').onclick = () => {
+  const n = picked.size;
+  // 決定（2026-08-20）：skip 完併進 Reviewed 分頁，用灰色 Skipped 章跟真的批過的區分。
+  subs.forEach(s => {
+    if (!picked.has(s.id)) return;
+    s.reviewed = true; s.skipped = true; s.timeAgo = 'just now';
+  });
+  picked = new Set();
+  closeSkipReview(); renderReview();
+  toast(`Skipped ${n} submission${n>1?'s':''} — moved to Reviewed`);
+};
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); tab = b.dataset.tab;
+  document.getElementById('srOpen').style.display = tab === 'toreview' ? 'inline-flex' : 'none';
+  renderReview();
+});
+document.getElementById('typeFilter').onchange = (e) => { typeFilter = e.target.value; renderReview(); };
+document.getElementById('rlist').addEventListener('click', (e) => {
+  const row = e.target.closest('.rrow');
+  if (row) openDrawer(row.dataset.id);
+});
+
+/* ===========================================================================
+   Review drawer
+   ——「Next student」走的是整份清單（只吃 type filter，不吃分頁），
+   　　所以在 To Review 分頁點進去，也會走到已批改過的那些。
+   　　出處：review-drawer.js:346 fullNavList
+   =========================================================================== */
+let current = null;
+
+const navList = () => reviewable().filter(s => matchesType(s));
+
+function openDrawer(id){
+  current = subs.find(s => s.id === id);
+  paint();
+  document.getElementById('drawer').classList.add('on');
+  document.getElementById('scrim').classList.add('on');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('on');
+  document.getElementById('scrim').classList.remove('on');
+}
+document.getElementById('d-close').onclick = closeDrawer;
+document.getElementById('scrim').onclick = closeDrawer;
+
+function paint(){
+  const s = current; if (!s) return;
+  const t = TYPE[s.practiceType];
+  document.getElementById('d-name').textContent = s.studentName;
+  document.getElementById('d-sub').textContent = `${s.className} · ${s.timeAgo}`;
+  const tt = document.getElementById('d-type');
+  tt.textContent = t.label; tt.style.background = t.bg; tt.style.color = t.color;
+  document.getElementById('d-practice').textContent = `${s.practiceName} · ${QUESTIONS.length} questions`;
+  const tag = document.getElementById('d-seal-tag');
+  tag.className = s.skipped ? 'rskip' : 'rdone';
+  tag.textContent = s.skipped ? 'Skipped' : 'Reviewed';
+  tag.style.display = s.reviewed ? 'inline-flex' : 'none';
+  document.getElementById('d-ai').textContent = s.ai;
+  document.getElementById('d-teacher').value = s.teacherScore ?? s.ai;
+
+  document.getElementById('d-qs').innerHTML = QUESTIONS.map((q,i) => `
+    <div class="q${i===0?' open':''}">
+      <div class="q-t">
+        <span class="txt">${i+1}. ${q.zh}</span>
+        <span class="badge ${q.score>=4?'b4':q.score===3?'b3':'b2'}">${q.score}</span>
+        <span class="mi" style="font-size:16px;color:#94a3b8">expand_more</span>
+      </div>
+      <div class="q-b">
+        <div class="zh">${q.zh}</div>
+        <div class="py">${q.py}</div>
+        <div class="py" style="color:#64748b">${q.en}</div>
+        <div class="audio"><span class="mi">play_circle</span><div class="wave"></div>
+          <span style="font-size:11px;font-weight:700;color:#94a3b8">0:0${3+i}</span></div>
+      </div>
+    </div>`).join('');
+
+  const quick = QUICK[s.practiceType] || QUICK.MIRRORING;
+  document.getElementById('d-quick').innerHTML = quick.map(x => `<button>${x}</button>`).join('');
+  document.getElementById('d-note').value = s.comment || '';
+  document.getElementById('d-seal').style.display    = (s.reviewed && !s.skipped) ? 'flex' : 'none';
+  document.getElementById('d-skipMark').style.display = s.skipped ? 'flex' : 'none';
+
+  const i = navList().findIndex(x => x.id === s.id);
+  document.getElementById('d-prev').disabled = i <= 0;
+  document.getElementById('d-next').disabled = i < 0 || i >= navList().length - 1;
+  syncSend();
+}
+
+document.getElementById('d-quick').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const on = b.classList.contains('on');
+  document.querySelectorAll('#d-quick button').forEach(x => x.classList.remove('on'));
+  const note = document.getElementById('d-note');
+  if (on){ note.value = ''; } else { b.classList.add('on'); note.value = b.textContent; }
+  syncSend();
+});
+document.getElementById('d-note').oninput = syncSend;
+document.getElementById('d-teacher').oninput = syncSend;
+
+function syncSend(){
+  const s = current; if (!s) return;
+  // skipped 的視為「還沒真的批過」——老師改變心意時打一段留言就能補批，
+  // 不用另外做 undo（那是 §6 Q4，還沒定案）。
+  const done  = s.reviewed && !s.skipped;
+  const note  = document.getElementById('d-note').value.trim();
+  const score = document.getElementById('d-teacher').value;
+  const dirty = done && (note !== (s.comment || '') || String(score) !== String(s.teacherScore ?? s.ai));
+  const btn = document.getElementById('d-send');
+  btn.disabled = !note || (done && !dirty);
+  document.getElementById('d-send-l').textContent =
+    !done ? 'Send review' : dirty ? 'Update review' : 'Reviewed';
+}
+
+document.getElementById('d-send').onclick = () => {
+  const s = current; if (!s) return;
+  s.reviewed = true;
+  s.skipped = false;                       // 補批之後就不再是 skipped
+  s.comment = document.getElementById('d-note').value.trim();
+  s.teacherScore = document.getElementById('d-teacher').value;
+  s.timeAgo = 'just now';
+  paint(); renderReview();
+  toast(`Review sent to ${s.studentName}`);
+};
+
+document.getElementById('d-prev').onclick = () => {
+  const l = navList(), i = l.findIndex(x => x.id === current.id);
+  if (i > 0){ current = l[i-1]; paint(); }
+};
+document.getElementById('d-next').onclick = () => {
+  const l = navList(), i = l.findIndex(x => x.id === current.id);
+  if (i >= 0 && i < l.length-1){ current = l[i+1]; paint(); }
+};
+
+document.getElementById('d-qs').addEventListener('click', (e) => {
+  const q = e.target.closest('.q'); if (q) q.classList.toggle('open');
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ closeDrawer(); closeSkipReview(); } });
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+renderAssignments();
+renderReview();
+
+/* ?drawer=1 直接把批改抽屜打開，方便 spec 內嵌與截圖 */
+const _p = new URLSearchParams(location.search);
+if (_p.get('drawer')) openDrawer('s0');
+if (_p.get('skip')) openSkipReview();
+if (_p.get('pick') === 'stale') document.getElementById('srStale').click();   // 截圖用
+// 縮圖用：0.5 倍縮放的 iframe 裡，backdrop-filter 會在合成時畫壞（文字看起來像鏡射）。
+// 版本頁的預覽縮圖帶 noblur=1 關掉毛玻璃，其餘照現行產品（skip-popup.js 有 blur(2px)）。
+if (_p.get('noblur')) document.querySelectorAll('.modal,.scrim').forEach(m => m.style.backdropFilter='none');
+</script>
+</body>
+</html>
