@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — v2 · To Review 增加 Skip</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-red { background: #ffe4e6; color: #be123c; }
+    .none { color: #cbd5e1; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .q { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #8b5cf6; border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; }
+    .q .qh { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .q .qn { display:inline-block; font-size: 11px; font-weight: 800; color: #fff; background: #8b5cf6; padding: 1px 8px; border-radius: 5px; margin-right: 8px; vertical-align: 2px; }
+    .q .why { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+    .q.done { border-left-color: #10b981; }
+    .q.done .qn { background: #10b981; }
+    .decided { display:inline-block; font-size:11px; font-weight:800; color:#047857;
+      background:#ecfdf5; border:1px solid #6ee7b7; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .ans { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#065f46; line-height:1.6; }
+    .q.shut { border-left-color:#cbd5e1; background:#fbfcfd; }
+    .q.shut .qn { background:#94a3b8; }
+    .q.shut .qh { color:#475569; }
+    .closed { display:inline-block; font-size:11px; font-weight:800; color:#475569;
+      background:#f1f5f9; border:1px solid #dde5ee; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .shutbox { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#475569; line-height:1.6; }
+    details { margin-top:10px; }
+    details summary { cursor:pointer; font-size:12px; font-weight:700; color:#94a3b8; }
+    details summary:hover { color:#475569; }
+    details table { margin-top:8px; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .st-shut { background:#f1f5f9; color:#475569; border:1px solid #dde5ee; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .q table { margin: 6px 0 0; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v2 · To Review 增加 Skip</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#now">2 · 現況：To Review</a></li>
+        <li><a href="#skip-now">3 · 現行已經有的 Skip</a></li>
+        <li><a href="#issues">4 · 查到的問題</a></li>
+        <li><a href="#plan">5 · 提案：Skip review</a></li>
+        <li><a href="#open">6 · 待決事項（全數收斂）</a></li>
+        <li><a href="#base">7 · 基準檔</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v2 — To Review 增加 Skip</h1>
+        <p class="subtitle">To Review 目前只有一個出口：批改。沒批改的提交會一直留著，截圖上最舊的一筆是 59 天前。這一版要補上第二個出口。</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>老師端</span>
+          <span>Source: dahua-dash <code>origin/develop</code> @ 1cca25a6</span>
+          <span>Updated: 2026-08-20</span>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>目前狀態：兩端都有畫面。</strong>
+        面板標頭一顆 <em>Skip review</em>，打開<a class="inline" href="skip-review-drawer.html?skip=1">一個從右側滑出的多選清單</a>，勾完一次 skip 掉（<a class="inline" href="#plan">§5</a>）。
+        <a class="inline" href="teacher-dashboard.html">teacher-dashboard.html</a> 是<strong>現行產品的複刻</strong>、保留不動，方便並排比對（<a class="inline" href="#base">§7</a>）。
+        <a class="inline" href="#open">§6</a> 重新盤過：原本六題<strong>四題已經不用討論</strong>（Q2 你拍板、Q1／Q5 被設計本身回答掉、Q4 有了替代路徑），Q3 學生端與命名也在同一天拍板（<a class="inline" href="#plan">§5.4</a> 有畫面）——<strong>全數收斂</strong>，只剩後端欄位一項待辦。
+      </div>
+
+      <div class="callout callout-info">
+        <strong>工程交接檔已經備好。</strong>
+        <a class="inline" href="../../../../handoff/teacher-review-skip/index.html">handoff/teacher-review-skip/</a> ——
+        <code>HANDOFF.md</code>（要動哪些檔案、分三階段）＋ <code>API-CONTRACT.md</code>（欄位、query、批次 mutation）。
+        這一份 spec 講的是<strong>為什麼</strong>，交接檔講的是<strong>怎麼做</strong>。
+      </div>
+
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+
+      <table>
+        <thead><tr><th style="width:120px">項目</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr><td>功能名稱</td><td>To Review 增加 skip</td></tr>
+          <tr><td>線上網址</td><td><a class="inline" href="https://dahua-dash-dev.web.app/school/teacher-dashboard/" target="_blank" rel="noopener">dahua-dash-dev.web.app/school/teacher-dashboard/</a></td></tr>
+          <tr><td>主要程式碼</td><td><code>src/sections/teacher/dashboard/review-panel.js</code>（清單）<br><code>src/sections/teacher/dashboard/review-drawer.js</code>（批改抽屜）<br><code>src/sections/teacher/dashboard/index.js</code>（狀態）</td></tr>
+          <tr><td>一併複刻</td><td><code>active-assignments-panel.js</code> + <code>shared/skip-popup.js</code>——現行的 Skip 就在左欄，新的 skip 要跟它對得起來（見 §3）</td></tr>
+          <tr><td>範圍外</td><td>Students 頁、Word Game 頁、練習建立流程</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="now"><span class="num">2</span> 現況：To Review 是怎麼運作的</h2>
+
+      <h3>2.1　資料與狀態</h3>
+      <p>整個 Dashboard 只讀一次 <code>getTeacherAssignmentOverview</code>，回來兩份互相獨立的清單：<code>assignments</code>（左欄）與 <code>submissions</code>（右欄）。每一筆 submission 只帶這些欄位：</p>
+      <div class="formula">submissions {
+  assignmentHistorySk   userId       studentName
+  assignmentSk          classSk      className
+  practiceName          practiceType submittedAt
+  reviewed              ← 布林，整個 To Review 唯一的狀態
+}</div>
+
+      <div class="callout callout-info">
+        <strong>只有一個布林。</strong> 一筆提交只有「已批改／未批改」兩種狀態，<strong>沒有第三種</strong>。
+        skip 要成立，這裡就得多一個東西——欄位長什麼樣是 <a class="inline" href="#open">§6 Q6</a>。
+      </div>
+
+      <h3>2.2　面板本身</h3>
+      <table>
+        <thead><tr><th style="width:130px">元素</th><th>行為</th></tr></thead>
+        <tbody>
+          <tr><td>兩個分頁</td><td><strong>To Review</strong> = <code>!reviewed</code>、<strong>Reviewed</strong> = <code>reviewed</code>。計數各自吃當下的型別過濾。</td></tr>
+          <tr><td>型別下拉</td><td>All / Mirroring / Vocabulary / Follow the Pattern / Q&amp;A。<code>MULTIPLE_CHOICE</code>、<code>SENTENCE_SCRAMBLE</code>、<code>WORD_GAME</code> 是 <code>NO_REVIEW_TYPES</code>，機器自動判分，根本不會進這個收件匣。</td></tr>
+          <tr><td>排序</td><td><code>_reviewedAt || submittedAt</code> 由新到舊。所以未批改分頁裡，<strong>最舊的沉在最底下</strong>。</td></tr>
+          <tr><td>一列</td><td>學生名 + 班級 chip + 型別 tag（+ Reviewed 章）／第二行練習名 · 相對時間。整列可點，右側淡色 chevron。沒有頭像、沒有未讀點、沒有分數。</td></tr>
+          <tr><td>空狀態</td><td>未批改分頁 “All caught up!”，已批改分頁 “Nothing reviewed yet”。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>2.3　批改抽屜</h3>
+      <ul>
+        <li>學生答案（可收合，speaking 帶錄音 + 1–5 分徽章）、<strong>View practice detail</strong>、<strong>AI Score</strong>（唯讀）／<strong>Teacher Score</strong>（可改，改了會標橘色 <em>Saved with the review</em>）。</li>
+        <li><strong>Quick review</strong> 三句預設語（依型別不同），或自己打一段 note。</li>
+        <li><strong>Send review</strong> —— <strong>留言為空就是 disabled</strong>（<code>sendDisabled = commentIsEmpty || …</code>）。送出後蓋 Reviewed 章、按鈕變灰，改了分數或留言才會再亮成 <em>Update review</em>。送出<strong>不會</strong>自動跳下一位。</li>
+        <li>底部 <strong>Previous / Next student</strong> ——導覽清單 <code>fullNavList</code> <strong>只吃型別過濾、不吃分頁</strong>，所以會走進已經批改過的那些。</li>
+      </ul>
+
+      <h2 id="skip-now"><span class="num">3</span> 現行產品已經有一個 Skip——但在左欄</h2>
+
+      <p>Active Assignments 的 <strong>Overdue</strong> 區塊，每一列右側有一顆 <span class="pill p-gray">Skip</span>。這是 To Review 這顆 skip 唯一能參照的既有語彙，先把它講清楚。</p>
+
+      <table>
+        <thead><tr><th style="width:120px">項目</th><th>現況</th></tr></thead>
+        <tbody>
+          <tr><td>出現條件</td><td>只有 <code>section === 'overdue'</code> 而且不是 Word Game 的列才有（Word Game 沒有可寫的 assignment row）。</td></tr>
+          <tr><td>對象</td><td><strong>一份作業（assignment × class）</strong>，不是某一個學生的提交。</td></tr>
+          <tr><td>確認</td><td>紅色 <code>block</code> 圖示的 modal，標題 <em>Skip assignment</em>，內文：<em>“This overdue assignment will be removed from Active Assignments — students won't be chased for it anymore. You can still see it in the class history.”</em></td></tr>
+          <tr><td>寫入</td><td><code>upsertAssignment({ assignmentSk, classSk, skipped: true })</code>，成功後把該列從本地 state 移除，toast <em>Skipped "X" for Y</em>。</td></tr>
+          <tr><td>語意</td><td><strong>不再催</strong>——處理的是「沒交的人」。</td></tr>
+          <tr><td>可否復原</td><td>介面上<strong>沒有</strong>復原入口。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>兩個 Skip 會同名不同物。</strong>
+        左欄的 Skip 管「沒交」，右欄要加的 skip 管「交了沒批」，兩者不重疊。
+        如果新的也叫 <em>Skip</em>，老師會在同一頁看到兩顆語意不同的同名按鈕——命名見 <a class="inline" href="#open">§6.4</a>。
+      </div>
+
+      <h2 id="issues"><span class="num">4</span> 查到的問題</h2>
+
+      <h3>4.1　To Review 只進不出</h3>
+      <p>提交進來的唯一出口是「批改完送出」。老師沒批，它就永遠留著，而且因為排序是由新到舊，<strong>最該處理的最舊那幾筆沉在清單最底</strong>。截圖上的分頁計數是 <strong>15</strong>，最舊的一筆 <strong>59 天前</strong>——這些都不是「還沒輪到」，是「不會再批了」。</p>
+
+      <h3>4.2　左欄的 Skip 幫不上忙</h3>
+      <p><code>assignments</code> 和 <code>submissions</code> 是兩份獨立清單，<code>handleSkipConfirm</code> 只 filter 掉 <code>assignments</code>，<strong>完全沒有動 submissions</strong>。所以老師 skip 掉一份逾期作業之後，那份作業<strong>已經交上來的提交還是留在 To Review</strong>。</p>
+      <div class="callout callout-info">
+        <strong>要跟後端確認：</strong>重新整理、後端重跑 <code>getTeacherAssignmentOverview</code> 時，被 <code>skipped</code> 的作業，它的 submissions 會不會一起被濾掉？前端這一側可以確定不會。
+      </div>
+
+      <h3>4.3　「這份沒問題」也得打字</h3>
+      <p><code>Send review</code> 在留言空白時是 disabled。老師想表達的「看過了、沒問題、不用回饋」，現在只能靠點一句 Quick review 湊出來——那會真的寄一段回饋給學生。<strong>「看過但不給回饋」現在沒有辦法表達。</strong></p>
+
+      <h3>4.4　Next student 會走回已批改的</h3>
+      <p>抽屜的導覽清單不吃分頁。從 To Review 分頁點進第一位、一路按 Next，中間會混進已經批改過的項目。加了 skip 之後這件事會更明顯：<strong>被 skip 掉的還會不會出現在導覽裡</strong>，得跟 <a class="inline" href="#open">§6 Q2</a> 一起決定。</p>
+
+      <h2 id="plan"><span class="num">5</span> 提案：Skip review</h2>
+
+      <p>在 To Review 面板標頭加一顆 <strong>Skip review</strong>，打開一個<strong>可多選</strong>的清單，勾完按一次就全部跳過。
+      解的是 <a class="inline" href="#issues">§4.1</a>：15 筆積了兩個月的提交，要能一次清掉，而不是逐筆點開抽屜。</p>
+
+      <p>做法是<strong>跟批改抽屜同一種開法</strong>——440px、從右側滑出、scrim 蓋住後面。
+      老師在這一頁本來就已經習慣「點一筆 → 右邊滑出來」，skip 用同一個動作，多學一種開窗方式的成本就省下來了。
+      一次看得到 11 列，15 筆幾乎一眼看完；只蓋住右欄，左欄 Active Assignments 還看得見。</p>
+
+      <div class="preview" style="height:558px">
+        <iframe style="width:1440px;height:1000px;transform:scale(.556)" src="skip-review-drawer.html?skip=1&amp;noblur=1" title="Skip review 側邊抽屜" loading="lazy"></iframe>
+      </div>
+      <div class="preview-cap">
+        <span>Skip review · 右側抽屜（440px 寬，一次看得到 11 列）</span>
+        <span>
+          <a href="skip-review-drawer.html" target="_blank" rel="noopener">另開 ↗</a> ·
+          <a href="skip-review-drawer.html?skip=1&amp;pick=stale" target="_blank" rel="noopener">已勾選的樣子 ↗</a>
+        </span>
+      </div>
+
+      <h3>5.1　逐項</h3>
+      <table>
+        <thead><tr><th style="width:150px">元素</th><th>行為</th></tr></thead>
+        <tbody>
+          <tr><td><strong>入口</strong></td><td>面板標頭右上一顆幽靈按鈕 <span class="pill p-gray">⃠ Skip review</span>——白底灰字、hover 轉紅，<strong>沿用左欄 Skip 的語彙</strong>（§3）。只在 <em>To Review</em> 分頁出現，切到 Reviewed 就收起來。</td></tr>
+          <tr><td><strong>清單排序</strong></td><td>只列未批改的，而且<strong>最舊的排最上面</strong>——跟面板本身相反。面板由新到舊，所以最該處理的沉在底部（§4.1）；這個抽屜就是為了撈那些，所以倒過來排。</td></tr>
+          <tr><td><strong>一列</strong></td><td>checkbox + 學生名 + 班級 chip + 型別 tag ／ 第二行練習名，右側天數。<strong>超過 30 天的天數標綠</strong>。整列可點（不用瞄準那個小方框）。</td></tr>
+          <tr><td><strong>Select all</strong></td><td>未勾時顯示 <em>Select all (15)</em>，勾了變 <em>12 selected</em>。部分勾選是綠色橫槓的半選狀態。再按一次全部取消。</td></tr>
+          <tr><td><strong>Older than 30 days</strong></td><td>一鍵把積很久的那些勾起來。這是最常見的動作，不用一列一列點。</td></tr>
+          <tr><td><strong>型別下拉</strong></td><td>打開時<strong>沿用面板當下的過濾</strong>，在抽屜裡還能再改。改了之後 Select all 的範圍跟著變。</td></tr>
+          <tr><td><strong>配色</strong></td><td>勾選中的列是淺灰底、checkbox 勾起來是產品主色綠、天數也是綠。<strong>紅色只留給底部那顆 Skip</strong>——紅色在這個畫面只代表「按下去會發生不可逆的事」。</td></tr>
+          <tr><td><strong>底部</strong></td><td><em>Cancel</em> ／ 紅色 <em>Skip review</em>——<strong>跟標頭的觸發鈕同名</strong>，不掛數字；要 skip 幾筆由左上的 <em>N selected</em> 交代。沒勾任何一筆時 disabled。<strong>整個畫面只有這顆是紅的</strong>。</td></tr>
+          <tr><td><strong>送出後</strong></td><td>那些提交<strong>移到 Reviewed 分頁</strong>，掛一枚<strong>灰色 <span class="pill p-gray">Skipped</span> 章</strong>跟真的批過的（綠色 <span class="pill p-green">Reviewed</span>）區分。To Review 計數下降、Reviewed 計數上升，toast <em>Skipped 12 submissions — moved to Reviewed</em>。（Q2 決定，2026-08-20）</td></tr>
+          <tr><td><strong>說明文案</strong></td><td>按鈕上方一句：<em>“Skipped submissions move to the Reviewed tab, marked Skipped. Students keep their score — they just will not get a teacher comment for this one.”</em> 講清楚 skip 掉的是「回饋」不是「成績」。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.2　為什麼不直接在清單列上放 checkbox</h3>
+      <p>清單那一列<strong>現在整列可點</strong>（點了開批改抽屜）。在同一列塞 checkbox，會有兩種點擊語意打架，而且 400px 寬的面板塞不下。skip 拉到獨立的一層之後，批改流程完全不受影響，是一條各走各的動線。</p>
+
+      <h3>5.3　skip 完之後：併進 Reviewed</h3>
+      <p><strong>Q2 決定（2026-08-20）：不加第三個分頁。</strong>skip 掉的提交移進 <em>Reviewed</em>，掛灰色 <span class="pill p-gray">Skipped</span> 章。
+      分頁維持兩個，老師的心智模型還是「待處理／處理完」，只是「處理完」有兩種：真的批過（綠章）和跳過（灰章）。</p>
+      <table>
+        <thead><tr><th style="width:170px">連帶影響</th><th>結果</th></tr></thead>
+        <tbody>
+          <tr><td>Reviewed 的計數</td><td>從此<strong>包含 skip 掉的</strong>。要看「真的批過幾份」得靠章的顏色分辨——這是選 C 的代價。</td></tr>
+          <tr><td>Skip review modal</td><td>只列未批改的，所以 skip 過的<strong>不會再出現</strong>在裡面。</td></tr>
+          <tr><td>批改抽屜</td><td>skipped 的顯示灰色 <em>Skipped</em>、不蓋藍色印章；<strong>打一段留言就能補批</strong>，送出後灰章變綠章。改變心意有路走，所以這一版不必先做 undo。</td></tr>
+          <tr><td>Previous／Next</td><td>本來就走得到 Reviewed 的項目（導覽清單不吃分頁，§2.3），所以 skip 過的也走得到——不需要額外處理。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.4　學生端：老師 skip 掉的那一筆長什麼樣</h3>
+      <p>老師端決定「skip 掉的併進 Reviewed」（<a class="inline" href="#plan">§5.3</a>），學生端就得有對應的落點，否則那一筆會永遠卡在「等待老師批改」。
+      決定是：<strong>也出現在 History 的 Reviewed 裡</strong>。</p>
+
+      <div class="preview" style="height:622px">
+        <iframe style="width:1280px;height:1000px;transform:scale(.62)" src="student.html?screen=hist&amp;hist=reviewed&amp;open=global-warming" title="學生端 History · Reviewed" loading="lazy"></iframe>
+      </div>
+      <div class="preview-cap">
+        <span>學生端 · History → Reviewed（上面是真的批過的，下面展開的是老師 skip 掉的）</span>
+        <span><a href="student.html?screen=hist&amp;hist=reviewed&amp;open=global-warming" target="_blank" rel="noopener">另開 ↗</a></span>
+      </div>
+
+      <table>
+        <thead><tr><th style="width:150px">學生看到的</th><th>怎麼做的</th></tr></thead>
+        <tbody>
+          <tr><td><strong>狀態章</strong></td><td>綠色 <span class="pill p-green">Reviewed</span>——<strong>跟真的批過的一模一樣</strong>。學生端不引進「Skipped」這個詞；被跳過是老師的作業流程，不是學生要學的概念。</td></tr>
+          <tr><td><strong>Reviewed 篩選</strong></td><td>吃得到。學生按 <em>Reviewed</em> 就看得到這一筆，不會漏掉。</td></tr>
+          <tr><td><strong>「等待老師批改」</strong></td><td><strong>收掉了</strong>——這正是這一版要解的：不讓學生空等一個不會來的回饋。</td></tr>
+          <tr><td><strong>老師回饋卡</strong></td><td>換成一張灰色的中性卡，<strong>只有一行字：<em>No teacher comment</em></strong>。不解釋、不道歉——那一格本來就是放老師留言的，寫「沒有」就夠了，多寫反而把一件小事講成一件事。</td></tr>
+          <tr><td><strong>AI Summary</strong></td><td><strong>照常顯示</strong>。AI 評語本來就是自動產生的，跟老師批不批改無關——所以學生不是什麼都沒拿到。</td></tr>
+          <tr><td><strong>未讀紅點</strong></td><td>沒有。沒有新的東西可讀，不該叫學生點進來。</td></tr>
+          <tr><td><strong>分數 / Tries / Growth</strong></td><td>照常。Redo to improve 也照常——想再練一次的路沒有被關掉。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>這個檔案是從 redesign 那條線複製過來的。</strong>
+        <code>student.html</code> 的來源是 <code>specs/chinese-modules/student-redesign.html</code>（redesign v0–v12 那條探索線），
+        <strong>不是現行學生端產品</strong>——那條線比現行產品早很多。所以這一頁展示的是「這個設計放進那個未來版學生端會長什麼樣」，
+        真的要上線時得回頭對照現行學生端的 History 長什麼樣。原檔沒有被動到（<a class="inline" href="../../VERSIONING-WORKFLOW.md">兩條線互不覆寫</a>）。
+      </div>
+
+      <h3>5.5　這一版<em>沒有</em>做的</h3>
+      <p>下面這些是 <a class="inline" href="#open">§6</a> 的直接後果（重新盤過之後，只剩後端欄位）：</p>
+      <table>
+        <thead><tr><th style="width:170px">沒做的</th><th>目前的行為</th><th style="width:120px">對應</th></tr></thead>
+        <tbody>
+          <tr><td>Undo</td><td>不做。skip 掉的留在 Reviewed 看得到，打開來補批就是復原路徑（<a class="inline" href="#open">§6 Q4</a> 已收斂）</td><td>Q4</td></tr>
+          <tr><td>學生端</td><td><strong>已經做了</strong>——見 <a class="inline" href="#plan">§5.4</a>（Q3 已決定）</td><td>Q3</td></tr>
+          <tr><td>後端</td><td>純前端 state，重整就回來。正式做要加 <code>submissions.skipped</code> 欄位（<a class="inline" href="#open">§6 Q6</a>，已不是選擇題）</td><td>Q6</td></tr>
+          <tr><td>命名</td><td><strong>已決定</strong>——兩顆都叫 <em>Skip review</em>（<a class="inline" href="#open">§6.4</a>）</td><td>§6.4</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="open"><span class="num">6</span> 待決事項——重新盤過</h2>
+
+      <p>原本列了六題。畫完 <a class="inline" href="#plan">§5</a> 之後回頭看，<strong>四題已經不用討論</strong>——
+      一題你已經拍板，兩題被設計本身回答掉了（做出來就沒有第二種可能），一題有了替代路徑。
+      <strong>Q3 與命名也在 2026-08-20 拍板了</strong>——六題全數收斂，只剩<strong>後端欄位</strong>和<strong>問後端一件事</strong>兩項待辦。</p>
+
+      <table>
+        <thead><tr><th style="width:52px"></th><th style="width:190px">題目</th><th style="width:110px">狀態</th><th>一句話</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Q1</strong></td><td>skip 的對象</td><td><span class="stat st-shut">不用討論</span></td><td>設計本身回答了：單位是<strong>一筆提交</strong>，一次多筆只是多選同一個單位</td></tr>
+          <tr><td><strong>Q2</strong></td><td>skip 完去哪</td><td><span class="stat st-done">已決定</span></td><td>併進 <em>Reviewed</em>，掛灰色 Skipped 章（2026-08-20，你決定的）</td></tr>
+          <tr><td><strong>Q3</strong></td><td>學生端看得到嗎</td><td><span class="stat st-done">已決定</span></td><td>也進學生的 History → Reviewed；收掉「等待批改」，換成一句「沒有老師留言、成績還在」（2026-08-20）</td></tr>
+          <tr><td><strong>Q4</strong></td><td>能不能復原</td><td><span class="stat st-shut">不用討論</span></td><td>Q2 之後已經有復原路徑：打開來補批，灰章變綠章</td></tr>
+          <tr><td><strong>Q5</strong></td><td>按鈕放哪</td><td><span class="stat st-shut">不用討論</span></td><td>設計本身回答了：面板標頭 → 專屬的多選畫面</td></tr>
+          <tr><td><strong>Q6</strong></td><td>後端怎麼存</td><td><span class="stat st-todo">待辦</span></td><td>只剩一個做得到的選項，不是選擇題了</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.1　不用討論了</h3>
+
+      <div class="q shut">
+        <div class="qh"><span class="qn">Q1</span>skip 的對象是「一筆提交」還是「一批」？<span class="closed">設計回答掉了</span></div>
+        <div class="shutbox">
+          <strong>單位就是一筆提交，「一批」不是另一種東西。</strong>
+          原本把它當成三選一（逐筆／整批／兩個都做），是因為還沒有畫面。畫出來之後才看清楚：
+          多選清單裡<strong>勾一筆是逐筆、Select all 是整批</strong>——同一個單位、同一個動作，不需要兩套 UI、也不需要「skip 整個練習」這種另一種資料層級。
+          原本的選項 C（兩個都要）等於就是現在這個東西，只是不用做成兩套。
+        </div>
+        <div class="shutbox" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-top:8px">
+          <strong>唯一殘留的小問題：</strong>現在只能依<strong>型別</strong>篩選。如果老師想「把某個練習的全部放過」（例如全球暖化那一批），得自己一列一列勾。
+          要不要多一個「依練習」的篩選？——這是小功能，不是原本 Q1 的層級。
+        </div>
+        <details>
+          <summary>當初列的選項</summary>
+          <table>
+            <thead><tr><th style="width:150px">選項</th><th>意思</th><th style="width:230px">代價</th></tr></thead>
+            <tbody>
+              <tr><td><strong>A. 一筆提交</strong></td><td>某個學生的某一次提交，這一筆不批了</td><td>15 筆要點 15 次</td></tr>
+              <tr><td><strong>B. 一批</strong></td><td>某個練習／某個班／某個時間之前的全部一次放過</td><td>誤操作代價大，要能復原</td></tr>
+              <tr><td><strong>C. 兩個都要</strong></td><td>逐筆 + 一個「全部標為不用批改」</td><td>兩套 UI、兩套文案</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="q done">
+        <div class="qh"><span class="qn">Q2</span>被 skip 的提交去哪裡？<span class="decided">已決定 · 2026-08-20</span></div>
+        <div class="ans"><strong>選 C：併進 Reviewed。</strong>不加第三個分頁——skip 完就進 <em>Reviewed</em>，用<strong>灰色 Skipped 章</strong>跟真的批過的（綠色 Reviewed 章）區分。
+        連帶：分頁還是兩個、Reviewed 的計數從此包含 skip 掉的、抽屜的 Previous／Next 走得到它們。細節見 <a class="inline" href="#plan">§5.3</a>。</div>
+      </div>
+
+      <div class="q shut">
+        <div class="qh"><span class="qn">Q4</span>可以復原嗎？<span class="closed">Q2 之後就有路了</span></div>
+        <div class="shutbox">
+          <strong>已經有復原路徑，不必另外做 undo。</strong>
+          Q2 決定 skip 掉的東西<strong>留在 Reviewed 分頁看得到</strong>——不是消失。老師改變心意，點開它、打一段留言送出，就轉成真的 review、灰章變綠章。
+          「按錯了找不回來」這個原本的風險，在 Q2 選 C 的那一刻就消失了。
+        </div>
+        <div class="shutbox" style="margin-top:8px">
+          <strong>要你點一下頭的只有一件事：</strong>還缺的是「skipped → 退回<em>未批改</em>」（丟回 To Review）。
+          我認為<strong>不需要</strong>——想批就直接批，退回去只是多繞一圈。除非你要。
+        </div>
+        <details>
+          <summary>當初列的選項</summary>
+          <table>
+            <thead><tr><th style="width:150px">選項</th><th>意思</th></tr></thead>
+            <tbody>
+              <tr><td><strong>A. 不能</strong></td><td>跟左欄一致；那 skip 前一定要有確認 modal</td></tr>
+              <tr><td><strong>B. Toast 上的 Undo</strong></td><td>幾秒內可以收回，過了就沒了</td></tr>
+              <tr><td><strong>C. 永遠可以</strong></td><td>Skipped 分頁裡每一列都能「還原成待批改」</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="q shut">
+        <div class="qh"><span class="qn">Q5</span>按鈕放在哪？<span class="closed">設計回答掉了</span></div>
+        <div class="shutbox">
+          <strong>答案是當初三個選項以外的第四種：面板標頭 → 一個專屬的多選畫面。</strong>
+          當初問的是「清單列 hover／抽屜裡／兩處都放」，前提是<strong>一次 skip 一筆</strong>。
+          多選之後這個前提不成立了：入口只需要一個，放在面板標頭；勾選在專屬畫面裡做，所以列上不必塞 checkbox（<a class="inline" href="#plan">§5.2</a>），抽屜裡也不必再放一顆。
+          選項 A 擔心的「觸控沒有 hover」也一起解決了。
+        </div>
+        <div class="shutbox" style="margin-top:8px">
+          剩下的只是<strong>這個畫面長什麼樣</strong>——見 <a class="inline" href="#plan">§5</a>，那是外觀不是待決事項。
+        </div>
+        <details>
+          <summary>當初列的選項</summary>
+          <table>
+            <thead><tr><th style="width:180px">選項</th><th>意思</th><th style="width:230px">代價</th></tr></thead>
+            <tbody>
+              <tr><td><strong>A. 清單列上（hover）</strong></td><td>不用打開就能放過</td><td>觸控裝置沒有 hover；要擋住冒泡</td></tr>
+              <tr><td><strong>B. 抽屜裡</strong></td><td>看過內容再決定</td><td>每一筆都要開一次抽屜</td></tr>
+              <tr><td><strong>C. 兩處都放</strong></td><td>快速通道 + 看完再決定</td><td>兩個入口的文案與確認要一致</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <h3>6.2　Q3 學生端</h3>
+
+      <div class="q done">
+        <div class="qh"><span class="qn">Q3</span>學生端看得到嗎？<span class="decided">已決定 · 2026-08-20</span></div>
+        <div class="ans"><strong>選 B（收掉等待狀態），再加一句說明。</strong>
+        老師 skip 掉的一樣出現在學生的 <strong>History → Reviewed</strong>，狀態章跟真的批過的一樣是綠色 <em>Reviewed</em>——
+        學生端不引進「Skipped」這個詞。「等待老師批改」收掉，老師回饋卡換成一張灰色中性卡、只寫 <em>No teacher comment</em>，AI Summary 照常顯示。
+        畫面見 <a class="inline" href="#plan">§5.4</a>。</div>
+        <div class="shutbox" style="margin-top:8px">
+          <strong>文案定案（2026-08-20）：只寫 <em>No teacher comment</em>。</strong>
+          原本還接了一句「老師看過但沒留言，成績有記錄」，拿掉了——那一格本來就是放老師留言的，寫「沒有」就夠了，
+          多解釋反而把一件小事講成一件事，也不必替老師交代他為什麼沒批。成績、AI Summary、Redo 都還在畫面上，學生自己看得到。
+        </div>
+        <table>
+          <thead><tr><th style="width:150px">選項</th><th>意思</th><th style="width:250px">代價</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A. 完全不動</strong></td><td>純老師端的整理工具，學生那邊維持「等待批改中」</td><td>學生會一直等一個不會來的東西</td></tr>
+            <tr><td><strong>B. 收掉等待狀態</strong></td><td>學生端不再顯示「等待老師批改」，但也不說被跳過</td><td>學生不知道發生什麼事，但至少不會空等</td></tr>
+            <tr><td><strong>C. 明說</strong></td><td>學生看到「這次不另外給回饋」</td><td>誠實，但學生可能覺得被略過</td></tr>
+          </tbody>
+        </table>
+        <div class="shutbox" style="margin-top:10px">
+          <strong>提醒：</strong>目前畫面上那句文案是
+          <em>“Students keep their score — they just will not get a teacher comment for this one.”</em>——
+          它已經<strong>暗示了 B</strong>（成績還在、回饋不會來）。這一題的答案會回頭改這句話。
+        </div>
+      </div>
+
+      <h3>6.3　這兩件是待辦，不是決定</h3>
+
+      <div class="q shut">
+        <div class="qh"><span class="qn">Q6</span>後端怎麼存？<span class="closed">只剩一個選項</span></div>
+        <div class="shutbox">
+          <strong>只能是 A：<code>submissions</code> 多一個 <code>skipped</code> 欄位（＋<code>skippedAt</code>）。</strong>另外兩個選項被 Q2 淘汰掉了：
+          <ul style="margin:8px 0 0 20px">
+            <li><strong>B 借用 <code>reviewed</code></strong> —— 做不到。Q2 決定要用灰章跟綠章區分，借用就分不出來了。</li>
+            <li><strong>C 純前端</strong> —— 做不到。skip 掉的要留在 Reviewed 分頁，重整就跑回來的東西留不住。</li>
+          </ul>
+          所以這不是選擇題了，是一張要開給後端的單：<code>submissions</code> 加欄位、<code>getTeacherAssignmentOverview</code> 回傳它、一支寫入的 mutation（命名建議跟左欄的 <code>upsertAssignment.skipped</code> 對齊）。
+        </div>
+      </div>
+
+      <div class="q shut">
+        <div class="qh">要跟後端問的一件事<span class="closed">查證</span></div>
+        <div class="shutbox">
+          <a class="inline" href="#issues">§4.2</a>：一份作業被 <code>skipped</code> 之後，它<strong>已經交上來的 submissions</strong> 會不會從 To Review 消失？
+          前端這一側可以確定不會（<code>handleSkipConfirm</code> 只 filter <code>assignments</code>）；後端重跑那支 query 時會不會濾掉，只有後端知道。
+          如果<strong>會</strong>，這一版的量會少掉一塊——那些提交本來就會自己不見。
+        </div>
+      </div>
+
+      <h3>6.4　命名</h3>
+      <div class="q done">
+        <div class="qh">這顆按鈕叫什麼？<span class="decided">已決定 · 2026-08-20</span></div>
+        <div class="why">左欄現行產品已經有一顆 <em>Skip</em>（管「沒交的人」），右欄這顆管「交了沒批」。</div>
+        <div class="ans">
+          <strong>兩顆都叫 <em>Skip review</em>。</strong>面板標頭的觸發鈕、畫面裡的送出鈕，同一個名字從頭到尾。
+          原本送出鈕叫單獨的 <em>Skip</em>，改掉了——<strong>這一側從此沒有任何地方只寫 Skip</strong>，
+          所以跟左欄那顆 <em>Skip</em>（Skip assignment）不會撞名，靠的是名字本身而不是「所在面板」去分辨。
+          <em>No feedback needed</em> 不採用：太長，而且它描述的是後果、不是動作。
+        </div>
+        <div class="shutbox" style="margin-top:8px">
+          兩個 skip 現在這樣分：<br>
+          <strong>左欄 <em>Skip</em>（Skip assignment）</strong> —— 不再催沒交的人。<br>
+          <strong>右欄 <em>Skip review</em></strong> —— 交了但不批改。
+        </div>
+      </div>
+
+      <h2 id="base"><span class="num">7</span> 基準檔</h2>
+
+      <p>下面這一頁是 <strong>現行 teacher-dashboard 的複刻</strong>——顏色、字級、圓角、間距逐項照抄程式碼裡的 <code>sx</code>，行為（分頁計數、型別過濾、抽屜導覽走全清單、Send review 需要留言、左欄 Overdue 的 Skip + 確認 modal）也照著實作。<strong>沒有加任何 skip</strong>——Skip review 就是長在這之上，兩頁並排看就是這一版改了什麼。假資料照截圖捏，分頁計數同樣是 15 / 11。</p>
+
+      <div class="preview">
+        <iframe src="teacher-dashboard.html" title="v2 基準：現行 teacher-dashboard" loading="lazy"></iframe>
+      </div>
+      <div class="preview-cap">
+        <span>基準 · 現行產品複刻（dahua-dash <code>origin/develop</code> @ 1cca25a6）</span>
+        <span>
+          <a href="teacher-dashboard.html" target="_blank" rel="noopener">另開 ↗</a> ·
+          <a href="teacher-dashboard.html?drawer=1" target="_blank" rel="noopener">直接開批改抽屜 ↗</a>
+        </span>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>下一步。</strong> 畫面在 §5，決定與理由在 §6。基準檔保留不動，方便並排比對。改動逐項記在 <a class="inline" href="ITERATION.md">ITERATION.md</a>，流程見
+        <a class="inline" href="../../VERSIONING-WORKFLOW.md">VERSIONING-WORKFLOW.md</a>。
+      </div>
+
+      <footer>v2 · To Review 增加 Skip — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = document.querySelectorAll('.sidebar a');
+    const sections = [...links].map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let i = 0;
+      sections.forEach((s, n) => { if (s && s.getBoundingClientRect().top <= 80) i = n; });
+      links.forEach((a, n) => a.classList.toggle('active', n === i));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>

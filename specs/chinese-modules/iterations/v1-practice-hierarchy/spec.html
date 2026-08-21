@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — v1 · Practice 練習層級優化</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; }
+    .none { color: #cbd5e1; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 605px; position: relative; }
+    .preview iframe { width: 1160px; height: 720px; border: 0; transform: scale(.84); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview.tall { height: 640px; }
+    .preview.tall iframe { height: 762px; }
+    .preview.taller { height: 664px; }
+    .preview.taller iframe { height: 790px; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v1 · Practice 練習層級優化</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#hierarchy">2 · 現況：練習層級</a></li>
+        <li><a href="#issues">3 · 查到的問題</a></li>
+        <li><a href="#proposal">4 · 提案</a></li>
+        <li><a href="#locked">5 · 素材未建立時</a></li>
+        <li><a href="#open">6 · 待決事項</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v1 — Practice 練習層級優化</h1>
+        <p class="subtitle">Choose Practice Type 把兩層結構壓成一層，壓完之後產生兩組同名項目。這一版處理的就是這件事。</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>老師端</span>
+          <span>Source: dahua-dash <code>origin/develop</code> @ 42b56202</span>
+          <span>Updated: 2026-08-19</span>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>沙盒。</strong> 三個提案：<a class="inline" href="choose-practice-type-a.html">A 攤平</a>、<a class="inline" href="choose-practice-type-b.html">B ＋同源標題</a>、<a class="inline" href="choose-practice-type-c.html">C ＋示意圖</a>；另有 <a class="inline" href="locked-state.html">素材未建立時的鎖定狀態</a>。
+        改動紀錄在 <a class="inline" href="ITERATION.md">ITERATION.md</a>，流程見 <a class="inline" href="../../VERSIONING-WORKFLOW.md">VERSIONING-WORKFLOW.md</a>。
+      </div>
+
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+
+      <p>只動 <strong>Choose Practice Type</strong> 這一頁——老師按下 <code>New Practice</code> 之後跳出來、六張卡並排的那個對話框。</p>
+
+      <table>
+        <thead><tr><th style="width:120px">項目</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr><td>功能名稱</td><td>Practice 練習層級優化</td></tr>
+          <tr><td>線上網址</td><td><a class="inline" href="https://dahua-dash-dev.web.app/dashboard/practice/" target="_blank" rel="noopener">dahua-dash-dev.web.app/dashboard/practice/</a></td></tr>
+          <tr><td>程式碼</td><td><code>src/sections/practice/components/AddNewPracticeDialog.js</code></td></tr>
+          <tr><td>範圍外</td><td>Practice List 頁本身、各類型的建立流程內頁</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="hierarchy"><span class="num">2</span> 現況：練習層級</h2>
+
+      <p>現況其實是<strong>兩層</strong>，但六張卡把它壓成一層——只有 Vocabulary 和 Sentence Patterns 有第二層，而第二層藏在建立流程的第 2 步裡，在選擇的當下完全看不到。</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:150px">第一層（六選一）</th>
+            <th style="width:230px">第二層（子項目）</th>
+            <th>完整步驟</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Mirroring</strong></td>
+            <td class="none">無</td>
+            <td>Content → Settings &amp; Preview → Assign</td>
+          </tr>
+          <tr>
+            <td><strong>Vocabulary</strong></td>
+            <td>
+              <span class="pill p-green">Mirroring</span>
+              <span class="pill p-blue">Multiple Choice</span><br>
+              <span class="pill p-gray">Mixed Mode</span> 已註解、標 Coming Soon
+            </td>
+            <td>Vocabulary → <strong>Practice Type</strong> → Settings → Assign<br>
+                <span style="color:#94a3b8">選 Multiple Choice 時多一步：</span>Vocabulary → Practice Type → <strong>Question Types</strong> → Settings → Assign</td>
+          </tr>
+          <tr>
+            <td><strong>Sentence Patterns</strong></td>
+            <td>
+              <span class="pill p-green">Guided Response</span>
+              <span class="pill p-blue">Sentence Building</span>
+            </td>
+            <td>Teaching Points → <strong>Practice Type</strong> → Question Review → Settings → Assign</td>
+          </tr>
+          <tr>
+            <td><strong>Sentence Scramble</strong></td>
+            <td class="none">無</td>
+            <td>Content → Edit Sentences → Settings → Assign</td>
+          </tr>
+          <tr>
+            <td><strong>Multiple Choice</strong></td>
+            <td class="none">無</td>
+            <td>Question Bank → Edit &amp; Preview → Assign</td>
+          </tr>
+          <tr>
+            <td><strong>QA</strong></td>
+            <td class="none">無</td>
+            <td>Content → Settings &amp; Preview → Assign</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>出處。</strong>
+        步驟表 <code>practice-unified-view.js</code> 的 <code>STEPS_BY_TYPE</code> / <code>VOCABULARY_MC_STEPS</code>；
+        子項目 <code>step-two-vocabulary-type.js</code>、<code>step-two-sentence-pattern-type.js</code>、
+        <code>vocabulary/create/practice-type-selection.js</code>；
+        列表與篩選 <code>practice/view/index.js</code>。
+      </div>
+
+      <h2 id="issues"><span class="num">3</span> 查到的問題</h2>
+
+      <h3>3.1　同名不同物，而且有兩組</h3>
+      <p>第一層和第二層各有一個 <strong>Mirroring</strong> 和一個 <strong>Multiple Choice</strong>，名字一樣但完全是兩回事。老師在第一層看到的六張卡，其中兩張會在第二層再出現一次、意思卻不同。</p>
+
+      <table>
+        <thead><tr><th style="width:220px">名稱</th><th style="width:150px">出現在</th><th>素材來源</th><th>步驟</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Multiple Choice</strong></td><td>第一層</td><td>題庫 Question Bank</td><td>Question Bank → Edit &amp; Preview → Assign</td></tr>
+          <tr><td><strong>Multiple Choice</strong></td><td>Vocabulary 第二層</td><td>生詞</td><td>Vocabulary → Practice Type → Question Types → Settings → Assign</td></tr>
+          <tr><td><strong>Mirroring</strong></td><td>第一層</td><td>課文句子</td><td>Content → Settings &amp; Preview → Assign</td></tr>
+          <tr><td><strong>Mirroring</strong></td><td>Vocabulary 第二層</td><td>生詞</td><td>Vocabulary → Practice Type → Settings → Assign</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.2　依賴關係在選擇畫面上看不出來</h3>
+      <p>六張卡視覺權重完全相同，但性質差很多：</p>
+      <ul>
+        <li><strong>Mirroring / Vocabulary / Sentence Scramble / Sentence Patterns</strong> — 直接從 Project 內容生成。</li>
+        <li><strong>Multiple Choice / QA</strong> — 需要<strong>題庫</strong>。從 Project 進來時會先跳出「Select a Question Bank」第二步；該 Project 沒有題庫的話只能先去建一個。</li>
+      </ul>
+      <p>這個分岔在選卡的當下完全沒有提示，老師要點下去才知道。</p>
+
+      <h3>3.3　Sentence Patterns 的權限不一致</h3>
+      <p>Practice List 的類型篩選用 <code>isDahuaAdmin</code> 把 <code>FOLLOW_PATTERN</code> 藏起來，但這個對話框裡那張卡<strong>沒有同樣的判斷</strong>。結果是一般老師建得出 Sentence Patterns 練習，卻無法在列表中篩選它。</p>
+
+      <h3>3.4　六張裡三張掛 NEW</h3>
+      <p>Sentence Patterns、Sentence Scramble、Multiple Choice 都有 NEW 徽章。一半的卡都是新的，這個標記已經失去指示作用。</p>
+
+      <h3>3.5　Mixed Mode 資料層還在、UI 已拿掉</h3>
+      <p><code>practice-type-selection.js</code> 裡 <code>mixed</code>（Combined practice modes）整段被註解、<code>available: false</code>；但 enum <code>VOCABULARY_PRACTICE_TYPES.MIXED</code> 和兩張 UI↔DB 對照表都還留著。要嘛補回來、要嘛連資料層一起清掉。</p>
+
+      <h2 id="proposal"><span class="num">4</span> 設計決定</h2>
+
+      <div class="callout callout-tip">
+        <strong>已決定（2026-08-19）。</strong> 第二層<strong>全部攤平</strong>成八張同層卡片；八個名稱<strong>全部重新定義</strong>成一套系統。
+        設計檔：<a class="inline" href="choose-practice-type-a.html">choose-practice-type-a.html</a>
+      </div>
+
+      <h3>提案 A — 攤平八張</h3>
+      <div class="preview">
+        <iframe src="choose-practice-type-a.html" title="提案 A" loading="lazy"></iframe>
+      </div>
+      <p class="preview-cap">
+        <span>八張同層卡片，4 欄 × 2 列，同素材直向成對。顏色與 icon 全部沿用 live。</span>
+        <a href="choose-practice-type-a.html" target="_blank" rel="noopener">原尺寸開啟 ↗</a>
+      </p>
+
+      <h3>提案 B — 攤平八張 ＋ 同源標題</h3>
+      <p>卡片跟 A 完全一樣，只在<strong>每一欄上方加一個共用標題</strong>，講明這一欄的兩張<strong>考的是同一批素材</strong>：
+         <code>Sentence</code>、<code>Vocabulary</code>、<code>Teaching Points</code>、<code>Question Bank</code>。</p>
+      <p>沒有群組框線、沒有底色，只是欄位上方多一行小字，所以 A 的扁平感大致保留；
+         但四種素材的關係從「要自己看出來」變成「直接寫在上面」。</p>
+      <div class="preview tall">
+        <iframe src="choose-practice-type-b.html" title="提案 B" loading="lazy"></iframe>
+      </div>
+      <p class="preview-cap">
+        <span>四個共用標題，各罩住同一欄的兩張卡。卡片名稱維持完整，不因為有了標題就縮短。</span>
+        <a href="choose-practice-type-b.html" target="_blank" rel="noopener">原尺寸開啟 ↗</a>
+      </p>
+
+      <div class="callout callout-info">
+        <strong>三個設計判斷。</strong><br>
+        <strong>① 標題講「在考什麼」，不是「取材自哪裡」。</strong> 用 <code>Sentence</code> 而不是 <code>From the passage</code>——
+        老師要判斷的是這一批練習在練哪一種東西，不是資料從哪來。<br>
+        <strong>② 名稱不縮短。</strong> 有了 <code>Sentence</code> 標題之後，卡片其實可以縮成 <code>Mirroring</code>、<code>Scramble</code>，
+        但那會讓兩個 <code>Mirroring</code> 並排、必須靠上方標題才分得出來。維持完整名稱，卡片單獨被引用時（列表、篩選、通知）也還說得清楚自己是誰。<br>
+        <strong>③ 標題和卡片放在同一個 grid。</strong> 不是切成四個獨立欄位——同一個 grid 排三列，跨欄的 icon、標題、說明文字才會落在同一條線上。
+      </div>
+
+      <h3>提案 C — 攤平八張 ＋ 學生畫面示意圖</h3>
+      <p>把 icon 圓換成一張<strong>學生實際會看到的畫面縮圖</strong>。老師不必從名字推敲，直接看出這個練習長什麼樣、學生要做什麼動作。</p>
+      <p>示意圖沿用 <a class="inline" href="../../teacher-planning.html">teacher-planning.html</a> 已經畫過的那一套（<code>THUMB</code>，136×56 畫布）：
+         <span style="color:#64748b">灰色</span>是內容，<span style="color:#059669;font-weight:700">綠色</span>是學生實際會動到的部分——
+         播放鍵、麥克風、被選中的選項、要填的空格。六張直接對應現有的圖，Pattern Response 與 Pattern Building 照同一套語彙補畫。</p>
+      <div class="preview taller">
+        <iframe src="choose-practice-type-c.html" title="提案 C" loading="lazy"></iframe>
+      </div>
+      <p class="preview-cap">
+        <span>八張示意圖：兩行帶播放鍵的句子 · 詞塊與空格 · 生詞卡加麥克風 · 選項三選一 · 句型填空後開口說 · 教學點造句 · 題目三選一 · 提示後開口說。</span>
+        <a href="choose-practice-type-c.html" target="_blank" rel="noopener">原尺寸開啟 ↗</a>
+      </p>
+
+      <div class="callout callout-info">
+        <strong>C 的取捨。</strong><br>
+        <strong>① 示意圖取代 icon 圓，不是並存。</strong> 兩個都放會太重，而且縮圖本身已經是最強的辨識物。代價是<strong>失去 live 的六個顏色</strong>——
+        卡片不再靠顏色區分，靠圖形。<br>
+        <strong>② 同一個練法的兩張圖刻意相似。</strong> Vocabulary Quiz 和 Question Bank Quiz 都是「題目＋三個選項、中間那個是綠的」，
+        差別只在選項寬度——因為它們對學生來說本來就幾乎一樣，差的是素材而不是動作。這點<em>看得出來</em>反而是準確的。<br>
+        <strong>③ C 可以和 B 疊加。</strong> 示意圖與欄位標題不衝突，要的話可以同時有。這裡分開畫是為了讓每個提案只多一個變因。
+      </div>
+
+      <h3>4.1　攤平之後剛好是 4 種素材 × 2 個練法</h3>
+
+      <p>把兩層壓平之後數出來是八個，而這八個不是散的——它們自然分成<strong>四種素材</strong>，每種素材各有<strong>兩個練法</strong>。名稱系統就建立在這個結構上：<code>素材 + 練法</code>。</p>
+
+      <div class="formula">           練法 ①                 練法 ②
+句子       Sentence Mirroring     Sentence Scramble
+生詞       Vocabulary Mirroring   Vocabulary Quiz
+教學點     Pattern Response       Pattern Building
+題庫       Question Bank Quiz     Question Bank QA</div>
+
+      <p>版面上就照這個結構排：<strong>4 欄 × 2 列，同一種素材直向成對</strong>。卡片之間沒有任何分組框線（維持方案 A 的扁平），靠欄位對齊表達同源關係。</p>
+
+      <h3>4.2　八個名稱</h3>
+
+      <table>
+        <thead><tr><th style="width:200px">新名稱</th><th style="width:90px">素材</th><th style="width:210px">現在叫什麼</th><th>說明文字</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentence Mirroring</strong></td><td><span class="pill p-green">句子</span></td><td>Mirroring Practice</td><td>Listen and repeat each sentence</td></tr>
+          <tr><td><strong>Sentence Scramble</strong></td><td><span class="pill p-green">句子</span></td><td>Sentence Scramble<br><span style="color:#94a3b8">（不變）</span></td><td>Listen, then reorder the words</td></tr>
+          <tr><td><strong>Vocabulary Mirroring</strong></td><td><span class="pill p-amber">生詞</span></td><td>Vocabulary → Mirroring</td><td>Listen and repeat each word</td></tr>
+          <tr><td><strong>Vocabulary Quiz</strong></td><td><span class="pill p-amber">生詞</span></td><td>Vocabulary → Multiple Choice</td><td>Image, pinyin &amp; meaning</td></tr>
+          <tr><td><strong>Pattern Response</strong></td><td><span class="pill p-blue">教學點</span></td><td>Sentence Patterns → Guided Response</td><td>Answer questions using a pattern</td></tr>
+          <tr><td><strong>Pattern Building</strong></td><td><span class="pill p-blue">教學點</span></td><td>Sentence Patterns → Sentence Building</td><td>Build sentences from teaching points</td></tr>
+          <tr><td><strong>Question Bank Quiz</strong></td><td><span class="pill p-purple">題庫</span></td><td>Multiple Choice</td><td>Auto-graded questions from a bank</td></tr>
+          <tr><td><strong>Question Bank QA</strong></td><td><span class="pill p-purple">題庫</span></td><td>QA Practice</td><td>Open questions, AI assessment</td></tr>
+        </tbody>
+      </table>
+
+      <p>幾個名稱的理由：</p>
+      <ul>
+        <li><strong>兩個 Mirroring、兩個 Quiz 保留同名是刻意的。</strong> 它們確實是同一個練法，差別就在素材——前綴講清楚就夠，不需要發明兩個不相干的字（§3.1 的同名問題因此消失，而不是被繞開）。</li>
+        <li><strong><code>Multiple Choice</code> 改成 <code>Question Bank Quiz</code></strong>，把 §3.2 的題庫依賴直接寫進名字裡。<code>QA Practice</code> 同樣加上 <code>Question Bank</code> 前綴——它一樣需要題庫，只是原本看不出來。</li>
+        <li><strong><code>Sentence Patterns</code> 這個層級消失</strong>，兩個子項目改用 <code>Pattern</code> 前綴，維持系統一致。</li>
+        <li><strong><code>Sentence Scramble</code> 是八個裡唯一不用改的</strong>——它本來就叫這個名字，而且素材正好是句子，天生就符合這套系統，跟 <code>Sentence Mirroring</code> 同源同色。原本第一層的 <code>Mirroring Practice</code> 反而要補上 <code>Sentence</code> 前綴才對得起來。</li>
+      </ul>
+
+      <h3>4.3　顏色與 icon：先貼齊 live</h3>
+      <p>這一版<strong>不動任何視覺</strong>——六個顏色原封不動沿用現在線上的樣子，icon 也全部取自現有程式碼。拆出來的四張卡用<strong>母卡的顏色</strong>（Vocabulary 兩張都是琥珀、Sentence Patterns 兩張都是藍綠），icon 則用子項目自己在第二層畫面上已經有的那一個。</p>
+      <table>
+        <thead><tr><th style="width:190px">卡片</th><th style="width:180px">icon</th><th style="width:130px">顏色</th><th>來源</th></tr></thead>
+        <tbody>
+          <tr><td>Sentence Mirroring</td><td><code>ic:round-mic</code></td><td><span class="pill p-green">primary</span></td><td>對話框 Mirroring Practice</td></tr>
+          <tr><td>Sentence Scramble</td><td><code>ic:round-view-column</code></td><td><span class="pill" style="background:#FCE7F3;color:#BE185D">#EC4899</span></td><td>對話框 Sentence Scramble</td></tr>
+          <tr><td>Vocabulary Mirroring</td><td><code>ic:round-flip</code></td><td><span class="pill p-amber">warning</span></td><td>icon 來自第二層子選單，顏色來自母卡 Vocabulary</td></tr>
+          <tr><td>Vocabulary Quiz</td><td><code>ic:round-checklist</code></td><td><span class="pill p-amber">warning</span></td><td>同上</td></tr>
+          <tr><td>Pattern Response</td><td><code>ic:round-question-answer</code></td><td><span class="pill" style="background:#E0F2F1;color:#00695C">#00897B</span></td><td>icon 來自第二層子選單，顏色來自母卡 Sentence Patterns</td></tr>
+          <tr><td>Pattern Building</td><td><code>ic:round-construction</code></td><td><span class="pill" style="background:#E0F2F1;color:#00695C">#00897B</span></td><td>同上</td></tr>
+          <tr><td>Question Bank Quiz</td><td><code>ic:round-quiz</code></td><td><span class="pill p-purple">#7C3AED</span></td><td>對話框 Multiple Choice</td></tr>
+          <tr><td>Question Bank QA</td><td><code>ic:round-chat-bubble</code></td><td><span class="pill p-blue">info</span></td><td>對話框 QA Practice</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><strong>代價。</strong> 貼齊 live 的結果是顏色不再對齊素材——Sentence 那一欄一綠一粉、Question Bank 那一欄一紫一藍，直向成對只剩欄位對齊在表達。如果之後想讓顏色也講同一件事，就要改成「一種素材一個顏色」（四色），但那是一次視覺改動，跟這一版的結構改動分開比較好判斷。</div>
+
+      <h3>4.4　連帶影響</h3>
+
+      <div class="callout callout-warn">
+        <strong>名稱字串有三個地方要一起改。</strong>
+        <code>AddNewPracticeDialog.js</code>（這個對話框）、
+        <code>practice-type-chip.js</code> 的 <code>PRACTICE_TYPE_CONFIG</code>（列表上的類型標籤）、
+        <code>view/index.js</code> 的 <code>PRACTICE_TYPE_FILTER_TABS</code>（篩選下拉）。
+        漏掉任何一處，列表和建立畫面就會叫不同名字。這一版的設計範圍只有對話框，但實作時三處要同步。
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>建立流程的第 2 步變成多餘。</strong> 攤平之後，
+        <code>StepTwoVocabularyType</code> 和 <code>StepTwoSentencePatternType</code>
+        這兩個「Practice Type」步驟已經在選卡當下就決定了。四條流程各少一步，步驟表 <code>STEPS_BY_TYPE</code> 要跟著重寫。
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>NEW 徽章從 3/6 變成 4/8，§3.4 的問題更嚴重。</strong>
+        設計檔目前忠實沿用現況的標記（Sentence Scramble、Pattern Response、Pattern Building、Question Bank Quiz），
+        一半的卡都掛著 NEW。這件事還沒決定，等規則定了再調。
+      </div>
+
+      <h2 id="locked"><span class="num">5</span> 素材未建立時：把卡片鎖起來</h2>
+
+      <p>練習不是憑空生出來的——每一種都要有素材。素材還沒建立的時候，該張卡<strong>直接鎖起來並說明缺什麼、去哪建</strong>，
+         而不是讓老師選完才碰壁。</p>
+
+      <h3>5.1　現況：只有一半的情況事先擋下</h3>
+      <table>
+        <thead><tr><th style="width:150px">缺的素材</th><th style="width:230px">影響哪些練習</th><th>現況怎麼處理</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Question Bank</strong></td>
+            <td>Question Bank Quiz<br>Question Bank QA<br><span style="color:#94a3b8">（<code>QB_TYPES</code>）</span></td>
+            <td><span class="pill p-amber">點下去才知道</span> 卡片看起來完全正常，點了之後 <code>handleQbType()</code> 發現 <code>relatedQbs.length === 0</code>，才跳出「No Question Bank found for this project. Create one first.」</td>
+          </tr>
+          <tr>
+            <td><strong>Project content</strong></td>
+            <td>全部八張</td>
+            <td><span class="pill p-green">已事先擋下</span> <code>hasContent</code> 為 false 時整批 <code>disabled</code>（<code>opacity .5</code> + <code>pointerEvents none</code>），並顯示警告 Alert</td>
+          </tr>
+          <tr>
+            <td><strong>Teaching Points</strong></td>
+            <td><span style="color:#94a3b8">—</span></td>
+            <td><span class="pill p-gray">不列入</span> 教學點是在建立 Project 的流程裡就決定好的，所以「有 Project 但沒有教學點」實務上不會發生（2026-08-20 確認）。<code>teacher-planning.html</code> 的 <code>needs:'tp'</code> 是規劃用的標記，不是執行期的檢查。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>5.2　提案</h3>
+      <div class="preview taller">
+        <iframe src="locked-state.html?s=nobank" title="鎖定狀態" loading="lazy"></iframe>
+      </div>
+      <p class="preview-cap">
+        <span>沒有 Question Bank 的情境。頁面上方的膠囊可以切換三種情境（展示用，不是產品的一部分）。</span>
+        <a href="locked-state.html?s=nobank" target="_blank" rel="noopener">原尺寸開啟 ↗</a>
+      </p>
+
+      <ul>
+        <li><strong>兩種缺料都事先擋下</strong>——題庫和專案內容，不只現在的 content 一種。</li>
+        <li><strong>鎖定的卡片說明缺什麼</strong>：說明文字換成 <code>Needs Question Bank</code>，icon 圓轉灰，右上角加一個鎖。</li>
+        <li><strong>解鎖動線放在卡片上</strong>：<code>Create Question Bank →</code>，不必回頭找入口。</li>
+        <li><strong>頂部一句話交代整體狀況</strong>，沿用 live 既有的 MUI Alert 樣式與位置（<code>hasContent</code> 那個警告就在同一個位置）。</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>兩個設計判斷。</strong><br>
+        <strong>① 不用 live 的 <code>opacity: .5</code> + <code>pointerEvents: none</code>。</strong>
+        那會把「怎麼解鎖」也一起壓灰、而且點不了。這裡改成卡片本體轉灰、但解鎖動線維持可讀可點——
+        鎖定的目的是<em>指路</em>，不是單純擋住。<br>
+        <strong>② 卡上的動線只在「部分鎖定」時出現。</strong> 八張全鎖時它會重複八次、又和頂部按鈕講同一件事，
+        所以全鎖情境只留頂部那一個入口，卡片單純說明缺什麼。
+      </div>
+
+      <h2 id="open"><span class="num">6</span> 待決事項</h2>
+
+      <div class="callout callout-info">
+        §4 的兩個主要決定已經落在設計檔上。以下是還沒決定的。
+      </div>
+
+      <ul>
+        <li><strong>用 A、B 還是 C（或 B＋C）。</strong> A 最輕；B 多一行欄位標題，把同源關係寫明；C 用縮圖直接show出學生畫面，但會放棄 live 的六個顏色、卡片也最高。</li>
+        <li><strong>NEW 徽章的規則。</strong> 現在 8 張裡 4 張掛 NEW（見 §4.3）。保留幾個、掛多久。</li>
+        <li><strong>Sentence Patterns 的可見性。</strong> 原本第一層那張卡在列表篩選裡是 <code>isDahuaAdmin</code> 才看得到、對話框卻沒擋（§3.3）。攤平成 Pattern Response / Pattern Building 之後，這兩張要不要擋。</li>
+        <li><strong>Mixed Mode。</strong> enum 裡還留著、UI 已註解掉（§3.5）。補回來變成第九張，還是連資料層一起清掉。</li>
+        <li><strong>顏色要不要改成一種素材一個顏色。</strong> 這一版先貼齊 live（見 §4.3），所以直向成對只有欄位對齊在表達，顏色沒有跟上。</li>
+        <li><strong>排序。</strong> 現在是課文 → 生詞 → 教學點 → 題庫。要不要改成依使用頻率或依難度。</li>
+      </ul>
+
+            <footer>Chinese Modules · 2.4 Versions &amp; Iteration · v1</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let idx = 0;
+      sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top <= 80) idx = i; });
+      links.forEach((a, i) => a.classList.toggle('active', i === idx));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>
