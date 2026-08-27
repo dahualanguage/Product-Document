@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose Practice Type — 素材未建立時的鎖定狀態</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root{
+  --primary-main:#00CB61; --error-main:#FF5630;
+  --info-lighter:#DCECFE; --info-main:#508AFC; --info-dark:#193592;
+  --g200:#F4F6F8; --g400:#C4CDD5; --g500:#919EAB; --g600:#637381; --g800:#212B36;
+  --divider:rgba(145,158,171,.2);
+
+  /* 四欄的顏色沿用 choose-practice-type.html，值在 <script> 的 TRACKS：
+     Content 綠 · Vocabulary 黃 · Sentence 粉 · Comprehension 紫 */
+}
+
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--g800); background:#eef0f3; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px; gap:16px;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; word-wrap:normal;
+     direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased;
+     user-select:none; }
+
+/* ---------- 展示用情境切換（不是產品的一部分） ---------- */
+.demo{ width:100%; max-width:1080px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font-size:.75rem; color:var(--g600); }
+.demo b{ font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--g500); margin-right:4px; }
+.demo button{ font:inherit; font-weight:600; padding:5px 12px; border-radius:999px; cursor:pointer;
+  background:#fff; color:var(--g600); border:1px solid var(--divider); }
+.demo button:hover{ border-color:var(--g400); }
+.demo button.on{ background:var(--g800); color:#fff; border-color:var(--g800); }
+
+/* ---------- dialog ---------- */
+.dlg{ background:#fff; border-radius:24px; width:100%; max-width:1080px;
+  display:flex; flex-direction:column;
+  box-shadow:0 24px 48px rgba(22,28,36,.16), 0 0 2px rgba(22,28,36,.12); }
+.dlg-hd{ padding:24px 24px 12px; }
+.dlg-hd h2{ font-size:1.5rem; font-weight:700; }
+.dlg-hd p{ font-size:.875rem; color:var(--g600); margin-top:6px; }
+.dlg-bd{ padding:8px 24px 16px; overflow-y:auto; }
+.dlg-ft{ padding:12px 24px 20px; display:flex; justify-content:flex-end; }
+
+/* ---------- 頂部提示：沿用 live 既有的 MUI Alert 樣式 ---------- */
+.alert{ display:flex; align-items:center; gap:12px; margin-bottom:16px;
+  background:var(--info-lighter); color:var(--info-dark);
+  border-radius:8px; padding:12px 16px; font-size:.875rem; }
+.alert .mi{ font-size:22px; color:var(--info-main); flex-shrink:0; }
+.alert .txt{ flex:1; }
+.alert b{ font-weight:700; }
+.alert button{ font:inherit; font-size:.8125rem; font-weight:700; white-space:nowrap;
+  background:none; border:none; color:var(--info-dark); cursor:pointer;
+  padding:6px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; }
+.alert button:hover{ background:rgba(25,53,146,.08); }
+.alert button .mi{ font-size:18px; color:inherit; }
+
+/* ---------- 八張卡：四欄，欄高 1 / 2 / 3 / 2 ---------- */
+.types{ display:grid; grid-template-columns:repeat(4,1fr);
+  grid-template-rows:auto repeat(3,auto); column-gap:20px; row-gap:20px; }
+
+.colhead{ grid-row:1; align-self:end; color:var(--label);
+  padding-bottom:9px; border-bottom:3px solid var(--ink);
+  font-size:.75rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+
+.type{ position:relative; background:#fff; border:1px solid var(--divider); border-radius:24px;
+  padding:24px; cursor:pointer; text-align:center; transition:border-color .2s ease, box-shadow .2s ease; }
+.type:hover, .type:focus-visible{ border-color:var(--ink); outline:none;
+  box-shadow:0 5px 5px -3px rgba(145,158,171,.2),
+             0 8px 10px 1px rgba(145,158,171,.14),
+             0 3px 14px 2px rgba(145,158,171,.12); }
+.type:focus-visible{ box-shadow:0 0 0 3px color-mix(in srgb, var(--ink) 22%, transparent); }
+
+.type .thumb{ display:block; margin-bottom:14px; }
+.type .thumb svg{ display:block; width:100%; height:auto; transition:filter .2s ease; }
+
+.type b{ display:block; font-size:1.125rem; line-height:1.5556; font-weight:700; color:var(--g800); }
+.type .desc{ display:block; margin-top:12px; font-size:.875rem; line-height:1.5714; color:var(--g600); }
+
+.badge{ position:absolute; top:12px; left:12px; z-index:1;
+  display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:12px;
+  background:var(--error-main); color:#fff; font-size:.8125rem; font-weight:800; line-height:1;
+  animation:glowPulse 1.6s ease-in-out infinite; }
+@keyframes glowPulse{
+  0%  { opacity:1;   transform:scale(1);    box-shadow:0 0 0 0 rgba(255,171,0,.35); }
+  50% { opacity:.72; transform:scale(1.05); box-shadow:0 0 0 6px rgba(255,171,0,.08); }
+  100%{ opacity:1;   transform:scale(1);    box-shadow:0 0 0 0 rgba(255,171,0,0); }
+}
+
+/* ---------- 鎖定狀態 ----------
+   live 目前的 disabled 是整張 opacity:.5 + pointer-events:none，那會把「怎麼解鎖」
+   也一起壓灰、而且點不了。這裡改成：卡片本體轉灰、但解鎖動線維持可讀可點。
+
+   示意圖抽掉飽和度——那一欄的顏色跟著淡掉，「這條軌道現在走不了」自己就說完了。
+   唯一還有顏色的是解鎖動線，用該欄的 label 色：一張灰卡上唯一活著的東西就是出口。 */
+.type.locked{ background:#FBFCFD; cursor:default; }
+.type.locked:hover{ border-color:var(--divider); box-shadow:none; }
+.type.locked .thumb svg{ filter:grayscale(1); opacity:.45; }
+.type.locked b{ color:var(--g500); }
+
+.lock{ position:absolute; top:12px; right:12px; width:26px; height:26px; border-radius:50%;
+  background:var(--g200); color:var(--g500); display:flex; align-items:center; justify-content:center; z-index:1; }
+.lock .mi{ font-size:16px; }
+
+.needs{ display:block; margin-top:12px; font-size:.875rem; line-height:1.5714; color:var(--g500); }
+.needs .act{ display:inline-flex; align-items:center; gap:4px; margin-top:6px;
+  font-weight:700; color:var(--label); cursor:pointer; }
+.needs .act:hover{ text-decoration:underline; }
+.needs .act .mi{ font-size:16px; }
+
+.btn{ font:inherit; font-size:.875rem; font-weight:700; border-radius:8px; height:36px;
+  padding:0 16px; cursor:pointer; background:#fff; color:var(--g800);
+  border:1px solid rgba(145,158,171,.32); }
+.btn:hover{ background:rgba(145,158,171,.08); }
+
+@media (prefers-reduced-motion: reduce){ .badge{ animation:none; } .type{ transition:none; } }
+
+@media (max-width:1040px){
+  .types{ grid-template-columns:repeat(2,1fr); grid-template-rows:none; }
+  .type{ grid-column:auto !important; grid-row:auto !important; }
+  .colhead{ grid-row:auto; grid-column:1 / -1; margin-top:8px; }
+}
+@media (max-width:560px){ .types{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="demo">
+  <b>展示情境</b>
+  <button data-s="ok" class="on">素材齊全</button>
+  <button data-s="nobank">沒有 Question Bank</button>
+  <button data-s="nocontent">專案沒有內容</button>
+</div>
+
+<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+  <div class="dlg-hd">
+    <h2 id="dlgT">Choose Practice Type</h2>
+    <p>Select one practice to continue.</p>
+  </div>
+  <div class="dlg-bd">
+    <div id="alert"></div>
+    <div class="types" id="types"></div>
+  </div>
+  <div class="dlg-ft">
+    <button class="btn">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* 素材未建立時把卡片鎖起來，並在卡上直接給出「去建立」的動線。
+   命名、欄位、示意圖、顏色與 choose-practice-type.html 同一套。
+
+   現況（origin/develop @ 42b56202）：
+   - QB_TYPES = new Set(['QA','MULTIPLE_CHOICE']) —— 唯二需要題庫的兩種。
+     但沒有題庫這件事要「點下去之後」才會知道：handleQbType() 發現 relatedQbs.length === 0
+     才跳一個 Alert「No Question Bank found for this project. Create one first.」
+   - hasContent 為 false 時，六張卡全部 disabled（opacity .5 + pointerEvents none）
+     並在上方顯示一個警告 Alert。這是唯一已經事先擋下的情況。
+
+   這一版把題庫的檢查也提前到卡片上，並讓「缺什麼、去哪建」寫在卡片本身。
+   改名之後 Comprehension Quiz / Open-ended Questions 的名字不再提到題庫，
+   所以這一頁是題庫依賴唯一被說出來的地方（見 HANDOFF.md）。
+
+   註：教學點不列入。教學點是在建立 Project 的流程裡就決定好的，
+   所以「有 Project 但沒有教學點」在實務上不會發生（2026-08-20 確認）。 */
+
+const REQ = { bank:'Question Bank', content:'Project content' };
+
+const TRACKS = {
+  content:  { ink:'#00B95C', tint:'#BBF1D0', wash:'#EFFBF4', label:'#00754A' },
+  vocab:    { ink:'#EFA00B', tint:'#FFE49E', wash:'#FFF8E7', label:'#8F6209' },
+  sentence: { ink:'#EC4899', tint:'#FBD5E8', wash:'#FEF2F8', label:'#BE185D' },
+  comp:     { ink:'#8B5CF6', tint:'#E9DDFD', wash:'#F7F3FE', label:'#6D28D9' },
+};
+
+const thumb = (c, inner) =>
+  '<span class="thumb"><svg viewBox="0 0 136 56" role="img" aria-hidden="true">' +
+  `<rect x=".5" y=".5" width="135" height="55" rx="7" fill="${c.wash}" stroke="#e6ecf3"/>` + inner + '</svg></span>';
+
+const play = (cy, c) =>
+  `<circle cx="17" cy="${cy}" r="7" fill="${c.ink}"/>` +
+  `<path d="M15 ${cy - 3} l5 3 -5 3z" fill="#fff"/>`;
+
+const speak = (c) =>
+  `<rect x="40" y="35" width="56" height="15" rx="7.5" fill="${c.tint}" stroke="${c.ink}"/>` +
+  `<rect x="55" y="39" width="3.5" height="6" rx="1.75" fill="${c.ink}"/>` +
+  `<rect x="63" y="41" width="20" height="3" rx="1.5" fill="${c.ink}"/>`;
+
+const THUMB = {
+  MIRRORING: (c) => thumb(c,
+    play(18, c) +
+    '<rect x="30" y="13" width="72" height="3" rx="1.5" fill="#cbd5e1"/>' +
+    '<rect x="30" y="19.5" width="88" height="5" rx="2" fill="#94a3b8"/>' +
+    play(40, c) +
+    '<rect x="30" y="35" width="56" height="3" rx="1.5" fill="#cbd5e1"/>' +
+    '<rect x="30" y="41.5" width="78" height="5" rx="2" fill="#94a3b8"/>'),
+
+  SCRAMBLE: (c) => thumb(c,
+    '<rect x="17" y="12" width="23" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>' +
+    '<rect x="45" y="9" width="27" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>' +
+    '<rect x="77" y="13" width="21" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>' +
+    '<rect x="103" y="10" width="16" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>' +
+    `<rect x="17" y="34" width="102" height="13" rx="3" fill="none" stroke="${c.ink}" stroke-dasharray="3 3"/>`),
+
+  VOCAB: (c) => thumb(c,
+    '<rect x="44" y="9" width="48" height="21" rx="5" fill="#fff" stroke="#cbd5e1"/>' +
+    '<rect x="55" y="16.5" width="26" height="6" rx="2" fill="#94a3b8"/>' +
+    `<circle cx="68" cy="42" r="8.5" fill="${c.tint}" stroke="${c.ink}"/>` +
+    `<rect x="66" y="37.5" width="4" height="6.5" rx="2" fill="${c.ink}"/>` +
+    `<path d="M63.5 42a4.5 4.5 0 0 0 9 0" stroke="${c.ink}" fill="none" stroke-width="1.4"/>`),
+
+  VOCAB_MC: (c) => thumb(c,
+    '<rect x="48" y="8" width="40" height="7" rx="3" fill="#94a3b8"/>' +
+    '<rect x="26" y="21" width="84" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>' +
+    `<rect x="26" y="32" width="84" height="8" rx="4" fill="${c.tint}" stroke="${c.ink}"/>` +
+    '<rect x="26" y="43" width="84" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'),
+
+  SENTENCE_RESPONSE: (c) => thumb(c,
+    '<rect x="18" y="10" width="70" height="5" rx="2.5" fill="#94a3b8"/>' +
+    '<rect x="18" y="22" width="24" height="4" rx="2" fill="#cbd5e1"/>' +
+    `<rect x="46" y="20" width="24" height="8" rx="3" fill="none" stroke="${c.ink}" stroke-dasharray="3 3"/>` +
+    '<rect x="74" y="22" width="16" height="4" rx="2" fill="#cbd5e1"/>' +
+    speak(c)),
+
+  SENTENCE_BUILDING: (c) => thumb(c,
+    '<rect x="36" y="7" width="64" height="14" rx="7" fill="#fff" stroke="#cbd5e1"/>' +
+    '<rect x="46" y="11.5" width="44" height="5" rx="2.5" fill="#94a3b8"/>' +
+    `<rect x="18" y="30" width="100" height="16" rx="8" fill="${c.tint}" stroke="${c.ink}"/>` +
+    `<rect x="29" y="35" width="3.5" height="6" rx="1.75" fill="${c.ink}"/>` +
+    `<rect x="37" y="36.5" width="66" height="3" rx="1.5" fill="${c.ink}"/>`),
+
+  MC: (c) => thumb(c,
+    '<rect x="16" y="9" width="86" height="5" rx="2.5" fill="#94a3b8"/>' +
+    '<rect x="16" y="20" width="104" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>' +
+    `<rect x="16" y="31" width="104" height="8" rx="4" fill="${c.tint}" stroke="${c.ink}"/>` +
+    '<rect x="16" y="42" width="104" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'),
+
+  QA: (c) => thumb(c,
+    '<rect x="18" y="12" width="86" height="5" rx="2.5" fill="#94a3b8"/>' +
+    '<rect x="18" y="22" width="54" height="4" rx="2" fill="#cbd5e1"/>' +
+    speak(c)),
+};
+
+const GROUPS = [
+  { head:'Content', track:'content', items:[
+    { art:THUMB.MIRRORING,         title:'Content Mirroring',    desc:'Listen and repeat each sentence' },
+  ]},
+  { head:'Vocabulary', track:'vocab', items:[
+    { art:THUMB.VOCAB,             title:'Vocabulary Mirroring', desc:'Listen and repeat each word' },
+    { art:THUMB.VOCAB_MC,          title:'Vocabulary Quiz',      desc:'Image, pinyin &amp; meaning' },
+  ]},
+  { head:'Sentence', track:'sentence', items:[
+    { art:THUMB.SCRAMBLE,          title:'Sentence Scramble',    desc:'Listen, then reorder the words',       isNew:true },
+    { art:THUMB.SENTENCE_RESPONSE, title:'Sentence Response',    desc:'Answer questions using a pattern',     isNew:true },
+    { art:THUMB.SENTENCE_BUILDING, title:'Sentence Building',    desc:'Build sentences from teaching points', isNew:true },
+  ]},
+  { head:'Comprehension', track:'comp', items:[
+    { art:THUMB.MC,                title:'Comprehension Quiz',   desc:'Auto-graded questions from a bank', needs:'bank', isNew:true },
+    { art:THUMB.QA,                title:'Open-ended Questions',    desc:'Open questions, AI assessment',     needs:'bank' },
+  ]},
+];
+
+/* 每個情境缺哪些素材 */
+const SCENARIOS = {
+  ok:        { missing:[] },
+  nobank:    { missing:['bank'] },
+  nocontent: { missing:['content'] },   /* 內容是所有練習的共同前提，缺了就全鎖 */
+};
+
+const ALERTS = {
+  bank:    { msg:'2 practices need a Question Bank. Create one to unlock <b>Comprehension Quiz</b> and <b>Open-ended Questions</b>.',
+             cta:'Create a Question Bank' },
+  content: { msg:'This project has no content yet. Add content to unlock <b>every practice</b>.',
+             cta:'Edit Project' },
+};
+
+/* 可用 ?s=nobank / nocontent 直接開到某個情境 */
+const fromUrl = new URLSearchParams(location.search).get('s');
+let scenario = SCENARIOS[fromUrl] ? fromUrl : 'ok';
+
+const isLocked = (t, missing) =>
+  missing.includes('content') || (t.needs && missing.includes(t.needs));
+
+/* 卡上的動線只在「部分鎖定」時出現。全部鎖定時它會重複八次、
+   又和頂部提示的按鈕講同一件事，所以只留頂部那一個入口。 */
+const card = (t, g, col, row, missing, allLocked) => {
+  const c = TRACKS[g.track];
+  const locked = isLocked(t, missing);
+  const miss = missing.includes('content') ? 'content' : t.needs;
+  const act = allLocked ? '' :
+    `<span class="act">Create ${REQ[miss]}<span class="mi">arrow_forward</span></span>`;
+  const body = locked
+    ? `<span class="needs">Needs ${REQ[miss]}${act}</span>`
+    : `<span class="desc">${t.desc}</span>`;
+  return `
+  <div class="type${locked ? ' locked' : ''}"${locked ? '' : ' tabindex="0"'}
+       style="--ink:${c.ink};--label:${c.label};grid-column:${col + 1};grid-row:${row + 2}">
+    ${t.isNew && !locked ? '<span class="badge">NEW</span>' : ''}
+    ${locked ? '<span class="lock"><span class="mi">lock</span></span>' : ''}
+    ${t.art(c)}
+    <b>${t.title}</b>
+    ${body}
+  </div>`;
+};
+
+const render = () => {
+  const { missing } = SCENARIOS[scenario];
+
+  document.getElementById('alert').innerHTML = missing.length === 0 ? '' : (() => {
+    const a = ALERTS[missing[0]];
+    return `<div class="alert">
+      <span class="mi">info</span>
+      <div class="txt">${a.msg}</div>
+      <button>${a.cta}<span class="mi">arrow_forward</span></button>
+    </div>`;
+  })();
+
+  const allLocked = GROUPS.every(g => g.items.every(t => isLocked(t, missing)));
+  document.getElementById('types').innerHTML =
+    GROUPS.map((g, col) =>
+      `<div class="colhead" style="--ink:${TRACKS[g.track].ink};--label:${TRACKS[g.track].label};grid-column:${col + 1}">${g.head}</div>`).join('')
+    + GROUPS.map((g, col) => g.items.map((t, row) => card(t, g, col, row, missing, allLocked)).join('')).join('');
+};
+
+document.querySelectorAll('.demo button').forEach(b => {
+  b.classList.toggle('on', b.dataset.s === scenario);
+  b.addEventListener('click', () => {
+    scenario = b.dataset.s;
+    document.querySelectorAll('.demo button').forEach(x => x.classList.toggle('on', x === b));
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
