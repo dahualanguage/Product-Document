@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings 套到各 practice — 共用改動</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* 工具列／視窗預覽的樣式從 v3-content-mirroring/proposal.html 抽出來（R11 的參考實作），畫廊自己的在最後 */
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --student-green:#22C55E; --student-wash:#E8FFF0;
+  
+  --wash:#EFFBF4; --label:#00754A;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --error:#FF5630;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px;
+  font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.seg.dis{ opacity:.5; }
+.seg.dis button{ cursor:default; }
+.vgrp{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.vgrp .vl{ font-size:11px; font-weight:700; letter-spacing:.2px;
+  color:var(--text3); margin-right:2px; }
+.chip{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; }
+.chip:hover{ border-color:var(--text3); color:var(--text); }
+.chip .mi{ font-size:16px; }
+.chip.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.chip.playing .mi{ color:var(--primary); }
+.stp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; }
+.stp .n{ display:inline-block; }
+.stp button{ width:38px; height:38px; border:0; background:#fff; color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.stp button:hover{ background:var(--grey200); color:var(--text); }
+.stp .n{ width:44px; text-align:center; font-size:15px; font-weight:700;
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); line-height:38px; }
+.specimen{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:hidden; }
+.spec-screen{ padding:24px 24px 20px; position:relative; }
+.spec-pager{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.spec-pager .who{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text3); }
+.spec-pager .nav2{ display:flex; align-items:center; gap:2px; }
+.spec-pager button{ width:28px; height:28px; border:0; background:transparent; border-radius:6px;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.spec-pager button:hover{ background:var(--grey200); color:var(--text); }
+.spec-pager .idx{ font-size:12px; color:var(--text2); min-width:88px; text-align:center; }
+.stu-row{ display:flex; align-items:flex-start; gap:8px;
+  border-left:4px solid var(--student-green); background:var(--student-wash);
+  border-radius:4px; padding:10px 8px 10px 12px; }
+.stu-row .body{ flex:1; min-width:0; }
+.stu-py{ color:gray; font-style:italic; font-size:13.6px; }
+.stu-zh{ font-size:17.6px; line-height:1.5; }
+.stu-tr{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+.stu-tr .eye{ width:26px; height:26px; border:0; background:transparent; border-radius:50%;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.stu-tr .eye:hover{ background:rgba(145,158,171,.12); }
+.stu-tr .txt{ font-size:12px; flex:1; }
+.stu-tr .txt.off{ color:var(--text3); font-style:italic; }
+.stu-spk{ width:30px; height:30px; border:0; background:transparent; border-radius:50%; flex:none;
+  color:var(--student-green); display:flex; align-items:center; justify-content:center; margin-top:2px; }
+.stu-pinyin-switch{ display:flex; justify-content:flex-end; align-items:center; gap:8px;
+  margin:0 0 8px; font-size:14px; color:var(--text); }
+.spec-ctrl{ border-top:1px dashed var(--divider); background:var(--grey100); padding:4px 24px; }
+.spec-ctrl .rw + .rw{ border-top:1px solid var(--divider); }
+.spec-cap{ font-size:12px; color:var(--text3); margin:8px 4px 0; }
+.stu-screen{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:hidden; }
+.stu-top{ display:flex; justify-content:flex-end; padding:12px 16px 0; font-size:14px; }
+.stu-top span{ display:inline-flex; align-items:center; gap:8px; }
+.stu-body{ padding:24px; }
+.stu-name{ font-size:20px; font-weight:700; color:var(--student-green); padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--divider); }
+.stu-row{ margin-bottom:4px; border-left:4px solid transparent; background:transparent; border-radius:0; cursor:pointer; }
+.stu-row.cur{ border-left-color:var(--student-green); background:var(--student-wash); border-radius:4px; }
+.stu-row:hover:not(.cur){ background:var(--grey100); }
+.stu-seq{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--primary-dark); }
+.stu-seq .mi{ font-size:14px; }
+.stu-seq b{ font-weight:700; }
+.stu-audio{ padding:24px; }
+.canvas{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:visible; }
+.toolbar{ border-bottom:1px solid var(--divider); }
+.tb-row{ display:flex; align-items:stretch; padding:8px 8px 8px 16px; position:relative; }
+.tb-row + .tb-row{ border-top:1px solid var(--divider); }
+.tb-grp{ display:flex; align-items:flex-end; gap:20px; padding:4px 20px 4px 0; flex-wrap:wrap; row-gap:8px; }
+.tb-grp + .tb-grp{ border-left:1px solid var(--divider); padding-left:20px; }
+.tb-ctl{ display:flex; flex-direction:column; gap:5px; }
+.tb-ctl .tl{ font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); line-height:1; display:flex; align-items:center; gap:4px; }
+.tip{ position:relative; border:0; background:transparent; padding:0; color:var(--text3); cursor:help; display:inline-flex; font-family:inherit; }
+.tip .mi{ font-size:14px; }
+.tip::after{ content:attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+  width:max-content; max-width:300px; background:#454F5B; color:#fff; font-size:12px; font-weight:500; line-height:1.5;
+  letter-spacing:0; text-transform:none; padding:6px 10px; border-radius:8px; white-space:normal; text-align:left;
+  opacity:0; pointer-events:none; transition:opacity .12s; z-index:50; box-shadow:0 8px 16px rgba(33,43,54,.16); }
+.tip::before{ content:''; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:#454F5B; opacity:0; transition:opacity .12s; z-index:50; }
+.tip:hover::after, .tip:focus-visible::after, .tip.on::after,
+.tip:hover::before, .tip:focus-visible::before, .tip.on::before{ opacity:1; }
+.tb-row .tip::after{ bottom:auto; left:calc(100% + 10px); top:-7px; transform:none; }
+.tb-row .tip::before{ bottom:auto; left:calc(100% + 1px); top:50%; transform:translateY(-50%);
+  border-top-color:transparent; border-right-color:#454F5B; }
+.toolbar .seg{ padding:2px; border-radius:8px; }
+.toolbar .seg button{ height:26px; padding:0 10px; font-size:12px; border-radius:6px; }
+.toolbar .chip{ height:28px; padding:0 10px; font-size:12px; gap:4px; }
+.toolbar .chip .mi{ font-size:15px; }
+.toolbar .vgrp{ gap:6px; }
+.toolbar .stp button{ width:28px; height:28px; }
+.toolbar .stp .n{ width:40px; line-height:28px; font-size:13px; }
+.toolbar .stp{ border-radius:8px; }
+.tb-fold{ margin-left:auto; align-self:center; width:32px; height:32px; border:0; background:transparent; border-radius:8px;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.tb-fold:hover{ background:var(--grey200); color:var(--text); }
+.tb-fold .mi{ font-size:20px; transition:transform .2s; }
+.tb-fold.closed .mi{ transform:rotate(-90deg); }
+.vdd{ position:relative; }
+.vdd-trig{ height:28px; display:inline-flex; align-items:center; gap:6px; padding:0 8px 0 10px; border:1px solid var(--divider);
+  border-radius:999px; background:#fff; font-family:inherit; font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+.vdd-trig:hover{ border-color:var(--text3); }
+.vdd-trig .mi{ font-size:15px; color:var(--primary); }
+.vdd-trig .mi.caret{ color:var(--text2); font-size:18px; margin-left:2px; }
+.vdd-menu{ position:absolute; top:34px; left:0; z-index:40; min-width:220px; background:#fff; border:1px solid var(--divider);
+  border-radius:10px; padding:4px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.vdd-menu .vl{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 4px; }
+.vdd-item{ display:flex; align-items:center; gap:8px; width:100%; padding:7px 8px; border:0; background:transparent; border-radius:6px;
+  font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; text-align:left; }
+.vdd-item:hover{ background:var(--grey200); }
+.vdd-item .play{ width:24px; height:24px; border:0; border-radius:50%; background:transparent; color:var(--primary); display:flex;
+  align-items:center; justify-content:center; flex:none; }
+.vdd-item .play .mi{ font-size:16px; }
+.vdd-item .nm{ flex:1; }
+.vdd-item .tick{ font-size:18px; color:var(--primary); }
+.vdd-item.on .nm{ font-weight:700; }
+.tb-note{ display:inline-flex; align-items:center; gap:6px; height:28px; font-size:12px; color:var(--text2); }
+.tb-note .mi{ font-size:16px; color:var(--text3); }
+.stu-ground{ background:#DFE5EC; padding:24px; }
+.winwrap{ max-width:900px; margin:0 auto; }
+.win-bar{ height:34px; display:flex; align-items:center; justify-content:center; position:relative; background:#fff; border-bottom:1px solid var(--divider);
+  font-size:12px; font-weight:700; color:var(--text2); letter-spacing:.2px; }
+.win-bar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.win{ border-radius:14px; overflow:hidden; background:#fff;
+  box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.canvas .stu-screen{ border:0; border-radius:0 0 16px 16px; }
+.canvas .stu-foot{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:12px; color:var(--text3);
+  border-top:1px solid var(--divider); }
+.mp{ display:flex; min-height:420px; }
+.mp-left{ width:38px; flex:none; border-right:1px solid var(--divider); display:flex; justify-content:center; padding-top:12px; }
+.mp-left button{ width:38px; height:38px; border:1px solid #BBF7D0; border-radius:12px; background:rgba(255,255,255,.98); color:var(--student-green);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.mp-left button .mi{ font-size:22px; }
+.mp-main{ flex:1; min-width:0; }
+.mp-hd{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; }
+.mp-hd .ttl{ font-size:16px; font-weight:800; color:#1E293B; }
+.sp{ position:relative; }
+.sp .gear{ width:48px; height:48px; border:0; border-radius:12px; background:#fff; color:#64748B; cursor:pointer;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.sp .gear .mi{ font-size:20px; }
+.sp .panel{ position:absolute; top:56px; right:0; width:220px; background:#fff; border-radius:12px; z-index:20;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; }
+.sp .panel .ph{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7;
+  font-size:14px; font-weight:700; color:#334155; }
+.sp .panel .ph .mi{ font-size:18px; color:#94A3B8; }
+.sp .panel .pr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:14px; font-weight:600; color:#475569; }
+.sp .panel .pr + .pr{ border-top:1px solid #EEF2F7; }
+.sp .panel .pr .sel{ height:30px; padding:0 8px; border:1px solid var(--divider); border-radius:6px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.sp .panel .pr .sel .mi{ font-size:18px; color:var(--text2); }
+.sw2{ display:inline-block; width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; }
+.sw2::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.sw2.on{ background:var(--primary); }
+.sw2.on::after{ left:15px; }
+.mp-body{ padding:8px 24px 24px; }
+.pcard{ background:#F0FAF4; border:1px solid #D1FAE5; border-radius:24px; padding:32px; min-height:190px; display:flex; align-items:center;
+  box-shadow:0 8px 20px rgba(15,23,42,.04); transition:all .18s ease; }
+.pcard.meaning{ background:#EFF6FF; border-color:#BFDBFE; box-shadow:0 18px 42px rgba(15,23,42,.08); min-height:240px; }
+.pcard.repeat{ background:#F0FAF4; border-color:#86EFAC; box-shadow:0 18px 42px rgba(15,23,42,.08); min-height:240px; }
+.pcard .in{ width:100%; display:flex; flex-direction:column; gap:18px; }
+.pcard .lbl{ display:flex; align-items:center; gap:8px; }
+.pcard .lbl .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; }
+.pcard .lbl .ic .mi{ font-size:20px; color:#22C55E; }
+.pcard .lbl .t{ font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:#22C55E; }
+.pcard .lbl .h{ font-size:12px; color:var(--text2); }
+.pcard.meaning .lbl .ic .mi, .pcard.meaning .lbl .t{ color:#2563EB; }
+.pcard.repeat .lbl .ic .mi, .pcard.repeat .lbl .t{ color:#16A34A; }
+.pcard .py{ font-size:16px; font-style:italic; color:var(--text2); text-align:center; margin-bottom:8px; }
+.pcard .zh{ font-size:40px; font-weight:800; color:#0F172A; line-height:1.55; text-align:center; }
+.pcard .tr{ font-size:14px; color:var(--text2); text-align:center; margin-top:4px; }
+.pcard .tr-big{ font-size:32px; font-weight:800; color:#1E3A8A; line-height:1.55; text-align:center; }
+.pcard .hidden{ font-size:16px; font-style:italic; color:#94A3B8; line-height:1.6; text-align:center; }
+.mp-play{ display:flex; justify-content:center; margin-top:16px; }
+.mp-play button{ height:36px; padding:0 16px 0 12px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit; font-size:13px;
+  font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:20px; color:var(--primary); }
+.mp-play button:hover{ border-color:var(--primary); }
+.sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }
+.sdd-trig{ height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit;
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.sdd-trig:hover{ border-color:var(--text3); }
+.sdd-trig .mi{ font-size:18px; color:var(--text2); }
+.sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
+  font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
+.sdd-item:hover{ background:var(--grey200); }
+.sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .z{ flex:1; min-width:0; }
+.sdd-item.on .z{ font-weight:600; }
+.sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
+.sdd-item .mi{ font-size:18px; color:var(--primary); }
+/* ---------- 畫廊頁自己的 ---------- */
+*{ box-sizing:border-box; } html,body{ margin:0; }
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#F4F6F8; color:var(--text); -webkit-font-smoothing:antialiased; line-height:1.5; }
+.wrap{ max-width:1180px; margin:0 auto; padding:40px 24px 80px; }
+.kick{ font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--primary-dark); }
+h1{ font-size:28px; font-weight:800; letter-spacing:-.3px; margin:6px 0 10px; }
+.lede{ font-size:14px; color:var(--text2); max-width:860px; margin:0 0 36px; }
+.lede code, .sec-note code, .cap code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em; background:#fff; border:1px solid var(--divider); border-radius:4px; padding:0 4px; }
+section{ margin:0 0 56px; }
+.sec-hd{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 14px; }
+.tchip{ height:26px; padding:0 10px; border-radius:8px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; }
+.sec-note{ font-size:12px; color:var(--text2); }
+.demo{ margin-left:auto; font-size:12px; color:var(--text3); display:inline-flex; align-items:center; gap:6px; }
+.dbtn{ height:26px; padding:0 10px; border:1px solid var(--divider); border-radius:8px; background:#fff; font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; }
+.dbtn.on{ border-color:var(--primary); color:var(--primary-dark); background:rgba(0,203,97,.06); }
+.cap{ font-size:12px; color:var(--text3); margin:12px 0 0; max-width:960px; }
+footer{ margin-top:40px; font-size:12px; color:var(--text3); text-align:center; }
+.mp-body{ padding:8px 24px 24px; }
+/* QA：MessageList.js 的題目泡泡 */
+.qa-guide{ display:flex; align-items:center; gap:10px; padding:10px 14px; margin:0 0 14px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; font-size:13px; }
+.qa-guide > .mi{ font-size:18px; color:#22C55E; }
+.qa-guide b{ display:block; font-weight:700; color:#166534; } .qa-guide i{ display:block; font-style:normal; font-size:11px; color:#9CA3AF; }
+.qa-gtag{ margin-left:auto; font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#16A34A; }
+.qa-bubble{ background:#f0f0f0; border-radius:4px; padding:12px 16px; max-width:80%; position:relative; }
+.qa-py{ font-size:.85rem; margin-bottom:8px; color:var(--text2); }
+.qa-row{ display:flex; align-items:center; gap:8px; }
+.qa-q{ flex:1; font-weight:700; font-size:1.05rem; }
+.qa-play{ width:30px; height:30px; border:1px solid #D1D5DB; border-radius:50%; color:#9CA3AF; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.qa-play .mi{ font-size:18px; }
+.qa-eye{ display:inline-flex; color:#9CA3AF; margin-bottom:6px; } .qa-eye .mi{ font-size:16px; }
+.qa-hidden{ display:block; font-size:12px; font-style:italic; color:#9CA3AF; }
+/* Scramble ／ Follow Pattern：#E8EEF4 地板上一張白卡（Container sm） */
+.ss-ground{ background:#E8EEF4; padding:16px 24px 24px; position:relative; }
+.ss-top{ height:8px; position:relative; }
+.ss-top .sp{ position:absolute; top:-4px; right:0; }
+.ss-card{ max-width:600px; margin:0 auto; background:#fff; border-radius:12px; padding:24px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.ss-hd{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:16px; }
+.ss-hint{ color:#EC4899; font-weight:600; font-size:15px; }
+.fp-hint{ color:#14B8A6; font-weight:600; font-size:15px; }
+.ss-tries{ font-size:12px; font-weight:700; color:#64748B; white-space:nowrap; }
+.ss-listen{ display:inline-flex; align-items:center; gap:6px; margin-bottom:16px; border:0; background:transparent; font-family:inherit; font-size:14px; font-weight:600; color:#EC4899; cursor:pointer; padding:6px 8px; border-radius:8px; }
+.ss-listen:hover{ background:#FDF2F8; } .ss-listen .mi{ font-size:20px; }
+.ss-zone{ min-height:72px; padding:16px; margin-bottom:16px; border-radius:8px; border:2px dashed #CBD5E1; background:#F8FAFC; display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+.ss-slot{ min-width:60px; min-height:52px; border:2px dashed #CBD5E1; border-radius:8px; }
+.ss-punct{ font-weight:700; font-size:20px; color:#64748B; padding-bottom:6px; }
+.ss-pool{ padding:16px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; display:flex; gap:8px; flex-wrap:wrap; }
+.ss-tile{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:60px; min-height:52px; padding:8px 16px; border-radius:8px; background:#fff; border:2px solid #E2E8F0; cursor:pointer; }
+.ss-tile:hover{ background:#FCE7F3; border-color:#F9A8D4; }
+.ss-tile .p{ font-size:11px; color:#94A3B8; line-height:1.2; } .ss-tile .z{ font-weight:700; font-size:18px; color:#1E293B; }
+.ss-ft{ display:flex; justify-content:flex-end; margin-top:24px; }
+.ss-check{ height:36px; padding:0 20px; border:0; border-radius:8px; background:#EC4899; color:#fff; font-family:inherit; font-size:14px; font-weight:700; opacity:.5; }
+.ss-ground .mp-play{ margin-top:16px; }
+/* Follow Pattern：question-card.js */
+.fp-q{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:24px; margin-bottom:16px; border-radius:8px; background:rgba(20,184,166,.06); border:1px solid rgba(20,184,166,.15); }
+.fp-chunks{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:4px; }
+.fp-ck{ display:inline-flex; flex-direction:column; align-items:center; line-height:1; }
+.fp-ck .p{ font-size:13px; color:#374151; margin-bottom:2px; } .fp-ck .z{ font-size:18px; font-weight:700; padding:2px 4px; border-radius:4px; }
+.fp-ck.hl .z{ background:#D1FAE5; color:#065F46; } .fp-ck.hl .p{ color:#065F46; }
+.fp-tr{ font-size:14px; color:var(--text2); font-style:italic; margin-top:6px; } .fp-tr.sm{ font-size:12px; color:#64748B; }
+.fp-vol{ color:#14B8A6; display:inline-flex; padding:8px; flex:none; } .fp-vol .mi{ font-size:28px; }
+.fp-listen{ font-size:14px; font-weight:600; color:#64748B; }
+.fp-ref{ padding:16px; margin-bottom:24px; border-radius:8px; background:rgba(20,184,166,.06); border:1px solid rgba(20,184,166,.2); }
+.fp-reflb{ font-size:12px; font-weight:600; color:#14B8A6; margin-bottom:6px; }
+.fp-rec{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0 0; }
+.fp-recbtn{ width:64px; height:64px; border-radius:50%; background:#14B8A6; color:#fff; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(20,184,166,.3); }
+.fp-recbtn .mi{ font-size:30px; } .fp-reccap{ font-size:12px; color:var(--text3); }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick">共用改動 · S3 套到其他卡</div>
+  <h1>Settings 那一步套到各 practice</h1>
+  <p class="lede">R11 的工具列 ＋ 視窗預覽，套到還沒做的三張卡。工具列的格子只放這張卡真的有的設定（照 <code>origin/develop @ 599dd4cb</code> 查）；畫布照學生端的主欄抄。控制項可以點，畫布跟著變。
+  Vocabulary Quiz 與 Comprehension Quiz 的 Settings 沒有顯示／音檔設定（只有 Practice name ＋ 題目清單），R11 不適用，不在這裡。</p>
+
+  <!-- ======================= QA ======================= -->
+  <section id="qa">
+    <div class="sec-hd">
+      <span class="tchip" style="background:#F7F3FE;color:#6D28D9">Open-ended Questions</span>
+      <span class="sec-note">現行 <code>qa-step-two-section.js</code>：Audio Mode 卡、Pinyin 下拉（印 enum）、Speed／Voice、Guide phrase language 下拉。沒有 Translation、沒有 Max tries。</span>
+    </div>
+    <div class="canvas" id="p-qa"></div>
+    <p class="cap">畫布照 <code>qa/components/MessageList.js</code>：灰底題目泡泡（拼音 caption 在上、題目粗體、右邊 30px 圓形播放鈕）；Audio only 時泡泡先藏起來，學生點眼睛才看到（<em>Tap the eye to reveal the question</em>）。
+    Guide phrase language 決定播放前導語用哪種語言（<code>StartPracticeButton.js</code> 的四句，另一種語言留作 caption）。學生端齒輪（<code>settings-panel.js</code>）在 QA 永遠有 Speed；Pinyin 那列只在 Choice by student 時有。</p>
+  </section>
+
+  <!-- ======================= Scramble ======================= -->
+  <section id="ss">
+    <div class="sec-hd">
+      <span class="tchip" style="background:#FEF2F8;color:#BE185D">Sentence Scramble</span>
+      <span class="sec-note">現行 <code>sentence-scramble-preview.js</code>（settings 模式）：Pinyin 下拉（印 enum）、Speed／Voice、<em>Attempts per sentence</em>。沒有 Translation、沒有 Audio Mode。</span>
+    </div>
+    <div class="canvas" id="p-ss"></div>
+    <p class="cap">畫布照 <code>sentence-scramble/index.js</code>：白卡上一句粉色提示 ＋ <code>0 / 3 tries</code>；<em>Listen to sentence</em>；虛線答案區（每個詞一個空格、標點固定）；下方詞池（白底磁磚，拼音 11px 在字上面）；右下 <em>Check</em>。
+    Max tries 就是右上角那個 <code>/ 3</code>。學生端齒輪：Pinyin 與 Speed 各只在 Choice by student 時有。</p>
+  </section>
+
+  <!-- ======================= Follow Pattern ======================= -->
+  <section id="fp">
+    <div class="sec-hd">
+      <span class="tchip" style="background:#FEF2F8;color:#BE185D">Sentence Response ／ Sentence Building</span>
+      <span class="sec-note">兩張共用 <code>follow-pattern-settings.js</code>：自己畫的 Audio Mode 開關、Pinyin／Translation 下拉（印 enum）、Speed／Voice、<em>Attempts per question</em>。</span>
+      <span class="demo">預覽哪一張：<button class="dbtn on" data-fpsub="guided">Sentence Response</button><button class="dbtn" data-fpsub="building">Sentence Building</button></span>
+    </div>
+    <div class="canvas" id="p-fp"></div>
+    <p class="cap">畫布照 <code>follow-pattern/question-card.js</code>（主色 <code>#14B8A6</code>）：提示句 ＋ <code>0 / 3 tries</code>；題目框（逐詞拼音在上、字 18px、翻譯斜體）；Response 多一個 <em>Use this pattern to answer:</em> 的句型框，句型裡要填的那一塊淡綠反白（<code>follow-pattern-chunks.js</code> 的 highlight）；Audio only 時題目框只寫 <em>Listen to the question</em>。
+    這裡的 Practice mode 用的是 Follow Pattern 自己的 <code>audioMode</code>——行為是「題目不顯示文字」，跟 Mirroring 共用卡是同一件事，可以換成同一格。</p>
+  </section>
+
+  <section id="none">
+    <div class="sec-hd"><span class="tchip" style="background:#FFF8E7;color:#8F6209">Vocabulary Quiz</span><span class="tchip" style="background:#F7F3FE;color:#6D28D9">Comprehension Quiz</span></div>
+    <p class="cap" style="margin-top:0">兩張的 Settings 步都<strong>沒有顯示／音檔設定</strong>：Vocabulary Quiz 的 <code>vocabulary-step-three-section.js</code> 在 <code>isMultipleChoice</code> 時只渲染 Practice Name ＋ <code>McQuestionsPreview</code>（可刪、可換順序、可重抽）＋ <em>Add Question</em>；Comprehension Quiz 的 <code>mc-step-two-section.js</code> 是題目清單 ＋ <em>Edit in Question Bank</em>。R11 對它們沒有作用，能套的是 S1（名稱搬第一步）、S8、S9。</p>
+  </section>
+
+  <footer>共用改動 · Settings 套到各 practice — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+</div>
+
+<script>
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const VOICES = ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'];
+const SPEED_NAME = { '0.6':'Slow', '0.8':'Normal', '1':'Fast', 'choice':'Normal' };
+
+/* ---------- 共用：工具列的格子 ---------- */
+const ctl = (label, inner) => `<div class="tb-ctl"><span class="tl">${label}</span>${inner}</div>`;
+const seg = (p, name, value, opts) => `<div class="seg">${opts.map(([v, t]) =>
+  `<button type="button" data-p="${p}" data-seg="${name}" data-val="${v}" class="${v === value ? 'on' : ''}" aria-pressed="${v === value}">${t}</button>`).join('')}</div>`;
+const speedChips = (p, S) => [['0.6','Slow'],['0.8','Normal'],['1','Fast']].map(([v, t]) =>
+  `<button class="chip ${S.speed === v ? 'on' : ''} ${S.playing === 'sp:' + v ? 'playing' : ''}" data-p="${p}" data-speed="${v}"><span class="mi">${S.playing === 'sp:' + v ? 'graphic_eq' : 'play_arrow'}</span>${t}</button>`
+).join('') + `<button class="chip ${S.speed === 'choice' ? 'on' : ''}" data-p="${p}" data-speed="choice">Choice by student</button>`;
+const voiceCtl = (p, S) => `<div class="vdd">
+  <button class="vdd-trig" data-p="${p}" data-act="voicedd" aria-haspopup="menu" aria-expanded="${S.voiceOpen}">
+    <span class="mi">${S.playing === S.voice ? 'graphic_eq' : 'play_arrow'}</span>${esc(S.voice)}<span class="mi caret">expand_more</span></button>
+  ${S.voiceOpen ? `<div class="vdd-menu" role="menu">${VOICES.map(name => `<button class="vdd-item ${S.voice === name ? 'on' : ''}" role="menuitemradio" data-p="${p}" data-voice="${name}">
+    <span class="play"><span class="mi">${S.playing === name ? 'graphic_eq' : 'play_arrow'}</span></span><span class="nm">${name}</span>${S.voice === name ? '<span class="mi tick">check</span>' : ''}</button>`).join('')}</div>` : ''}</div>`;
+const triesCtl = (p, S, unit) => ctl(`Max tries <button type="button" class="tip" data-act="tip" data-tip="How many times a student may retry one ${unit} before it is let through — the ${unit} then counts as passed (auto pass, default 3)." aria-label="What max tries means"><span class="mi">info</span></button>`,
+  `<span class="stp"><button data-p="${p}" data-act="minus" aria-label="Fewer tries"><span class="mi">remove</span></button><span class="n">${S.tries}</span><button data-p="${p}" data-act="plus" aria-label="More tries"><span class="mi">add</span></button></span>`);
+const win = (inner) => `<div class="stu-ground"><div class="win"><div class="win-bar"><span class="mi">desktop_windows</span>Student view</div>${inner}</div></div>`;
+const gear = (p, S, rows) => rows.length ? `<div class="sp"><button class="gear" data-p="${p}" data-act="settings" aria-label="Settings" aria-expanded="${S.settingsOpen}"><span class="mi">settings</span></button>${
+  S.settingsOpen ? `<div class="panel"><div class="ph">Settings<span class="mi">close</span></div>${rows.join('')}</div>` : ''}</div>` : '';
+const swRow = (p, label, act, on) => `<div class="pr">${label}<span class="sw2 ${on ? 'on' : ''}" data-p="${p}" data-act="${act}" role="switch" aria-checked="${on}"></span></div>`;
+const selRow = (label, val) => `<div class="pr">${label}<span class="sel">${val}<span class="mi">arrow_drop_down</span></span></div>`;
+const playBtn = (p, S, label) => `<div class="mp-play"><button data-p="${p}" data-act="play" ${S.playing === 'seq' ? 'disabled' : ''}>
+  <span class="mi">${S.playing === 'seq' ? 'graphic_eq' : 'play_arrow'}</span>${S.playing === 'seq' ? 'Playing' : label}</button></div>`;
+const pager = (p, S, word, n) => `<div class="sdd"><button class="sdd-trig" data-p="${p}" data-act="sdd" aria-expanded="${S.listOpen}">${word} ${S.idx + 1} of ${n}<span class="mi">${S.listOpen ? 'expand_less' : 'expand_more'}</span></button></div>`;
+
+/* ---------- 假資料（我的一天，zh-CN） ---------- */
+const QA_Q = [
+  ['你每天几点起床？','nǐ měi tiān jǐ diǎn qǐ chuáng?'],
+  ['你早饭吃什么？','nǐ zǎo fàn chī shén me?'],
+  ['你几点上课？','nǐ jǐ diǎn shàng kè?'],
+  ['下午你去哪里？','xià wǔ nǐ qù nǎ lǐ?'],
+  ['晚上你做什么？','wǎn shang nǐ zuò shén me?'],
+];
+const GUIDE = { CHINESE:['请回答以下问题','Please answer the following question'], ENGLISH:['Please answer the following question','请回答以下问题'] };
+const SS_S = { tokens:['我','每天','七点','起床'], py:['wǒ','měi tiān','qī diǎn','qǐ chuáng'], pool:['七点','我','起床','每天'], poolPy:['qī diǎn','wǒ','qǐ chuáng','měi tiān'], n:6 };
+const FP_Q = { q:[['你','nǐ'],['每天','měi tiān'],['几点','jǐ diǎn'],['起床','qǐ chuáng'],['？','']], tr:'What time do you get up every day?',
+  pattern:[['我','wǒ'],['每天','měi tiān'],['＿＿','',true],['起床','qǐ chuáng'],['。','']], ptr:'I get up at ___ every day.', n:5 };
+
+/* ---------- 狀態 ---------- */
+const P = {
+  qa:{ mode:'text', pinyin:'shown', speed:'0.8', voice:VOICES[0], guide:'CHINESE', stuPy:true, idx:0, playing:null, voiceOpen:false, settingsOpen:false, listOpen:false },
+  ss:{ pinyin:'choice', speed:'0.8', voice:VOICES[0], tries:3, stuPy:true, idx:0, playing:null, voiceOpen:false, settingsOpen:false, listOpen:false },
+  fp:{ sub:'guided', mode:'text', pinyin:'shown', translation:'choice', speed:'0.8', voice:VOICES[0], tries:3, stuPy:true, stuTr:true, idx:0, playing:null, voiceOpen:false, settingsOpen:false, listOpen:false },
+};
+
+/* ---------- QA ---------- */
+function renderQA(){
+  const S = P.qa, p = 'qa';
+  const pyOn = S.mode === 'text' && (S.pinyin === 'shown' || (S.pinyin === 'choice' && S.stuPy));
+  const [q, py] = QA_Q[S.idx];
+  const [g1, g2] = GUIDE[S.guide];
+  const textGrp = S.mode === 'audio'
+    ? `<div class="tb-grp"><span class="tb-note"><span class="mi">pan_tool_alt</span>Pinyin is up to the student</span></div>`
+    : `<div class="tb-grp">${ctl('Pinyin', seg(p, 'pinyin', S.pinyin, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}</div>`;
+  const toolbar = `<div class="toolbar">
+    <div class="tb-row"><div class="tb-grp">${ctl('Practice mode', seg(p, 'mode', S.mode, [['text','Text visible'],['audio','Audio only']]))}</div>${textGrp}</div>
+    <div class="tb-row"><div class="tb-grp">${ctl('Speed', `<span class="vgrp">${speedChips(p, S)}</span>`)}${ctl('Voice', voiceCtl(p, S))}</div>
+      <div class="tb-grp">${ctl('Guide phrase language', seg(p, 'guide', S.guide, [['CHINESE','Chinese'],['ENGLISH','English']]))}</div></div></div>`;
+  const rows = [selRow('Speed', 'Normal')];                       // QA 的齒輪永遠有 Speed（practice-content-list.js 傳 speedOptions）
+  if (S.pinyin === 'choice' && S.mode === 'text') rows.unshift(swRow(p, 'Pinyin', 'stupy', S.stuPy));
+  const bubble = S.mode === 'audio' && !S.revealed
+    ? `<div class="qa-bubble"><span class="qa-eye"><span class="mi">visibility_off</span></span><span class="qa-hidden">Tap the eye to reveal the question</span></div>`
+    : `<div class="qa-bubble">${S.mode === 'audio' ? '<span class="qa-eye"><span class="mi">visibility</span></span>' : ''}${pyOn ? `<div class="qa-py">${esc(py)}</div>` : ''}
+        <div class="qa-row"><span class="qa-q">${esc(q)}</span><span class="qa-play"><span class="mi">${S.playing === 'seq' ? 'graphic_eq' : 'play_arrow'}</span></span></div></div>`;
+  const screen = `<div class="mp"><div class="mp-main">
+    <div class="mp-hd"><span class="ttl">我的一天</span>${gear(p, S, rows)}</div>
+    <div class="mp-body">
+      <div class="qa-guide"><span class="mi">volume_up</span><span><b>${esc(g1)}</b><i>${esc(g2)}</i></span><span class="qa-gtag">guide phrase · ${S.guide === 'CHINESE' ? 'Chinese' : 'English'}</span></div>
+      ${bubble}
+      ${playBtn(p, S, `Play · ${S.guide === 'CHINESE' ? 'Chinese' : 'English'} guide phrase, then the question · ${SPEED_NAME[S.speed]} · ${esc(S.voice)}`)}
+      ${pager(p, S, 'Question', QA_Q.length)}
+    </div></div></div>`;
+  document.getElementById('p-qa').innerHTML = toolbar + win(`<div class="stu-screen">${screen}</div>`) + `<div class="stu-foot"><span>${QA_Q.length} questions${S.mode === 'audio' ? ' · Audio only' : ''}</span></div>`;
+}
+
+/* ---------- Scramble ---------- */
+function renderSS(){
+  const S = P.ss, p = 'ss';
+  const pyOn = S.pinyin === 'shown' || (S.pinyin === 'choice' && S.stuPy);
+  const toolbar = `<div class="toolbar">
+    <div class="tb-row"><div class="tb-grp">${ctl('Pinyin', seg(p, 'pinyin', S.pinyin, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}</div></div>
+    <div class="tb-row"><div class="tb-grp">${ctl('Speed', `<span class="vgrp">${speedChips(p, S)}</span>`)}${ctl('Voice', voiceCtl(p, S))}</div>
+      <div class="tb-grp">${triesCtl(p, S, 'sentence')}</div></div></div>`;
+  const rows = [];
+  if (S.pinyin === 'choice') rows.push(swRow(p, 'Pinyin', 'stupy', S.stuPy));
+  if (S.speed === 'choice') rows.push(selRow('Speed', 'Normal'));
+  const slots = SS_S.tokens.map(() => `<span class="ss-slot"></span>`).join('') + `<span class="ss-punct">。</span>`;
+  const tiles = SS_S.pool.map((t, i) => `<span class="ss-tile">${pyOn ? `<span class="p">${esc(SS_S.poolPy[i])}</span>` : ''}<span class="z">${esc(t)}</span></span>`).join('');
+  const screen = `<div class="ss-ground">
+    <div class="ss-top">${gear(p, S, rows)}</div>
+    <div class="ss-card">
+      <div class="ss-hd"><span class="ss-hint">Rearrange the words to form the correct sentence.</span>${S.tries > 1 ? `<span class="ss-tries">0 / ${S.tries} tries</span>` : ''}</div>
+      <button class="ss-listen" data-p="${p}" data-act="play"><span class="mi">${S.playing === 'seq' ? 'graphic_eq' : 'volume_up'}</span>${S.playing === 'seq' ? 'Playing' : `Listen to sentence · ${SPEED_NAME[S.speed]} · ${esc(S.voice)}`}</button>
+      <div class="ss-zone">${slots}</div>
+      <div class="ss-pool">${tiles}</div>
+      <div class="ss-ft"><button class="ss-check" disabled>Check</button></div>
+    </div>
+    ${pager(p, S, 'Sentence', SS_S.n)}
+  </div>`;
+  document.getElementById('p-ss').innerHTML = toolbar + win(screen) + `<div class="stu-foot"><span>${SS_S.n} sentences</span></div>`;
+}
+
+/* ---------- Follow Pattern ---------- */
+function renderFP(){
+  const S = P.fp, p = 'fp';
+  const guided = S.sub === 'guided';
+  const pyOn = S.pinyin === 'shown' || (S.pinyin === 'choice' && S.stuPy);
+  const trOn = S.translation === 'shown' || (S.translation === 'choice' && S.stuTr);
+  const textGrp = S.mode === 'audio'
+    ? `<div class="tb-grp"><span class="tb-note"><span class="mi">pan_tool_alt</span>Pinyin and translation are up to the student</span></div>`
+    : `<div class="tb-grp">${ctl('Pinyin', seg(p, 'pinyin', S.pinyin, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}${ctl('Translation', seg(p, 'translation', S.translation, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}</div>`;
+  const toolbar = `<div class="toolbar">
+    <div class="tb-row"><div class="tb-grp">${ctl('Practice mode', seg(p, 'mode', S.mode, [['text','Text visible'],['audio','Audio only']]))}</div>${textGrp}</div>
+    <div class="tb-row"><div class="tb-grp">${ctl('Speed', `<span class="vgrp">${speedChips(p, S)}</span>`)}${ctl('Voice', voiceCtl(p, S))}</div>
+      <div class="tb-grp">${triesCtl(p, S, 'question')}</div></div></div>`;
+  const rows = [];
+  if (S.mode === 'text' && S.pinyin === 'choice') rows.push(swRow(p, 'Pinyin', 'stupy', S.stuPy));
+  if (S.mode === 'text' && S.translation === 'choice') rows.push(swRow(p, 'Translation', 'stutr', S.stuTr));
+  if (S.speed === 'choice') rows.push(selRow('Speed', 'Normal'));
+  const chunks = (list, py) => `<div class="fp-chunks">${list.map(([z, pp, hl]) => `<span class="fp-ck ${hl ? 'hl' : ''}">${py && pp ? `<span class="p">${esc(pp)}</span>` : ''}<span class="z">${esc(z)}</span></span>`).join('')}</div>`;
+  const qbox = S.mode === 'audio'
+    ? `<div class="fp-q"><span class="fp-listen">Listen to the question</span><span class="fp-vol"><span class="mi">${S.playing === 'seq' ? 'graphic_eq' : 'volume_up'}</span></span></div>`
+    : `<div class="fp-q"><div>${chunks(FP_Q.q, pyOn)}${trOn ? `<div class="fp-tr">${esc(FP_Q.tr)}</div>` : ''}</div><span class="fp-vol"><span class="mi">${S.playing === 'seq' ? 'graphic_eq' : 'volume_up'}</span></span></div>`;
+  const ref = guided ? `<div class="fp-ref"><div class="fp-reflb">Use this pattern to answer:</div>${chunks(FP_Q.pattern, pyOn)}${trOn ? `<div class="fp-tr sm">${esc(FP_Q.ptr)}</div>` : ''}</div>` : '';
+  const screen = `<div class="ss-ground">
+    <div class="ss-top">${gear(p, S, rows)}</div>
+    <div class="ss-card">
+      <div class="ss-hd"><span class="fp-hint">${guided ? 'Listen and answer using the pattern.' : 'Listen and build your own sentence.'}</span>${S.tries > 1 ? `<span class="ss-tries">0 / ${S.tries} tries</span>` : ''}</div>
+      ${qbox}${ref}
+      <div class="fp-rec"><span class="fp-recbtn"><span class="mi">mic</span></span><span class="fp-reccap">Tap to record your answer</span></div>
+    </div>
+    ${playBtn(p, S, `Play · ${SPEED_NAME[S.speed]} · ${esc(S.voice)}`)}
+    ${pager(p, S, 'Question', FP_Q.n)}
+  </div>`;
+  document.getElementById('p-fp').innerHTML = toolbar + win(screen) + `<div class="stu-foot"><span>${FP_Q.n} questions${S.mode === 'audio' ? ' · Audio only' : ''}</span></div>`;
+}
+
+function render(){ renderQA(); renderSS(); renderFP(); }
+render();
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click', (e) => {
+  const fs = e.target.closest('[data-fpsub]');
+  if (fs){ P.fp.sub = fs.dataset.fpsub; document.querySelectorAll('[data-fpsub]').forEach(b => b.classList.toggle('on', b === fs)); renderFP(); return; }
+  const el = e.target.closest('[data-p]');
+  if (!el){ Object.values(P).forEach(S => { S.voiceOpen = false; }); render(); return; }
+  const S = P[el.dataset.p];
+  const sg = el.dataset.seg, sp = el.dataset.speed, vc = el.dataset.voice, a = el.dataset.act;
+  if (sg){ S[sg] = el.dataset.val; if (sg === 'mode') S.revealed = false; render(); return; }
+  if (sp){ S.speed = sp; S.playing = sp === 'choice' ? null : 'sp:' + sp; render(); if (S.playing) setTimeout(() => { S.playing = null; render(); }, 1400); return; }
+  if (vc){ S.voice = vc; S.playing = vc; S.voiceOpen = false; render(); setTimeout(() => { S.playing = null; render(); }, 1400); return; }
+  if (a === 'voicedd'){ S.voiceOpen = !S.voiceOpen; render(); return; }
+  if (a === 'settings'){ S.settingsOpen = !S.settingsOpen; render(); return; }
+  if (a === 'stupy'){ S.stuPy = !S.stuPy; render(); return; }
+  if (a === 'stutr'){ S.stuTr = !S.stuTr; render(); return; }
+  if (a === 'minus'){ S.tries = Math.max(1, S.tries - 1); render(); return; }
+  if (a === 'plus'){ S.tries = Math.min(10, S.tries + 1); render(); return; }
+  if (a === 'sdd'){ S.listOpen = !S.listOpen; S.idx = (S.idx + 1) % 5; S.listOpen = false; render(); return; }   // 畫廊：點一下換下一題（正式版是原地展開清單，見 v3）
+  if (a === 'play'){ if (S.playing) return; S.playing = 'seq'; S.revealed = true; render(); setTimeout(() => { S.playing = null; render(); }, 1400); return; }
+  if (a === 'tip'){ el.classList.toggle('on'); return; }
+});
+</script>
+</body>
+</html>
