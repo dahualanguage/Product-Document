@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Content Mirroring — v3 提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— 這一頁是 v3 的設計提案，不是現行產品。
+   對照組是 create-mirroring.html（現行複刻）。外殼、字體、配色完全沿用產品的
+   theme，這一版不動視覺識別；動的是「哪些設定放在一起」與「用什麼控制項」。
+
+   一句話：把 Settings 這一步變成一張學生會看到的句子，控制項長在它上面。
+
+   分三段，依「它改變什麼」分：
+     ON SCREEN —— 學生看得到什麼（樣本句 ＋ Pinyin / Translation）
+     ON PLAY   —— 按下播放會聽到什麼（Translation first / Speed / Voice）
+     PASSING   —— 什麼時候算過（Move on after N tries）
+   Audio Mode 不在三段裡 —— 它換的是練習本身，提到最上面成為兩選一的模式。
+
+   樣本句照學生端實際的排版畫（content-window.js）：
+     拼音在字的「上面」，灰色斜體 0.85rem
+     句子 1.1rem
+     翻譯在下面 caption 12px；Choice by student 時預設「收起來」，要點眼睛才出現
+     正在唸的那一句：左邊 4px #22C55E ＋ 底色 #E8FFF0
+   純聽力的畫面照 assignments/content/index.js 的 renderAudioModePanel。
+   （耳機圖產品用 /assets/images/headphones.png，這個 repo 沒有，用 icon 代。）
+
+   網址參數：?step=1|2|3|4（從 1 數）· &proj=0|1|2 換專案（2 是對話類）· &dd=1 選單打開
+             &split=N 第 N 句進入切句模式 · &hide=N,M 隱藏第 N、M 句（從 0 數）· &audio=1 純聽力 · &voice=1 聲音下拉打開 · &settings=1 學生的 Settings 面板 · &list=1 句子下拉打開 · &phase=meaning|repeat 播放中
+             &pick=3b,4a 已選班級 · &roster=3b 展開名冊 · &perclass=1 逐班日期 · &review=1 預覽框
+             &assigned=1 已指派過
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --student-green:#22C55E; --student-wash:#E8FFF0;
+  /* 淺綠色票 = PRACTICE_TYPE_COLUMNS.CONTENT.wash（practice-type-labels.js）。
+     Content Mirroring 就是 Content 欄那張卡，用它自己那一欄的 wash。
+     先前我在三個地方各調了一個 alpha（.06 / .07 / .10），統一成這一個。
+     --label 是同一欄的 label 色，那一組裡唯一為「文字」準備的綠——
+     primary(#00CB61) 當 14px 內文對比只有 2.3:1，讀不動。 */
+  --wash:#EFFBF4; --label:#00754A;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼（跟基準檔同一套，出自 config-layout.js） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* 標題前的圖示：出處是 PRACTICE_TYPE_ENTRIES 每一項的 tag
+   （practice-type-labels.js，#922 加的），八種型別都有：
+     CONTENT_MIRRORING: { wash:'#DCFCE7', label:'#15803D', icon:'ic:round-mic' }
+   wash 當底、label 當圖示色。 */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px;
+  display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none;
+  background:#DCFCE7; color:#15803D; display:flex; align-items:center; justify-content:center; }
+.h4 .tico .mi{ font-size:22px; }
+
+/* ---------- Stepper —— 換成 ReUI c-stepper-2 的做法，配色改成產品的綠 ----------
+   出處：https://reui.io/r/c-stepper-2.json ＋ @reui/stepper
+     StepperIndicator  size-6（24px）· rounded-full · text-xs · font-medium
+     StepperSeparator  h-0.5（2px）· rounded-sm · m-0.5（2px）· flex-1
+     走過的那一段 separator 變色（group-data-[state=completed]/step）
+   兩處刻意不照抄：
+     ① 原版 active 用 bg-primary（shadcn 預設近黑）、completed 用 green-500。
+        這裡兩個都是綠的，所以改用「實心＋光環」區分「正在這一步」。
+     ② 原版沒有文字標籤，只有數字。Content / Settings / Assign 是必要資訊，保留。 */
+.stepper{ display:flex; align-items:center; width:100%; margin-bottom:32px; }
+.stp-item{ display:flex; align-items:center; gap:10px; }
+.stp-ind{ width:24px; height:24px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; background:var(--grey300); color:var(--text2);
+  transition:background .2s, box-shadow .2s; }
+  /* 原版 bg-accent 是預設「白底」才看得見；這一頁底色是 #f4f7fb，
+     grey200 會整個糊掉，所以未走到的那格加深一階到 grey300。 */
+.stp-item.done .stp-ind{ background:var(--primary); color:#fff; }
+.stp-item.active .stp-ind{ background:var(--primary); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.stp-lbl{ font-size:14px; font-weight:400; color:var(--text3); white-space:nowrap; }
+.stp-item.done .stp-lbl{ color:var(--text); }
+.stp-item.active .stp-lbl{ color:var(--text); font-weight:600; }
+.stp-sep{ flex:1; min-width:24px; height:2px; border-radius:2px; margin:2px 10px;
+  background:var(--divider); transition:background .2s; }
+.stp-sep.done{ background:var(--primary); }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* =====================================================================
+   提案的新語彙
+   ===================================================================== */
+
+/* --- 段落眉標：三段各自回答一個問題 --- */
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:40px 0 12px; }
+.eyebrow:first-child{ margin-top:0; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); }
+.eyebrow .hint{ font-size:12px; color:var(--text3); }
+
+/* --- 模式：兩選一，不是開關 --- */
+.modes{ display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:560px; }
+.mode{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:14px 16px;
+  display:flex; gap:12px; align-items:flex-start; cursor:pointer; text-align:left;
+  transition:border-color .15s, background .15s; }
+.mode:hover{ border-color:var(--text3); }
+.mode .dot{ width:20px; height:20px; border-radius:50%; border:2px solid var(--text3); flex:none; margin-top:2px; }
+.mode.sel{ border-color:var(--primary); background:var(--wash); }
+.mode.sel .dot{ border-color:var(--primary); border-width:6px; }
+.mode .t{ display:block; font-size:14px; font-weight:700; }
+.mode .d{ display:block; font-size:12px; color:var(--text2); margin-top:2px; }
+
+/* --- 設定列：不再一個設定一張卡 --- */
+.rows{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:4px 20px; }
+.rw{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 0; }
+.rw + .rw{ border-top:1px solid var(--divider); }
+.rw .lb{ font-size:14px; font-weight:600; }
+.rw .hp{ font-size:12px; color:var(--text2); margin-top:2px; max-width:44ch; }
+.rw .ct{ flex:none; }
+
+/* --- 三段式（分段控制項）：一個決定讀起來是一個控制項 --- */
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px;
+  font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.seg.dis{ opacity:.5; }
+.seg.dis button{ cursor:default; }
+
+/* --- 聲音 chip：點一下＝選它＋聽它 --- */
+.voices{ display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.vgrp{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.vgrp .vl{ font-size:11px; font-weight:700; letter-spacing:.2px;
+  color:var(--text3); margin-right:2px; }
+.chip{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; }
+.chip:hover{ border-color:var(--text3); color:var(--text); }
+.chip .mi{ font-size:16px; }
+.chip.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.chip.playing .mi{ color:var(--primary); }
+
+/* --- 次數：小型 stepper --- */
+.stp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; }
+.stp .n{ display:inline-block; }
+.stp button{ width:38px; height:38px; border:0; background:#fff; color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.stp button:hover{ background:var(--grey200); color:var(--text); }
+.stp .n{ width:44px; text-align:center; font-size:15px; font-weight:700;
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); line-height:38px; }
+
+/* =====================================================================
+   樣本句 —— 這一版的主角
+   上半是學生螢幕的真實排版，下半是改它的兩個控制項，同一張卡。
+   ===================================================================== */
+.specimen{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:hidden; }
+.spec-screen{ padding:24px 24px 20px; position:relative; }
+.spec-pager{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.spec-pager .who{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text3); }
+.spec-pager .nav2{ display:flex; align-items:center; gap:2px; }
+.spec-pager button{ width:28px; height:28px; border:0; background:transparent; border-radius:6px;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.spec-pager button:hover{ background:var(--grey200); color:var(--text); }
+.spec-pager .idx{ font-size:12px; color:var(--text2); min-width:88px; text-align:center; }
+
+/* 學生的一列句子（content-window.js 的 active row） */
+.stu-row{ display:flex; align-items:flex-start; gap:8px;
+  border-left:4px solid var(--student-green); background:var(--student-wash);
+  border-radius:4px; padding:10px 8px 10px 12px; }
+.stu-row .body{ flex:1; min-width:0; }
+.stu-py{ color:gray; font-style:italic; font-size:13.6px; }        /* 0.85rem，在字的上面 */
+.stu-zh{ font-size:17.6px; line-height:1.5; }                       /* h5 / 1.1rem */
+.stu-tr{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+.stu-tr .eye{ width:26px; height:26px; border:0; background:transparent; border-radius:50%;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.stu-tr .eye:hover{ background:rgba(145,158,171,.12); }
+.stu-tr .txt{ font-size:12px; flex:1; }
+.stu-tr .txt.off{ color:var(--text3); font-style:italic; }
+.stu-spk{ width:30px; height:30px; border:0; background:transparent; border-radius:50%; flex:none;
+  color:var(--student-green); display:flex; align-items:center; justify-content:center; margin-top:2px; }
+.stu-pinyin-switch{ display:flex; justify-content:flex-end; align-items:center; gap:8px;
+  margin:0 0 8px; font-size:14px; color:var(--text); }
+.sw{ display:inline-flex; align-items:center; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--primary); position:relative; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:15px; width:16px; height:16px;
+  border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+
+/* 樣本句卡的下半：控制它的兩列 */
+.spec-ctrl{ border-top:1px dashed var(--divider); background:var(--grey100); padding:4px 24px; }
+.spec-ctrl .rw + .rw{ border-top:1px solid var(--divider); }
+.spec-cap{ font-size:12px; color:var(--text3); margin:8px 4px 0; }
+
+/* 純聽力：樣本句換成學生真正看到的那張卡 */
+.audio-card{ border:1px solid var(--divider); border-radius:16px; padding:24px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; max-width:300px; margin:8px auto 0; }
+.audio-card .hp{ width:100px; height:100px; border-radius:50%; background:var(--grey200);
+  display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+.audio-card .hp .mi{ font-size:56px; color:var(--text2); }
+.audio-card .t{ font-size:16px; font-weight:700; margin-bottom:4px; }
+.audio-card .t span{ color:var(--student-green); }
+.audio-card .d{ font-size:12px; color:var(--text2); }
+.audio-hint{ background:#F0FAF4; border-radius:16px; padding:12px 16px; display:flex; gap:8px;
+  align-items:flex-start; max-width:300px; margin:16px auto 0; }
+.audio-hint .mi{ font-size:20px; color:var(--student-green); flex:none; }
+.audio-hint span{ font-size:12px; color:var(--text2); }
+/* 純聽力時，兩個顯示設定不是變灰，是換成一句說明 */
+.handed{ display:flex; gap:12px; align-items:flex-start; padding:16px 0; }
+.handed .mi{ font-size:20px; color:var(--text3); flex:none; margin-top:1px; }
+.handed .t{ font-size:14px; font-weight:600; }
+.handed .d{ font-size:12px; color:var(--text2); margin-top:2px; }
+
+/* --- 收起來的全部句子 --- */
+.allsent{ margin-top:16px; }
+.allsent summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:600; color:var(--text2); padding:10px 4px; }
+.allsent summary::-webkit-details-marker{ display:none; }
+.allsent summary .mi{ font-size:18px; transition:transform .2s; }
+.allsent[open] summary .mi{ transform:rotate(90deg); }
+.allsent .sl{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:4px 16px; }
+.allsent .si{ display:flex; gap:12px; align-items:flex-start; padding:12px 6px; margin:0 -6px; border-radius:8px; cursor:pointer; }
+.allsent .si:hover{ background:var(--grey100); }
+.allsent .si.cur .z{ font-weight:600; }
+.allsent .si.cur .n{ color:var(--primary-dark); font-weight:700; }
+.allsent .si + .si{ border-top:1px solid var(--divider); }
+.allsent .si .n{ font-size:12px; color:var(--text3); width:16px; flex:none; padding-top:3px; }
+.allsent .si .z{ font-size:14px; flex:1; }
+.allsent .si button{ width:30px; height:30px; border:0; background:transparent; border-radius:50%;
+  color:var(--primary); cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; }
+.allsent .si button:hover{ background:rgba(0,203,97,.08); }
+
+/* =====================================================================
+   Step 1 的兩個欄位 —— 參考 ReUI
+     c-input-2         = Field + FieldLabel + Input：標籤在輸入框「上面」，
+                         不是 MUI 那種浮在框線上的凹槽標籤。
+     c-dropdown-menu-18 = outline 按鈕觸發 + 選單；選單有群組標題、
+                         每一列帶一個圖示、箭頭用 ml-auto 推到最右。
+   兩者都改成 label-above 之後，第一步就是統一的「標籤在上、控制項在下」。
+   ===================================================================== */
+.fld{ display:flex; flex-direction:column; gap:8px; max-width:520px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.fld .help{ font-size:12px; color:var(--text2); }
+.inp{ height:40px; width:100%; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); }
+.inp::placeholder{ color:var(--text3); }
+.inp:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); }
+
+.dd{ position:relative; }
+.dd-trig{ width:100%; height:40px; display:flex; align-items:center; gap:10px;
+  border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 12px;
+  font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.dd-trig:hover{ background:var(--grey100); }
+.dd-trig .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-trig .caret{ font-size:18px; color:var(--text2); flex:none; }   /* ml-auto */
+/* c-18 每一列的 logo 位；這裡放 targetLanguage。
+   值是 BCP-47（src/enum/languageTags.js：'zh-CN' / 'zh-TW' / 'zh-HK'），
+   產品直接印 cfg.targetLanguage，所以不縮寫、不改大小寫。
+   顏色沿用產品給語言 chip 的藍（#EFF6FF / #1D4ED8），跟綠色的級數 chip 分開。 */
+.mark{ height:22px; padding:0 8px; border-radius:6px; flex:none; display:inline-flex;
+  align-items:center; font-size:11px; font-weight:700; letter-spacing:.2px;
+  background:#EFF6FF; color:#1D4ED8; }
+.dd-menu{ position:absolute; top:46px; left:0; right:0; z-index:30; background:#fff;
+  border:1px solid var(--divider); border-radius:10px; padding:4px;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+/* DropdownMenuLabel */
+.dd-lbl{ font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--text3); padding:8px 8px 6px; }
+.dd-item{ display:flex; align-items:center; gap:10px; width:100%; padding:8px; border:0;
+  background:transparent; border-radius:6px; font-size:14px; color:var(--text);
+  cursor:pointer; text-align:left; font-family:inherit; }
+.dd-item:hover{ background:var(--grey200); }
+.dd-item .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-item .lvl, .dd-trig .lvl{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px;
+  background:#F0FDF4; color:#065F46; flex:none; }
+/* 現行產品的語言／級數 chip 只有在選單打開時看得到，收起來就消失了。
+   觸發鈕也帶上，選完之後還看得出「這是哪一個專案」。 */
+.dd-item .tick{ font-size:18px; color:var(--primary); flex:none; }
+
+/* =====================================================================
+   Step 4 · Assign —— 從 modal 搬回頁面上
+   現行是「一個只放按鈕的頁面 ＋ 一個 1728 行的對話框」，而對話框裡
+   Schedule／Optional／Students 每選一個班就整組重複一次。
+   這一版：三段（誰／什麼時候／算不算作業），一份時間套用到全部，
+   要分開再展開。名詞跟 AssignmentTypeChip 對齊（Mandatory / Optional）。
+   ===================================================================== */
+.clsrow{ display:flex; align-items:center; gap:12px; padding:14px 0; }
+.clsrow + .clsrow{ border-top:1px solid var(--divider); }
+.clsrow .box{ width:20px; height:20px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.clsrow .box .mi{ font-size:15px; opacity:0; }
+.clsrow.on .box{ background:var(--primary); border-color:var(--primary); }
+.clsrow.on .box .mi{ opacity:1; }
+.clsrow .nm{ display:block; font-size:14px; font-weight:600; }
+.clsrow .sub{ display:block; font-size:12px; color:var(--text2); margin-top:1px; }
+.clsrow .grow{ flex:1; min-width:0; }
+.clsrow.done{ opacity:.55; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; }
+.pill.mand{ background:#F1F5F9; color:#475569; }
+.pill.opt{ background:#E0E7FF; color:#3730A3; }
+.linkbtn{ border:0; background:transparent; padding:0; font-family:inherit; font-size:12px;
+  font-weight:700; color:var(--primary-dark); cursor:pointer; text-decoration:underline; }
+
+.dtrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dtrow .lbl{ font-size:14px; font-weight:600; width:52px; flex:none; }
+.dt2{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 12px;
+  font-family:inherit; font-size:14px; color:var(--text); background:#fff; width:220px; }
+.quick{ display:inline-flex; gap:4px; }
+.quick button{ height:30px; padding:0 11px; border-radius:8px; border:1px solid var(--divider);
+  background:#fff; font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; }
+.quick button:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.quick button.on{ background:rgba(0,203,97,.10); border-color:var(--primary); color:var(--primary-dark); }
+
+/* 「全部同一份 / 每班各自」是兩種模式，不是一個附加選項——
+   所以用「現況陳述 ＋ 切換動作」，而且就放在日期正上方，不是右上角的 hint。 */
+.modeline{ display:flex; align-items:center; gap:12px; padding:14px 0 12px;
+  font-size:13px; color:var(--text2); border-bottom:1px solid var(--divider); margin-bottom:4px; }
+.perclass{ padding:14px 0; }
+.perclass + .perclass{ border-top:1px solid var(--divider); }
+.pc-name{ font-size:13px; font-weight:700; margin-bottom:10px; }
+
+.checkline{ display:flex; align-items:center; gap:10px; padding:14px 0; border-top:1px solid var(--divider);
+  font-size:14px; cursor:pointer; }
+.checkline .box{ width:18px; height:18px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.checkline .box .mi{ font-size:13px; opacity:0; }
+.checkline.on .box{ background:var(--primary); border-color:var(--primary); }
+.checkline.on .box .mi{ opacity:1; }
+
+/* 名冊：預設收起來，例外才展開 */
+.roster{ margin:2px 0 6px 32px; padding:12px 14px; background:var(--grey100);
+  border:1px solid var(--divider); border-radius:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.stu{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; color:var(--text); cursor:pointer; }
+.stu .box{ width:15px; height:15px; border-radius:4px; border:2px solid var(--text3); flex:none; }
+.stu.on{ border-color:var(--primary); background:rgba(0,203,97,.08); }
+.stu.on .box{ background:var(--primary); border-color:var(--primary); }
+.stu.off{ opacity:.58; cursor:default; }
+.stu .tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; }
+.stu .tag.ok{ background:#D3FCD2; color:#118D57; }
+.stu .tag.new{ background:#DCECFE; color:#193592; }
+.stu .tag.bad{ background:#FFE9D5; color:#B71D18; }
+.stu .tag.warn{ background:#FFF5CC; color:#7A4100; }
+
+/* ---------- Step 3（沿用基準檔，這一版沒改） ---------- */
+.sub1{ font-size:16px; font-weight:600; }
+.sub2{ font-size:14px; font-weight:600; }
+.cap{ font-size:12px; color:var(--text2); }
+.cap.dis{ color:var(--text3); }
+/* =====================================================================
+   Content preview —— 換成 ReUI 的 c-frame-6（Frame with ghost variant）
+   出處：https://reui.io/r/c-frame-6.json ＋ @reui/frame
+     Frame        bg-muted/50 · border 1px · rounded(--frame-radius)
+                  padding + gap = --spacing(0.75) = 3px
+     FrameHeader  px --spacing(4)=16 · py --spacing(2)=8 · gap 0
+                  FrameTitle text-sm font-semibold / FrameDescription muted
+     FramePanel   白底(--color-card) · border 1px · shadow-xs · px/py 16
+   （c-frame-6 的範例只有 Header + Panel，沒有 FrameFooter，這裡照它）
+   ghost 變體：外框「沒有邊框」，只剩底色與 panel。因為少了那 1px 邊框，
+   同心圓角的算式也跟著少減 1：
+     ghost: [--frame-panel-radius:calc(var(--frame-radius) - var(--frame-px))]
+     --frame-radius = --radius-xl = calc(0.625rem + 4px) = 14px
+     --frame-panel-radius = 14 − 3 = 11px（default 變體是 14 − 3 − 1 = 10px）
+   這一塊同時收掉了現行的三層標題（Content Preview 分隔線／綠色專案名／
+   Article Content 小標）——同一件事本來被標了四次。 */
+.frame{ --frame-radius:14px; --frame-px:3px;
+  /* ghost：沒有 1px 外框，所以 panel 圓角少減那 1px */
+  --frame-panel-radius:calc(var(--frame-radius) - var(--frame-px));
+  display:flex; flex-direction:column; gap:var(--frame-px);
+  /* 原版是 bg-muted/50。這裡換成 CONTENT.wash。用實色而不是半透明：
+     ghost 沒有邊框，形狀全靠這層底色撐，實色才不會隨背後的東西變色。 */
+  background:var(--wash);
+  border-radius:var(--frame-radius); padding:var(--frame-px);
+  margin-top:32px; }
+.frame-hd{ display:flex; flex-direction:column; gap:0; padding:8px 16px; }
+.frame-ttl{ font-size:14px; font-weight:600; color:var(--text); }
+.frame-desc{ font-size:14px; color:var(--text2); }
+.frame-panel{ position:relative; overflow:hidden; background:#fff;
+  border:1px solid var(--divider); border-radius:var(--frame-panel-radius);
+  box-shadow:0 1px 2px rgba(33,43,54,.05); padding:16px; }
+/* --- 句子表（狀態 B）--------------------------------------------------
+   現行是一張有 checkbox 欄與 Actions 欄的表格，外加一條 Tip 說明
+   「點字與字之間放游標，再用 New Line 提示切句」——那是在用文字解釋一個
+   看不見的控制項。這裡把三件事都改成看得見的東西：
+     合併 → 長在兩句之間的分隔線上（「跟上一句合併」在空間上才成立）
+     切句 → 一顆 Split 鈕，按下去字與字之間才出現可點的插入點
+     刪除 → 標記 → 一條確認列（拿掉現行多出來的那個 confirm modal）
+   -------------------------------------------------------------------- */
+.srow{ display:flex; align-items:flex-start; gap:12px; padding:14px 6px; border-radius:8px; }
+.srow .n{ font-size:12px; color:var(--text3); min-width:18px; text-align:right; flex:none; padding-top:6px; font-variant-numeric:tabular-nums; }   /* 編號跟第三步 All sentences 對齊（2026-09-14） */
+.srow .zh{ flex:1; font-size:16px; line-height:1.7; }
+.srow .acts{ display:flex; gap:2px; flex:none; align-items:center; }
+.srow .acts button{ width:34px; height:34px; border:0; background:transparent; border-radius:8px;
+  color:var(--text3); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.srow .acts button:hover{ background:var(--grey200); color:var(--text); }
+.srow .acts button .mi{ font-size:20px; }
+/* 切句是這一步最核心的動作，給它字（2026-09-14）：跟 Merge 同一種藥丸，但灰框黑字，
+   跟綠色的 Merge 分得開；進切句模式變成 Cancel */
+.srow .acts button.splitbtn{ width:auto; height:30px; padding:0 12px 0 8px; gap:5px; border:1px solid var(--divider);
+  border-radius:999px; font-family:inherit; font-size:12px; font-weight:700; color:var(--text); background:#fff; margin-right:4px; }
+.srow .acts button.splitbtn .mi{ font-size:16px; color:var(--text2); }
+.srow .acts button.splitbtn:hover{ border-color:var(--primary); color:var(--primary-dark); background:rgba(0,203,97,.06); }
+.srow .acts button.splitbtn:hover .mi{ color:var(--primary-dark); }
+.srow .acts button.splitbtn.on{ background:var(--primary); border-color:var(--primary); color:#fff; }
+.srow .acts button.splitbtn.on .mi{ color:#fff; }   /* 2026-09-14：照產品 IconButton small ＋ Iconify 20，原本沒設、繼承成 13px */
+.srow.marked{ opacity:.45; }
+.srow.marked .zh{ text-decoration:line-through; }
+.srow .acts button.hid{ color:var(--text2); opacity:1; }
+.srow.splitting{ background:var(--wash); }
+.srow.splitting .zh{ letter-spacing:1px; }   /* 切句模式字距拉開一點，插入點才有位置站 */
+.srow .hint{ display:block; font-size:12px; color:var(--primary-dark); margin-top:4px; }
+
+/* 合併鈕 22px 高、壓在分隔線上，兩側各留 10px 才不會擠著上下兩句 */
+.sdiv{ position:relative; height:1px; margin:10px 6px; display:flex; }
+.sdiv::before{ content:''; position:absolute; inset:0; border-top:1px dashed var(--divider); }
+.sdiv button{ position:relative; margin:-13px 0 0 30px; display:inline-flex; align-items:center; gap:5px;
+  height:26px; padding:0 12px 0 8px; border:1px solid rgba(0,203,97,.45); border-radius:999px; background:#fff;
+  font-size:12px; font-weight:700; color:var(--primary-dark); cursor:pointer; font-family:inherit;
+  box-shadow:0 1px 2px rgba(33,43,54,.08); }   /* 2026-09-14：靠左、跟句子對齊，顏色改成看得見 */
+.sdiv button:hover{ background:rgba(0,203,97,.08); border-color:var(--primary); }
+.sdiv button .mi{ font-size:16px; }
+
+/* 切句模式的插入點 */
+/* 插入點一進切句模式就看得到——只有 hover 才顯色的話，等於還是
+   「看不見的控制項」，那正是現行那條 Tip 在替代的東西。 */
+.gap{ display:inline-block; width:4px; height:1.25em; vertical-align:-5px; margin:0 3px;
+  border-radius:3px; background:rgba(0,167,73,.45); cursor:pointer; transition:background .12s, transform .12s; }
+/* 2026-09-14 加重：淡綠底上原本的 .14 alpha 幾乎看不到。
+   所有插入點一樣重——標點後面不另外標深（使用者拿掉），任何位置都點得下去 */
+.gap:hover{ background:var(--primary-dark); transform:scaleX(1.6); }
+
+/* 專案鎖住時的說明 */
+.locked-note{ font-size:12px; color:var(--text2); display:flex; align-items:center; gap:5px; }
+.locked-note .mi{ font-size:14px; }
+.dd-trig.locked{ background:var(--grey100); color:var(--text2); cursor:default; }
+.dd-trig.locked:hover{ background:var(--grey100); }
+
+/* 課文照專案存的分段一段一行。沒有 max-height——這是第一步，
+   底下沒有東西在跟它搶空間，而讓它長完才看得出「這篇有多少」。
+   寬度維持整欄（2026-09-10 決定）——中文 16px 的舒適行長雖然約 520–640px，
+   但收窄會讓這一塊在頁面上失去份量，取捨後選擇不收。 */
+/* 注意：.seg 已經被 Settings 的分段控制項用掉了，這裡另取名 */
+.aline{ display:flex; gap:12px; align-items:baseline; padding:7px 0; }
+.aline + .aline{ border-top:1px solid var(--divider); }
+.aline .n{ font-size:12px; color:var(--text3); min-width:14px; text-align:right; flex:none;
+  font-variant-numeric:tabular-nums; }
+.aline .t{ flex:1; font-size:16px; line-height:1.75; }
+/* 對話類專案：這個限制在第一步就算得出來，不該等到第二步才講 */
+/* 對話類的提醒：MUI Alert severity=warning 的 standard 變體（warning.lighter 底、warning.darker 字），
+   2026-09-15 使用者要它更顯眼——原本是一行 12px 棕字，跟旁邊的副標幾乎一樣淡 */
+.conv{ display:flex; gap:10px; align-items:center; margin:4px 16px 10px; padding:10px 14px; border-radius:8px;
+  background:#FFF5CC; color:#7A4100; box-shadow:inset 3px 0 0 #FFAB00; }
+.conv .mi{ font-size:22px; color:#B76E00; flex:none; }
+.conv span{ font-size:15px; font-weight:500; color:#7A4100; line-height:1.5; }
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.dt{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-size:12.8px;
+  width:190px; font-family:inherit; color:var(--text); background:#fff; }
+.opt-chip{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+
+/* ---------- 送出前的預覽（照產品的 ConfirmDialog） ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex;
+  align-items:center; justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:16px; width:100%; max-width:560px; overflow:hidden;
+  box-shadow:0 24px 48px rgba(33,43,54,.24); max-height:88vh; display:flex; flex-direction:column; }
+.dlg-hd{ padding:20px 24px 0; }
+.dlg-hd h3{ font-size:18px; font-weight:700; }
+.dlg-hd p{ font-size:13px; color:var(--text2); margin-top:4px; }
+.dlg-bd{ padding:16px 24px; overflow-y:auto; }
+.dlg-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px;
+  border-top:1px solid var(--divider); }
+/* 只講例外，不覆述常規：整班就寫「all N students」，不列名字；
+   有人拿不到才把那幾個人（和原因）寫出來。 */
+.rvc{ padding:12px 0; }
+.rvc + .rvc{ border-top:1px solid var(--divider); }
+.rvc .top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
+.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--label); }
+.rvc .top .cnt{ font-size:13px; color:var(--text2); flex:none; }
+.rvc .when{ font-size:12px; color:var(--text2); margin-top:2px; }
+.rvc .ex{ font-size:12px; color:#7A4100; margin-top:6px; line-height:1.6; }
+
+/* ---------- Footer ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.contained.dis:hover{ background:var(--grey300); }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+
+/* ---------- 提案說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; } .main{ padding:88px 16px; }
+}
+@media (max-width:820px){
+  .modes{ grid-template-columns:1fr; }
+  .rw{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .voices{ align-items:flex-start; } .vgrp{ justify-content:flex-start; }
+  .stepper .stp-lbl{ display:none; }
+}
+/* =====================================================================
+   Settings 第三版（2026-09-14）：六個控制項一張卡在上，學生畫面整份在下（可收合）
+   學生畫面照 content-window.js：綠色練習名稱＋分隔線、整份句子清單、正在唸的那句
+   左邊 4px #22C55E ＋ 底色 #E8FFF0、拼音灰斜體 0.85rem 在字上、句子 1.1rem、
+   翻譯 caption 在字下（Choice by student 有眼睛）、每句右邊喇叭 20px、
+   Choice by student 的拼音開關在右上角。純聽力換成 renderAudioModePanel 那張耳機卡。
+   ===================================================================== */
+.ctrlcard{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:4px 20px; }   /* 不 sticky（2026-09-14 改回） */
+.ctrlcard .rw{ padding:12px 0; }
+/* 兩欄：Pinyin｜Translation ／ Play the translation first｜Move on ／ Speed｜Voice（右欄寬一點給四顆聲音 chip） */
+.ctrlcard .grid{ display:grid; grid-template-columns:1fr 1.3fr; column-gap:32px; }
+.ctrlcard .cell{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 0; border-top:1px solid var(--divider); min-width:0; }
+.ctrlcard .cell:nth-child(-n+2){ border-top:0; }
+.ctrlcard .cell.span{ grid-column:1 / -1; }
+.ctrlcard .cell .lb{ font-size:14px; font-weight:600; }
+.ctrlcard .cell.span .sub{ display:flex; align-items:center; gap:16px; min-width:0; }
+.ctrlcard .cell.span .sub + .sub{ margin-left:auto; }
+.ctrlcard .cell .ct{ flex:0 1 auto; min-width:0; display:flex; justify-content:flex-end; }   /* 可以縮、chip 換行，不會撐破卡（2026-09-14） */
+.ctrlcard .cell .voices, .ctrlcard .cell .vgrp{ min-width:0; }
+.ctrlcard .handed{ padding:10px 0; grid-column:1 / -1; border-bottom:1px solid var(--divider); }
+.ctrlcard .handed + .cell, .ctrlcard .handed + .cell + .cell{ border-top:0; }   /* 純聽力：交給學生那一列自己畫底線，下面兩格不再畫上線 */
+@media (max-width:1100px){ .ctrlcard .grid{ grid-template-columns:1fr; } .ctrlcard .cell:nth-child(2){ border-top:1px solid var(--divider); } }
+.prev{ margin-top:24px; }
+.prev summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px; padding:8px 4px 10px;
+  font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.prev summary::-webkit-details-marker{ display:none; }
+.prev summary .mi{ font-size:18px; transition:transform .2s; }
+.prev[open] summary .mi{ transform:rotate(90deg); }
+.prev summary .cnt{ margin-left:auto; font-weight:600; letter-spacing:0; text-transform:none; font-size:12px; }
+.stu-screen{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:hidden; }
+.stu-top{ display:flex; justify-content:flex-end; padding:12px 16px 0; font-size:14px; }
+.stu-top span{ display:inline-flex; align-items:center; gap:8px; }
+.stu-body{ padding:24px; }
+.stu-name{ font-size:20px; font-weight:700; color:var(--student-green); padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--divider); }
+.stu-row{ margin-bottom:4px; border-left:4px solid transparent; background:transparent; border-radius:0; cursor:pointer; }
+.stu-row.cur{ border-left-color:var(--student-green); background:var(--student-wash); border-radius:4px; }
+.stu-row:hover:not(.cur){ background:var(--grey100); }
+.stu-seq{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--primary-dark); }
+.stu-seq .mi{ font-size:14px; }
+.stu-seq b{ font-weight:700; }
+.stu-audio{ padding:24px; }
+/* =====================================================================
+   Settings 第四版（2026-09-14）：工具列 ＋ 畫布，同一張卡
+   一張卡就是學生畫面，六個控制項是貼在它頂上的一條工具列（像設計工具的屬性列）。
+   三組用細直線隔開：看得到的｜喇叭播什麼｜Move on after。每個控制項「小字標籤在上、控制項在下」。
+   （2026-09-15：收合鈕拿掉，畫布永遠顯示。）
+   ===================================================================== */
+.canvas{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:visible; }
+.toolbar{ border-bottom:1px solid var(--divider); }
+/* 兩行是明說的，不是換行換出來的：第一行＝畫面上看得到的，第二行＝喇叭播什麼｜Move on after */
+.tb-row{ display:flex; align-items:stretch; padding:8px 8px 8px 16px; position:relative; }
+.tb-row + .tb-row{ border-top:1px solid var(--divider); }
+.tb-grp{ display:flex; align-items:flex-end; gap:20px; padding:4px 20px 4px 0; flex-wrap:wrap; row-gap:8px; }
+.tb-grp + .tb-grp{ border-left:1px solid var(--divider); padding-left:20px; }
+.tb-ctl{ display:flex; flex-direction:column; gap:5px; }
+.tb-ctl .tl{ font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); line-height:1; display:flex; align-items:center; gap:4px; }
+.tip{ position:relative; border:0; background:transparent; padding:0; color:var(--text3); cursor:help; display:inline-flex; font-family:inherit; }
+.tip .mi{ font-size:14px; }
+/* MUI Tooltip：grey.800 底、白字 12px、圓角 8、arrow */
+.tip::after{ content:attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+  width:max-content; max-width:300px; background:#454F5B; color:#fff; font-size:12px; font-weight:500; line-height:1.5;
+  letter-spacing:0; text-transform:none; padding:6px 10px; border-radius:8px; white-space:normal; text-align:left;
+  opacity:0; pointer-events:none; transition:opacity .12s; z-index:50; box-shadow:0 8px 16px rgba(33,43,54,.16); }
+.tip::before{ content:''; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:#454F5B; opacity:0; transition:opacity .12s; z-index:50; }
+.tip:hover::after, .tip:focus-visible::after, .tip.on::after,
+.tip:hover::before, .tip:focus-visible::before, .tip.on::before{ opacity:1; }
+/* 工具列裡的往右彈：往上會蓋到第一行、往下會壓到數字，右邊才有空間 */
+.tb-row .tip::after{ bottom:auto; left:calc(100% + 10px); top:-7px; transform:none; }   /* 上緣對齊 ⓘ，往右下長，不碰第一行 */
+.tb-row .tip::before{ bottom:auto; left:calc(100% + 1px); top:50%; transform:translateY(-50%);
+  border-top-color:transparent; border-right-color:#454F5B; }
+.toolbar .seg{ padding:2px; border-radius:8px; }
+.toolbar .seg button{ height:26px; padding:0 10px; font-size:12px; border-radius:6px; }
+.toolbar .chip{ height:28px; padding:0 10px; font-size:12px; gap:4px; }
+.toolbar .chip .mi{ font-size:15px; }
+.toolbar .vgrp{ gap:6px; }
+.toolbar .stp button{ width:28px; height:28px; }
+.toolbar .stp .n{ width:40px; line-height:28px; font-size:13px; }
+.toolbar .stp{ border-radius:8px; }
+.tb-fold{ margin-left:auto; align-self:center; width:32px; height:32px; border:0; background:transparent; border-radius:8px;
+  color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.tb-fold:hover{ background:var(--grey200); color:var(--text); }
+.tb-fold .mi{ font-size:20px; transition:transform .2s; }
+.tb-fold.closed .mi{ transform:rotate(-90deg); }
+/* Voice：這一頁唯一長的清單，收成一顆帶 ▶ 的下拉；打開每列一顆 ▶，點一列＝選它＋聽它 */
+.vdd{ position:relative; }
+.vdd-trig{ height:28px; display:inline-flex; align-items:center; gap:6px; padding:0 8px 0 10px; border:1px solid var(--divider);
+  border-radius:999px; background:#fff; font-family:inherit; font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+.vdd-trig:hover{ border-color:var(--text3); }
+.vdd-trig .mi{ font-size:15px; color:var(--primary); }
+.vdd-trig .mi.caret{ color:var(--text2); font-size:18px; margin-left:2px; }
+.vdd-menu{ position:absolute; top:34px; left:0; z-index:40; min-width:220px; background:#fff; border:1px solid var(--divider);
+  border-radius:10px; padding:4px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.vdd-menu .vl{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 4px; }
+.vdd-item{ display:flex; align-items:center; gap:8px; width:100%; padding:7px 8px; border:0; background:transparent; border-radius:6px;
+  font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; text-align:left; }
+.vdd-item:hover{ background:var(--grey200); }
+.vdd-item .play{ width:24px; height:24px; border:0; border-radius:50%; background:transparent; color:var(--primary); display:flex;
+  align-items:center; justify-content:center; flex:none; }
+.vdd-item .play .mi{ font-size:16px; }
+.vdd-item .nm{ flex:1; }
+.vdd-item .tick{ font-size:18px; color:var(--primary); }
+.vdd-item.on .nm{ font-weight:700; }
+.tb-note{ display:inline-flex; align-items:center; gap:6px; height:28px; font-size:12px; color:var(--text2); }
+.tb-note .mi{ font-size:16px; color:var(--text3); }
+/* 預覽做成一個視窗（2026-09-15，跟 v4 第三十六輪同一套）：灰色地板上一個有圓角、有陰影的框，框頂一條視窗列（三個點 ＋ Student view），
+   學生的主欄在框裡。「視窗裡的視窗＝預覽」不用文字解釋；先前的綠帶子與深灰線拿掉。 */
+.stu-ground{ background:#DFE5EC; padding:24px; }
+.winwrap{ max-width:900px; margin:0 auto; }
+/* 方案 B（2026-09-15）：視窗列留著，三個點換成一個小螢幕圖示——不綁平台 */
+.win-bar{ height:34px; display:flex; align-items:center; justify-content:center; position:relative; background:#fff; border-bottom:1px solid var(--divider);
+  font-size:12px; font-weight:700; color:var(--text2); letter-spacing:.2px; }
+.win-bar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.win{ border-radius:14px; overflow:hidden; background:#fff;
+  box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.canvas .stu-screen{ border:0; border-radius:0 0 16px 16px; }
+.canvas .stu-foot{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:12px; color:var(--text3);
+  border-top:1px solid var(--divider); }
+/* =====================================================================
+   學生畫面（2026-09-14 更正）：學生端 Mirroring 是兩欄。左欄是 content-window.js 的整份清單
+   （練習開始前收起），主欄是 practice-content-list.js → message-list.js 的 PRACTICE SENTENCE 大卡，
+   右上角 Settings 是跟 Vocabulary 共用的 settings-panel.js，四個 toggle 各自只在 Choice by student 時出現。
+   前一版把左欄清單當成學生畫面畫，是錯的——主角是這張卡。
+   ===================================================================== */
+.mp{ display:flex; min-height:420px; }
+.mp-left{ width:38px; flex:none; border-right:1px solid var(--divider); display:flex; justify-content:center; padding-top:12px; }
+.mp-left button{ width:38px; height:38px; border:1px solid #BBF7D0; border-radius:12px; background:rgba(255,255,255,.98); color:var(--student-green);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.mp-left button .mi{ font-size:22px; }
+.mp-main{ flex:1; min-width:0; }
+.mp-hd{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; }
+.mp-hd .ttl{ font-size:16px; font-weight:800; color:#1E293B; }
+/* settings-panel.js：48px 齒輪卡 ＋ 220px 面板 */
+.sp{ position:relative; }
+.sp .gear{ width:48px; height:48px; border:0; border-radius:12px; background:#fff; color:#64748B; cursor:pointer;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.sp .gear .mi{ font-size:20px; }
+.sp .panel{ position:absolute; top:56px; right:0; width:220px; background:#fff; border-radius:12px; z-index:20;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; }
+.sp .panel .ph{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7;
+  font-size:14px; font-weight:700; color:#334155; }
+.sp .panel .ph .mi{ font-size:18px; color:#94A3B8; }
+.sp .panel .pr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:14px; font-weight:600; color:#475569; }
+.sp .panel .pr + .pr{ border-top:1px solid #EEF2F7; }
+.sp .panel .pr .sel{ height:30px; padding:0 8px; border:1px solid var(--divider); border-radius:6px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.sp .panel .pr .sel .mi{ font-size:18px; color:var(--text2); }
+.sw2{ display:inline-block; width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; }
+.sw2::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.sw2.on{ background:var(--primary); } .sw2.on::after{ left:15px; }
+/* message-list.js：PRACTICE SENTENCE 卡 */
+.mp-body{ padding:8px 24px 24px; }
+.pcard{ background:#F0FAF4; border:1px solid #D1FAE5; border-radius:24px; padding:32px; min-height:190px; display:flex; align-items:center;
+  box-shadow:0 8px 20px rgba(15,23,42,.04); transition:all .18s ease; }
+.pcard.meaning{ background:#EFF6FF; border-color:#BFDBFE; box-shadow:0 18px 42px rgba(15,23,42,.08); min-height:240px; }
+.pcard.repeat{ background:#F0FAF4; border-color:#86EFAC; box-shadow:0 18px 42px rgba(15,23,42,.08); min-height:240px; }
+.pcard .in{ width:100%; display:flex; flex-direction:column; gap:18px; }
+.pcard .lbl{ display:flex; align-items:center; gap:8px; }
+.pcard .lbl .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; }
+.pcard .lbl .ic .mi{ font-size:20px; color:#22C55E; }
+.pcard .lbl .t{ font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:#22C55E; }
+.pcard .lbl .h{ font-size:12px; color:var(--text2); }
+.pcard.meaning .lbl .ic .mi, .pcard.meaning .lbl .t{ color:#2563EB; }
+.pcard.repeat .lbl .ic .mi, .pcard.repeat .lbl .t{ color:#16A34A; }
+.pcard .py{ font-size:16px; font-style:italic; color:var(--text2); text-align:center; margin-bottom:8px; }
+.pcard .zh{ font-size:40px; font-weight:800; color:#0F172A; line-height:1.55; text-align:center; }
+.pcard .tr{ font-size:14px; color:var(--text2); text-align:center; margin-top:4px; }
+.pcard .tr-big{ font-size:32px; font-weight:800; color:#1E3A8A; line-height:1.55; text-align:center; }
+.pcard .hidden{ font-size:16px; font-style:italic; color:#94A3B8; line-height:1.6; text-align:center; }
+.mp-play{ display:flex; justify-content:center; margin-top:16px; }
+.mp-play button{ height:36px; padding:0 16px 0 12px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit; font-size:13px;
+  font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:20px; color:var(--primary); }
+.mp-play button:hover{ border-color:var(--primary); }
+/* 翻頁改成下拉（2026-09-14）：一顆藥丸打開全部句子，點一句就換預覽 */
+.sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }   /* 在容器裡展開，不是浮出來的選單（2026-09-14） */
+.sdd-trig{ height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit;
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.sdd-trig:hover{ border-color:var(--text3); }
+.sdd-trig .mi{ font-size:18px; color:var(--text2); }
+.sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
+  font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
+.sdd-item:hover{ background:var(--grey200); }
+.sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .z{ flex:1; min-width:0; }
+.sdd-item.on .z{ font-weight:600; } .sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
+.sdd-item .mi{ font-size:18px; color:var(--primary); }
+.pager{ display:flex; align-items:center; gap:2px; margin:12px auto 0; width:max-content; padding:3px 4px;
+  background:#fff; border:1px solid var(--divider); border-radius:999px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.pager button{ width:28px; height:28px; border:0; background:transparent; border-radius:50%; color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.pager button:hover{ background:var(--grey200); color:var(--text); }
+.pager .idx{ font-size:13px; font-weight:600; color:var(--text); padding:0 10px; min-width:150px; text-align:center; font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="https://project-logeg.vercel.app/specs/chinese-modules/assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main">
+    <div class="container">
+      <div class="h4"><span class="tico"><span class="mi">mic</span></span>New Content Mirroring</div>
+      <div class="stepper" id="stepper"></div>
+      <div class="content" id="content"></div>
+      <div class="footer">
+        <button class="btn text" id="back">Back</button>
+        <button class="btn contained" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><b>提案</b>　v3 · 對照組 <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/v3-content-mirroring/create-mirroring.html?step=1">現行複刻 ↗</a></span>
+  <span>
+    <a href="?step=1" id="l0">1 Content</a> ·
+    <a href="?step=2" id="l0b">2 Edit Sentences</a> ·
+    <a href="?step=3" id="l1">3 Settings</a> ·
+    <a href="?step=3&amp;audio=1" id="l1a">3 純聽力</a> ·
+    <a href="?step=4&amp;assigned=1" id="l2">4 Assign</a>
+  </span>
+</div>
+
+<script>
+const S = {
+  step:0, audio:false, assigned:false,
+  project:0, practiceName:'环境保护与可持续发展', ddOpen:false,
+  pinyin:'shown', translation:'choice', tfirst:'yes',
+  speed:'0.8', voice:'Xiaorou (Female)', attempts:3,
+  idx:0, trOpen:false, playing:null, allOpen:false, prevOpen:true, playSeq:null, voiceOpen:false,
+  settingsOpen:false, stuPy:true, stuTr:false, stuTf:true, phase:'idle',   // 學生端：齒輪面板、學生自己的三個 toggle（index.js 初始值）、播放階段
+  rows:null, splitAt:null, marked:null,
+  picked:null, sel:null, done:null, start:'2026-09-10T08:00', due:'2026-09-17T23:59',
+  kind:'mandatory', perClass:false, perDates:{}, roster:null, justAssigned:false, review:false,
+};
+
+/* 每個專案有自己的課文與句子。第三個是 contentType='CONVERSATION'
+   ——那會讓第二步的切句／合併整個不能用（canSplitMerge），
+   放在這裡是為了讓那個限制可以被示範出來。 */
+/* lines     = 專案存的 splitArticleArray（一段一段），預覽現在照它顯示
+   sentences = 練習建立後 AI 切出來的句子，第二步編的是這個
+   兩者刻意不一樣：第一個專案 5 段 → 6 句（第 1 段被切成兩句），
+   這正是「專案的分段不等於最終句子」該被看見的地方。
+   第三個專案 contentType='CONVERSATION'，第二步不能切句／合併。 */
+const CONTENT = {
+  0: { lines:[
+        '近年来，全球暖化的问题越来越严重。许多国家开始重视环境保护，并且制定相关的政策。',
+        '我们每个人都可以从日常生活做起，例如随手关灯、自备购物袋、减少使用一次性餐具。',
+        '虽然一个人的力量看起来很小，但是如果每个人都愿意改变，就能产生很大的影响。',
+        '保护环境不只是政府的责任，也是我们每一个人的责任。',
+        '让我们一起努力，为下一代留下一个更干净、更美好的地球。',
+      ],
+      sentences:[
+        '近年来，全球暖化的问题越来越严重。',
+        '许多国家开始重视环境保护，并且制定相关的政策。',
+        '我们每个人都可以从日常生活做起，例如随手关灯、自备购物袋、减少使用一次性餐具。',
+        '虽然一个人的力量看起来很小，但是如果每个人都愿意改变，就能产生很大的影响。',
+        '保护环境不只是政府的责任，也是我们每一个人的责任。',
+        '让我们一起努力，为下一代留下一个更干净、更美好的地球。',
+      ] },
+  1: { lines:[
+        '我每天早上七点起床。',
+        '起床以后，我先刷牙洗脸，然后吃早饭。',
+        '八点半我骑自行车去学校。',
+        '下午四点放学，我常常和同学一起打篮球。',
+        '晚上我做完作业就早点睡觉。',
+      ],
+      sentences:[
+        '我每天早上七点起床。',
+        '起床以后，我先刷牙洗脸，然后吃早饭。',
+        '八点半我骑自行车去学校。',
+        '下午四点放学，我常常和同学一起打篮球。',
+        '晚上我做完作业就早点睡觉。',
+      ] },
+  2: { lines:[
+        '服务员：您好，请问几位？',
+        '客人：两位，谢谢。',
+        '服务员：这是菜单，请慢慢看。',
+        '客人：我们要一个宫保鸡丁和一碗米饭。',
+        '服务员：好的，请稍等。',
+      ],
+      sentences:[
+        '服务员：您好，请问几位？',
+        '客人：两位，谢谢。',
+        '服务员：这是菜单，请慢慢看。',
+        '客人：我们要一个宫保鸡丁和一碗米饭。',
+        '服务员：好的，请稍等。',
+      ] },
+};
+
+/* 樣本句用的拼音與翻譯只準備了第一個專案的——換專案時樣本句沿用它，
+   這是 mock 的限制，不是設計。 */
+const SENTENCES = [
+  { zh:'近年来，全球暖化的问题越来越严重。', py:'jìn nián lái, quán qiú nuǎn huà de wèn tí yuè lái yuè yán zhòng.', tr:'In recent years, global warming has become increasingly serious.' },
+  { zh:'许多国家开始重视环境保护，并且制定相关的政策。', py:'xǔ duō guó jiā kāi shǐ zhòng shì huán jìng bǎo hù, bìng qiě zhì dìng xiāng guān de zhèng cè.', tr:'Many countries have begun to value environmental protection and formulate related policies.' },
+  { zh:'我们每个人都可以从日常生活做起。', py:'wǒ men měi ge rén dōu kě yǐ cóng rì cháng shēng huó zuò qǐ.', tr:'Every one of us can start from daily life.' },
+  { zh:'虽然一个人的力量看起来很小，但是如果每个人都愿意改变，就能产生很大的影响。', py:'suī rán yí ge rén de lì liàng kàn qǐ lái hěn xiǎo, dàn shì rú guǒ měi ge rén dōu yuàn yì gǎi biàn, jiù néng chǎn shēng hěn dà de yǐng xiǎng.', tr:'Although one person’s power seems small, if everyone is willing to change, it can make a big difference.' },
+  { zh:'让我们一起努力，为下一代留下一个更干净的地球。', py:'ràng wǒ men yì qǐ nǔ lì, wèi xià yí dài liú xià yí ge gèng gān jìng de dì qiú.', tr:'Let us work together to leave a cleaner planet for the next generation.' },
+  /* 2026-09-14 補齊：CONTENT[0] 六句與 CONTENT[1] 五句都要對得到拼音／翻譯，
+     不然 Settings 的學生畫面對不到的那幾句就沒有翻譯眼睛，會被誤讀成「沒有 toggle」 */
+  { zh:'我们每个人都可以从日常生活做起，例如随手关灯、自备购物袋、减少使用一次性餐具。', py:'wǒ men měi ge rén dōu kě yǐ cóng rì cháng shēng huó zuò qǐ, lì rú suí shǒu guān dēng, zì bèi gòu wù dài, jiǎn shǎo shǐ yòng yí cì xìng cān jù.', tr:'Every one of us can start from daily life, such as turning off lights, bringing our own bags, and using fewer disposable utensils.' },
+  { zh:'保护环境不只是政府的责任，也是我们每一个人的责任。', py:'bǎo hù huán jìng bù zhǐ shì zhèng fǔ de zé rèn, yě shì wǒ men měi yí ge rén de zé rèn.', tr:'Protecting the environment is not only the government\u2019s responsibility, but each of ours.' },
+  { zh:'让我们一起努力，为下一代留下一个更干净、更美好的地球。', py:'ràng wǒ men yì qǐ nǔ lì, wèi xià yí dài liú xià yí ge gèng gān jìng, gèng měi hǎo de dì qiú.', tr:'Let us work together to leave a cleaner, better planet for the next generation.' },
+  { zh:'我每天早上七点起床。', py:'wǒ měi tiān zǎo shang qī diǎn qǐ chuáng.', tr:'I get up at seven every morning.' },
+  { zh:'起床以后，我先刷牙洗脸，然后吃早饭。', py:'qǐ chuáng yǐ hòu, wǒ xiān shuā yá xǐ liǎn, rán hòu chī zǎo fàn.', tr:'After getting up, I brush my teeth and wash my face, then eat breakfast.' },
+  { zh:'八点半我骑自行车去学校。', py:'bā diǎn bàn wǒ qí zì xíng chē qù xué xiào.', tr:'At half past eight I ride my bike to school.' },
+  { zh:'下午四点放学，我常常和同学一起打篮球。', py:'xià wǔ sì diǎn fàng xué, wǒ cháng cháng hé tóng xué yì qǐ dǎ lán qiú.', tr:'School ends at four; I often play basketball with classmates.' },
+  { zh:'晚上我做完作业就早点睡觉。', py:'wǎn shang wǒ zuò wán zuò yè jiù zǎo diǎn shuì jiào.', tr:'In the evening I go to bed early once my homework is done.' },
+];
+
+/* 產品的 Project 下拉每一列本來就帶 targetLanguage 與 levelType+level 兩個 chip
+   （step-one-mirroring.js），這裡沿用同一批欄位，沒有新增資料。
+   第三個是 contentType='CONVERSATION'——那會讓第二步的切句／合併整個不能用。 */
+const PROJECTS = [
+  { name:'环境保护与可持续发展', lang:'zh-CN', level:'HSK 4' },
+  { name:'我的一天',            lang:'zh-CN', level:'HSK 2' },
+  { name:'餐厅点餐（对话）',     lang:'zh-CN', level:'HSK 3', contentType:'CONVERSATION' },
+];
+
+const CLASSES = [
+  { id:'3b', name:'Chinese 3B', students:['陈小明','林佳蓉','王大卫','张怡君','李承恩','吴宜庭','黄柏翰','郑雅文'] },
+  { id:'4a', name:'Chinese 4A', students:['蔡宗翰','郑雅文','许博涵','杨子萱','周彦廷','高子涵'] },
+  { id:'5c', name:'Chinese 5C', students:['苏韵如','范文杰','邱柏宇','何昀蓁','曾筱婷'] },
+];
+// 郑雅文 同時在 3B 與 4A —— 指派過 3B 之後，她在 4A 的名冊裡就是「已由別班指派」的衝突狀態
+
+const STEPS = ['Content','Edit Sentences','Settings','Assign Practice'];
+
+/* config/practices.js 的 getVoiceList()：
+     zh-CN → 只有 SIMPLIFIED 那組（4 個）
+     zh-TW → [...TRADITIONAL(3), ...SIMPLIFIED(4)] = 7 個串成一份清單
+   後者就是 spec §4 問題 11 —— 而且產品的標籤沒有任何地區標記。
+   這裡照語言取清單，並用跟專案同一套 BCP-47 標籤當組標題。 */
+/* label 直接用 config/practices.js 裡的字串，不縮寫也不改寫 */
+const VOICE_GROUPS = {
+  'zh-TW': ['HsiaoChen (Female)','HsiaoYu (Female)','YunJhe (Male)'],
+  'zh-CN': ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'],
+};
+const voiceList = (lang) => lang === 'zh-TW'
+  ? [['zh-TW', VOICE_GROUPS['zh-TW']], ['zh-CN', VOICE_GROUPS['zh-CN']]]
+  : [['zh-CN', VOICE_GROUPS['zh-CN']]];
+
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(3, Math.max(0, (parseInt(qs.get('step') ?? '1', 10) || 1) - 1));   // ?step= 從 1 數（2026-09-14 改），內部仍是 0-based
+S.audio = qs.get('audio') === '1';
+S.assigned = qs.get('assigned') === '1';
+S.ddOpen = qs.get('dd') === '1';        // 讓 spec 能直接嵌一張「選單打開」的圖
+if (qs.has('proj')) S.project = Math.min(2, Math.max(0, +qs.get('proj') || 0));
+S.practiceName = PROJECTS[S.project].name;
+S.rows   = CONTENT[S.project].sentences.slice();
+S.marked = new Set();
+S.picked = new Set((qs.get('pick') || '').split(',').filter(Boolean));
+S.sel    = new Set([...S.picked].flatMap(id => CLASSES.find(c => c.id === id)?.students ?? []));
+/* 已指派 3B 的 6 個人，其中包含郑雅文——她同時在 4A，
+   所以 4A 的名冊裡她會是「已由別班指派」的衝突狀態，不能重複派。 */
+S.done   = S.assigned ? [{ id:'3b', start:S.start, due:S.due, kind:'mandatory',
+                           students:CLASSES[0].students.slice(0, 5).concat('郑雅文') }] : [];
+if (qs.has('roster')) S.roster = qs.get('roster');
+S.perClass = qs.get('perclass') === '1';
+S.review = qs.get('review') === '1';    // 讓 spec 能嵌一張預覽框的圖
+S.voiceOpen = qs.get('voice') === '1';  // &voice=1 聲音下拉打開
+S.settingsOpen = qs.get('settings') === '1';   // &settings=1 學生的 Settings 面板打開
+S.listOpen = qs.get('list') === '1';           // &list=1 句子下拉打開
+S.tipOpen = qs.get('tip') === '1';             // &tip=1 Auto pass 的 tooltip 開著（截圖用）
+if (qs.get('phase')) S.phase = qs.get('phase');   // &phase=meaning|repeat 播放中的兩個狀態
+if (qs.has('split')) S.splitAt = +qs.get('split');   // 讓 spec 能嵌一張切句模式的圖
+if (qs.has('hide')) S.marked = new Set(qs.get('hide').split(',').map(Number));   // &hide=1,3 第 2、4 句隱藏
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+function renderStepper(){
+  // separator 的顏色跟著「它左邊那一步」走，跟 StepperItem 內含 separator 的結構一致
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const sep = i ? `<div class="stp-sep ${i - 1 < S.step ? 'done' : ''}"></div>` : '';
+    return sep + `<div class="stp-item ${cls}">
+      <span class="stp-ind">${i + 1}</span><span class="stp-lbl">${label}</span></div>`;
+  }).join('');
+}
+
+/* 分段控制項 */
+function seg(name, value, options, disabled){
+  return `<div class="seg ${disabled ? 'dis' : ''}">${options.map(([v,t]) =>
+    `<button type="button" ${disabled ? 'disabled' : `data-seg="${name}" data-val="${v}"`}
+      class="${v === value ? 'on' : ''}" aria-pressed="${v === value}">${t}</button>`).join('')}</div>`;
+}
+
+/* =====================================================================
+   Step 1 · Content —— Practice name 搬到這裡（選 Project 時它就被填好了）
+   ===================================================================== */
+function renderStep0(){
+  const p = PROJECTS[S.project];
+  const lines = CONTENT[S.project].lines;
+  return `
+    <div class="fld" style="margin-bottom:24px">
+      <label>Project</label>
+      <div class="dd">
+        <button class="dd-trig" data-act="dd" aria-haspopup="menu" aria-expanded="${S.ddOpen}">
+          <span class="mark">${p.lang}</span>
+          <span class="nm">${esc(p.name)}</span>
+          <span class="lvl">${p.level}</span>
+          <span class="mi caret">expand_more</span>
+        </button>
+        ${S.ddOpen ? `<div class="dd-menu" role="menu">
+          <div class="dd-lbl">Project</div>
+          ${PROJECTS.map((x, i) => `<button class="dd-item" role="menuitem" data-proj="${i}">
+            <span class="mark">${x.lang}</span>
+            <span class="nm">${esc(x.name)}</span>
+            <span class="lvl">${x.level}</span>
+            ${i === S.project ? '<span class="mi tick">check</span>' : ''}
+          </button>`).join('')}
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="fld">
+      <label for="pname">Practice name</label>
+      <input class="inp" id="pname" type="text" value="${esc(S.practiceName)}">
+      <span class="help">Filled in from the project. Change it if this practice needs its own name.</span>
+    </div>
+
+    <div class="frame">
+      <div class="frame-hd">
+        <div class="frame-ttl">Article content</div>
+        <div class="frame-desc">${lines.length} lines</div>
+      </div>
+      <!-- 對話類的提醒不在這一步講（2026-09-15 使用者：直接在下一步顯示就好）；第二步句子表上面那一則留著 -->
+      <div class="frame-panel">${lines.map((t, n) =>
+        `<div class="aline"><span class="n">${n + 1}</span><span class="t">${esc(t)}</span></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* =====================================================================
+   Step 2 · Edit Sentences —— 這一版新增的一步
+   現行沒有這一步：句子表藏在第一步，而且第一次走到第一步時還不存在，
+   要按 Next 再 Back 才看得到（spec §4 問題 7）。獨立成一步之後，
+   Stepper 從一開始就宣告了這件工作，而「Project 按了 Next 就鎖住」
+   也回到跟其他步驟一樣的常識，不需要另外解釋。
+   ===================================================================== */
+function renderStep1(){
+  const p = PROJECTS[S.project];
+  return `
+    <div class="frame" style="margin-top:0">
+      <div class="frame-hd">
+        <div class="frame-ttl">Sentences</div>
+        <div class="frame-desc">Split from ${esc(p.name)} · ${S.rows.length - S.marked.size} sentences${S.marked.size ? ` · ${S.marked.size} hidden` : ''}</div>
+      </div>
+      <div class="frame-panel">${renderSentences()}</div>
+    </div>`;
+}
+
+/* 合併長在分隔線上、切句要先按 Split 才出現插入點、
+   刪除是標記＋一條確認列（現行還多一個 confirm modal，這裡收掉）。 */
+function renderSentences(){
+  // canSplitMerge = selectedProject?.contentType !== 'CONVERSATION'
+  const canEdit = PROJECTS[S.project].contentType !== 'CONVERSATION';
+  const rows = S.rows.map((zh, i) => {
+    const isSplit = S.splitAt === i;
+    const body = isSplit
+      ? [...zh].map((ch, k, all) => (k
+          ? `<span class="gap"
+                   data-act="gap" data-i="${i}" data-pos="${k}"></span>` : '') + esc(ch)).join('')
+      : esc(zh);
+    const div = (i && canEdit) ? `<div class="sdiv"><button data-act="merge" data-i="${i}">
+        <span class="mi">call_merge</span>Merge with previous</button></div>` : '';
+    return div + `<div class="srow ${S.marked.has(i) ? 'marked' : ''} ${isSplit ? 'splitting' : ''}">
+      <span class="n">${i + 1}</span>
+      <div class="zh">${body}${isSplit ? '<span class="hint">Click where the sentence should break.</span>' : ''}</div>
+      <div class="acts">
+        ${canEdit ? `<button class="splitbtn ${isSplit ? 'on' : ''}" data-act="split" data-i="${i}">
+          <span class="mi">${isSplit ? 'close' : 'content_cut'}</span>${isSplit ? 'Cancel' : 'Split'}</button>` : ''}
+        <button class="${S.marked.has(i) ? 'hid' : ''}" data-act="mark" data-i="${i}" title="${S.marked.has(i) ? 'Show this sentence' : 'Hide from students'}">
+          <span class="mi">${S.marked.has(i) ? 'visibility_off' : 'visibility'}</span></button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const bar = '';   // 刪除的兩段式確認拿掉了：隱藏就是隱藏，再按一次就回來（2026-09-14）
+  const note = canEdit ? '' : `<div class="conv" style="margin:0 0 12px">
+      <span class="mi">forum</span>
+      <span>Conversation — lines can't be split or merged.</span></div>`;
+  return note + rows + bar;
+}
+
+/* =====================================================================
+   Step 3 · Settings —— 這一版的主體
+   ===================================================================== */
+function renderStep2(){
+  /* 拼音／翻譯只準備了第一個專案那五句的（SENTENCES）；第二步編過的句子照字對回去，對不到就沒有拼音與翻譯——mock 的限制 */
+  const lookup = (zh) => SENTENCES.find(x => x.zh === zh) || { zh, py:'', tr:'' };
+  const visible = S.rows.map((zh, i) => ({ i, ...lookup(zh) })).filter(r => !S.marked.has(r.i));
+  if (S.idx >= visible.length) S.idx = Math.max(0, visible.length - 1);
+
+  const pinyinVisible = S.pinyin === 'shown' || S.pinyin === 'choice';   // Choice by student 開場是開的
+  const trCanToggle = S.translation === 'choice';
+
+  const speedChips = [['0.6','Slow'],['0.8','Normal'],['1','Fast']].map(([v, t]) =>
+    `<button class="chip ${S.speed === v ? 'on' : ''} ${S.playing === 'sp:' + v ? 'playing' : ''}"
+      data-speed="${v}"><span class="mi">${S.playing === 'sp:' + v ? 'graphic_eq' : 'play_arrow'}</span>${t}</button>`
+  ).join('') + `<button class="chip ${S.speed === 'choice' ? 'on' : ''}" data-speed="choice">Choice by student</button>`;
+  const groups = voiceList(PROJECTS[S.project].lang);
+  const voiceChips = groups.map(([g, list]) =>
+    `<div class="vgrp">${groups.length > 1 ? `<span class="vl">${g}</span>` : ''}${
+      list.map((name) => `<button class="chip ${S.voice === name ? 'on' : ''} ${S.playing === name ? 'playing' : ''}"
+        data-voice="${name}"><span class="mi">${S.playing === name ? 'graphic_eq' : 'play_arrow'}</span>${name}</button>`).join('')
+    }</div>`).join('');
+
+  /* 六個控制項一張卡。純聽力時 Pinyin／Translation 兩列換成一句「交給學生」 */
+  /* 工具列（第四版）：三組、標籤在上 */
+  const ctl = (label, inner) => `<div class="tb-ctl"><span class="tl">${label}</span>${inner}</div>`;
+  const groups2 = voiceList(PROJECTS[S.project].lang);
+  const voiceMenu = S.voiceOpen ? `<div class="vdd-menu" role="menu">${groups2.map(([g, list]) =>
+      (groups2.length > 1 ? `<div class="vl">${g}</div>` : '') +
+      list.map(name => `<button class="vdd-item ${S.voice === name ? 'on' : ''}" role="menuitemradio" aria-checked="${S.voice === name}" data-voice="${name}">
+        <span class="play"><span class="mi">${S.playing === name ? 'graphic_eq' : 'play_arrow'}</span></span>
+        <span class="nm">${name}</span>${S.voice === name ? '<span class="mi tick">check</span>' : ''}</button>`).join('')).join('')}</div>` : '';
+  const voiceCtl = `<div class="vdd">
+      <button class="vdd-trig" data-act="voicedd" aria-haspopup="menu" aria-expanded="${S.voiceOpen}">
+        <span class="mi">${S.playing === S.voice ? 'graphic_eq' : 'play_arrow'}</span>${esc(S.voice)}<span class="mi caret">expand_more</span></button>
+      ${voiceMenu}</div>`;
+
+  /* 模式併進工具列第一行（2026-09-15 使用者：跟下方的面板融在一起）——原本是眉標＋兩張 radio 卡在畫布上面 */
+  const modeCtl = `<div class="seg">
+      <button type="button" data-mode="text" class="${S.audio ? '' : 'on'}" aria-pressed="${!S.audio}">Text visible</button>
+      <button type="button" data-mode="audio" class="${S.audio ? 'on' : ''}" aria-pressed="${S.audio}">Audio only</button></div>`;
+  const modeGrp = `<div class="tb-grp">${ctl('Practice mode', modeCtl)}</div>`;
+  const textGrp = S.audio
+    ? `<div class="tb-grp"><span class="tb-note"><span class="mi">pan_tool_alt</span>Pinyin and translation are up to the student</span></div>`
+    : `<div class="tb-grp">
+        ${ctl('Pinyin', seg('pinyin', S.pinyin, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}
+        ${ctl('Translation', seg('translation', S.translation, [['shown','Shown'],['hidden','Hidden'],['choice','Choice by student']]))}
+      </div>`;
+
+  const ctrl = `<div class="toolbar">
+    <div class="tb-row">
+      ${modeGrp}${textGrp}
+    </div>
+    <div class="tb-row">
+      <div class="tb-grp">
+        ${ctl('Translation first', seg('tfirst', S.tfirst, [['yes','Yes'],['no','No'],['choice','Choice by student']]))}
+        ${ctl('Speed', `<span class="vgrp">${speedChips}</span>`)}
+        ${ctl('Voice', voiceCtl)}
+      </div>
+      <div class="tb-grp">
+        ${ctl(`Max tries <button type="button" class="tip ${S.tipOpen ? 'on' : ''}" data-act="tip" data-tip="How many times a student may retry one sentence before it is let through — the sentence then counts as passed (auto pass, default 3)." aria-label="What max tries means"><span class="mi">info</span></button>`, `<span class="stp">
+          <button data-act="minus" aria-label="Fewer attempts"><span class="mi">remove</span></button>
+          <span class="n">${S.attempts}</span>
+          <button data-act="plus" aria-label="More attempts"><span class="mi">add</span></button></span>`)}
+      </div>
+    </div>
+  </div>`;
+
+  /* 學生畫面 ＝ 主欄（practice-content-list.js）：標題列＋齒輪、PRACTICE SENTENCE 卡、一次一句。
+     Choice by student 的四個 toggle 在齒輪的面板裡；拼音預設開、翻譯預設關（index.js 的初始值）。
+     左欄的整份清單不畫（2026-09-14 拿掉那個收起的把手）——預覽只要主欄。 */
+  const cur = visible[S.idx] || visible[0];
+  const anyChoice = S.pinyin === 'choice' || S.translation === 'choice' || S.tfirst === 'choice' || S.speed === 'choice';
+  const pyOn = S.pinyin === 'shown' || (S.pinyin === 'choice' && S.stuPy);
+  const trOn = S.translation === 'shown' || (S.translation === 'choice' && S.stuTr);
+  const tfOn = S.tfirst === 'yes' || (S.tfirst === 'choice' && S.stuTf);
+  const speedName = { '0.6':'Slow', '0.8':'Normal', '1':'Fast', 'choice':'Normal' }[S.speed];
+
+  const panel = !S.settingsOpen ? '' : `<div class="panel">
+      <div class="ph">Settings<span class="mi">close</span></div>
+      ${S.pinyin === 'choice' ? `<div class="pr">Pinyin<span class="sw2 ${S.stuPy ? 'on' : ''}" data-act="stupy" role="switch" aria-checked="${S.stuPy}"></span></div>` : ''}
+      ${S.translation === 'choice' ? `<div class="pr">Translation<span class="sw2 ${S.stuTr ? 'on' : ''}" data-act="stutr" role="switch" aria-checked="${S.stuTr}"></span></div>` : ''}
+      ${S.tfirst === 'choice' ? `<div class="pr">Translation first<span class="sw2 ${S.stuTf ? 'on' : ''}" data-act="stutf" role="switch" aria-checked="${S.stuTf}"></span></div>` : ''}
+      ${S.speed === 'choice' ? `<div class="pr">Speed<span class="sel">Normal<span class="mi">arrow_drop_down</span></span></div>` : ''}
+    </div>`;
+  const gear = anyChoice ? `<div class="sp"><button class="gear" data-act="settings" aria-label="Settings" aria-expanded="${S.settingsOpen}"><span class="mi">settings</span></button>${panel}</div>` : '';
+
+  /* 卡的三個狀態：idle ／ meaning（先播英文，藍）／ repeat（再播中文，綠）——message-list.js 的 getSentenceCardMeta */
+  const phase = S.phase || 'idle';
+  const meta = phase === 'meaning' ? { cls:'meaning', icon:'translate', t:'Meaning', h:'Listen to the English meaning first.' }
+             : phase === 'repeat'  ? { cls:'repeat', icon:'record_voice_over', t:'Listen & Repeat', h:'Now repeat the Chinese sentence.' }
+             : { cls:'', icon:'chat', t:'Practice Sentence', h:'' };
+  const body = !cur ? '<div class="hidden">No sentences to practise.</div>'
+    : S.audio && phase !== 'meaning' ? `<div class="hidden">Listen carefully and repeat the sentence.</div>`
+    : phase === 'meaning' ? `<div class="tr-big">${esc(cur.tr || cur.zh)}</div>`
+    : `${pyOn && cur.py ? `<div class="py">${esc(cur.py)}</div>` : ''}<div class="zh">${esc(cur.zh)}</div>${
+        phase === 'idle' && trOn && cur.tr ? `<div class="tr">${esc(cur.tr)}</div>` : ''}`;
+
+  const screen = `<div class="mp">
+    <div class="mp-main">
+      <div class="mp-hd"><span class="ttl">${esc(S.practiceName)}</span>${gear}</div>
+      <div class="mp-body">
+        <div class="pcard ${meta.cls}"><div class="in">
+          <div class="lbl"><span class="ic"><span class="mi">${meta.icon}</span></span>
+            <span><span class="t">${meta.t}</span>${meta.h ? `<span class="h" style="display:block">${meta.h}</span>` : ''}</span></div>
+          ${body}
+        </div></div>
+        <div class="mp-play"><button data-act="playseq" ${phase !== 'idle' ? 'disabled' : ''}>
+          <span class="mi">${phase !== 'idle' ? 'graphic_eq' : 'play_arrow'}</span>${phase !== 'idle' ? 'Playing' : `Play ${tfOn ? '· English first' : ''} · ${speedName} · ${esc(S.voice)}`}</button></div>
+        ${visible.length > 1 ? `<div class="sdd">
+          <button class="sdd-trig" data-act="sdd" aria-haspopup="listbox" aria-expanded="${S.listOpen}">
+            Sentence ${S.idx + 1} of ${visible.length}<span class="mi">${S.listOpen ? 'expand_less' : 'expand_more'}</span></button>
+          ${S.listOpen ? `<div class="sdd-menu" role="listbox">${visible.map((r, k) => `
+            <button class="sdd-item ${k === S.idx ? 'on' : ''}" role="option" aria-selected="${k === S.idx}" data-act="pickrow" data-k="${k}">
+              <span class="n">${k + 1}</span><span class="z">${esc(r.zh)}</span>${k === S.idx ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>
+  </div>`;
+
+  return `
+    <div class="canvas">
+      ${ctrl}
+      <div class="stu-ground"><div class="winwrap"><div class="win"><div class="win-bar"><span class="mi">desktop_windows</span>Student view</div>${screen}</div></div></div>
+      <div class="stu-foot">
+        <span>${S.audio ? 'Audio only' : `${visible.length} ${visible.length === 1 ? 'sentence' : 'sentences'}${S.marked.size ? ` · ${S.marked.size} hidden` : ''}`}</span></div>
+    </div>`;
+}
+
+/* =====================================================================
+   Step 4 · Assign Practice
+   把工作從對話框搬回頁面：三段各回答一個問題——誰做／什麼時候／算不算作業。
+   一份時間套用到所有選到的班，要分開再展開（現行是每個班整組重複一次）。
+   名詞跟 AssignmentTypeChip 對齊：Mandatory / Optional。
+   ===================================================================== */
+const fmt = (v) => {
+  const d = new Date(v);
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${
+    String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+// 這個班有哪些人已經被指派過（不分是哪一筆）
+const assignedIn = (id) => new Set(S.done.filter(a => a.id === id).flatMap(a => a.students));
+// 這個人是不是已經由「別的班」指派了
+const conflictFor = (name, id) => S.done.find(a => a.id !== id && a.students.includes(name));
+
+function renderStep3(){
+  const list = !S.done.length ? '' : `
+    <div class="eyebrow"><b>Assigned</b><span class="rule"></span></div>
+    ${S.done.map((a, k) => {
+      const c = CLASSES.find(x => x.id === a.id);
+      return `<div class="card" style="${k ? 'margin-top:8px' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+          <div style="min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="sub2">${c.name}</span>
+              <span class="pill ${a.kind === 'optional' ? 'opt' : 'mand'}">${
+                a.kind === 'optional' ? 'Optional' : 'Mandatory'}</span></div>
+            <div class="cap dis" style="margin-top:2px">${a.students.length} of ${c.students.length} students</div>
+            <div class="cap" style="margin-top:4px">${fmt(a.start)} → ${fmt(a.due)}</div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn text sm">Edit</button>
+            <button class="btn outerr sm">Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+
+  const classRows = CLASSES.map(c => {
+    const had = assignedIn(c.id);
+    const full = had.size === c.students.length;
+    const on = S.picked.has(c.id);
+    const open = S.roster === c.id;
+    const left = c.students.length - had.size;
+
+    const sub = full ? 'Everyone is assigned'
+      : had.size ? `${had.size} of ${c.students.length} assigned · ${left} left`
+      : `${c.students.length} students`;
+
+    const row = `<div class="clsrow ${on ? 'on' : ''} ${full ? 'done' : ''}"
+        ${full ? '' : `data-cls="${c.id}"`} style="${full ? '' : 'cursor:pointer'}">
+      <span class="box"><span class="mi">check</span></span>
+      <span class="grow"><span class="nm">${c.name}</span><span class="sub">${sub}</span></span>
+      ${full ? '<span class="pill mand">Assigned</span>'
+             : (on ? `<button class="linkbtn" data-roster="${c.id}">${open ? 'Close' : 'Choose students'}</button>` : '')}
+    </div>`;
+
+    /* 名冊是一個 diff：本班已派的維持勾選標 Assigned、新勾的標 New、
+       取消勾的標 Will remove、已被別班派走的不能選（照 assign-practice.js 的四種狀態）。 */
+    const roster = (on && open) ? `<div class="roster">${c.students.map(nm => {
+      const cf = conflictFor(nm, c.id);
+      if (cf) return `<span class="stu off"><span class="box"></span>${nm}
+        <span class="tag warn">In ${CLASSES.find(x => x.id === cf.id).name}</span></span>`;
+      const was = had.has(nm);
+      const sel = S.sel.has(nm);
+      const tag = was && sel ? '<span class="tag ok">Assigned</span>'
+        : was && !sel ? '<span class="tag bad">Will remove</span>'
+        : sel ? '<span class="tag new">New</span>' : '';
+      return `<span class="stu ${sel ? 'on' : ''}" data-stu="${nm}"><span class="box"></span>${nm}${tag}</span>`;
+    }).join('')}</div>` : '';
+    return row + roster;
+  }).join('');
+
+  const n = S.picked.size;
+  const allFull = CLASSES.every(c => assignedIn(c.id).size === c.students.length);
+  const days = [1, 3, 7].map(d => `<button data-days="${d}">+${d} ${d === 1 ? 'day' : 'days'}</button>`).join('');
+
+  const form = allFull ? `<div class="card empty">Every class already has this practice.</div>` : `
+    <div class="eyebrow"><b>Who does it</b><span class="rule"></span>
+      ${S.done.length ? '<span class="hint">Assign it again to another class, with its own dates</span>' : ''}</div>
+    <div class="rows">${classRows}</div>
+
+    <div class="eyebrow"><b>When</b><span class="rule"></span></div>
+    <div class="rows">
+      ${n > 1 ? `<div class="modeline">
+        <span>${S.perClass
+          ? `Each class has its own dates.`
+          : `These dates apply to all ${n} classes.`}</span>
+        <button class="linkbtn" data-act="perclass">${S.perClass
+          ? 'Use one schedule for all' : 'Set dates per class'}</button>
+      </div>` : ''}
+      ${(n > 1 && S.perClass)
+        ? [...S.picked].map(id => {
+            const c = CLASSES.find(x => x.id === id);
+            const d = S.perDates[id] || { start:S.start, due:S.due };
+            return `<div class="perclass">
+              <div class="pc-name">${c.name}</div>
+              <div class="dtrow" style="margin-bottom:10px">
+                <span class="lbl">Start</span>
+                <input class="dt2" type="datetime-local" value="${d.start}">
+                <span class="quick"><button data-now="${id}">Now</button></span>
+              </div>
+              <div class="dtrow">
+                <span class="lbl">Due</span>
+                <input class="dt2" type="datetime-local" value="${d.due}">
+                <span class="quick">${[1,3,7].map(k =>
+                  `<button data-days="${k}" data-for="${id}">+${k} ${k === 1 ? 'day' : 'days'}</button>`).join('')}</span>
+              </div>
+            </div>`;
+          }).join('')
+        : `<div class="rw"><div class="dtrow">
+        <span class="lbl">Start</span>
+        <input class="dt2" type="datetime-local" value="${S.start}">
+        <span class="quick"><button data-now="1">Now</button></span>
+      </div></div>
+      <div class="rw"><div class="dtrow">
+        <span class="lbl">Due</span>
+        <input class="dt2" type="datetime-local" value="${S.due}">
+        <span class="quick">${days}</span>
+      </div></div>`}
+    </div>
+
+    <div class="eyebrow"><b>How it counts</b><span class="rule"></span></div>
+    <div class="rows">
+      <div class="rw">
+        <div><div class="lb">${S.kind === 'optional' ? 'Optional' : 'Mandatory'}</div>
+          <div class="hp">${S.kind === 'optional'
+            ? 'Self-paced practice. Students are not reminded and it is not chased as homework.'
+            : 'Counts as homework. Students get reminder emails until they finish it.'}</div></div>
+        <div class="ct">${seg('kind', S.kind, [['mandatory','Mandatory'],['optional','Optional']])}</div>
+      </div>
+    </div>
+
+`;
+
+  return list + form;
+}
+
+/* 一份作業可以重複指派：送出一筆之後表單清空，可以再派一次 */
+/* 送出前的預覽：每個班一段——班名、Mandatory/Optional、起訖，
+   要加進去的人，以及「被跳過的人與原因」（產品的確認框沒有講後者，
+   但衝突是真的會發生的，老師應該在送出前就知道）。 */
+function renderReview(){
+  const rows = [...S.picked].map(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };
+    const add = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    const skip = c.students.filter(nm => conflictFor(nm, id));
+    const off = c.students.filter(nm => !S.sel.has(nm) && !conflictFor(nm, id));
+
+    // 整班 → 一句話。有人拿不到 → 只把那幾個人寫出來。
+    const cnt = add.length === c.students.length
+      ? `all ${add.length} students`
+      : `${add.length} of ${c.students.length} students`;
+    const ex = [
+      ...skip.map(nm => `${nm} is already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}`),
+      ...(off.length ? [`Not selected: ${off.join('、')}`] : []),
+    ];
+
+    return `<div class="rvc">
+      <div class="top"><span class="nm">${c.name}</span><span class="cnt">${cnt}</span></div>
+      <div class="when">${fmt(d.start)} → ${fmt(d.due)}</div>
+      ${ex.length ? `<div class="ex">${ex.join('<br>')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const total = [...S.picked].reduce((k, id) => k +
+    CLASSES.find(x => x.id === id).students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id)).length, 0);
+
+  /* 標題用跟觸發鈕一模一樣的字——同一個動作從頭到尾同一個說法，
+     而且有 Back / Assign 兩顆鈕，本來就看得出這是確認關卡，
+     不需要再寫一次「Review before assigning」。
+     副標只留兩個要確認的數：模式與人數；它的解釋在後面那一頁上。 */
+  const nc = S.picked.size;
+  return `<div class="scrim" data-act="closerev"><div class="dlg" data-stop="1">
+    <div class="dlg-hd">
+      <h3>Assign to ${nc} ${nc === 1 ? 'class' : 'classes'}</h3>
+      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students</p>
+    </div>
+    <div class="dlg-bd">${rows}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closerev">Back</button>
+      <button class="btn contained" data-act="confirm">Assign</button>
+    </div>
+  </div></div>`;
+}
+
+function commit(){
+  [...S.picked].forEach(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const students = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    if (students.length) S.done.push({ id, start:S.start, due:S.due, kind:S.kind, students });
+  });
+  S.picked = new Set(); S.sel = new Set(); S.roster = null;
+}
+
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2, renderStep3][S.step]()
+    + (S.review ? renderReview() : '');
+  el('back').classList.toggle('dis', S.step === 0);
+  // resolvePrimaryActionLabel：倒數第二步是 Save，最後一步換成 Done
+  /* 第四步把「送出一筆指派」與「結束流程」合併成同一顆，依狀態換標籤：
+       有勾班           → Assign to N classes（送出後留在原地，可以再派一次）
+       沒勾、已指派過   → Done
+       沒勾、完全沒指派 → Skip for now（照現行空狀態的說法：之後可以從 Practice List 指派）
+     送出後先停在 Assigned ✓ 一下再變回去，避免連點直接把人送出流程。 */
+  const n4 = S.step === 3 ? S.picked.size : 0;
+  el('next').textContent = S.step === 3
+    ? (S.justAssigned ? 'Assigned ✓'
+       : n4 ? `Assign to ${n4} ${n4 === 1 ? 'class' : 'classes'}`
+       : (S.done.length ? 'Done' : 'Skip for now'))
+    : (S.step === 2 ? 'Save' : 'Next');
+  el('next').className = 'btn contained' + (S.justAssigned ? ' dis' : '');
+
+  ['l0','l0b','l1','l1a','l2'].forEach(id => el(id).classList.remove('cur'));
+  el(S.step === 0 ? 'l0' : S.step === 1 ? 'l0b' : S.step === 2 ? (S.audio ? 'l1a' : 'l1') : 'l2').classList.add('cur');
+}
+
+document.addEventListener('click', (e) => {
+  const pj = e.target.closest('[data-proj]');
+  if (pj){
+    // 產品在 CREATE 模式選 Project 時會一併覆寫 practiceName，照做
+    S.project = +pj.dataset.proj; S.practiceName = PROJECTS[S.project].name;
+    S.rows = CONTENT[S.project].sentences.slice(); S.marked = new Set(); S.splitAt = null;
+    S.ddOpen = false; render(); return;
+  }
+  const sg = e.target.closest('[data-seg]');
+  const md = e.target.closest('[data-mode]');
+  const vc = e.target.closest('[data-voice]');
+  const cl = e.target.closest('[data-cls]');
+  const rs = e.target.closest('[data-roster]');
+  const dy = e.target.closest('[data-days]');
+  const st = e.target.closest('[data-stu]');
+  if (st){
+    const nm = st.dataset.stu;
+    S.sel.has(nm) ? S.sel.delete(nm) : S.sel.add(nm);
+    render(); return;
+  }
+  if (rs){ S.roster = S.roster === rs.dataset.roster ? null : rs.dataset.roster; render(); return; }
+  if (cl){
+    const id = cl.dataset.cls, c = CLASSES.find(x => x.id === id);
+    if (S.picked.has(id)){
+      S.picked.delete(id); c.students.forEach(nm => S.sel.delete(nm));
+      if (S.roster === id) S.roster = null;
+    } else {
+      S.picked.add(id);
+      // 預設整班，但已被別班派走的人不能選
+      c.students.forEach(nm => { if (!conflictFor(nm, id)) S.sel.add(nm); });
+    }
+    render(); return;
+  }
+  if (dy){
+    const d = +dy.dataset.days, st = new Date(S.start);
+    st.setDate(st.getDate() + d); st.setHours(23, 59);
+    S.due = st.toISOString().slice(0, 16); render(); return;
+  }
+  const sc = e.target.closest('[data-speed]');
+  if (sc){
+    S.speed = sc.dataset.speed;
+    S.playing = S.speed === 'choice' ? null : 'sp:' + S.speed;
+    render();
+    if (S.playing) setTimeout(() => { S.playing = null; render(); }, 1400);
+    return;
+  }
+  const ac = e.target.closest('[data-act]');
+
+  if (sg){ S[sg.dataset.seg] = sg.dataset.val; if (sg.dataset.seg === 'translation') S.trOpen = false; render(); return; }
+  if (md){ S.audio = md.dataset.mode === 'audio'; render(); return; }
+  if (vc){
+    S.voice = vc.dataset.voice; S.playing = vc.dataset.voice; S.voiceOpen = false; render();
+    setTimeout(() => { S.playing = null; render(); }, 1400);   // 假裝在播
+    return;
+  }
+  if (ac){
+    const a = ac.dataset.act;
+    const nVis = S.rows.filter((_, k) => !S.marked.has(k)).length || 1;
+    if (a === 'prev') S.idx = (S.idx - 1 + nVis) % nVis;
+    if (a === 'next') S.idx = (S.idx + 1) % nVis;
+    if (a === 'settings'){ S.settingsOpen = !S.settingsOpen; render(); return; }
+    if (a === 'sdd'){ S.listOpen = !S.listOpen; render(); return; }
+    if (a === 'tip'){ ac.classList.toggle('on'); return; }   // 點一下也開，給觸控用
+    if (a === 'stupy') S.stuPy = !S.stuPy;
+    if (a === 'stutr') S.stuTr = !S.stuTr;
+    if (a === 'stutf') S.stuTf = !S.stuTf;
+    if (a === 'playseq'){
+      // 先英後中兩段（message-list.js 的 playbackDisplay.phase），各 1.4 秒；沒有先英就只有中文那段
+      const tf = S.tfirst === 'yes' || (S.tfirst === 'choice' && S.stuTf);
+      const go = (ph, next, ms) => { S.phase = ph; render(); setTimeout(next, ms); };
+      if (tf) go('meaning', () => go('repeat', () => { S.phase = 'idle'; render(); }, 1400), 1400);
+      else go('repeat', () => { S.phase = 'idle'; render(); }, 1400);
+      return;
+    }
+    if (a === 'eye') S.trOpen = !S.trOpen;
+    if (a === 'voicedd'){ S.voiceOpen = !S.voiceOpen; render(); return; }
+    if (a === 'pickrow' && !e.target.closest('[data-stop]')){ S.idx = +ac.dataset.k; S.trOpen = false; }   // 清單留著，換句不收
+    if (a === 'playrow'){
+      S.idx = +ac.dataset.k; S.playSeq = +ac.dataset.i; render();
+      setTimeout(() => { S.playSeq = null; render(); }, 2000);
+      return;
+    }
+    if (a === 'allsent'){ e.preventDefault(); S.allOpen = !S.allOpen; }
+    if (a === 'pick' && !e.target.closest('[data-stop]')) S.idx = +ac.dataset.i;
+    if (a === 'minus') S.attempts = Math.max(1, S.attempts - 1);
+    if (a === 'plus') S.attempts = Math.min(10, S.attempts + 1);
+    const i = +ac.dataset.i;
+    if (a === 'dd') S.ddOpen = !S.ddOpen;
+    if (a === 'perclass') S.perClass = !S.perClass;
+    if (a === 'closerev' && !e.target.closest('[data-stop]')) S.review = false;
+    if (a === 'confirm'){
+      S.review = false; commit(); S.justAssigned = true; render();
+      // 送出後結果長在頁面最上面的 Assigned 清單裡，捲上去才看得到
+      window.scrollTo(0, 0);
+      setTimeout(() => { S.justAssigned = false; render(); }, 1600);
+      return;
+    }
+
+    if (a === 'merge'){ S.rows[i - 1] += S.rows[i]; S.rows.splice(i, 1); S.marked = new Set(); S.splitAt = null; }
+    if (a === 'split') S.splitAt = S.splitAt === i ? null : i;
+    if (a === 'gap'){
+      const pos = +ac.dataset.pos, zh = S.rows[i];
+      S.rows.splice(i, 1, zh.slice(0, pos), zh.slice(pos)); S.splitAt = null; S.marked = new Set();
+    }
+    if (a === 'mark'){ S.marked.has(i) ? S.marked.delete(i) : S.marked.add(i); }
+    render();
+    return;
+  }
+  if (S.ddOpen || S.voiceOpen){ S.ddOpen = false; S.voiceOpen = false; render(); }   // 點外面關掉
+});
+
+/* 換步驟＝換一頁，捲動位置要回到最上面。
+   現行產品沒有做這件事（practice-unified-view.js 裡唯一的 scrollIntoView
+   是處理對話框關閉後捲到某張卡），所以從很長的一步往下走，會落在半空中。 */
+function goStep(n){ S.step = n; S.review = false; render(); window.scrollTo(0, 0); }
+
+el('back').addEventListener('click', () => { if (S.step > 0) goStep(S.step - 1); });
+el('next').addEventListener('click', () => {
+  if (S.step < 3){ goStep(S.step + 1); return; }
+  if (S.justAssigned) return;                     // 送出後的短暫緩衝，擋連點
+  if (S.picked.size){ S.review = true; render(); return; }   // 先預覽，不直接送出
+  /* 沒有待送出的選擇時這一顆是 Done / Skip for now。
+     產品會導到練習清單或專案頁（handleFinish）；原型沒有那些頁面，
+     所以回到乾淨的第一步，流程可以再走一次。 */
+  location.href = location.pathname;
+});
+
+render();
+</script>
+</body>
+</html>

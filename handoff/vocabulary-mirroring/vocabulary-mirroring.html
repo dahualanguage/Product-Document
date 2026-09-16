@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Vocabulary Mirroring — v4 提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— v4 · 對照組是 create-vocabulary.html（現行複刻）。
+
+   第一輪（2026-09-10）：只換共用元件，Vocabulary 自己的部分原封不動。
+   「共用」照 practice-design-rules.html §1 的表：
+     八張卡共用  Stepper（c-stepper-2）、標題前的型別圖示、頁腳按鈕、換步驟捲回最上面、
+                 Assign 那一步（step-three.js + assign-practice.js → 搬回頁面、三段、送出前預覽）
+     五種共用    AudioSettingsPanel（Speed / Voice → 點一下＝選它＋聽它的 chip）
+                 MaxAttemptsField（→ Move on after N tries ＋ 加減鈕）
+     Audio Mode 卡 Vocabulary 本來就沒有，不適用。
+     第一步的三個欄位（v3 在 step-one 換的 ReUI 元件）：
+                 Project 選單 → c-dropdown-menu-18（這裡是多選，選單留著不關、選中打勾）
+                 Practice name → c-input-2，從第二步搬到第一步（選 Project 時它就被填好了）
+                 內容預覽 → c-frame-6 ghost frame（Teaching Points Preview 一個專案一個 frame）
+   第二輪（2026-09-11，使用者指示，邏輯參考 teacher-planning.html 的 Vocabulary 面板）：
+     ① teaching point 可以勾選——每個專案一塊，標頭全選框 ＋ 已選/總數，chip 是勾選鈕
+     ② 第一步就能加字——Add words：From Project（專案課文裡的詞，已在的變灰打勾、其餘 + 加入，
+        加入的掛 Added 標、預設勾起來）＋ Custom word。加的字歸在它所在的專案底下。
+     產品現在這兩件事都要等 Load Content 之後才能做（hide 與 Add Vocab 都要 practice.id），
+     所以這是把「決定要練哪些字」提前到生成之前——要問工程 createPractice 能不能吃一份字表（spec E4）。
+   第四輪（2026-09-11）：流程從三步變四步——Teaching Points → Vocabulary → Settings → Assign Practice。
+     第一步 Teaching Points：選專案、勾 teaching point、加字，按 Next 生成（原地轉圈）→ 自動進第二步。
+     第二步 Vocabulary：生成後的生詞卡（產品的 VocabularyDisplaySection，沒動）——審卡、編例句、隱藏、選圖。
+     這跟 v3 把審句獨立成 Edit Sentences 是同一個做法；產品自己也有先例：
+     Follow Pattern 是 ['Teaching Points','Question Review','Settings','Assign Practice']。
+     回到第一步時專案與 teaching point 都鎖住（practice 已存在），Add words 收起來。
+   第五輪（2026-09-11）：第二步 Vocabulary 重畫——
+     ① 這一步不再有 Add Vocab（加字在第一步做完了）。代價：生成後沒有加字的入口，第一步又鎖著——要決定。
+     ② 生詞卡重排：一個字一列，右邊就是學生會拿到的三張卡（Card 1 字／Card 2 例句 1／Card 3 例句 2），
+        照 card-stack.js 的排版：拼音在字上面、翻譯在下面。spec §5 問題 3「一個字＝三張卡看不出來」在這裡解掉。
+     ③ 圖片：AI 的四張候選之外多一格 Upload，老師可以放自己的圖（新能力，產品沒有——spec E5）。
+   第三輪（2026-09-11）：Load Content 那條拿掉，頁腳的 Next 直接做它的事——
+     勾好字按 Next → 生成（按鈕轉圈）→ 生詞卡出現、留在第一步 → 再按 Next 才到 Settings。
+     Scramble / Follow Pattern 同一個位置的鈕叫 Generate（resolvePrimaryActionLabel），
+     這裡照使用者的話留 Next。
+   第十九輪（2026-09-15）：第三步 Settings 照 practice-design-rules.html §2 R11 改成「工具列 ＋ 畫布，同一張卡」——
+     工具列兩行：Pinyin｜Translation｜Image ／ Speed｜Voice ‖ Auto pass ⓘ；畫布是學生的主欄（頂欄、進度條、齒輪、一疊卡、
+     Play 鈕、「Card 1 of N ▾」原地展開）。Vocabulary Preview 那份清單拿掉；Move on after N tries 改回產品的 Auto pass。
+   第二十輪（2026-09-15）：第二步的卡——①「練不練」全部用眼睛（字、每句例句各一顆，跟 Hide、藏圖同一個圖示），
+     Practised 開關拿掉；②例句可以再生：一顆 Generate another example，一次一句、最多再按三次到五句（產品沒有——新能力 E6）。
+   第二十一輪（2026-09-15）：群組標頭加兩顆組開關 Word cards／Examples，所有字卡或所有例句卡一次設定，每張卡的眼睛照留。
+   第二十二輪（2026-09-15）：Examples 那顆改成下拉，選 0～n（n＝例句最多的字有幾句），每個字都練前 k 句；個別改過就顯示 mixed。
+   第二十三輪（2026-09-15）：標頭右邊「6 words · 17 cards for students · in this order · 1 hidden」拿掉，組開關搬到那個位子。
+   第二十四輪（2026-09-15）：上傳圖片的對話框——選檔（拖放區）→ 預覽（檔名 ＋ 學生字卡）→ Use this image。
+   第二十五輪（2026-09-15）：Back 回第一步不再鎖住——跟工程談定 practice 在第二步才存，所以專案、teaching point、Add words 都能重選；
+     已生成的字留著，多勾的掛 New、按 Next 直接回第二步（不做生成動畫，新字在卡上生），取消勾的離開練習。
+   第二十六輪（2026-09-15）：選兩個以上專案時 Practice name 用「 + 」串起來（A + B）；老師改過名稱就不再跟著專案變。
+   第二十七輪（2026-09-15）：第二步例句卡的拼音／句子／翻譯置右。
+   第二十八輪（2026-09-15）：例句的拼音逐詞斷開、放在每個詞上面（照學生端 EXAMPLE 卡的排法）。
+   第二十九輪（2026-09-15）：例句置左（第二十七輪的置右改回來）。
+   第三十輪（2026-09-15）：眼睛太多——「哪幾張卡要練」收成每列標頭的一組 chip（Word / Example 1 / …），卡上不放眼睛；
+     Hide 變純文字鈕、群組標頭的兩顆也拿掉圖示。整頁只剩圖片上那一顆眼睛。
+   第三十六輪（2026-09-15）：第三步的預覽做成一個視窗（灰色地板 ＋ 有陰影的框 ＋ 視窗列 Student view），帶子與深灰線拿掉。
+   第三十一輪（2026-09-15）：群組標頭多一顆 Images · N of N，所有字的圖一次開關；每張圖上的眼睛照留當例外。
+   第三十二輪（2026-09-15）：圖上的眼睛拿掉，改成標頭 chip 列最前面一顆 ☑ Image。整頁沒有眼睛了。
+   沒動的（Vocabulary 自己長的）：載入後的 Vocabulary Content 手風琴與生詞卡、
+     Practice Config 分隔線、Display Settings 手風琴（三個下拉還是印 enum）、Vocabulary Preview 兩欄卡。
+   所以這一頁刻意是「新舊混在一起」的樣子——共用元件換完後，剩下的落差就是
+   下一輪要決定的東西。
+
+   共用元件的做法、尺寸、文案全部照 v3 proposal.html，出處註解不重抄，見那裡。
+   唯一依型別改的字：Move on after N tries 那一列的說明——Mirroring 寫 sentence，
+   Vocabulary 照產品自己的說明文字寫 card（vocabulary-step-three-section.js）。
+
+   網址參數：?step=1|2|3|4（從 1 數）
+     step 1：預設從頭走（還沒選專案）· &sel=1 已選一個專案 · &pool=1 From Project 展開 · &tdd=1 型別選單打開 · &gen=1 生成中 · &dd=1 專案選單打開 · &back=1 從第二步回來（第二十五輪起不鎖，可以重選）
+     step 2：生成後的生詞卡 · &upload=1 第一個字換成老師上傳的圖 · &more=1 第一個字已生成到五句 · &exn=1 例句數下拉打開 ·
+             &updlg=1 上傳對話框（選檔） · &updlg=2 上傳對話框（預覽）
+     step 3：&img=0 Image HIDE · &banner=1 音檔重產中 · &all=1 「Card 1 of N ▾」展開 · &voice=1 Voice 下拉打開 ·
+             &settings=1 學生的齒輪面板打開（要有 Choice by student） · &tip=1 Auto pass 說明開著
+     step 4：&pick=3b,4a 已選班級 · &roster=3b 展開名冊 · &perclass=1 逐班日期 ·
+             &review=1 預覽框 · &assigned=1 已指派過
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --success:#22C55E;
+  /* Vocabulary 欄的色票（practice-type-labels.js PRACTICE_TYPE_COLUMNS.VOCABULARY）
+     ＋ VOCABULARY_MIRRORING 那一項的 tag。跟 v3 用 CONTENT 欄的 wash 是同一個道理。 */
+  --wash:#FFF8E7; --label:#8F6209; --tag-wash:#FEF3C7; --tag-label:#D97706;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-lighter:#DCECFE;
+  --warning-lighter:#FFF5CC; --warning-dark:#B76E00;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼（跟基準檔同一套） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* ---------- 共用①：標題前的型別圖示（v3，出處 PRACTICE_TYPE_ENTRIES.tag） ----------
+   VOCABULARY_MIRRORING: { wash:'#FEF3C7', label:'#D97706', icon:'ic:round-mic' } */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px;
+  display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none;
+  background:var(--tag-wash); color:var(--tag-label); display:flex; align-items:center; justify-content:center; }
+.h4 .tico .mi{ font-size:22px; }
+.h5{ font-size:20px; font-weight:700; line-height:1.5; }
+.h6{ font-size:18px; font-weight:700; line-height:1.55; }
+
+/* ---------- 共用②：Stepper（v3 · ReUI c-stepper-2） ---------- */
+.stepper{ display:flex; align-items:center; width:100%; margin-bottom:32px; }
+.stp-item{ display:flex; align-items:center; gap:10px; }
+.stp-ind{ width:24px; height:24px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; background:var(--grey300); color:var(--text2);
+  transition:background .2s, box-shadow .2s; }
+.stp-item.done .stp-ind{ background:var(--primary); color:#fff; }
+.stp-item.active .stp-ind{ background:var(--primary); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.stp-lbl{ font-size:14px; font-weight:400; color:var(--text3); white-space:nowrap; }
+.stp-item.done .stp-lbl{ color:var(--text); }
+.stp-item.active .stp-lbl{ color:var(--text); font-weight:600; }
+.stp-sep{ flex:1; min-width:24px; height:2px; border-radius:2px; margin:2px 10px;
+  background:var(--divider); transition:background .2s; }
+.stp-sep.done{ background:var(--primary); }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- 基準檔沿用：通用 ---------- */
+.paper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.sub2{ font-size:14px; font-weight:600; }
+.sub1{ font-size:16px; font-weight:600; }
+.body2{ font-size:14px; }
+.cap{ font-size:12px; color:var(--text2); line-height:1.5; }
+.cap.dis{ color:var(--text3); }
+
+/* ---------- 基準檔沿用：MUI TextField / Select ---------- */
+.field{ position:relative; }
+.field > label{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1;
+  font-size:12px; color:var(--text2); line-height:1.2; }
+.field.dis > label{ color:var(--text3); background:linear-gradient(#fff 50%, var(--grey100) 50%); }
+.ctrl{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 14px; font-size:14px; color:var(--text); font-family:inherit;
+  display:flex; align-items:center; gap:8px; cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.field.sm .ctrl{ height:40px; }
+.field.dis .ctrl{ background:var(--grey100); color:var(--text3); cursor:default; }
+.field.dis .ctrl:hover{ border-color:var(--divider); }
+.ctrl .caret{ margin-left:auto; font-size:22px; color:var(--text2); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.menu{ position:absolute; top:60px; left:0; right:0; z-index:30; background:#fff; border-radius:8px;
+  box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:8px;
+  max-height:300px; overflow:auto; }
+.field.sm .menu{ top:44px; }
+.menu .opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:14px; cursor:pointer; }
+.menu .opt:hover{ background:var(--grey200); }
+.menu .opt.sel{ background:rgba(0,203,97,.08); }
+.chip-lang{ padding:1px 8px; background:#EFF6FF; color:#1D4ED8; font-size:11.2px; font-weight:600; border-radius:6px; }
+.chip-lvl{ padding:1px 8px; background:#F0FDF4; color:#065F46; font-size:11.2px; font-weight:600; border-radius:6px; }
+.opt .cnt{ margin-left:auto; font-size:12px; color:var(--text3); flex-shrink:0; }
+.opt .cnt.err{ color:var(--error); }
+
+/* ---------- 基準檔沿用：第一步（Autocomplete / Teaching Points / Loading / 生詞卡） ---------- */
+.ac .ctrl{ height:auto; min-height:56px; flex-wrap:wrap; padding:9px 14px; gap:6px; }
+.ac .tagchip{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 4px 0 12px;
+  border:1px solid rgba(145,158,171,.32); border-radius:16px; font-size:13px; font-weight:500; }
+.ac .tagchip .mi{ font-size:18px; color:rgba(145,158,171,.6); }
+.field.dis .tagchip{ color:var(--text3); }
+.ac .ph{ color:var(--text3); flex:1; }
+.ac .caret2{ margin-left:auto; display:flex; gap:4px; color:var(--text2); }
+.ac .caret2 .mi{ font-size:22px; }
+.tp-card{ border:1px solid var(--divider); border-radius:16px; overflow:hidden; background:#fff; }
+.tp-card + .tp-card{ margin-top:16px; }
+.tp-card .hd{ display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--divider); background:#FAFBFC; }
+.tp-card .hd .mi{ font-size:20px; color:var(--text2); }
+.tp-card .bd{ padding:20px; display:flex; flex-wrap:wrap; gap:6px; }
+.chip{ display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:16px;
+  border:1px solid rgba(145,158,171,.32); font-size:14px; font-weight:600; white-space:nowrap; }
+.chip.sm{ height:24px; padding:0 8px; font-size:12px; }
+.chip.primary{ border-color:rgba(0,203,97,.48); color:var(--primary); }
+.chip.info{ border-color:rgba(80,138,252,.48); color:var(--info); }
+.chip.secondary{ border-color:rgba(142,51,255,.48); color:#8E33FF; }
+.genbar{ display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:16px;
+  background:#F0FDF4; border:1px solid #D1FAE5; margin-top:16px; }
+.loading{ margin:32px 0; padding:48px 24px; border-radius:24px; text-align:center;
+  background:linear-gradient(135deg, rgba(187,241,208,.3) 0%, rgba(211,252,210,.3) 100%); }
+.loading .orb{ width:80px; height:80px; border-radius:50%; margin:0 auto 24px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--primary) 0%, var(--success) 100%); box-shadow:0 8px 24px rgba(0,203,97,.3); color:#fff; }
+.loading .orb .mi{ font-size:36px; animation:spin 1.2s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.loading .h6{ background:linear-gradient(90deg, var(--primary), var(--success)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+.loading .dots{ display:flex; gap:8px; justify-content:center; margin-top:24px; }
+.loading .dots i{ width:8px; height:8px; border-radius:50%; background:var(--primary); opacity:.35; }
+.loading .dots i:nth-child(2){ opacity:.7; } .loading .dots i:nth-child(3){ opacity:1; }
+.skel{ background:rgba(145,158,171,.16); border-radius:6px; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:.5;} }
+.skel-grid{ display:flex; gap:16px; flex-wrap:wrap; margin-top:32px; }
+.skel-card{ width:280px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; }
+.acc{ background:#fff; border-radius:16px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); margin-bottom:16px; overflow:hidden; }
+.acc .sum{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; background:var(--grey200); cursor:pointer; min-height:48px; }
+.acc .sum .l{ display:flex; align-items:center; gap:16px; }
+.acc .sum .l .mi{ font-size:24px; }
+.acc .sum .r{ display:flex; align-items:center; gap:16px; padding-right:16px; }
+.acc .sum .r > .mi{ font-size:24px; color:var(--text2); }
+.btn.success{ background:var(--success); color:#fff; box-shadow:0 8px 16px 0 rgba(34,197,94,.24); font-size:12px; padding:4px 12px; }
+.btn.success .mi{ font-size:16px; }
+.acc .det{ padding:8px 16px 16px; display:flex; flex-wrap:wrap; gap:16px; }
+.vcard{ min-width:280px; max-width:320px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; position:relative; transition:all .3s; }
+.vcard:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.vcard.hidden{ opacity:.45; }
+.vcard.hidden .word{ text-decoration:line-through; }
+.vcard .acts{ display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; }
+.vcard .ib{ width:36px; height:36px; border-radius:50%; border:0; background:rgba(0,0,0,.04); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.vcard .ib .mi{ font-size:20px; }
+.vcard .ib.edit{ color:var(--primary); } .vcard .ib.edit:hover{ background:var(--primary); color:#fff; }
+.vcard .ib.eye{ color:var(--text2); } .vcard .ib.eye:hover{ background:rgba(0,0,0,.08); color:var(--text); }
+.vcard .ib.eye.off{ color:var(--text3); } .vcard .ib.eye.off:hover{ background:#FFAB00; color:#fff; }
+.imgph{ width:100%; max-width:280px; height:160px; border-radius:8px; margin-bottom:8px;
+  background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.imgph .mi{ font-size:28px; }
+.thumbs{ display:flex; gap:6px; margin-bottom:16px; }
+.thumbs i{ width:48px; height:36px; border-radius:6px; background:#E9F5EE; border:2px solid transparent; display:block; }
+.thumbs i.sel{ border-color:var(--primary); }
+.vcard .word{ font-size:18px; font-weight:700; margin-bottom:5.6px; }
+.vcard .py{ font-size:14px; color:var(--text2); margin-bottom:5.6px; }
+.vcard .tr{ font-size:14px; color:var(--primary); margin-bottom:5.6px; }
+.vcard .tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+.vcard .ro{ margin-top:16px; padding:12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.vcard .ex{ margin-top:16px; padding:12px; background:var(--grey200); border-radius:8px; }
+.vcard .ex + .ex{ margin-top:12px; }
+.vcard .ex .c{ font-size:12px; display:block; margin-bottom:5.6px; }
+.vcard .ex .c.py{ color:var(--text2); margin-bottom:0; } .vcard .ex .c.tr{ color:var(--primary); margin:0; }
+.vcard .gram{ font-size:12px; color:var(--text3); font-style:italic; }
+.sw{ display:flex; align-items:center; gap:8px; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; transition:background .2s; cursor:pointer; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .track::after{ transform:translateX(13px); }
+
+/* ---------- 基準檔沿用：第二步 Vocabulary 自己的部分 ---------- */
+.divlabel{ display:flex; align-items:center; gap:16px; margin:24px 0; }
+.divlabel::before, .divlabel::after{ content:''; flex:1; height:1px; background:var(--divider); }
+.divlabel span{ font-size:14px; font-weight:600; color:var(--text2); padding:0 8px; }
+.alert{ display:flex; gap:12px; align-items:center; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:16px; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.spin{ width:18px; height:18px; border-radius:50%; border:2px solid rgba(80,138,252,.3); border-top-color:var(--info); animation:spin 1s linear infinite; flex-shrink:0; }
+.proc{ display:flex; align-items:center; gap:16px; padding:16px; border-radius:8px; background:var(--warning-lighter); margin-bottom:24px; font-size:14px; color:var(--warning-dark); }
+.proc .spin{ width:24px; height:24px; border-width:3px; border-color:#FFD666; border-top-color:#FFAB00; }
+.dsacc{ border:1px solid var(--divider); border-radius:8px; background:#fff; }
+.dsacc .sum{ display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:8px 16px; cursor:pointer; }
+.dsacc .sum .l{ display:flex; align-items:center; gap:8px; }
+.dsacc .sum .l .mi{ font-size:20px; color:var(--primary); }
+.dsacc .sum > .mi{ font-size:24px; color:var(--text2); }
+.dsacc .det{ padding:0 16px 16px; display:flex; gap:16px; flex-wrap:wrap; }
+.dsacc .det .field{ flex:1; min-width:180px; }
+.pv-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:24px; margin-bottom:32px; }
+.pv{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; transition:all .2s; }
+.pv:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.pv .hd{ margin-bottom:16px; }
+.pv .box{ display:flex; gap:24px; margin-bottom:24px; padding:16px; border-radius:16px; background:rgba(0,203,97,.05); border:2px solid rgba(0,203,97,.2); }
+.pv .box .col{ flex:1; min-width:0; }
+.pv .ov{ display:block; font-size:10.4px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--text2); line-height:1.5; }
+.pv .w{ font-size:20px; font-weight:700; }
+.pv .p{ font-size:18px; font-weight:700; color:var(--text2); }
+.pv .t{ font-size:18px; font-weight:700; color:var(--primary); }
+.pv .box .wcol{ display:flex; align-items:center; gap:8px; }
+.play{ border:0; background:transparent; border-radius:50%; color:var(--success); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.play.lg{ width:48px; height:48px; } .play.lg .mi{ font-size:32px; }
+.play.sm{ width:34px; height:34px; } .play.sm .mi{ font-size:24px; }
+.play:hover{ background:rgba(34,197,94,.08); }
+.pv .tags{ display:flex; flex-direction:column; gap:4px; }
+.pv .exs{ display:flex; gap:16px; }
+.pv .exs .ex{ flex:1; padding:16px; border-radius:8px; background:var(--grey200); border:1px solid var(--divider); }
+.pv .ex .lbl{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pv .ex .lbl .lt{ font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2); }
+.pv .ex .s{ font-size:14px; font-weight:500; margin-bottom:4px; }
+.pv .ex .py{ font-size:12px; color:var(--text2); display:block; margin-bottom:4px; }
+.pv .ex .tr{ font-size:12px; color:var(--primary); display:block; }
+.pv .imgph{ max-width:280px; }
+
+/* ---------- 共用⑥：第一步的欄位（v3 · ReUI c-input-2 / c-dropdown-menu-18 / c-frame-6） ---------- */
+.fld{ display:flex; flex-direction:column; gap:8px; max-width:520px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.fld .help{ font-size:12px; color:var(--text2); }
+.inp{ height:40px; width:100%; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); }
+  .inp::placeholder{ color:var(--text3); }
+.inp:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); }
+.dd{ position:relative; }
+.dd-trig{ width:100%; min-height:40px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border:1px solid var(--divider); border-radius:8px; background:#fff; padding:6px 12px;
+  font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.dd-trig:hover{ background:var(--grey100); }
+.dd-trig .ph{ color:var(--text3); font-weight:400; flex:1; }
+.dd-trig .tok{ display:inline-flex; align-items:center; gap:8px; }
+.dd-trig .tok + .tok::before{ content:''; width:1px; height:16px; background:var(--divider); margin-right:2px; }
+.dd-trig .caret{ font-size:18px; color:var(--text2); flex:none; margin-left:auto; }
+.mark{ height:22px; padding:0 8px; border-radius:6px; flex:none; display:inline-flex;
+  align-items:center; font-size:11px; font-weight:700; letter-spacing:.2px; background:#EFF6FF; color:#1D4ED8; }
+.lvl{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:#F0FDF4; color:#065F46; flex:none; }
+.dd-menu{ position:absolute; top:46px; left:0; right:0; z-index:30; background:#fff;
+  border:1px solid var(--divider); border-radius:10px; padding:4px;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.dd-lbl{ font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 6px; }
+.dd-item{ display:flex; align-items:center; gap:10px; width:100%; padding:8px; border:0;
+  background:transparent; border-radius:6px; font-size:14px; color:var(--text); cursor:pointer; text-align:left; font-family:inherit; }
+.dd-item:hover{ background:var(--grey200); }
+.dd-item .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-item .cnt{ font-size:12px; color:var(--text3); flex:none; }
+.dd-item .cnt.err{ color:var(--error); }
+.dd-item .tick{ font-size:18px; color:var(--primary); flex:none; width:18px; }
+.dd-item .tick.off{ visibility:hidden; }
+/* c-frame-6 ghost：外框沒邊框、底色用 Vocabulary 欄的 wash，panel 圓角 = 14 − 3 = 11 */
+.frame{ --frame-radius:14px; --frame-px:3px; --frame-panel-radius:calc(var(--frame-radius) - var(--frame-px));
+  display:flex; flex-direction:column; gap:var(--frame-px); background:var(--wash);
+  border-radius:var(--frame-radius); padding:var(--frame-px); margin-top:24px; }
+.frame + .frame{ margin-top:12px; }
+.frame-hd{ display:flex; flex-direction:column; gap:0; padding:8px 16px; }
+.frame-ttl{ font-size:14px; font-weight:600; color:var(--text); }
+.frame-desc{ font-size:14px; color:var(--text2); }
+.frame-panel{ position:relative; overflow:hidden; background:#fff; border:1px solid var(--divider);
+  border-radius:var(--frame-panel-radius); box-shadow:0 1px 2px rgba(33,43,54,.05); padding:16px;
+  display:flex; flex-wrap:wrap; gap:6px; }
+
+/* ---------- 第二輪：可勾的 teaching point ＋ Add words（邏輯照 teacher-planning，樣式沿 v3） ---------- */
+.frame-hd.sel{ flex-direction:row; align-items:center; gap:10px; }
+.frame-hd.sel .cb{ border:0; background:transparent; padding:0; cursor:pointer; color:var(--primary); display:flex; }
+.frame-hd.sel .cb .mi{ font-size:22px; }
+.frame-hd.sel .cb.none{ color:var(--text3); }
+.frame-hd.sel .ttl{ flex:1; }
+.frame-hd.sel .cnt{ font-size:13px; font-weight:600; color:var(--text2); font-variant-numeric:tabular-nums; }
+.tpchip{ display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px 0 8px; border-radius:10px;
+  border:1px solid var(--divider); background:#fff; font-size:14px; font-weight:600; color:var(--text2);
+  cursor:pointer; font-family:inherit; }
+.tpchip .mi{ font-size:18px; color:var(--text3); }
+.tpchip:hover{ border-color:var(--text3); color:var(--text); }
+.tpchip.on{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); color:var(--text); }
+.tpchip.on .mi{ color:var(--primary); }
+.tpchip .ty{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+.tpchip .ty.gram{ background:#F3E8FF; color:#7C3AED; }
+.tpchip .ty.added{ background:#DCECFE; color:#193592; }
+.tpchip.dim{ opacity:.5; cursor:default; }
+.tpchip.dim:hover{ border-color:var(--divider); color:var(--text2); }
+.addsep{ display:flex; align-items:center; gap:12px; margin:4px 0 8px; }
+.addsep b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.addsep .rule{ flex:1; height:1px; background:var(--divider); }
+.vp-head{ display:flex; align-items:center; gap:6px; width:100%; border:0; background:transparent; padding:6px 0;
+  font-family:inherit; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.vp-head .mi{ font-size:20px; color:var(--text2); }
+.vp-head .n{ margin-left:auto; font-size:12px; font-weight:600; color:var(--text3); }
+.pool{ display:flex; flex-wrap:wrap; gap:6px; padding:6px 0 10px; }
+.tp-add{ display:flex; gap:8px; margin-top:8px; }
+.tp-add .inp{ flex:1; }
+.tp-add .btn{ height:40px; }
+.tp-add .dd{ width:200px; flex:none; }
+.tp-add .dd-trig{ font-weight:500; }
+.tp-add .dd-menu{ left:auto; right:0; min-width:220px; }
+
+/* ---------- 第五輪：第二步的生詞卡（一個字＝三張卡） ---------- */
+.wcard{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:16px 20px; }
+.wcard + .wcard{ margin-top:12px; }
+.wcard.off{ background:var(--grey100); }
+.wcard.off .wc-bd{ opacity:.45; }
+.wc-hd{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.wc-hd .n{ font-size:12px; color:var(--text3); width:18px; font-variant-numeric:tabular-nums; }
+.wc-hd .w{ font-size:18px; font-weight:700; }
+.wcard.off .wc-hd .w{ text-decoration:line-through; color:var(--text2); }
+.wc-hd .cards{ font-size:12px; color:var(--text3); margin-left:4px; }
+.wc-hd .grow{ flex:1; }
+.wc-hd .ghost{ height:32px; padding:0 10px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.wc-hd .ghost .mi{ font-size:16px; }
+.wc-hd .ghost:hover{ border-color:var(--text3); color:var(--text); }
+.wc-bd{ display:flex; gap:24px; align-items:stretch; }
+/* 圖片區：大圖 ＋ 四張 AI 候選 ＋ 一格 Upload */
+.wc-img{ width:216px; flex:none; }
+.wc-img .big{ width:216px; height:144px; border-radius:10px; background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%);
+  display:flex; align-items:center; justify-content:center; color:#8AA69A; font-size:12px; gap:6px; position:relative; overflow:hidden; }
+.wc-img .big .mi{ font-size:28px; }
+.wc-img .big.mine{ background:linear-gradient(135deg,#FFF3D6 0%,#FFE7B3 100%); color:#8F6209; }
+.wc-img .big .eye{ position:absolute; top:6px; right:6px; width:28px; height:28px; border:0; border-radius:50%;
+  background:rgba(255,255,255,.92); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.wc-img .big .eye .mi{ font-size:16px; }
+.wc-img .big .eye:hover{ color:var(--text); }
+.wc-img .big.hid{ background:var(--grey200); color:var(--text3); }
+.wc-img .big .tag{ position:absolute; top:8px; left:8px; font-size:10px; font-weight:800; letter-spacing:.3px; padding:2px 7px; border-radius:6px;
+  background:rgba(255,255,255,.92); color:var(--label); }
+.thumbs2{ display:flex; gap:6px; margin-top:8px; }
+.thumbs2 button{ width:36px; height:28px; border-radius:6px; border:2px solid transparent; background:#E9F5EE; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center; color:#8AA69A; }
+.thumbs2 button.sel{ border-color:var(--primary); }
+.thumbs2 button.mine{ background:#FFF3D6; color:#8F6209; }
+.thumbs2 button.up{ background:#fff; border:1px dashed var(--text3); color:var(--text2); }
+.thumbs2 button.up:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.thumbs2 button .mi{ font-size:16px; }
+.wc-img .cap{ margin-top:6px; }
+/* 學生的三張卡：照 card-stack.js——拼音在字上面、字、翻譯在下面 */
+.cards3{ flex:1; display:grid; grid-template-columns:minmax(160px, max-content) 1fr; column-gap:28px; grid-auto-rows:auto; gap:12px; min-width:0; }   /* 例句可以到五句（第二十輪）：列數不固定，字那一塊用 inline grid-row 跨全部 */
+.scard.word{ grid-row:1 / span 2; }
+/* 字那一塊不是卡（照產品原本 vocabulary-display-section 的排法：字 h6、拼音 body2、翻譯 primary、chip） */
+.wblock{ display:flex; flex-direction:column; justify-content:flex-start; padding:10px 0 4px; min-width:0; max-width:260px; }   /* 第二十輪：例句可到五句，字那一塊貼齊上緣（置中會浮在半空） */
+.wblock .w{ font-size:18px; font-weight:700; margin-bottom:6px; }
+.wblock .py{ font-size:14px; color:var(--text2); margin-bottom:6px; }
+.wblock .tr{ font-size:14px; color:var(--primary); margin-bottom:14px; }
+.wblock .tags{ display:flex; gap:8px; flex-wrap:wrap; }
+.wblock .gram{ font-size:14px; color:var(--text3); font-style:italic; margin-bottom:12px; }
+.wblock .note{ font-size:12px; color:var(--text3); margin-bottom:12px; }
+.wblock .ro{ margin-top:12px; padding:10px 12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text2); }
+.scard.ex{ min-height:0; }
+.scard{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:12px 14px; display:flex; flex-direction:column; min-height:144px;
+  box-shadow:0 4px 12px rgba(33,43,54,.06); position:relative; }
+.scard .lb{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.scard .lb .edit{ margin-left:auto; border:0; background:transparent; color:var(--text3); cursor:pointer; padding:2px; border-radius:6px; display:flex; }
+.scard .lb .edit:hover{ color:var(--primary-dark); background:rgba(0,203,97,.08); }
+.scard .lb .edit .mi{ font-size:16px; }
+.scard .mid{ flex:1; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; text-align:left; gap:2px; }   /* 第二十九輪：例句置左（第二十七輪的置右改回來，使用者 2026-09-15） */
+.scard .py{ font-size:13px; color:var(--text2); }
+/* 第二十八輪：逐詞拼音在上、字在下，整段靠右換行 */
+.rz{ display:flex; flex-wrap:wrap; justify-content:flex-start; column-gap:8px; row-gap:6px; }
+.tk{ display:inline-flex; flex-direction:column; align-items:center; }
+.tk .p{ font-size:11px; color:var(--text2); line-height:1.2; min-height:13px; white-space:nowrap; }
+.tk .z{ font-size:16px; font-weight:600; line-height:1.3; }
+.tk.pu{ margin-left:-6px; }
+.scard .zh{ font-size:22px; font-weight:600; line-height:1.3; }
+.scard.ex .zh{ font-size:16px; }
+.scard .tr{ font-size:12px; color:var(--text2); margin-top:6px; }
+.scard .note{ font-size:12px; color:var(--text3); font-style:italic; text-align:center; }
+.scard.skip{ background:var(--grey100); box-shadow:none; }
+.scard .ro{ margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text2); }
+.grp-hd{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }
+.grp-hd .mi{ font-size:22px; color:var(--text2); }
+.grp-hd .cnt{ margin-left:auto; font-size:13px; color:var(--text2); }
+@media (max-width:1100px){ .wc-bd{ flex-direction:column; } .cards3{ grid-template-columns:1fr; grid-template-rows:auto; } .scard.word, .wblock{ grid-row:auto; } }
+
+/* ---------- 第三十輪：卡上的眼睛拿掉，「哪幾張卡要練」是標頭列的一組 chip ---------- */
+.wc-hd .cardchips{ display:inline-flex; gap:6px; margin-left:12px; flex-wrap:wrap; }
+.wc-hd .tpchip.cc{ height:28px; padding:0 10px 0 6px; font-size:12px; border-radius:8px; }
+.wc-hd .tpchip.cc .mi{ font-size:16px; }
+.wcard.off .cardchips{ display:none; }
+.skip{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:6px; background:var(--grey200); color:var(--text2); margin-left:8px; text-transform:uppercase; }
+.wblock .top{ justify-content:flex-start; align-items:center; }
+/* ---------- 第二十輪：Generate more examples ---------- */
+.scard .lb .new{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:6px; background:#DCECFE; color:#193592; margin-left:2px; }
+.genex{ grid-column:2; display:flex; align-items:center; gap:8px; height:40px; padding:0 14px; border:1px dashed var(--divider); border-radius:12px;
+  background:transparent; font-family:inherit; font-size:13px; font-weight:700; color:var(--text2); cursor:pointer; }
+.genex .mi{ font-size:18px; color:var(--primary-dark); }
+.genex .sub{ font-weight:500; color:var(--text3); margin-left:auto; font-size:12px; }
+.genex:hover{ border-color:var(--primary); color:var(--primary-dark); background:rgba(0,203,97,.04); }
+.genex.busy, .genex.done{ cursor:default; border-style:solid; }
+.genex.done{ color:var(--text3); font-weight:500; }
+.genex.done .mi{ color:var(--text3); }
+.genex .spin{ width:16px; height:16px; }
+
+/* 第二十一輪：群組標頭的組開關（跟 Hide 同一種 ghost 鈕，多一個 on of N 的計數） */
+.tpchip .ty.new{ background:#DCECFE; color:#193592; }   /* 第二十五輪：回頭多勾、還沒生的字 */
+.grp-hd .gtogs{ display:inline-flex; gap:6px; margin-left:auto; }   /* 第二十三輪：靠右，原本計數的位子 */
+.grp-hd .ghost{ height:30px; padding:0 10px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.grp-hd .ghost .mi{ font-size:16px; }
+.grp-hd .ghost:hover{ border-color:var(--text3); color:var(--text); }
+.grp-hd .ghost .n{ font-weight:500; color:var(--text3); font-variant-numeric:tabular-nums; }
+.grp-hd .ghost.alloff{ color:var(--text3); background:var(--grey100); }
+.grp-hd .ghost.alloff .n{ color:var(--error); }
+/* 第二十二輪：Examples 是下拉 */
+.grp-hd .gdd{ position:relative; display:inline-flex; }
+.grp-hd .ghost .caret{ font-size:18px; color:var(--text2); margin-left:-2px; }
+.grp-hd .gmenu{ top:36px; left:auto; right:0; min-width:240px; }
+.grp-hd .gmenu .cnt{ font-size:12px; color:var(--text3); flex:none; margin-left:auto; }
+.grp-hd .gmenu .tick{ margin-left:6px; }
+
+/* ---------- 第十一輪：第三步的 Vocabulary Preview 改用第二步的排版 ＋ 順序 ＋ 逐卡開關 ---------- */
+.wc-hd .mv{ display:inline-flex; gap:2px; margin-left:4px; }
+.wc-hd .mv button{ width:28px; height:28px; border:1px solid var(--divider); border-radius:6px; background:#fff; color:var(--text2);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.wc-hd .mv button:hover{ border-color:var(--text3); color:var(--text); }
+.wc-hd .mv button:disabled{ opacity:.35; cursor:default; }
+.wc-hd .mv button .mi{ font-size:18px; }
+.wc-hd .off-n{ font-size:12px; color:var(--text3); }
+.wblock .top{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.wblock .top .w{ margin:0; }
+.wblock .play.sm{ width:30px; height:30px; } .wblock .play.sm .mi{ font-size:22px; }
+.wblock .tog{ margin-top:12px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); }
+.scard .lb .tog{ margin-left:auto; display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0; font-weight:600; font-size:12px; color:var(--text2); }
+.scard .lb .edit + .tog{ margin-left:8px; }   /* 編輯鈕已經靠右了，開關跟在它後面 */
+.scard .lb .play.sm{ width:26px; height:26px; margin-left:2px; } .scard .lb .play.sm .mi{ font-size:20px; }
+.wblock.off, .scard.off{ opacity:.45; }
+.scard.off{ box-shadow:none; background:var(--grey100); }
+.sw.sm .track{ width:28px; height:16px; } .sw.sm .track::after{ width:12px; height:12px; }
+.sw.sm.on .track::after{ transform:translateX(12px); }
+.wc-img.ro .big{ height:120px; }
+
+/* ---------- 第十九輪（2026-09-15）：第三步照 R11 —— 工具列 ＋ 畫布，同一張卡 ----------
+   做法、尺寸全部照 v3 proposal.html 的第三步（參考實作），出處註解不重抄。
+   型別差異只有三處：第一行多一格 Image；第二行沒有 Translation first（Vocabulary 沒這個設定）；畫布上是學生的一疊字卡。 */
+.canvas{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:visible; }
+.toolbar{ border-bottom:1px solid var(--divider); }
+.tb-row{ display:flex; align-items:stretch; padding:8px 8px 8px 16px; position:relative; }
+.tb-row + .tb-row{ border-top:1px solid var(--divider); }
+.tb-grp{ display:flex; align-items:flex-end; gap:20px; padding:4px 20px 4px 0; flex-wrap:wrap; row-gap:8px; }
+.tb-grp + .tb-grp{ border-left:1px solid var(--divider); padding-left:20px; }
+.tb-grp.dis{ opacity:.55; pointer-events:none; }   /* 音檔重產中：Speed／Voice 不能點（對應原本兩個下拉的 disabled） */
+.tb-ctl{ display:flex; flex-direction:column; gap:5px; }
+.tb-ctl .tl{ font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); line-height:1; display:flex; align-items:center; gap:4px; }
+.tip{ position:relative; border:0; background:transparent; padding:0; color:var(--text3); cursor:help; display:inline-flex; font-family:inherit; }
+.tip .mi{ font-size:14px; }
+.tip::after{ content:attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+  width:max-content; max-width:300px; background:#454F5B; color:#fff; font-size:12px; font-weight:500; line-height:1.5;
+  letter-spacing:0; text-transform:none; padding:6px 10px; border-radius:8px; white-space:normal; text-align:left;
+  opacity:0; pointer-events:none; transition:opacity .12s; z-index:50; box-shadow:0 8px 16px rgba(33,43,54,.16); }
+.tip::before{ content:''; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:#454F5B; opacity:0; transition:opacity .12s; z-index:50; }
+.tip:hover::after, .tip:focus-visible::after, .tip.on::after,
+.tip:hover::before, .tip:focus-visible::before, .tip.on::before{ opacity:1; }
+.tb-row .tip::after{ bottom:auto; left:calc(100% + 10px); top:-7px; transform:none; }
+.tb-row .tip::before{ bottom:auto; left:calc(100% + 1px); top:50%; transform:translateY(-50%);
+  border-top-color:transparent; border-right-color:#454F5B; }
+.toolbar .seg{ padding:2px; border-radius:8px; }
+.toolbar .seg button{ height:26px; padding:0 10px; font-size:12px; border-radius:6px; }
+.toolbar .vchip{ height:28px; padding:0 10px; font-size:12px; gap:4px; }
+.toolbar .vchip .mi{ font-size:15px; }
+.toolbar .vgrp{ gap:6px; justify-content:flex-start; }
+.toolbar .stp{ border-radius:8px; }
+.toolbar .stp button{ width:28px; height:28px; }
+.toolbar .stp .n{ width:40px; line-height:28px; font-size:13px; }
+/* Voice：面板裡唯一的下拉（帶 ▶）；打開每列一顆 ▶，點一列＝選它＋聽它 */
+.vdd{ position:relative; }
+.vdd-trig{ height:28px; display:inline-flex; align-items:center; gap:6px; padding:0 8px 0 10px; border:1px solid var(--divider);
+  border-radius:999px; background:#fff; font-family:inherit; font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+.vdd-trig:hover{ border-color:var(--text3); }
+.vdd-trig .mi{ font-size:15px; color:var(--primary); }
+.vdd-trig .mi.caret{ color:var(--text2); font-size:18px; margin-left:2px; }
+.vdd-menu{ position:absolute; top:34px; left:0; z-index:40; min-width:220px; background:#fff; border:1px solid var(--divider);
+  border-radius:10px; padding:4px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.vdd-menu .vl{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 4px; }
+.vdd-item{ display:flex; align-items:center; gap:8px; width:100%; padding:7px 8px; border:0; background:transparent; border-radius:6px;
+  font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; text-align:left; }
+.vdd-item:hover{ background:var(--grey200); }
+.vdd-item .vpl{ width:24px; height:24px; border-radius:50%; color:var(--primary); display:flex; align-items:center; justify-content:center; flex:none; }
+.vdd-item .vpl .mi{ font-size:16px; }
+.vdd-item .nm{ flex:1; }
+.vdd-item .tick{ font-size:18px; color:var(--primary); }
+.vdd-item.on .nm{ font-weight:700; }
+/* 工具列與畫布之間一條明顯的分隔帶（2026-09-15 使用者）：告訴老師底下是預覽，不是另一組設定 */
+/* 第三十六輪（2026-09-15，方案 A）：預覽做成一個視窗——灰色地板上一個有圓角、有陰影的框，框頂一條視窗列（三個點 ＋ Student view），
+   學生的卡在框裡。「視窗裡的視窗＝預覽」不用文字解釋，第三十四輪的帶子與深灰線拿掉。 */
+.vp{ background:#DFE5EC; padding:24px; }
+.winwrap{ max-width:900px; margin:0 auto; }
+/* 方案 B（2026-09-15）：視窗列留著，三個點換成一個小螢幕圖示——不綁平台 */
+.win-bar{ height:34px; display:flex; align-items:center; justify-content:center; position:relative; background:#fff; border-bottom:1px solid var(--divider);
+  font-size:12px; font-weight:700; color:var(--text2); letter-spacing:.2px; }
+.win-bar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.win{ border-radius:14px; overflow:hidden; background:#E8EEF4;
+  box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.canvas .stu-foot{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:12px; color:var(--text3);
+  border-top:1px solid var(--divider); }
+/* 學生畫面 ＝ 主欄（vocabulary/index.js）：（頂欄與進度條 2026-09-15 拿掉）
+   settings-panel.js 的齒輪（右上 top:12 right:16）、card-stack.js 的一疊卡。
+   左欄 Vocabulary List 與卡底下的星星／錄音鈕不畫——預覽只要主欄與那張卡（v3 同一個取捨）。 */
+/* 2026-09-15 使用者：畫布不要學生端的頂欄（型別 chip ＋ 名稱 ＋ 頭像）與進度條——預覽只要那張卡 */
+.vp-body{ position:relative; padding:28px 24px 24px; }   /* 視窗裡的內容：學生端底色 #E8EEF4 在 .win 上 */
+/* settings-panel.js：48px 齒輪卡 ＋ 220px 面板 */
+.sp{ position:absolute; top:12px; right:16px; z-index:10; }
+.sp .gear{ width:48px; height:48px; border:0; border-radius:12px; background:#fff; color:#64748B; cursor:pointer;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.sp .gear .mi{ font-size:20px; }
+.sp .panel{ position:absolute; top:56px; right:0; width:220px; background:#fff; border-radius:12px; z-index:20;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; }
+.sp .panel .ph{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7;
+  font-size:14px; font-weight:700; color:#334155; }
+.sp .panel .ph .mi{ font-size:18px; color:#94A3B8; }
+.sp .panel .pr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:14px; font-weight:600; color:#475569; }
+.sp .panel .pr + .pr{ border-top:1px solid #EEF2F7; }
+.sp .panel .pr .sel{ height:30px; padding:0 8px; border:1px solid var(--divider); border-radius:6px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.sp .panel .pr .sel .mi{ font-size:18px; color:var(--text2); }
+.sw2{ display:inline-block; width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; cursor:pointer; }
+.sw2::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.sw2.on{ background:var(--primary); } .sw2.on::after{ left:15px; }
+/* 學生的一疊卡：560×280，後面兩張各往右下偏 8px（CARD_STACK_CONFIG.layers） */
+.stk{ position:relative; width:100%; max-width:560px; height:296px; margin:0 auto; }
+.stk .c{ position:absolute; left:0; top:0; width:calc(100% - 16px); height:280px; background:#fff; border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.08); }
+.stk .c.b2{ transform:translate(16px,16px); z-index:1; } .stk .c.b1{ transform:translate(8px,8px); z-index:2; }
+.stk .c.f{ z-index:3; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; overflow:hidden; }
+.stk .c.f .img{ width:50%; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.stk .c.f .img.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.stk .c.f .img .mi{ font-size:28px; }
+.stk .c.f .txt{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; position:relative; min-width:0; }
+.stk .c.f .spk{ position:absolute; top:8px; right:8px; color:var(--text2); }
+.stk .c.f .spk.on{ color:var(--primary); }   /* 播放中：card-stack.js 的 isAutoPlaying → volume-up、primary */
+.stk .c.f .spk .mi{ font-size:24px; }
+.stk .py{ font-size:18px; color:var(--text2); line-height:1.25; text-align:center; }        /* h6 secondary */
+.stk .w{ font-size:36px; font-weight:600; line-height:1.3; text-align:center; }              /* h4 600, lg 36 */
+.stk .ex .py{ font-size:15px; } .stk .ex .w{ font-size:22px; }                               /* 例句卡 h6 */
+.stk .tr{ font-size:14px; color:var(--text2); text-align:center; margin-top:16px; line-height:1.35; min-height:24px; }
+.stk .tr.off{ visibility:hidden; }                                                            /* 關掉時位置留著（card-stack.js） */
+/* Play 鈕：字寫著會怎麼播（v3） */
+.mp-play{ display:flex; justify-content:center; margin-top:16px; }
+.mp-play button{ height:36px; padding:0 16px 0 12px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit; font-size:13px;
+  font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:20px; color:var(--primary); }
+.mp-play button:hover{ border-color:var(--primary); }
+.mp-play button:disabled{ cursor:default; }
+/* 「Card 1 of N ▾」：在容器裡原地展開全部卡片，點一列就換預覽（v3 的 .sdd） */
+.sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }
+.sdd-trig{ height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit;
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.sdd-trig:hover{ border-color:var(--text3); }
+.sdd-trig .mi{ font-size:18px; color:var(--text2); }
+.sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
+  font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
+.sdd-item:hover{ background:var(--grey200); }
+.sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .z{ flex:1; min-width:0; }
+.sdd-item .k{ font-size:11px; font-weight:700; color:var(--text3); flex:none; }
+.sdd-item.on .z{ font-weight:600; } .sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
+.sdd-item .mi{ font-size:18px; color:var(--primary); }
+
+/* ---------- 共用③：設定列／分段控制項／chip／次數（v3 的語彙） ---------- */
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:40px 0 12px; }
+.eyebrow:first-child{ margin-top:0; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); }
+.eyebrow .hint{ font-size:12px; color:var(--text3); }
+.rows{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:4px 20px; }
+.rw{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 0; }
+.rw + .rw{ border-top:1px solid var(--divider); }
+.rw .lb{ font-size:14px; font-weight:600; }
+.rw .hp{ font-size:12px; color:var(--text2); margin-top:2px; max-width:44ch; }
+.rw .ct{ flex:none; }
+.rows.dis{ opacity:.55; pointer-events:none; }
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px;
+  font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+/* v3 叫 .chip；這一頁 .chip 已經被 MUI outlined chip 用掉，聲音／速度 chip 改叫 .vchip */
+.voices{ display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.vgrp{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.vgrp .vl{ font-size:11px; font-weight:700; letter-spacing:.2px; color:var(--text3); margin-right:2px; }
+.vchip{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; }
+.vchip:hover{ border-color:var(--text3); color:var(--text); }
+.vchip .mi{ font-size:16px; }
+.vchip.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.vchip.playing .mi{ color:var(--primary); }
+.stp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; }
+.stp button{ width:38px; height:38px; border:0; background:#fff; color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.stp button:hover{ background:var(--grey200); color:var(--text); }
+.stp .n{ width:44px; text-align:center; font-size:15px; font-weight:700;
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); line-height:38px; }
+
+/* ---------- 共用④：Assign（v3 · 從對話框搬回頁面） ---------- */
+.clsrow{ display:flex; align-items:center; gap:12px; padding:14px 0; }
+.clsrow + .clsrow{ border-top:1px solid var(--divider); }
+.clsrow .box{ width:20px; height:20px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.clsrow .box .mi{ font-size:15px; opacity:0; }
+.clsrow.on .box{ background:var(--primary); border-color:var(--primary); }
+.clsrow.on .box .mi{ opacity:1; }
+.clsrow .nm{ display:block; font-size:14px; font-weight:600; }
+.clsrow .sub{ display:block; font-size:12px; color:var(--text2); margin-top:1px; }
+.clsrow .grow{ flex:1; min-width:0; }
+.clsrow.done{ opacity:.55; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; }
+.pill.mand{ background:#F1F5F9; color:#475569; }
+.pill.opt{ background:#E0E7FF; color:#3730A3; }
+.linkbtn{ border:0; background:transparent; padding:0; font-family:inherit; font-size:12px;
+  font-weight:700; color:var(--primary-dark); cursor:pointer; text-decoration:underline; }
+.dtrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dtrow .lbl{ font-size:14px; font-weight:600; width:52px; flex:none; }
+.dt2{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 12px;
+  font-family:inherit; font-size:14px; color:var(--text); background:#fff; width:220px; }
+.quick{ display:inline-flex; gap:4px; }
+.quick button{ height:30px; padding:0 11px; border-radius:8px; border:1px solid var(--divider);
+  background:#fff; font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; }
+.quick button:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.modeline{ display:flex; align-items:center; gap:12px; padding:14px 0 12px;
+  font-size:13px; color:var(--text2); border-bottom:1px solid var(--divider); margin-bottom:4px; }
+.perclass{ padding:14px 0; }
+.perclass + .perclass{ border-top:1px solid var(--divider); }
+.pc-name{ font-size:13px; font-weight:700; margin-bottom:10px; }
+.roster{ margin:2px 0 6px 32px; padding:12px 14px; background:var(--grey100);
+  border:1px solid var(--divider); border-radius:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.stu{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; color:var(--text); cursor:pointer; }
+.stu .box{ width:15px; height:15px; border-radius:4px; border:2px solid var(--text3); flex:none; }
+.stu.on{ border-color:var(--primary); background:rgba(0,203,97,.08); }
+.stu.on .box{ background:var(--primary); border-color:var(--primary); }
+.stu.off{ opacity:.58; cursor:default; }
+.stu .tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; }
+.stu .tag.ok{ background:#D3FCD2; color:#118D57; }
+.stu .tag.new{ background:#DCECFE; color:#193592; }
+.stu .tag.bad{ background:#FFE9D5; color:#B71D18; }
+.stu .tag.warn{ background:#FFF5CC; color:#7A4100; }
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+
+/* 送出前的預覽 */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex;
+  align-items:center; justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:16px; width:100%; max-width:560px; overflow:hidden;
+  box-shadow:0 24px 48px rgba(33,43,54,.24); max-height:88vh; display:flex; flex-direction:column; }
+.dlg-hd{ padding:20px 24px 0; }
+.dlg-hd h3{ font-size:18px; font-weight:700; }
+.dlg-hd p{ font-size:13px; color:var(--text2); margin-top:4px; }
+.dlg-bd{ padding:16px 24px; overflow-y:auto; }
+.dlg-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px; border-top:1px solid var(--divider); }
+/* 第二十四輪：上傳圖片的對話框 */
+.dropzone{ width:100%; min-height:176px; border:1.5px dashed var(--text3); border-radius:12px; background:var(--grey100); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; font-family:inherit; color:var(--text2); padding:24px; }
+.dropzone:hover, .dropzone:focus-visible{ border-color:var(--primary); background:rgba(0,203,97,.04); color:var(--text); outline:none; }
+.dropzone .mi{ font-size:36px; color:var(--primary-dark); margin-bottom:4px; }
+.dropzone .t{ font-size:14px; font-weight:700; }
+.dropzone .c{ font-size:12px; color:var(--text3); }
+.up-prev .file{ display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--divider); border-radius:12px; }
+.up-prev .thumb{ width:56px; height:40px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex:none; }
+.up-prev .thumb.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.up-prev .thumb .mi{ font-size:22px; }
+.up-prev .meta{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; font-size:12px; color:var(--text2); }
+.up-prev .meta b{ font-size:14px; color:var(--text); }
+.up-prev .lbl{ font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text3); margin:18px 0 8px; }
+/* 學生字卡的縮小版（card-stack.js 的比例 560×280 → 448×224） */
+.minicard{ width:448px; max-width:100%; height:224px; margin:0 auto; border-radius:12px; background:#fff; box-shadow:0 8px 32px rgba(0,0,0,.15);
+  display:flex; overflow:hidden; border:1px solid var(--divider); }
+.minicard .img{ width:50%; display:flex; align-items:center; justify-content:center; }
+.minicard .img.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.minicard .img .mi{ font-size:40px; }
+.minicard .txt{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; min-width:0; }
+.minicard .py{ font-size:15px; color:var(--text2); }
+.minicard .w{ font-size:30px; font-weight:600; line-height:1.3; }
+.minicard .tr{ font-size:13px; color:var(--text2); margin-top:12px; min-height:20px; }
+.minicard .tr.off{ visibility:hidden; }
+.rvc{ padding:12px 0; }
+.rvc + .rvc{ border-top:1px solid var(--divider); }
+.rvc .top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
+.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--label); }
+.rvc .top .cnt{ font-size:13px; color:var(--text2); flex:none; }
+.rvc .when{ font-size:12px; color:var(--text2); margin-top:2px; }
+.rvc .ex{ font-size:12px; color:#7A4100; margin-top:6px; line-height:1.6; }
+
+/* ---------- 共用⑤：頁腳按鈕 ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.contained.dis:hover{ background:var(--grey300); }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.btn .mi.spinning{ font-size:18px; animation:spin 1s linear infinite; }
+
+/* ---------- 提案說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; } .main{ padding:88px 16px; }
+}
+@media (max-width:900px){ .pv-grid{ grid-template-columns:1fr; } }
+@media (max-width:820px){
+  .rw{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .voices{ align-items:flex-start; } .vgrp{ justify-content:flex-start; }
+  .stepper .stp-lbl{ display:none; }
+}
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="https://project-logeg.vercel.app/specs/chinese-modules/assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main">
+    <div class="container">
+      <div class="h4"><span class="tico"><span class="mi">mic</span></span>New Vocabulary Mirroring</div>
+      <div class="stepper" id="stepper"></div>
+      <div class="content" id="content"></div>
+      <div class="footer">
+        <button class="btn text" id="back">Back</button>
+        <button class="btn contained" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><b>提案</b>　v4 · 第三十六輪 · 對照組 <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/v4-vocabulary-mirroring/create-vocabulary.html?step=1">現行複刻 ↗</a></span>
+  <span>
+    <a href="?step=1" id="l0">1 從頭走</a> ·
+    <a href="?step=1&amp;sel=1" id="l0s">1 已選專案</a> ·
+    <a href="?step=1&amp;sel=1&amp;dd=1" id="l0d">1 選單打開</a> ·
+    <a href="?step=1&amp;sel=1&amp;pool=1" id="l0p">1 From Project</a> ·
+    <a href="?step=2" id="l0l">2 Vocabulary</a> ·
+    <a href="?step=2&amp;upload=1" id="l0u">2 上傳圖</a> ·
+    <a href="?step=3" id="l1">3 Settings</a> ·
+    <a href="?step=4" id="l2">4 Assign</a> ·
+    <a href="?step=4&amp;assigned=1" id="l2a">4 已指派</a>
+  </span>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   假資料跟基準檔同一份（兩邊才比得起來）。
+   --------------------------------------------------------------------------- */
+const S = {
+  step:0, empty:false, gen:false, loaded:false, banner:false, assigned:false,
+  projects:[], practiceName:'', nameEdited:false,   // 從頭走：還沒選專案、還沒有 teaching points；名稱老師改過就不再跟專案走
+  pinyin:'PINYIN', translation:'STUDENT_CHOICE',
+  speed:'0.8', voice:'Xiaorou (Female)', attempts:3, playing:null,
+  open:null, ddOpen:false,
+  tp:null, added:[], poolOpen:false, customType:'WORD', typeOpen:false,   // Custom word 的型別（產品 CustomWordDialog 的下拉，預設 WORD）
+  hiddenW:null, imgSel:{}, uploaded:null, imgHidden:null,
+  order:null, cardOff:null,   // 第三步：字的順序／關掉不練的卡（'字|word' / '字|ex1' / '字|ex2'）   // 第二步：隱藏的字／每個字選的圖／老師上傳的圖   // 勾選的 teaching point ／ 加進來的字 ／ From Project 展開
+  picked:null, sel:null, done:null, start:'2026-09-10T08:00', due:'2026-09-17T23:59',
+  kind:'mandatory', perClass:false, perDates:{}, roster:null, justAssigned:false, review:false,
+};
+
+const PROJECTS = [
+  ['我的一天','zh-CN','HSK 2', 7],
+  ['环境保护与可持续发展','zh-CN','HSK 4', 12],
+  ['餐厅点餐（对话）','zh-CN','HSK 3', 0],
+];
+const PROJECT_LANG = 'zh-CN';   // targetLanguage：選到的專案裡任一個是 zh-TW 才會是 zh-TW
+
+const WORDS = [
+  { w:'起床', py:'qǐ chuáng', tr:'get up', pos:'verb', type:'VERB',
+    ex:[['我每天七点起床。','wǒ měi tiān qī diǎn qǐ chuáng.','I get up at seven every day.'],
+        ['周末我起床很晚。','zhōu mò wǒ qǐ chuáng hěn wǎn.','On weekends I get up late.']] },
+  { w:'早饭', py:'zǎo fàn', tr:'breakfast', pos:'noun', type:'NOUN',
+    ex:[['我早饭吃面包。','wǒ zǎo fàn chī miàn bāo.','I eat bread for breakfast.'],
+        ['你吃早饭了吗？','nǐ chī zǎo fàn le ma?','Have you had breakfast?']] },
+  { w:'上课', py:'shàng kè', tr:'attend class', pos:'verb', type:'VERB',
+    ex:[['我八点上课。','wǒ bā diǎn shàng kè.','I have class at eight.'],
+        ['今天我们不上课。','jīn tiān wǒ men bù shàng kè.','We do not have class today.']] },
+  { w:'图书馆', py:'tú shū guǎn', tr:'library', pos:'noun', type:'NOUN',
+    ex:[['下午我去图书馆看书。','xià wǔ wǒ qù tú shū guǎn kàn shū.','In the afternoon I go to the library to read.'],
+        ['图书馆里很安静。','tú shū guǎn lǐ hěn ān jìng.','It is very quiet in the library.']] },
+  { w:'运动', py:'yùn dòng', tr:'exercise', pos:'verb', type:'WORD',
+    ex:[['我喜欢晚上运动。','wǒ xǐ huan wǎn shang yùn dòng.','I like to exercise in the evening.'],
+        ['运动对身体很好。','yùn dòng duì shēn tǐ hěn hǎo.','Exercise is good for the body.']] },
+  { w:'睡觉', py:'shuì jiào', tr:'sleep', pos:'verb', type:'VERB', hidden:true,
+    ex:[['我十一点睡觉。','wǒ shí yī diǎn shuì jiào.','I go to sleep at eleven.'],
+        ['睡觉前我看一会儿书。','shuì jiào qián wǒ kàn yí huì er shū.','I read for a while before sleeping.']] },
+  { w:'一……就', py:'yī … jiù', tr:'as soon as', pos:'', type:'GRAMMAR', examplesOnly:true,
+    ex:[['我一起床就喝水。','wǒ yì qǐ chuáng jiù hē shuǐ.','I drink water as soon as I get up.'],
+        ['他一下课就回家。','tā yí xià kè jiù huí jiā.','He goes home as soon as class ends.']] },
+];
+/* teaching point chip 上的短型別標（照 teacher-planning 的 TPT）；卡片上仍用產品的長標籤 */
+const TYPE_SHORT = { WORD:'Word', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adj', GRAMMAR:'Grammar', PHRASE:'Phrase', MEASURE_WORD:'Measure', OTHER:'Other' };
+/* From Project 的池子：專案課文（splitArticleArray）裡的詞，去重、去標點。
+   「我的一天」的課文借 v3 CONTENT[1] 那五句。 */
+const POOL = {
+  '我的一天': ['我','每天','早上','七点','起床','以后','先','刷牙','洗脸','然后','吃','早饭','八点半','骑','自行车','去','学校',
+             '下午','四点','放学','常常','和','同学','一起','打','篮球','晚上','做完','作业','就','早点','睡觉'],
+};
+const TYPE_LABEL = { WORD:'Word / Vocabulary', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adjective',
+  GRAMMAR:'Grammar / Structure', PHRASE:'Phrase / Idiom', MEASURE_WORD:'Measure Word', OTHER:'Other' };
+/* 第二十輪：再生的例句（mock 先備好三句；產品上是 AI 一次生一句）。一個字最多 5 句＝最多再按三次 */
+const MAX_EX = 5;
+const EXTRA = {
+  '起床':[['你几点起床？','nǐ jǐ diǎn qǐ chuáng?','What time do you get up?'],
+          ['妈妈六点就起床了。','mā ma liù diǎn jiù qǐ chuáng le.','Mom was up at six.'],
+          ['起床以后我先刷牙。','qǐ chuáng yǐ hòu wǒ xiān shuā yá.','After getting up I brush my teeth first.']],
+  '早饭':[['早饭我喝一杯牛奶。','zǎo fàn wǒ hē yì bēi niú nǎi.','I drink a glass of milk for breakfast.'],
+          ['他常常不吃早饭。','tā cháng cháng bù chī zǎo fàn.','He often skips breakfast.'],
+          ['我们一起吃早饭吧。','wǒ men yì qǐ chī zǎo fàn ba.','Let us have breakfast together.']],
+  '上课':[['上课的时候不要说话。','shàng kè de shí hou bú yào shuō huà.','Do not talk during class.'],
+          ['你今天几点上课？','nǐ jīn tiān jǐ diǎn shàng kè?','What time is your class today?'],
+          ['我们在二楼上课。','wǒ men zài èr lóu shàng kè.','We have class on the second floor.']],
+  '图书馆':[['图书馆九点开门。','tú shū guǎn jiǔ diǎn kāi mén.','The library opens at nine.'],
+          ['我在图书馆借了两本书。','wǒ zài tú shū guǎn jiè le liǎng běn shū.','I borrowed two books from the library.'],
+          ['图书馆离学校很近。','tú shū guǎn lí xué xiào hěn jìn.','The library is close to the school.']],
+  '运动':[['你喜欢什么运动？','nǐ xǐ huan shén me yùn dòng?','What sports do you like?'],
+          ['每天运动半小时。','měi tiān yùn dòng bàn xiǎo shí.','Exercise for half an hour every day.'],
+          ['运动以后要多喝水。','yùn dòng yǐ hòu yào duō hē shuǐ.','Drink more water after exercising.']],
+  '睡觉':[['你昨天几点睡觉？','nǐ zuó tiān jǐ diǎn shuì jiào?','What time did you go to sleep yesterday?'],
+          ['弟弟已经睡觉了。','dì di yǐ jīng shuì jiào le.','My little brother is already asleep.'],
+          ['太晚睡觉对身体不好。','tài wǎn shuì jiào duì shēn tǐ bù hǎo.','Going to sleep too late is bad for you.']],
+  '一……就':[['我一到家就做作业。','wǒ yí dào jiā jiù zuò zuò yè.','I do homework as soon as I get home.'],
+          ['她一看书就想睡觉。','tā yí kàn shū jiù xiǎng shuì jiào.','She gets sleepy as soon as she reads.'],
+          ['天一亮我们就出发。','tiān yí liàng wǒ men jiù chū fā.','We set off as soon as it is light.']],
+};
+const NON_WORD = new Set(['GRAMMAR','PHRASE','OTHER']);
+/* 一個字現在有幾句：原本兩句（老師加的字是兩個佔位）＋ 生成的 */
+/* 第二十八輪：例句的拼音逐詞斷開，放在每個詞上面（學生端 EXAMPLE 卡就是這樣排：shared/word-groups.js）。
+   mock 用一份小詞表做最長匹配；產品端有自己的斷詞。 */
+const WORDLIST = ['图书馆','一会儿','的时候','半小时','十一点','每天','七点','起床','周末','很晚','早饭','面包','八点','上课','今天','我们','下午','看书','安静','喜欢','晚上','运动','身体','睡觉','喝水','下课','回家','几点','妈妈','六点','以后','刷牙','一杯','牛奶','常常','一起','不要','说话','二楼','九点','开门','两本','学校','什么','昨天','弟弟','已经','作业','出发','到家'];
+const SEG_EXCEPT = { '一起床':'一' };   // 「一……就」的句子：一／起床，不是一起／床
+function rubyHtml(zh, py){
+  const syl = py.replace(/[.?!,。？！，]/g, '').trim().split(/\s+/);
+  let i = 0, k = 0; const out = [];
+  while (i < zh.length){
+    const ch = zh[i];
+    if (/[。？！，、：；]/.test(ch)){ out.push(`<span class="tk pu"><span class="p"></span><span class="z">${ch}</span></span>`); i++; continue; }
+    const ex = Object.keys(SEG_EXCEPT).find(x => zh.startsWith(x, i));
+    const w = ex ? SEG_EXCEPT[ex] : (WORDLIST.find(x => zh.startsWith(x, i)) || ch);
+    out.push(`<span class="tk"><span class="p">${esc(syl.slice(k, k + w.length).join(' '))}</span><span class="z">${esc(w)}</span></span>`);
+    k += w.length; i += w.length;
+  }
+  return `<div class="rz">${out.join('')}</div>`;
+}
+const exOf = (v) => (v.generated ? [['','',''],['','','']] : v.ex).concat(S.extraEx[v.w] || []);
+
+const CLASSES = [
+  { id:'3b', name:'Chinese 3B', students:['陈小明','林佳蓉','王大卫','张怡君','李承恩','吴宜庭','黄柏翰','郑雅文'] },
+  { id:'4a', name:'Chinese 4A', students:['蔡宗翰','郑雅文','许博涵','杨子萱','周彦廷','高子涵'] },
+  { id:'5c', name:'Chinese 5C', students:['苏韵如','范文杰','邱柏宇','何昀蓁','曾筱婷'] },
+];
+
+/* 四步。第一步的名字沿 Follow Pattern 的 'Teaching Points'，第二步就叫這種練習的素材 */
+const STEPS = ['Teaching Points','Vocabulary','Settings','Assign Practice'];
+const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];
+const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];
+const IMAGES = ['SHOW','HIDE'];
+/* getVoiceList()：zh-CN 只有一組；zh-TW 是繁體 3 ＋ 簡體 4 串在一起（v3 §4 問題 11） */
+const VOICE_GROUPS = {
+  'zh-TW': ['HsiaoChen (Female)','HsiaoYu (Female)','YunJhe (Male)'],
+  'zh-CN': ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'],
+};
+const voiceList = (lang) => lang === 'zh-TW'
+  ? [['zh-TW', VOICE_GROUPS['zh-TW']], ['zh-CN', VOICE_GROUPS['zh-CN']]]
+  : [['zh-CN', VOICE_GROUPS['zh-CN']]];
+
+/* ---------- 讀網址 ---------- */
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(3, Math.max(0, (parseInt(qs.get('step') ?? '1', 10) || 1) - 1));   // ?step= 從 1 數（2026-09-14 改），內部仍是 0-based
+S.empty = qs.get('empty') === '1';
+S.gen = qs.get('gen') === '1';
+S.loaded = S.step > 0 || qs.get('back') === '1';   // 已經生成過；&back=1 = 從第二步 Back 回第一步的樣子（第二十五輪起不鎖，可以重選）
+S.banner = qs.get('banner') === '1';
+S.assigned = qs.get('assigned') === '1';
+// &sel=1 直接跳到「已選一個專案」；&gen / &loaded / step>0 也一定有選
+if (qs.get('sel') === '1' || S.gen || S.loaded) { S.projects = ['我的一天']; S.practiceName = '我的一天'; }
+S.ddOpen = qs.get('dd') === '1';
+S.tp = new Set(WORDS.map(w => w.w));          // 預設全勾（產品現在就是全部載入）
+S.genWords = new Set(S.loaded ? S.tp : []);   // 第二十五輪：已經生成過的字；回頭多勾的按 Next 才生
+S.poolOpen = qs.get('pool') === '1';
+S.typeOpen = qs.get('tdd') === '1';   // Custom word 的型別選單打開
+S.hiddenW = new Set(WORDS.filter(w => w.hidden).map(w => w.w));
+S.image = qs.get('img') === '0' ? 'HIDE' : 'SHOW';   // Image 設定（IMAGE_PREFERENCES）
+S.specIdx = 0;
+S.allOpen = qs.get('all') === '1';   // 畫布上「Card 1 of N ▾」展開
+S.voiceOpen = qs.get('voice') === '1';       // &voice=1 Voice 下拉打開
+S.settingsOpen = qs.get('settings') === '1'; // &settings=1 學生的齒輪面板打開（要有 Choice by student 才有齒輪）
+S.tipOpen = qs.get('tip') === '1';           // &tip=1 Auto pass 的 tooltip 開著（截圖用）
+S.stuPy = true; S.stuTr = true;              // 學生端的起始值：兩個都開（use-vocabulary-practice.js）
+S.phase = 'idle';
+S.imgHidden = new Set();
+S.order = WORDS.map(w => w.w);
+S.cardOff = new Set();
+S.extraEx = {}; S.genBusy = new Set();   // 第二十輪：生成的例句／正在生成的字
+S.exnOpen = qs.get('exn') === '1';       // &exn=1 例句數的下拉打開（第二十二輪）
+S.upDlg = qs.get('updlg') === '1' ? { w: WORDS[0].w, stage:'pick' } : qs.get('updlg') === '2' ? { w: WORDS[0].w, stage:'preview' } : null;   // 第二十四輪：上傳對話框
+if (qs.get('more') === '1') S.extraEx[WORDS[0].w] = EXTRA[WORDS[0].w].slice();   // &more=1 第一個字已經生到五句
+S.uploaded = new Set(qs.get('upload') === '1' ? [WORDS[0].w] : []);
+if (qs.get('upload') === '1') S.imgSel[WORDS[0].w] = 'mine';
+S.picked = new Set((qs.get('pick') || '').split(',').filter(Boolean));
+S.sel    = new Set([...S.picked].flatMap(id => CLASSES.find(c => c.id === id)?.students ?? []));
+S.done   = S.assigned ? [{ id:'3b', start:S.start, due:S.due, kind:'mandatory',
+                           students:CLASSES[0].students.slice(0, 5).concat('郑雅文') }] : [];
+if (qs.has('roster')) S.roster = qs.get('roster');
+S.perClass = qs.get('perclass') === '1';
+S.review = qs.get('review') === '1';
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+/* ---------- 共用②：Stepper ---------- */
+function renderStepper(){
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const sep = i ? `<div class="stp-sep ${i - 1 < S.step ? 'done' : ''}"></div>` : '';
+    return sep + `<div class="stp-item ${cls}">
+      <span class="stp-ind">${i + 1}</span><span class="stp-lbl">${label}</span></div>`;
+  }).join('');
+}
+
+/* 分段控制項（Assign 的 Mandatory / Optional 用） */
+function seg(name, value, options){
+  return `<div class="seg">${options.map(([v,t]) =>
+    `<button type="button" data-seg="${name}" data-val="${v}" class="${v === value ? 'on' : ''}"
+      aria-pressed="${v === value}">${t}</button>`).join('')}</div>`;
+}
+
+/* MUI Select（基準檔的，Display Settings 三個下拉還在用） */
+function select({ id, label, value, options, width, small }){
+  return `<div class="field ${small ? 'sm' : ''}" style="${width ? 'width:' + width : ''}">
+    <label>${label}</label>
+    <div class="ctrl" data-menu="${id}"><span>${esc(value)}</span><span class="mi caret">arrow_drop_down</span></div>
+    ${S.open === id ? `<div class="menu">${options.map(v =>
+      `<div class="opt ${v === value ? 'sel' : ''}" data-pick="${id}" data-val="${esc(v)}"><span>${esc(v)}</span></div>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+const imgph = (w) => `<div class="imgph"><span class="mi">image</span>${esc(w)}</div>`;
+
+/* =====================================================================
+   Step 1 · Vocabulary —— 原封不動（Vocabulary 自己的，不是共用元件）
+   ===================================================================== */
+/* Project 選單：c-dropdown-menu-18 的做法（v3），但 Vocabulary 是多選——
+   選單點一下切換勾選、不關；觸發鈕把選到的專案一個一個列出來。
+   第二十五輪（2026-09-15）：生成後**不再鎖住**——跟工程談定 practice 在第二步才存，第一步隨時可以回來重選。
+   （產品現在是 disabled={configsLoading || isPracticeReady}，那是因為它在第一步就建了 practice。） */
+function renderProjectPicker(){
+  const toks = S.projects.map(n => { const p = PROJECTS.find(x => x[0] === n);
+    return `<span class="tok"><span class="mark">${p[1]}</span><span>${esc(p[0])}</span><span class="lvl">${p[2]}</span></span>`; }).join('');
+  return `<div class="fld">
+    <label>Projects</label>
+    <div class="dd">
+      <button class="dd-trig" data-act="dd" aria-haspopup="menu" aria-expanded="${S.ddOpen}">
+        ${toks || '<span class="ph">Choose projects to take vocabulary from</span>'}
+        <span class="mi caret">expand_more</span>
+      </button>
+      ${S.ddOpen ? `<div class="dd-menu" role="menu">
+        <div class="dd-lbl">Projects with vocabulary</div>
+        ${PROJECTS.map(p => { const on = S.projects.includes(p[0]);
+          return `<button class="dd-item" role="menuitemcheckbox" aria-checked="${on}" data-proj="${esc(p[0])}">
+            <span class="mi tick ${on ? '' : 'off'}">check</span>
+            <span class="mark">${p[1]}</span>
+            <span class="nm">${esc(p[0])}</span>
+            <span class="lvl">${p[2]}</span>
+            <span class="cnt ${p[3] ? '' : 'err'}">${p[3] ? p[3] + ' words' : 'No teaching points'}</span>
+          </button>`; }).join('')}
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+/* Practice name：c-input-2，從第二步搬上來（選 Project 時它就被填好了，v3 同一個決定） */
+function renderPracticeName(){
+  return `<div class="fld" style="margin-top:24px">
+    <label for="pname">Practice name</label>
+    <input class="inp" id="pname" type="text" value="${esc(S.practiceName)}" placeholder="Practice name">
+    <span class="help">Filled in from the projects you pick. Change it if this practice needs its own name.</span>
+  </div>`;
+}
+
+/* 每個專案一個 frame（c-frame-6 ghost）。標頭：全選框 ＋ 專案名 ＋ 已選/總數；
+   panel：可勾的 teaching point；第二個 panel：Add words（From Project ＋ Custom word）。
+   邏輯照 teacher-planning 的 renderVocPointsPanel，樣式沿 v3。 */
+function tpOf(name){
+  if (name === '我的一天') return WORDS.map(w => ({ w:w.w, type:w.type }));
+  const proj = PROJECTS.find(p => p[0] === name);
+  return Array.from({ length: proj[3] }, (_, i) => ({ w:`词${i + 1}`, type:'WORD' }));
+}
+function renderTeachingPoints(){
+  return S.projects.map(name => {
+    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED' })));
+    const picked = tps.filter(t => S.tp.has(t.w)).length;
+    const all = tps.length > 0 && picked === tps.length, some = picked > 0;
+
+    /* 第二十五輪：回頭看不再鎖住。已經生成的字帶 Generated 標；新勾的字按 Next 才生 */
+    const chips = tps.length ? tps.map(t => {
+      const on = S.tp.has(t.w);
+      // 詞性不印（第八輪拿掉）；只有第一步加進來的字掛 Added
+      const ty = t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '';
+      const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';   // 回頭多勾的：還沒生
+      return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}">
+        <span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`;
+    }).join('') : '<span class="body2" style="color:var(--text2)">No teaching points. You can add words below.</span>';
+
+    /* From Project：課文裡的詞。已在清單裡的變灰打勾，其餘按 + 加進來（加進來就是一個勾好的 teaching point） */
+    const pool = POOL[name] || [];
+    const inSet = new Set(tps.map(t => t.w));
+    const left = pool.filter(w => !inSet.has(w)).length;
+    const poolHtml = S.poolOpen ? `<div class="pool">${pool.length ? pool.map(w => inSet.has(w)
+        ? `<button class="tpchip dim" disabled aria-label="${esc(w)} — already in"><span class="mi">check</span>${esc(w)}</button>`
+        : `<button class="tpchip" data-addpool="${esc(name)}|${esc(w)}"><span class="mi">add</span>${esc(w)}</button>`).join('')
+      : '<span class="body2" style="color:var(--text2)">This project has no text to pull words from.</span>'}</div>` : '';
+
+    return `<div class="frame">
+      <div class="frame-hd sel">
+        <button class="cb ${some ? '' : 'none'}" data-tpall="${esc(name)}" aria-label="Select all in ${esc(name)}">
+          <span class="mi">${all ? 'check_box' : some ? 'indeterminate_check_box' : 'check_box_outline_blank'}</span></button>
+        <div class="ttl"><div class="frame-ttl">${esc(name)}</div><div class="frame-desc">Teaching points</div></div>
+        <span class="cnt">${picked}/${tps.length}</span>
+      </div>
+      <div class="frame-panel">${chips}</div>
+      ${(() => { const newN = tps.filter(t => S.tp.has(t.w) && !S.genWords.has(t.w)).length, dropN = tps.filter(t => !S.tp.has(t.w) && S.genWords.has(t.w)).length;
+        return !S.loaded ? '' : `<div class="frame-hd"><div class="frame-desc">${newN || dropN
+          ? [newN ? `${newN} new ${newN === 1 ? 'word is' : 'words are'} added to the Vocabulary step when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'word leaves' : 'words leave'} the practice` : ''].filter(Boolean).join(' · ')
+          : 'Generated. Tick more words or untick some — the cards you already have stay as they are.'}</div></div>`; })()}
+      <div class="frame-panel" style="display:block; overflow:visible">
+        <div class="addsep"><b>Add words</b><span class="rule"></span></div>
+        <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
+          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>From Project
+          <span class="n">${pool.length ? (left ? `${left} to add` : 'all added') + ` · ${pool.length} words` : 'no content'}</span>
+        </button>
+        ${poolHtml}
+        <div class="tp-add">
+          <input class="inp" type="text" placeholder="Custom word" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
+          <div class="dd">
+            <button class="dd-trig" data-act="typedd" aria-haspopup="menu" aria-expanded="${S.typeOpen}">
+              <span class="nm">${TYPE_LABEL[S.customType]}</span><span class="mi caret">${S.typeOpen ? 'expand_less' : 'expand_more'}</span></button>
+            ${S.typeOpen ? `<div class="dd-menu" role="menu">${Object.entries(TYPE_LABEL).map(([k, l]) =>
+              `<button class="dd-item" role="menuitemradio" aria-checked="${k === S.customType}" data-type="${k}">
+                <span class="nm">${l}</span>${k === S.customType ? '<span class="mi tick">check</span>' : ''}</button>`).join('')}</div>` : ''}
+          </div>
+          <button class="btn contained" data-addcustom="${esc(name)}">Add</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* 生成後的字表：勾起來的 teaching point ＋ 第一步加進來的字（後者拼音／翻譯／例句由 AI 生，mock 不編） */
+function selectedWords(){
+  const list = WORDS.filter(w => S.tp.has(w.w))
+    .concat(S.added.filter(a => S.tp.has(a.w)).map(a => ({ w:a.w, py:'', tr:'', pos:'', type:a.type || 'WORD', ex:[], generated:true })));
+  const pos = (w) => { const i = S.order.indexOf(w); return i < 0 ? 1e9 : i; };
+  return list.sort((a, b) => pos(a.w) - pos(b.w));
+}
+function renderVocabCard(v){
+  const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+  const head = isRO
+    ? `<div class="gram">${esc(v.w)}${v.py ? ` (${esc(v.py)})` : ''}</div>`
+    : v.generated
+    ? `<div class="word">${esc(v.w)}</div><div class="cap">Pinyin, meaning and examples are generated with the content.</div>`
+    : `<div class="word">${esc(v.w)}</div><div class="py">${esc(v.py)}</div><div class="tr">${esc(v.tr)}</div>`;
+  const tags = [
+    v.pos ? `<span class="chip sm">${esc(v.pos)}</span>` : '',
+    v.type ? `<span class="chip sm ${NON_WORD.has(v.type) ? 'secondary' : ''}">${TYPE_LABEL[v.type]}</span>` : '',
+    `<span class="chip sm info">HSK 2</span>`,
+  ].join('');
+  const ro = NON_WORD.has(v.type) ? `<div class="ro">
+      <div style="line-height:1.2"><div class="sub2" style="line-height:1.3">Read Sentences Only</div>
+        <div class="cap" style="line-height:1.2">Students will only read the example sentences below</div></div>
+      <div class="sw ${isRO ? 'on' : ''}"><span class="track"></span></div>
+    </div>` : '';
+  const img = v.type === 'GRAMMAR' ? '' : imgph(v.w) + '<div class="thumbs"><i class="sel"></i><i></i><i></i><i></i></div>';
+  return `<div class="vcard ${v.hidden ? 'hidden' : ''}">
+    <div class="acts">
+      <button class="ib edit" title="Edit examples"><span class="mi">edit</span></button>
+      <button class="ib eye ${v.hidden ? 'off' : ''}" title="${v.hidden ? 'Show to students' : 'Hide from students'}"><span class="mi">${v.hidden ? 'visibility_off' : 'visibility'}</span></button>
+    </div>
+    ${img}
+    ${head}
+    <div class="tags" style="margin-top:${isRO ? 0 : 16}px">${tags}</div>
+    ${ro}
+    ${v.ex.map((e, i) => `<div class="ex">
+      <span class="c"><strong>例句 ${i + 1}:</strong> ${esc(e[0])}</span>
+      <span class="c py">${esc(e[1])}</span>
+      <span class="c tr">${esc(e[2])}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderStep0(){
+  const picker = renderProjectPicker() + renderPracticeName();
+  if (S.gen) {
+    return `${picker}
+      <div class="loading">
+        <div class="orb"><span class="mi">autorenew</span></div>
+        <div class="h6">Generating vocabulary content...</div>
+        <div class="body2" style="color:var(--text2); max-width:400px; margin:0 auto">This may take a few moments. Please wait while we prepare your vocabulary content.</div>
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="skel-grid">${[0,1,2].map(() => `<div class="skel-card">
+          <div class="skel" style="height:120px; margin-bottom:16px"></div>
+          <div class="skel" style="height:24px; width:70%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:60%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:80%"></div></div>`).join('')}</div>
+      </div>`;
+  }
+  const body = S.projects.length === 0
+    ? `<div class="body2" style="color:var(--text2); margin-top:24px">Pick at least one project to preview teaching points.</div>`
+    : renderTeachingPoints();
+  return picker + body;
+}
+
+/* =====================================================================
+   Step 2 · Vocabulary —— 生成後的生詞卡（產品的 VocabularyDisplaySection，沒動）。
+   四步之後它有自己的一步：審卡、編例句、隱藏、選圖都在這裡。
+   ===================================================================== */
+function renderWordCard(v, n, total){
+  const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+  const off = S.hiddenW.has(v.w);
+  const sel = S.imgSel[v.w] ?? 0;
+  const mine = S.uploaded.has(v.w);
+
+  /* 圖片區：AI 四張候選 ＋ Upload。文法點沒有圖（產品：GRAMMAR 不生圖） */
+  const imgOff = S.imgHidden.has(v.w);
+  const coff = (k) => S.cardOff.has(`${v.w}|${k}`);
+  /* 第三十輪：「哪幾張卡要練」收成標頭列的一組 chip（照學生練的順序：Word → Example 1 → …），卡上不再放眼睛。
+     chip 跟第一步的 teaching point chip 同一種語言：勾＝在裡面。關掉的卡變灰、標 Skipped。 */
+  const exList = exOf(v);
+  const cchip = (k, label) => `<button class="tpchip cc ${coff(k) ? '' : 'on'}" data-cardtoggle="${esc(v.w)}|${k}" aria-pressed="${!coff(k)}">
+      <span class="mi">${coff(k) ? 'check_box_outline_blank' : 'check_box'}</span>${label}</button>`;
+  /* 第三十二輪：圖片也是一顆 chip（排最前面，它是字卡的一部分），圖上的眼睛拿掉——整頁再沒有眼睛 */
+  const imgChip = v.type === 'GRAMMAR' ? '' : `<button class="tpchip cc ${imgOff ? '' : 'on'}" data-hideimg="${esc(v.w)}" aria-pressed="${!imgOff}">
+      <span class="mi">${imgOff ? 'check_box_outline_blank' : 'check_box'}</span>Image</button>`;
+  const cardChips = `<span class="cardchips">${imgChip}${isRO ? '' : cchip('word', 'Word')}${exList.map((_, k) => cchip('ex' + (k + 1), `Example ${k + 1}`)).join('')}</span>`;
+  const rows = exList.length + 1;   // 例句 ＋ 生成那一列；字那一塊跨全部
+  /* 圖片區：AI 四張候選 ＋ Upload；右上角眼睛可以把這個字的圖藏起來（學生的字卡就沒有左半的圖）。 */
+  const img = v.type === 'GRAMMAR' ? '' : `<div class="wc-img">
+      <div class="big ${imgOff ? 'hid' : sel === 'mine' ? 'mine' : ''}">
+        ${!imgOff && sel === 'mine' ? '<span class="tag">YOUR IMAGE</span>' : ''}
+        <span class="mi">${imgOff ? 'hide_image' : sel === 'mine' ? 'photo' : 'image'}</span>${imgOff ? 'No image' : esc(v.w)}</div>
+      ${imgOff ? '' : `<div class="thumbs2">
+        ${[0,1,2,3].map(i => `<button class="${sel === i ? 'sel' : ''}" data-pickimg="${esc(v.w)}|${i}" aria-label="Candidate ${i + 1}"></button>`).join('')}
+        ${mine ? `<button class="mine ${sel === 'mine' ? 'sel' : ''}" data-pickimg="${esc(v.w)}|mine" aria-label="Your image"><span class="mi">photo</span></button>` : ''}
+        <button class="up" data-upload="${esc(v.w)}" aria-label="Upload your own image"><span class="mi">${mine ? 'sync' : 'add'}</span></button>
+      </div>`}
+    </div>`;
+
+  /* 字：不是卡，照產品原本的排法——字、拼音、翻譯、詞性 chip、級數 chip */
+  const tags = [
+    v.pos ? `<span class="chip sm">${esc(v.pos)}</span>` : '',
+    v.generated ? `<span class="chip sm ${NON_WORD.has(v.type) ? 'secondary' : ''}">${TYPE_LABEL[v.type] || v.type}</span>` : '',   // 老師加的字：印他選的型別
+    `<span class="chip sm info">HSK 2</span>`,
+  ].join('');
+  const wordCard = isRO
+    ? `<div class="wblock" style="grid-row:1 / span ${rows}"><div class="gram">${esc(v.w)}${v.py ? ` (${esc(v.py)})` : ''}</div>
+        <div class="tags"><span class="chip sm secondary">${TYPE_SHORT[v.type] || v.type}</span><span class="chip sm info">HSK 2</span></div>
+        <div class="ro"><span>Read sentences only</span><div class="sw on"><span class="track"></span></div></div></div>`
+    : `<div class="wblock ${coff('word') ? 'off' : ''}" style="grid-row:1 / span ${rows}">
+        <div class="top"><div class="w">${esc(v.w)}</div>${coff('word') ? '<span class="skip">Skipped</span>' : ''}</div>
+        ${v.generated ? `<div class="note">Pinyin and meaning are generated with the content.</div>`
+          : `<div class="py">${esc(v.py)}</div><div class="tr">${esc(v.tr)}</div>`}
+        <div class="tags">${tags}</div>
+        ${NON_WORD.has(v.type) ? `<div class="ro"><span>Read sentences only</span><div class="sw"><span class="track"></span></div></div>` : ''}
+      </div>`;
+
+  /* 例句（編輯照產品：例句可改，字不可改）。生成的那幾句掛 New；老師加的字例句還沒生，印一句佔位 */
+  const baseN = v.generated ? 2 : v.ex.length;
+  const exCards = exList.map((e, k) => `<div class="scard ex ${coff('ex' + (k + 1)) ? 'off' : ''}"><div class="lb">Example ${k + 1}${k >= baseN ? '<span class="new">New</span>' : ''}${coff('ex' + (k + 1)) ? '<span class="skip">Skipped</span>' : ''}
+        ${e[0] ? '<button class="edit" title="Edit this sentence"><span class="mi">edit</span></button>' : ''}</div>
+      <div class="mid">${e[0] ? `${rubyHtml(e[0], e[1])}<div class="tr">${esc(e[2])}</div>`
+        : '<div class="note">Generated with the content.</div>'}</div></div>`).join('');
+  /* 再生一句：一次一句、最多五句（第二十輪，新能力 E6；使用者：一次生一句就好，最多再按三次） */
+  const left = MAX_EX - exList.length;
+  const genRow = left <= 0 ? `<div class="genex done"><span class="mi">check</span>${MAX_EX} examples · the most for one word</div>`
+    : S.genBusy.has(v.w) ? `<div class="genex busy"><span class="spin"></span>Generating one more…</div>`
+    : `<button class="genex" data-genex="${esc(v.w)}"><span class="mi">auto_awesome</span>Generate another example<span class="sub">${left} more ${left === 1 ? 'time' : 'times'}</span></button>`;
+
+  return `<div class="wcard ${off ? 'off' : ''}">
+    <div class="wc-hd">
+      <span class="n">${n}</span>
+      <span class="mv">
+        <button data-mv="${esc(v.w)}|up|all" ${n === 1 ? 'disabled' : ''} aria-label="Move up"><span class="mi">arrow_upward</span></button>
+        <button data-mv="${esc(v.w)}|down|all" ${n === total ? 'disabled' : ''} aria-label="Move down"><span class="mi">arrow_downward</span></button>
+      </span>
+      ${v.generated ? '<span class="ty added" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; background:#DCECFE; color:#193592">Added</span>' : ''}
+      ${off ? '<span class="cards">Hidden from students</span>' : cardChips}
+      <span class="grow"></span>
+      <button class="ghost" data-hide="${esc(v.w)}">${off ? 'Show' : 'Hide'}</button>
+    </div>
+    <div class="wc-bd">${img}<div class="cards3">${wordCard}${exCards}${genRow}</div></div>
+  </div>`;
+}
+
+/* 組開關（第二十一輪）：所有字卡／所有例句卡一次設定，每張卡的眼睛照留。
+   三態：全開 → 按了全關；部分或全關 → 按了全開。算的是沒被 Hide 的字；文法點沒有字卡不算。 */
+function cardKeys(kind, list){
+  return list.flatMap(v => kind === 'word'
+    ? ((v.examplesOnly ?? v.type === 'GRAMMAR') ? [] : [`${v.w}|word`])
+    : exOf(v).map((_, i) => `${v.w}|ex${i + 1}`));
+}
+function renderGroupToggle(kind, label, list){
+  const keys = cardKeys(kind, list), on = keys.filter(k => !S.cardOff.has(k)).length, all = on === keys.length;
+  return `<button class="ghost gtog ${on === 0 ? 'alloff' : ''}" data-grp="${kind}" aria-pressed="${!all}"
+      title="${all ? `Skip every ${kind === 'word' ? 'word card' : 'example'}` : `Practise every ${kind === 'word' ? 'word card' : 'example'}`}">
+      ${label}<span class="n">${on} of ${keys.length}</span></button>`;
+}
+/* 例句的組開關是下拉（第二十二輪）：選 0～n，每個字都練前 k 句；n 是目前例句最多的字有幾句。
+   某個字被個別改過、對不上「前 k 句」的樣子 → 顯示 mixed。 */
+function exOnCount(v){ return exOf(v).filter((_, i) => !S.cardOff.has(`${v.w}|ex${i + 1}`)).length; }
+function exPrefixK(list){
+  // 每個字開著的都是前 k 句（或它全部）才算同一個 k；否則回 null
+  let k = null;
+  for (const v of list){
+    const n = exOf(v).length, on = exOnCount(v);
+    const prefix = exOf(v).every((_, i) => (i < on) === !S.cardOff.has(`${v.w}|ex${i + 1}`));
+    if (!prefix) return null;
+    if (k === null) k = on; else if (on !== Math.min(k, n)) return null;
+  }
+  return k ?? 0;
+}
+function renderExampleMenu(list){
+  const n = Math.max(0, ...list.map(v => exOf(v).length));
+  const k = exPrefixK(list);
+  const label = k === null ? 'mixed' : k === 0 ? 'none' : `${k} per word`;
+  const short = list.filter(v => exOf(v).length < n).length;
+  const menu = !S.exnOpen ? '' : `<div class="vdd-menu gmenu" role="menu">
+      ${Array.from({ length: n + 1 }, (_, i) => i).map(i => `<button class="vdd-item ${i === k ? 'on' : ''}" role="menuitemradio" aria-checked="${i === k}" data-exn="${i}">
+        <span class="nm">${i === 0 ? 'No examples' : `${i} ${i === 1 ? 'example' : 'examples'} per word`}</span>
+        <span class="cnt">${list.reduce((s, v) => s + Math.min(i, exOf(v).length), 0)} cards</span>${i === k ? '<span class="mi tick">check</span>' : ''}</button>`).join('')}
+      ${short ? `<div class="vl" style="text-transform:none; letter-spacing:0; font-weight:500">${short} ${short === 1 ? 'word has' : 'words have'} fewer — they show what they have</div>` : ''}
+    </div>`;
+  return `<span class="gdd"><button class="ghost gtog ${k === 0 ? 'alloff' : ''}" data-act="exndd" aria-haspopup="menu" aria-expanded="${S.exnOpen}">
+      Examples<span class="n">${label}</span><span class="mi caret">expand_more</span></button>${menu}</span>`;
+}
+/* 圖片的組開關（第三十一輪）：所有字的圖一次開關，每張圖上的眼睛照留當例外。文法點沒有圖不算 */
+function imgWords(list){ return list.filter(v => v.type !== 'GRAMMAR' && !(v.examplesOnly ?? false)); }
+function renderImageToggle(list){
+  const ws = imgWords(list), on = ws.filter(v => !S.imgHidden.has(v.w)).length, all = on === ws.length;
+  return `<button class="ghost gtog ${on === 0 ? 'alloff' : ''}" data-grpimg="1" aria-pressed="${!all}"
+      title="${all ? 'Hide every image' : 'Show every image'}">Images<span class="n">${on} of ${ws.length}</span></button>`;
+}
+function renderStep1(){
+  const words = selectedWords();
+  const shown = words.filter(v => !S.hiddenW.has(v.w));
+  /* 第二十三輪：標頭右邊那串計數拿掉，組開關搬到它的位子（靠右）。卡數在組開關的選單裡、字數在卡上，不必再數一次 */
+  return `
+    <div class="grp-hd"><span class="mi">folder</span><span class="h6">我的一天</span>
+      <span class="gtogs">${renderImageToggle(shown)}${renderGroupToggle('word', 'Word cards', shown)}${renderExampleMenu(shown)}</span></div>
+    ${words.map((v, i) => renderWordCard(v, i + 1, words.length)).join('')}
+    <div class="cap" style="margin-top:12px">Each word is practised as its own cards — the word, then each example. Students record and are scored on every card.</div>`;
+}
+
+/* =====================================================================
+   Step 3 · Settings —— 第十九輪（2026-09-15）照 R11：工具列 ＋ 畫布，同一張卡（第三十五輪：畫布不畫學生端的頂欄與進度條）
+   工具列兩行：Pinyin｜Translation｜Image ／ Speed｜Voice ‖ Auto pass ⓘ（Auto pass 用產品 MaxAttemptsField 的原字與 tooltip）。
+   畫布＝學生的主欄（vocabulary/index.js）。Vocabulary Preview 那份清單拿掉——全部卡片在畫布的「Card 1 of N ▾」裡原地展開。
+   沒有 Audio Mode（Vocabulary 本來就沒有）、沒有 Translation first。
+   ===================================================================== */
+
+/* 樣本：學生的一疊卡。翻頁走「字 → 例句 1 → 例句 2 → 下一個字」，關掉的卡跳過。
+   排版照 card-stack.js：VOCABULARY 卡左半是圖、右半拼音在字上面、翻譯在下面（關掉時位置留著）；
+   EXAMPLE 卡沒有圖。學生端 Choice by student 是「開著開始、學生自己關」（use-vocabulary-practice.js 的
+   useState(true)），跟 Mirroring 的「收起來、點眼睛」不一樣——照它畫。 */
+function specimenCards(list){
+  const out = [];
+  list.forEach(v => {
+    const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+    if (!isRO && !S.cardOff.has(`${v.w}|word`)) out.push({ kind:'word', v });
+    exOf(v).forEach((e, k) => {
+      if (!S.cardOff.has(`${v.w}|ex${k + 1}`)) out.push({ kind:'ex', v, e, k });
+    });
+  });
+  return out;
+}
+/* 畫布 ＝ 學生的主欄（vocabulary/index.js）：頂欄（practice-header.js）＋ 進度條 ＋ 齒輪（settings-panel.js）＋ 一疊卡（card-stack.js）。
+   翻頁走「字 → 例句 1 → 例句 2 → 下一個字」，關掉的卡跳過。
+   VOCABULARY 卡左半是圖、右半拼音在字上面、翻譯在下面（關掉時位置留著）；EXAMPLE 卡沒有圖。
+   Choice by student：學生端 Vocabulary 是「開著開始、學生自己關」（use-vocabulary-practice.js 的 useState(true)），
+   關的地方是齒輪的面板（settings-panel.js）——Choice by student 幾個就幾列；Speed 的 Choice by student 是面板裡的下拉（speedSelectable）。
+   前提仍是 E1：學生端現在根本沒讀這三個值，畫的是「如果讀了會長這樣」。 */
+function renderScreen(visible){
+  const cards = specimenCards(visible);
+  const win = (inner) => `<div class="vp"><div class="winwrap"><div class="win"><div class="win-bar"><span class="mi">desktop_windows</span>Student view</div>${inner}</div></div></div>`;
+  if (!cards.length) return win(`<div class="vp-body"><div class="cap" style="text-align:center">No cards to practise.</div></div>`);
+  S.specIdx = Math.min(S.specIdx, cards.length - 1);
+  const c = cards[S.specIdx];
+  const pyOn = S.pinyin === 'PINYIN' || (S.pinyin === 'STUDENT_CHOICE' && S.stuPy);
+  const trOn = S.translation === 'SHOW' || (S.translation === 'STUDENT_CHOICE' && S.stuTr);
+  const imgOn = S.image === 'SHOW' && !S.imgHidden.has(c.v.w);
+  const sel = S.imgSel[c.v.w] ?? 0;
+  const isWord = c.kind === 'word';
+  const py = isWord ? c.v.py : c.e[1], zh = isWord ? c.v.w : c.e[0], tr = isWord ? c.v.tr : c.e[2];
+  const playing = S.phase === 'playing';
+  const speedName = { '0.6':'Slow', '0.8':'Normal', '1':'Fast', 'choice':'Normal' }[S.speed];   // Choice by student：學生端起始值是 Normal
+  const kindOf = (x) => x.kind === 'word' ? 'word' : `example ${x.k + 1}`;
+
+  const anyChoice = S.pinyin === 'STUDENT_CHOICE' || S.translation === 'STUDENT_CHOICE' || S.speed === 'choice';
+  const panel = !S.settingsOpen ? '' : `<div class="panel">
+      <div class="ph">Settings<span class="mi">close</span></div>
+      ${S.pinyin === 'STUDENT_CHOICE' ? `<div class="pr">Pinyin<span class="sw2 ${S.stuPy ? 'on' : ''}" data-act="stupy" role="switch" aria-checked="${S.stuPy}"></span></div>` : ''}
+      ${S.translation === 'STUDENT_CHOICE' ? `<div class="pr">Translation<span class="sw2 ${S.stuTr ? 'on' : ''}" data-act="stutr" role="switch" aria-checked="${S.stuTr}"></span></div>` : ''}
+      ${S.speed === 'choice' ? `<div class="pr">Speed<span class="sel">Normal<span class="mi">arrow_drop_down</span></span></div>` : ''}
+    </div>`;
+  const gear = anyChoice ? `<div class="sp"><button class="gear" data-act="settings" aria-label="Settings" aria-expanded="${S.settingsOpen}"><span class="mi">settings</span></button>${panel}</div>` : '';
+
+  const front = `<div class="c f">
+      ${isWord && imgOn ? `<div class="img ${sel === 'mine' ? 'mine' : ''}"><span class="mi">${sel === 'mine' ? 'photo' : 'image'}</span>${esc(zh)}</div>` : ''}
+      <div class="txt ${isWord ? '' : 'ex'}">
+        <span class="spk ${playing ? 'on' : ''}"><span class="mi">${playing ? 'volume_up' : 'volume_down'}</span></span>
+        ${pyOn ? `<div class="py">${c.v.generated ? '…' : esc(py)}</div>` : ''}
+        <div class="w">${esc(zh)}</div>
+        <div class="tr ${trOn ? '' : 'off'}">${c.v.generated ? '…' : esc(tr) || '&nbsp;'}</div>
+      </div></div>`;
+
+  return win(`<div class="vp-body">
+      ${gear}
+      <div class="stk"><div class="c b2"></div><div class="c b1"></div>${front}</div>
+      <div class="mp-play"><button data-act="playseq" ${playing ? 'disabled' : ''}>
+        <span class="mi">${playing ? 'graphic_eq' : 'play_arrow'}</span>${playing ? 'Playing' : `Play · ${speedName} · ${esc(S.voice)}`}</button></div>
+      ${cards.length > 1 ? `<div class="sdd">
+        <button class="sdd-trig" data-act="sdd" aria-haspopup="listbox" aria-expanded="${S.allOpen}">
+          Card ${S.specIdx + 1} of ${cards.length} · ${kindOf(c)}<span class="mi">${S.allOpen ? 'expand_less' : 'expand_more'}</span></button>
+        ${S.allOpen ? `<div class="sdd-menu" role="listbox">${cards.map((x, i) => `
+          <button class="sdd-item ${i === S.specIdx ? 'on' : ''}" role="option" aria-selected="${i === S.specIdx}" data-act="pickcard" data-i="${i}">
+            <span class="n">${i + 1}</span><span class="z">${esc(x.kind === 'word' ? x.v.w : (x.v.generated ? x.v.w + ' …' : x.e[0]))}</span>
+            <span class="k">${kindOf(x)}</span>${i === S.specIdx ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}
+      </div>` : ''}
+    </div>`);
+}
+
+/* 學生真的會練到的卡數：字（examples-only 除外）＋ 兩句，關掉的不算 */
+function practisedCards(list){
+  return list.reduce((k, v) => {
+    const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+    return k + (isRO || S.cardOff.has(`${v.w}|word`) ? 0 : 1)
+      + exOf(v).filter((_, i) => !S.cardOff.has(`${v.w}|ex${i + 1}`)).length;
+  }, 0);
+}
+function renderStep2(){
+  const visible = selectedWords().filter(v => !S.hiddenW.has(v.w) && !(NON_WORD.has(v.type) && !(v.examplesOnly ?? v.type === 'GRAMMAR')));
+  const cards = specimenCards(visible);
+  const off = visible.reduce((k, v) => k + (S.cardOff.has(`${v.w}|word`) && !(v.examplesOnly ?? v.type === 'GRAMMAR') ? 1 : 0)
+    + exOf(v).filter((_, i) => S.cardOff.has(`${v.w}|ex${i + 1}`)).length, 0);
+
+  /* Slow / Normal / Fast 各有可播的樣本，帶 ▶；Choice by student 不是一個聽得到的速度，不給 ▶（v3） */
+  const speedChips = [['0.6','Slow'],['0.8','Normal'],['1','Fast']].map(([v, t]) =>
+    `<button class="vchip ${S.speed === v ? 'on' : ''} ${S.playing === 'sp:' + v ? 'playing' : ''}"
+      data-speed="${v}"><span class="mi">${S.playing === 'sp:' + v ? 'graphic_eq' : 'play_arrow'}</span>${t}</button>`
+  ).join('') + `<button class="vchip ${S.speed === 'choice' ? 'on' : ''}" data-speed="choice">Choice by student</button>`;
+
+  /* Voice：面板裡唯一的下拉（v3）。zh-CN 只有一組所以沒有地區標題 */
+  const groups = voiceList(PROJECT_LANG);
+  const voiceMenu = S.voiceOpen ? `<div class="vdd-menu" role="menu">${groups.map(([g, list]) =>
+      (groups.length > 1 ? `<div class="vl">${g}</div>` : '') +
+      list.map(name => `<button class="vdd-item ${S.voice === name ? 'on' : ''}" role="menuitemradio" aria-checked="${S.voice === name}" data-voice="${name}">
+        <span class="vpl"><span class="mi">${S.playing === name ? 'graphic_eq' : 'play_arrow'}</span></span>
+        <span class="nm">${name}</span>${S.voice === name ? '<span class="mi tick">check</span>' : ''}</button>`).join('')).join('')}</div>` : '';
+  const voiceCtl = `<div class="vdd">
+      <button class="vdd-trig" data-act="voicedd" aria-haspopup="menu" aria-expanded="${S.voiceOpen}">
+        <span class="mi">${S.playing === S.voice ? 'graphic_eq' : 'play_arrow'}</span>${esc(S.voice)}<span class="mi caret">expand_more</span></button>
+      ${voiceMenu}</div>`;
+
+  /* 工具列（R11）：兩行明說——第一行＝畫面上看得到的，第二行＝喇叭播什麼 ‖ Auto pass。每格小標在上、控制項在下，沒有眉標、沒有副標。 */
+  const ctl = (label, inner) => `<div class="tb-ctl"><span class="tl">${label}</span>${inner}</div>`;
+  const toolbar = `<div class="toolbar">
+    <div class="tb-row">
+      <div class="tb-grp">
+        ${ctl('Pinyin', seg('pinyin', S.pinyin, [['PINYIN','Shown'],['NO_PINYIN','Hidden'],['STUDENT_CHOICE','Choice by student']]))}
+        ${ctl('Translation', seg('translation', S.translation, [['SHOW','Shown'],['HIDE','Hidden'],['STUDENT_CHOICE','Choice by student']]))}
+        ${ctl('Image', seg('image', S.image, [['SHOW','Shown'],['HIDE','Hidden']]))}
+      </div>
+    </div>
+    <div class="tb-row">
+      <div class="tb-grp ${S.banner ? 'dis' : ''}">
+        ${ctl('Speed', `<span class="vgrp">${speedChips}</span>`)}
+        ${ctl('Voice', voiceCtl)}
+      </div>
+      <div class="tb-grp">
+        ${ctl(`Max tries <button type="button" class="tip ${S.tipOpen ? 'on' : ''}" data-act="tip" data-tip="How many times a student may retry one card before it is let through — the card then counts as passed (auto pass, default 3)." aria-label="What max tries means"><span class="mi">info</span></button>`, `<span class="stp">
+          <button data-act="minus" aria-label="Fewer attempts"><span class="mi">remove</span></button>
+          <span class="n">${S.attempts}</span>
+          <button data-act="plus" aria-label="More attempts"><span class="mi">add</span></button></span>`)}
+      </div>
+    </div>
+  </div>`;
+
+  return `
+    ${S.banner ? '<div class="alert info"><span class="spin"></span>Generating audio…</div>' : ''}
+    ${S.banner ? '<div class="proc"><span class="spin"></span>Applying speed change to all audio files...</div>' : ''}
+    <div class="canvas">
+      ${toolbar}
+      ${renderScreen(visible)}
+      <div class="stu-foot">
+        <span>${visible.length} ${visible.length === 1 ? 'word' : 'words'} · ${cards.length} ${cards.length === 1 ? 'card' : 'cards'}${
+          S.hiddenW.size ? ` · ${S.hiddenW.size} ${S.hiddenW.size === 1 ? 'word' : 'words'} hidden` : ''}${off ? ` · ${off} ${off === 1 ? 'card' : 'cards'} hidden` : ''}</span></div>
+    </div>`;
+}
+
+/* =====================================================================
+   Step 4 · Assign Practice —— v3 整組照搬（八種共用）
+   ===================================================================== */
+const fmt = (v) => {
+  const d = new Date(v);
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${
+    String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+const assignedIn = (id) => new Set(S.done.filter(a => a.id === id).flatMap(a => a.students));
+const conflictFor = (name, id) => S.done.find(a => a.id !== id && a.students.includes(name));
+
+function renderStep3(){
+  const list = !S.done.length ? '' : `
+    <div class="eyebrow"><b>Assigned</b><span class="rule"></span></div>
+    ${S.done.map((a, k) => {
+      const c = CLASSES.find(x => x.id === a.id);
+      return `<div class="card" style="${k ? 'margin-top:8px' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+          <div style="min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="sub2">${c.name}</span>
+              <span class="pill ${a.kind === 'optional' ? 'opt' : 'mand'}">${a.kind === 'optional' ? 'Optional' : 'Mandatory'}</span></div>
+            <div class="cap dis" style="margin-top:2px">${a.students.length} of ${c.students.length} students</div>
+            <div class="cap" style="margin-top:4px">${fmt(a.start)} → ${fmt(a.due)}</div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn text sm">Edit</button>
+            <button class="btn outerr sm">Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+
+  const classRows = CLASSES.map(c => {
+    const had = assignedIn(c.id);
+    const full = had.size === c.students.length;
+    const on = S.picked.has(c.id);
+    const open = S.roster === c.id;
+    const left = c.students.length - had.size;
+    const sub = full ? 'Everyone is assigned'
+      : had.size ? `${had.size} of ${c.students.length} assigned · ${left} left`
+      : `${c.students.length} students`;
+    const row = `<div class="clsrow ${on ? 'on' : ''} ${full ? 'done' : ''}"
+        ${full ? '' : `data-cls="${c.id}"`} style="${full ? '' : 'cursor:pointer'}">
+      <span class="box"><span class="mi">check</span></span>
+      <span class="grow"><span class="nm">${c.name}</span><span class="sub">${sub}</span></span>
+      ${full ? '<span class="pill mand">Assigned</span>'
+             : (on ? `<button class="linkbtn" data-roster="${c.id}">${open ? 'Close' : 'Choose students'}</button>` : '')}
+    </div>`;
+    const roster = (on && open) ? `<div class="roster">${c.students.map(nm => {
+      const cf = conflictFor(nm, c.id);
+      if (cf) return `<span class="stu off"><span class="box"></span>${nm}
+        <span class="tag warn">In ${CLASSES.find(x => x.id === cf.id).name}</span></span>`;
+      const was = had.has(nm);
+      const sel = S.sel.has(nm);
+      const tag = was && sel ? '<span class="tag ok">Assigned</span>'
+        : was && !sel ? '<span class="tag bad">Will remove</span>'
+        : sel ? '<span class="tag new">New</span>' : '';
+      return `<span class="stu ${sel ? 'on' : ''}" data-stu="${nm}"><span class="box"></span>${nm}${tag}</span>`;
+    }).join('')}</div>` : '';
+    return row + roster;
+  }).join('');
+
+  const n = S.picked.size;
+  const allFull = CLASSES.every(c => assignedIn(c.id).size === c.students.length);
+  const days = [1, 3, 7].map(d => `<button data-days="${d}">+${d} ${d === 1 ? 'day' : 'days'}</button>`).join('');
+
+  const form = allFull ? `<div class="card empty">Every class already has this practice.</div>` : `
+    <div class="eyebrow"><b>Who does it</b><span class="rule"></span>
+      ${S.done.length ? '<span class="hint">Assign it again to another class, with its own dates</span>' : ''}</div>
+    <div class="rows">${classRows}</div>
+
+    <div class="eyebrow"><b>When</b><span class="rule"></span></div>
+    <div class="rows">
+      ${n > 1 ? `<div class="modeline">
+        <span>${S.perClass ? 'Each class has its own dates.' : `These dates apply to all ${n} classes.`}</span>
+        <button class="linkbtn" data-act="perclass">${S.perClass ? 'Use one schedule for all' : 'Set dates per class'}</button>
+      </div>` : ''}
+      ${(n > 1 && S.perClass)
+        ? [...S.picked].map(id => {
+            const c = CLASSES.find(x => x.id === id);
+            const d = S.perDates[id] || { start:S.start, due:S.due };
+            return `<div class="perclass">
+              <div class="pc-name">${c.name}</div>
+              <div class="dtrow" style="margin-bottom:10px">
+                <span class="lbl">Start</span>
+                <input class="dt2" type="datetime-local" value="${d.start}">
+                <span class="quick"><button data-now="${id}">Now</button></span>
+              </div>
+              <div class="dtrow">
+                <span class="lbl">Due</span>
+                <input class="dt2" type="datetime-local" value="${d.due}">
+                <span class="quick">${[1,3,7].map(k =>
+                  `<button data-days="${k}" data-for="${id}">+${k} ${k === 1 ? 'day' : 'days'}</button>`).join('')}</span>
+              </div>
+            </div>`;
+          }).join('')
+        : `<div class="rw"><div class="dtrow">
+        <span class="lbl">Start</span>
+        <input class="dt2" type="datetime-local" value="${S.start}">
+        <span class="quick"><button data-now="1">Now</button></span>
+      </div></div>
+      <div class="rw"><div class="dtrow">
+        <span class="lbl">Due</span>
+        <input class="dt2" type="datetime-local" value="${S.due}">
+        <span class="quick">${days}</span>
+      </div></div>`}
+    </div>
+
+    <div class="eyebrow"><b>How it counts</b><span class="rule"></span></div>
+    <div class="rows">
+      <div class="rw">
+        <div><div class="lb">${S.kind === 'optional' ? 'Optional' : 'Mandatory'}</div>
+          <div class="hp">${S.kind === 'optional'
+            ? 'Self-paced practice. Students are not reminded and it is not chased as homework.'
+            : 'Counts as homework. Students get reminder emails until they finish it.'}</div></div>
+        <div class="ct">${seg('kind', S.kind, [['mandatory','Mandatory'],['optional','Optional']])}</div>
+      </div>
+    </div>`;
+
+  return list + form;
+}
+
+/* 上傳圖片的對話框（第二十四輪，新能力 E5）。兩個階段：選檔（拖放區）→ 預覽（檔名 ＋ 學生字卡長什麼樣）。
+   MUI Dialog 的殼跟 Assign 的預覽框同一套（.scrim / .dlg）。原型按拖放區就當作選好了一張 qichuang.jpg。 */
+function renderUpload(){
+  const { w, stage } = S.upDlg;
+  const v = selectedWords().find(x => x.w === w) || { w, py:'', tr:'' };
+  const replacing = S.uploaded.has(w);
+  const pyOn = S.pinyin !== 'NO_PINYIN', trOn = S.translation !== 'HIDE';
+  const body = stage === 'pick'
+    ? `<button class="dropzone" data-act="upchoose">
+        <span class="mi">cloud_upload</span>
+        <span class="t">Drop an image here, or click to choose</span>
+        <span class="c">PNG or JPG · up to 5 MB · landscape works best</span></button>`
+    : `<div class="up-prev">
+        <div class="file"><span class="thumb mine"><span class="mi">photo</span></span>
+          <span class="meta"><b>qichuang.jpg</b><span>1.2 MB · 1600 × 1067</span></span>
+          <button class="linkbtn" data-act="upback">Choose a different file</button></div>
+        <div class="lbl">On the word card</div>
+        <div class="minicard">
+          <div class="img mine"><span class="mi">photo</span></div>
+          <div class="txt">${pyOn ? `<div class="py">${esc(v.py)}</div>` : ''}<div class="w">${esc(w)}</div><div class="tr ${trOn ? '' : 'off'}">${esc(v.tr) || '&nbsp;'}</div></div>
+        </div>
+      </div>`;
+  return `<div class="scrim" data-act="closeup"><div class="dlg" data-stop="1" role="dialog" aria-labelledby="updlg-h">
+    <div class="dlg-hd">
+      <h3 id="updlg-h">${replacing ? 'Replace your image' : 'Upload an image'} for ${esc(w)}</h3>
+      <p>Shown on the left half of the word card. The AI pictures stay as choices.</p>
+    </div>
+    <div class="dlg-bd">${body}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closeup">Cancel</button>
+      ${stage === 'preview' ? '<button class="btn contained" data-act="upuse">Use this image</button>' : ''}
+    </div>
+  </div></div>`;
+}
+function renderReview(){
+  const rows = [...S.picked].map(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };
+    const add = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    const skip = c.students.filter(nm => conflictFor(nm, id));
+    const off = c.students.filter(nm => !S.sel.has(nm) && !conflictFor(nm, id));
+    const cnt = add.length === c.students.length ? `all ${add.length} students` : `${add.length} of ${c.students.length} students`;
+    const ex = [
+      ...skip.map(nm => `${nm} is already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}`),
+      ...(off.length ? [`Not selected: ${off.join('、')}`] : []),
+    ];
+    return `<div class="rvc">
+      <div class="top"><span class="nm">${c.name}</span><span class="cnt">${cnt}</span></div>
+      <div class="when">${fmt(d.start)} → ${fmt(d.due)}</div>
+      ${ex.length ? `<div class="ex">${ex.join('<br>')}</div>` : ''}
+    </div>`;
+  }).join('');
+  const total = [...S.picked].reduce((k, id) => k +
+    CLASSES.find(x => x.id === id).students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id)).length, 0);
+  const nc = S.picked.size;
+  return `<div class="scrim" data-act="closerev"><div class="dlg" data-stop="1">
+    <div class="dlg-hd">
+      <h3>Assign to ${nc} ${nc === 1 ? 'class' : 'classes'}</h3>
+      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students</p>
+    </div>
+    <div class="dlg-bd">${rows}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closerev">Back</button>
+      <button class="btn contained" data-act="confirm">Assign</button>
+    </div>
+  </div></div>`;
+}
+
+function commit(){
+  [...S.picked].forEach(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const students = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    if (students.length) S.done.push({ id, start:S.start, due:S.due, kind:S.kind, students });
+  });
+  S.picked = new Set(); S.sel = new Set(); S.roster = null;
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2, renderStep3][S.step]() + (S.review ? renderReview() : '') + (S.upDlg ? renderUpload() : '');
+  el('back').classList.toggle('dis', S.step === 0);
+
+  /* 頁腳：第三步照 v3 把「送出一筆指派」與「結束流程」合成同一顆，依狀態換標籤。
+     第一步的 Next 在 Load Content 之前仍是灰的（沒動，是 Vocabulary 自己的閘）。 */
+  const n3 = S.step === 3 ? S.picked.size : 0;
+  el('next').textContent = S.step === 3
+    ? (S.justAssigned ? 'Assigned ✓'
+       : n3 ? `Assign to ${n3} ${n3 === 1 ? 'class' : 'classes'}`
+       : (S.done.length ? 'Done' : 'Skip for now'))
+    : (S.step === 2 ? 'Save' : 'Next');   // resolvePrimaryActionLabel：倒數第二步 Save
+  // 第一步：沒選專案／沒勾字 → 灰；生成中 → 轉圈（LoadingButton）；其餘可按
+  const canLoad = S.projects.length > 0 && S.tp.size > 0;
+  if (S.step === 0 && S.gen) el('next').innerHTML = '<span class="mi spinning">autorenew</span>Next';
+  el('next').className = 'btn contained' + ((S.justAssigned || (S.step === 0 && (S.gen || !canLoad))) ? ' dis' : '');
+
+  ['l0','l0s','l0d','l0p','l0l','l0u','l1','l2','l2a'].forEach(id => el(id).classList.remove('cur'));
+  el(S.step === 0 ? (S.ddOpen ? 'l0d' : S.poolOpen ? 'l0p' : S.projects.length ? 'l0s' : 'l0')
+     : S.step === 1 ? (S.uploaded.size ? 'l0u' : 'l0l') : S.step === 2 ? 'l1' : (S.done.length ? 'l2a' : 'l2')).classList.add('cur');
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.play')) { e.stopPropagation(); return; }
+
+
+  const mv = e.target.closest('[data-mv]');
+  if (mv){
+    const [w, dir, scope] = mv.dataset.mv.split('|');
+    const vis = (scope === 'all' ? selectedWords() : selectedWords().filter(v => !S.hiddenW.has(v.w))).map(v => v.w);
+    const i = vis.indexOf(w), j = dir === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= vis.length) return;
+    const a = S.order.indexOf(vis[i]), b = S.order.indexOf(vis[j]);
+    if (a < 0 || b < 0){ S.order = selectedWords().map(v => v.w); return render(); }
+    [S.order[a], S.order[b]] = [S.order[b], S.order[a]];
+    render(); return;
+  }
+  const gx = e.target.closest('[data-genex]');
+  if (gx){
+    const w = gx.dataset.genex, v = selectedWords().find(x => x.w === w);
+    if (!v || S.genBusy.has(w)) return;
+    S.genBusy.add(w); render();
+    setTimeout(() => {   // 原型用 1.6 秒代替 AI 生成；一次一句。老師加的字沒有備好的句子，補佔位
+      const had = (S.extraEx[w] || []).length;
+      if (exOf(v).length >= MAX_EX) { S.genBusy.delete(w); return render(); }
+      const one = (EXTRA[w] || [])[had] || ['','',''];
+      S.extraEx[w] = (S.extraEx[w] || []).concat([one]);
+      S.genBusy.delete(w); render();
+    }, 1600);
+    return;
+  }
+  const xn = e.target.closest('[data-exn]');
+  if (xn){
+    const k = +xn.dataset.exn;
+    selectedWords().filter(v => !S.hiddenW.has(v.w)).forEach(v => exOf(v).forEach((_, i) => {
+      const key = `${v.w}|ex${i + 1}`; i < k ? S.cardOff.delete(key) : S.cardOff.add(key);
+    }));
+    S.exnOpen = false; render(); return;
+  }
+  const gi = e.target.closest('[data-grpimg]');
+  if (gi){
+    const ws = imgWords(selectedWords().filter(v => !S.hiddenW.has(v.w)));
+    const all = ws.every(v => !S.imgHidden.has(v.w));
+    ws.forEach(v => all ? S.imgHidden.add(v.w) : S.imgHidden.delete(v.w));
+    render(); return;
+  }
+  const gt = e.target.closest('[data-grp]');
+  if (gt){
+    const keys = cardKeys(gt.dataset.grp, selectedWords().filter(v => !S.hiddenW.has(v.w)));
+    const all = keys.every(k => !S.cardOff.has(k));
+    keys.forEach(k => all ? S.cardOff.add(k) : S.cardOff.delete(k));
+    render(); return;
+  }
+  const ct = e.target.closest('[data-cardtoggle]');
+  if (ct){ const k = ct.dataset.cardtoggle; S.cardOff.has(k) ? S.cardOff.delete(k) : S.cardOff.add(k); render(); return; }
+  const hd = e.target.closest('[data-hide]');
+  if (hd){ const w = hd.dataset.hide; S.hiddenW.has(w) ? S.hiddenW.delete(w) : S.hiddenW.add(w); render(); return; }
+  const hi = e.target.closest('[data-hideimg]');
+  if (hi){ const w = hi.dataset.hideimg; S.imgHidden.has(w) ? S.imgHidden.delete(w) : S.imgHidden.add(w); render(); return; }
+  const pi = e.target.closest('[data-pickimg]');
+  if (pi){ const [w, i] = pi.dataset.pickimg.split('|'); S.imgSel[w] = i === 'mine' ? 'mine' : +i; render(); return; }
+  const up = e.target.closest('[data-upload]');
+  if (up){ S.upDlg = { w: up.dataset.upload, stage:'pick' }; render(); return; }   // 第二十四輪：開上傳對話框
+  const ty = e.target.closest('[data-type]');
+  if (ty){ S.customType = ty.dataset.type; S.typeOpen = false; render(); return; }
+  const tp = e.target.closest('[data-tp]');
+  if (tp){ const w = tp.dataset.tp; S.tp.has(w) ? S.tp.delete(w) : S.tp.add(w); render(); return; }
+  const tpa = e.target.closest('[data-tpall]');
+  if (tpa){
+    const name = tpa.dataset.tpall;
+    const mine = tpOf(name).map(t => t.w).concat(S.added.filter(a => a.sk === name).map(a => a.w));
+    const allOn = mine.every(w => S.tp.has(w));
+    mine.forEach(w => allOn ? S.tp.delete(w) : S.tp.add(w));
+    render(); return;
+  }
+  const ap = e.target.closest('[data-addpool]');
+  if (ap){ const [sk, w] = ap.dataset.addpool.split('|'); addWord(sk, w); return; }
+  const ac0 = e.target.closest('[data-addcustom]');
+  if (ac0){ const sk = ac0.dataset.addcustom; const inp = document.querySelector(`[data-custom="${sk}"]`);
+    addWord(sk, (inp?.value || '').trim(), S.customType); return; }
+  const pj = e.target.closest('[data-proj]');
+  if (pj){
+    // 多選：切換勾選、選單不關。practiceName：選到的專案用「 + 」串起來（第二十六輪；產品是第一個專案），老師自己改過就不再動
+    const val = pj.dataset.proj;
+    S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+    S.empty = S.projects.length === 0;
+    if (!S.nameEdited) S.practiceName = S.projects.join(' + ');
+    render(); return;
+  }
+  const menu = e.target.closest('[data-menu]');
+  const pick = e.target.closest('[data-pick]');
+  if (pick){
+    const id = pick.dataset.pick, val = pick.dataset.val;
+    if (id === 'pinyin') S.pinyin = val;
+    if (id === 'translation') S.translation = val;
+    S.open = null; render(); return;
+  }
+  if (menu){ S.open = S.open === menu.dataset.menu ? null : menu.dataset.menu; render(); return; }
+
+  const sg = e.target.closest('[data-seg]');
+  const vc = e.target.closest('[data-voice]');
+  const cl = e.target.closest('[data-cls]');
+  const rs = e.target.closest('[data-roster]');
+  const dy = e.target.closest('[data-days]');
+  const st = e.target.closest('[data-stu]');
+  if (st){ const nm = st.dataset.stu; S.sel.has(nm) ? S.sel.delete(nm) : S.sel.add(nm); render(); return; }
+  if (rs){ S.roster = S.roster === rs.dataset.roster ? null : rs.dataset.roster; render(); return; }
+  if (cl){
+    const id = cl.dataset.cls, c = CLASSES.find(x => x.id === id);
+    if (S.picked.has(id)){
+      S.picked.delete(id); c.students.forEach(nm => S.sel.delete(nm));
+      if (S.roster === id) S.roster = null;
+    } else {
+      S.picked.add(id);
+      c.students.forEach(nm => { if (!conflictFor(nm, id)) S.sel.add(nm); });
+    }
+    render(); return;
+  }
+  if (dy){
+    const d = +dy.dataset.days, dt = new Date(S.start);
+    dt.setDate(dt.getDate() + d); dt.setHours(23, 59);
+    S.due = dt.toISOString().slice(0, 16); render(); return;
+  }
+  const sc = e.target.closest('[data-speed]');
+  if (sc){
+    S.speed = sc.dataset.speed;
+    S.playing = S.speed === 'choice' ? null : 'sp:' + S.speed;
+    render();
+    if (S.playing) setTimeout(() => { S.playing = null; render(); }, 1400);
+    return;
+  }
+  if (sg){ S[sg.dataset.seg] = sg.dataset.val; render(); return; }
+  if (vc){
+    S.voice = vc.dataset.voice; S.playing = vc.dataset.voice; S.voiceOpen = false; render();
+    setTimeout(() => { S.playing = null; render(); }, 1400);
+    return;
+  }
+  const ac = e.target.closest('[data-act]');
+  if (ac){
+    const a = ac.dataset.act;
+    if (a === 'dd'){ S.ddOpen = !S.ddOpen; render(); return; }
+    if (a === 'pool'){ S.poolOpen = !S.poolOpen; render(); return; }
+    if (a === 'sdd'){ S.allOpen = !S.allOpen; render(); return; }
+    if (a === 'pickcard'){ S.specIdx = +ac.dataset.i; playCard(); return; }   // 清單留著，換卡不收；產品換到新卡就自動播（use-vocabulary-practice.js 的 useEffect）
+    if (a === 'playseq'){ playCard(); return; }
+    if (a === 'settings'){ S.settingsOpen = !S.settingsOpen; render(); return; }
+    if (a === 'tip'){ ac.classList.toggle('on'); return; }   // 點一下也開，給觸控用
+    if (a === 'stupy') S.stuPy = !S.stuPy;
+    if (a === 'stutr') S.stuTr = !S.stuTr;
+    if (a === 'voicedd'){ S.voiceOpen = !S.voiceOpen; render(); return; }
+    if (a === 'typedd'){ S.typeOpen = !S.typeOpen; render(); return; }
+    if (a === 'exndd'){ S.exnOpen = !S.exnOpen; render(); return; }
+    if (a === 'upchoose'){ S.upDlg.stage = 'preview'; render(); return; }   // 原型：點拖放區＝選好了一張
+    if (a === 'upback'){ S.upDlg.stage = 'pick'; render(); return; }
+    if (a === 'closeup'){ if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.upDlg = null; render(); } return; }   // 按 Cancel 或點遮罩都關
+    if (a === 'upuse'){ const w = S.upDlg.w; S.uploaded.add(w); S.imgSel[w] = 'mine'; S.imgHidden.delete(w); S.upDlg = null; render(); return; }
+    if (a === 'minus') S.attempts = Math.max(1, S.attempts - 1);
+    if (a === 'plus') S.attempts = Math.min(10, S.attempts + 1);
+    if (a === 'perclass') S.perClass = !S.perClass;
+    if (a === 'closerev' && (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]'))) S.review = false;   // 鷹架修正：Back 鈕在 data-stop 裡面，原本按不到
+    if (a === 'confirm'){
+      S.review = false; commit(); S.justAssigned = true; render();
+      window.scrollTo(0, 0);
+      setTimeout(() => { S.justAssigned = false; render(); }, 1600);
+      return;
+    }
+    render(); return;
+  }
+  if (S.open !== null || S.ddOpen || S.typeOpen || S.voiceOpen || S.exnOpen){ S.open = null; S.ddOpen = false; S.typeOpen = false; S.voiceOpen = false; S.exnOpen = false; render(); }   // 點外面關掉
+});
+
+/* 畫布的播放：一張卡只有一段音檔，PRACTICE_STATE.PLAYING → IDLE（use-vocabulary-practice.js 的 handlePlayAudio），假裝播 1.4 秒 */
+function playCard(){
+  if (S.phase === 'playing') return;
+  S.phase = 'playing'; render();
+  setTimeout(() => { S.phase = 'idle'; render(); }, 1400);
+}
+
+/* 加一個字：歸在它所在的專案底下，掛 Added、預設勾起來。已經在清單裡的不重複加。 */
+function addWord(sk, w, type = 'WORD'){
+  if (!w) return;
+  const exists = tpOf(sk).some(t => t.w === w) || S.added.some(a => a.sk === sk && a.w === w);
+  if (!exists){ S.added.push({ sk, w, type }); S.order.push(w); }
+  S.tp.add(w); S.custom = '';
+  render();
+}
+document.addEventListener('keydown', (e) => {
+  const inp = e.target.closest?.('[data-custom]');
+  if (inp && e.key === 'Enter'){ e.preventDefault(); addWord(inp.dataset.custom, inp.value.trim(), S.customType); }
+});
+document.addEventListener('input', (e) => {
+  const inp = e.target.closest?.('[data-custom]'); if (inp) S.custom = inp.value;
+  if (e.target.id === 'pname'){ S.practiceName = e.target.value; S.nameEdited = true; }   // 老師改過名稱，之後換專案不再覆蓋
+});
+
+/* 第一步的 Next 就是原本的 Load Content：建 practice → GENERATING → 生詞載好，留在第一步給老師看卡。
+   原型用 2.4 秒代替 AI 生成。生好之後 Next 才是「到 Settings」。 */
+function startLoad(){
+  S.gen = true; S.ddOpen = false; S.poolOpen = false; render(); window.scrollTo(0, 0);
+  setTimeout(() => {   // 生完自動進 Vocabulary（照 Scramble 的 auto-advance）。第二十五輪：只生新勾的，舊的卡、圖、例句都留著
+    S.gen = false; S.loaded = true; S.genWords = new Set(S.tp); goStep(1);   // 取消勾的字就此離開，不再算「已生成」
+  }, 2400);
+}
+const newWords = () => [...S.tp].filter(w => !S.genWords.has(w));
+
+/* 換步驟＝換一頁，捲回最上面（v3；產品沒做） */
+function goStep(n){ S.step = n; S.review = false; S.open = null; S.ddOpen = false; render(); window.scrollTo(0, 0); }
+
+el('back').addEventListener('click', () => { if (S.step > 0) goStep(S.step - 1); });
+el('next').addEventListener('click', () => {
+  if (S.step === 0){
+    if (S.gen || !(S.projects.length && S.tp.size)) return;
+    if (S.loaded){ S.genWords = new Set(S.tp); goStep(1); return; }   // 回頭改過再 Next：不做生成動畫，直接回第二步（使用者 2026-09-15）；新字在卡上生
+    startLoad(); return;                      // 第一次：Next ＝ 原本的 Load Content，生完自動進第二步
+  }
+  if (S.step === 1){ goStep(2); return; }
+  if (S.step === 2){ goStep(3); return; }
+  if (S.justAssigned) return;
+  if (S.picked.size){ S.review = true; render(); return; }
+  location.href = location.pathname;
+});
+
+render();
+</script>
+</body>
+</html>
