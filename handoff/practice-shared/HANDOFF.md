@@ -11,6 +11,41 @@ Content Mirroring 與 Vocabulary Mirroring 兩包定下來的決定裡，有一�
 
 ---
 
+## ⚠ 先看：還沒定的、要先問的
+
+動工前先過這一節。有答案的直接照下面的表做；沒有的先不要動。
+
+**要問後端（答案會改設計）**
+
+| # | 題目 | 卡住哪一項 |
+|---|---|---|
+| E3 | 拼音／翻譯／模式改動為什麼會重產音檔？草稿路徑後端會 enqueue SQS（`use-practice-editor.js` 的註解），第二步就被全螢幕遮罩擋住 | S3 的「改了就看到」。五種都受影響 |
+| S10 | Scramble、Follow Pattern 第一步 Generate 之後鎖住——生成能不能只補新勾的 teaching point、儲存能不能延到審題那一步（＝ Vocabulary 契約 §1） | S10 |
+| S11 | `updatedArticleArray` 項目能不能帶 `hidden`（＝ Content Mirroring 的 H1） | S11 Scramble 的審句步 |
+| E1 | 新的發音 Lambda 什麼時候支援 slack 參數 | 「發音嚴格度」要不要進工具列 |
+
+**要先確認行為（查程式碼就能答，動工的人順手查）**
+
+| 題目 | 為什麼 |
+|---|---|
+| Follow Pattern 自己畫的 Audio Mode（`follow-pattern-settings.js` 165–187）跟共用 `AudioModeToggleCard` 是不是同一件事：學生端 `follow-pattern/question-card.js` 只是題目不顯示文字（*Listen to the question*），Mirroring 是整片換成聽力卡 | 是同一個 `audioMode` 布林才能換成同一格 Practice mode（S5） |
+| Scramble 的 `scramble-sentence-list.js` 有沒有用 `canSplitMerge`／`contentType === 'CONVERSATION'` | 對話類提醒要不要出現在它的審句步（S11） |
+| QA 的 `guidePhraseLanguage` 在學生端只影響 `StartPracticeButton.js` 的前導語（播哪種語言、哪種在前）——畫布上要能看到它改了什麼 | S3 QA 那一格的畫布（畫廊已照這個畫） |
+
+**設計還沒定（不擋動工，做到那一步再問）**
+
+| 題目 | 現況 |
+|---|---|
+| 第一步的 *Generate*（Scramble、Follow Pattern）vs *Next*（Vocabulary） | 唯一跨卡還沒統一的字；先各留各的 |
+| 各卡自己的部分：Vocabulary Quiz 的 Question Types ＋ 題目清單、Comprehension Quiz 的題目清單、QA 的 Guide phrase language、Scramble 的 Number of questions | **待設計梳理**，會逐張另開版本；工具列先留格子 |
+
+**查到的更正（免得照舊資料做）**
+
+- Vocabulary Quiz 與 Comprehension Quiz 的 Settings 步**沒有**顯示／音檔設定（`vocabulary-step-three-section.js` 把 Display／Audio／Max attempts 全包在 `!isMultipleChoice` 裡；`mc-step-two-section.js` 只有題目清單）。早先的 spec 草案寫成「同一套工具列」，已更正：S3–S7 對這兩張不適用。
+- Comprehension Quiz **有** Practice Name 欄位，只是不在 section 檔，在 `practice-unified-view.js` 的 `isMC` 分支。S1 對它一樣是「搬到第一步」。
+
+---
+
 ## 一張表看完
 
 ● 兩包已做　✓ 直接套　◐ 套得上但有差異　△ 要問工程　— 不適用
