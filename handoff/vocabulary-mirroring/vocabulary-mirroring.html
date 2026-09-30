@@ -10,6 +10,8 @@
 <style>
 /* ===========================================================================
    提案 —— v4 · 對照組是 create-vocabulary.html（現行複刻）。
+   2026-09-29（畫廊回套）：清單超過 15 列在清單裡捲（max-height 15 列），版面不再整個變長。
+   2026-09-29（畫廊回套）：主 Play 鈕放大成實心主綠（44px、白字、24px 圖示）；Card x of N 展開的清單每列一顆小播放鍵（只聽那一張、不換預覽）。跟 shared-settings-gallery.html 同一套。
 
    第一輪（2026-09-10）：只換共用元件，Vocabulary 自己的部分原封不動。
    「共用」照 practice-design-rules.html §1 的表：
@@ -654,10 +656,10 @@ button{ font-family:inherit; }
 .stk .tr.off{ visibility:hidden; }                                                            /* 關掉時位置留著（card-stack.js） */
 /* Play 鈕：字寫著會怎麼播（v3） */
 .mp-play{ display:flex; justify-content:center; margin-top:16px; }
-.mp-play button{ height:36px; padding:0 16px 0 12px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit; font-size:13px;
-  font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.mp-play button .mi{ font-size:20px; color:var(--primary); }
-.mp-play button:hover{ border-color:var(--primary); }
+.mp-play button{ height:44px; padding:0 22px 0 16px; border:0; border-radius:999px; background:var(--primary); font-family:inherit; font-size:14px; box-shadow:0 6px 16px rgba(0,203,97,.28);
+  font-weight:700; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:24px; color:#fff; }
+.mp-play button:hover{ background:var(--primary-dark); }   /* 2026-09-29 畫廊回套：實心主綠 */
 .mp-play button:disabled{ cursor:default; }
 /* 「Card 1 of N ▾」：在容器裡原地展開全部卡片，點一列就換預覽（v3 的 .sdd） */
 .sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }
@@ -666,10 +668,13 @@ button{ font-family:inherit; }
 .sdd-trig:hover{ border-color:var(--text3); }
 .sdd-trig .mi{ font-size:18px; color:var(--text2); }
 .sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-menu{ max-height:calc(15 * 46px + 8px); overflow-y:auto; overscroll-behavior:contain; }   /* 2026-09-29：超過 15 列就在清單裡捲，版面不再整個變長 */
 .sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
   font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
 .sdd-item:hover{ background:var(--grey200); }
 .sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .pl{ width:26px; height:26px; border-radius:50%; background:rgba(0,203,97,.1); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }   /* 2026-09-29 畫廊回套：每列一顆小播放鍵 */
+.sdd-item .pl:hover{ background:rgba(0,203,97,.22); } .sdd-item .pl .mi{ font-size:16px; }
 .sdd-item .z{ flex:1; min-width:0; }
 .sdd-item .k{ font-size:11px; font-weight:700; color:var(--text3); flex:none; }
 .sdd-item.on .z{ font-weight:600; } .sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
@@ -1469,7 +1474,7 @@ function renderScreen(visible){
           Card ${S.specIdx + 1} of ${cards.length} · ${kindOf(c)}<span class="mi">${S.allOpen ? 'expand_less' : 'expand_more'}</span></button>
         ${S.allOpen ? `<div class="sdd-menu" role="listbox">${cards.map((x, i) => `
           <button class="sdd-item ${i === S.specIdx ? 'on' : ''}" role="option" aria-selected="${i === S.specIdx}" data-act="pickcard" data-i="${i}">
-            <span class="n">${i + 1}</span><span class="z">${esc(x.kind === 'word' ? x.v.w : (x.v.generated ? x.v.w + ' …' : x.e[0]))}</span>
+            <span class="n">${i + 1}</span><span class="pl" role="button" aria-label="Play this card" data-act="playrow" data-i="${i}"><span class="mi">${S.rowPlay === i ? 'graphic_eq' : 'play_arrow'}</span></span><span class="z">${esc(x.kind === 'word' ? x.v.w : (x.v.generated ? x.v.w + ' …' : x.e[0]))}</span>
             <span class="k">${kindOf(x)}</span>${i === S.specIdx ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}
       </div>` : ''}
     </div>`);
@@ -1908,6 +1913,7 @@ document.addEventListener('click', (e) => {
     if (a === 'dd'){ S.ddOpen = !S.ddOpen; render(); return; }
     if (a === 'pool'){ S.poolOpen = !S.poolOpen; render(); return; }
     if (a === 'sdd'){ S.allOpen = !S.allOpen; render(); return; }
+    if (a === 'playrow'){ S.rowPlay = +ac.dataset.i; render(); setTimeout(() => { S.rowPlay = null; render(); }, 1400); return; }   // 2026-09-29 畫廊回套：只聽那一張、不換預覽
     if (a === 'pickcard'){ S.specIdx = +ac.dataset.i; playCard(); return; }   // 清單留著，換卡不收；產品換到新卡就自動播（use-vocabulary-practice.js 的 useEffect）
     if (a === 'playseq'){ playCard(); return; }
     if (a === 'settings'){ S.settingsOpen = !S.settingsOpen; render(); return; }

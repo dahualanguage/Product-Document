@@ -11,6 +11,18 @@
 
 ---
 
+## 2026-09-29 更新（9/16 交接之後改的，看這一段就夠）
+
+原型複本 [`vocabulary-mirroring.html`](vocabulary-mirroring.html) 已換成最新；線上網址不變；[`API-CONTRACT.md`](API-CONTRACT.md) 不變。跟 9/16 那版比只差三條，都在**第三步 Settings 的學生預覽**裡：
+
+1. **「Card x of N ▾」展開的清單，每列一顆小播放鍵**——點了只播那一張、不換預覽；點列本身仍是換卡＋自動播（照產品 `use-vocabulary-practice.js` 的行為）。原型：`?step=3`，按「Card 1 of 17」展開。
+2. **清單超過 15 列在清單裡捲**（`max-height` 15 列、`overflow-y:auto`）——一個字三張卡，六個字就 17 列，這條在這一包最有感。
+3. 預覽裡的主 **Play 鈕**放大成實心主色（44px、白字）——純視覺，邏輯不變。
+
+沒有新的設定、沒有新的欄位、E1–E6 不變。逐輪紀錄：[v4 ITERATION.md](https://project-logeg.vercel.app/specs/chinese-modules/iterations/v4-vocabulary-mirroring/ITERATION.md)（change log 第一列）。
+
+---
+
 ## 為什麼要做
 
 編號照 spec §5，每一條都在程式碼裡看得到：
