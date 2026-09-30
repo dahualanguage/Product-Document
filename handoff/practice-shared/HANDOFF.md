@@ -11,6 +11,18 @@ Content Mirroring 與 Vocabulary Mirroring 兩包定下來的決定裡，有一�
 
 ---
 
+## 2026-09-29 更新（9/16 交接之後改的，看這一段就夠）
+
+兩個檔案都換成最新；線上網址不變。
+
+- [`shared-settings-gallery.html`](shared-settings-gallery.html)：從三張卡變**六份 Settings 面板**——補上 Content Mirroring、Vocabulary Mirroring（v3／v4 定案照搬，當對照），以及 **Vocabulary Quiz 的 Question Types 一扇窗**（v6 定案：HOW MANY／HOW TO PICK ＋ 矩陣；它的 Settings 步沒有顯示／音檔設定）。Comprehension Quiz 只有題目清單，沒有可畫的面板。
+- **S3 多兩條，六張一起套**（見 [`shared-practice-changes.html`](shared-practice-changes.html) §5）：①視窗裡的主 Play 鈕放大成實心主色；②「Sentence x of N ▾」原地展開整份清單、**每列一顆小播放鍵**（只聽那一句、不換預覽），**超過 15 列在清單裡捲**。這兩條已回套到 Content Mirroring 與 Vocabulary Mirroring 兩包的原型。
+- 畫廊頁頂多了麵包屑；spec §2 總表的 Vocabulary Quiz 列、§10、§11 依上面改寫。
+
+**還沒交接、不在這一包的**：Vocabulary Quiz 的 Question Types 已在 v6 定案（2026-09-18）但沒有交接包；Sentence Scramble（v7）與 Assign 那一步的兩個新需求（v8：指派歷史、逾期扣分）仍在沙盒。
+
+---
+
 ## ⚠ 先看：還沒定的、要先問的
 
 動工前先過這一節。有答案的直接照下面的表做；沒有的先不要動。
