@@ -33,7 +33,11 @@
              &split=N 第 N 句進入切句模式 · &hide=N,M 隱藏第 N、M 句（從 0 數）· &audio=1 純聽力 · &voice=1 聲音下拉打開 · &settings=1 學生的 Settings 面板 · &list=1 句子下拉打開 · &phase=meaning|repeat 播放中
              &pick=3b,4a 已選班級 · &roster=3b 展開名冊 · &perclass=1 逐班日期 · &review=1 預覽框
              &assigned=1 已指派過
-   =========================================================================== */
+   ===========================================================================
+
+   2026-09-29（畫廊回套）：清單超過 15 列在清單裡捲（max-height 15 列），版面不再整個變長。
+   2026-09-29（畫廊回套）：主 Play 鈕放大成實心主綠（44px、白字、24px 圖示）；Sentence x of N 展開的清單每列一顆小播放鍵（只聽那一句、不換預覽）。跟 shared-settings-gallery.html 同一套。
+*/
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
 :root{
@@ -720,10 +724,10 @@ body{ padding-bottom:48px; }
 .pcard .tr-big{ font-size:32px; font-weight:800; color:#1E3A8A; line-height:1.55; text-align:center; }
 .pcard .hidden{ font-size:16px; font-style:italic; color:#94A3B8; line-height:1.6; text-align:center; }
 .mp-play{ display:flex; justify-content:center; margin-top:16px; }
-.mp-play button{ height:36px; padding:0 16px 0 12px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit; font-size:13px;
-  font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.mp-play button .mi{ font-size:20px; color:var(--primary); }
-.mp-play button:hover{ border-color:var(--primary); }
+.mp-play button{ height:44px; padding:0 22px 0 16px; border:0; border-radius:999px; background:var(--primary); font-family:inherit; font-size:14px; box-shadow:0 6px 16px rgba(0,203,97,.28);
+  font-weight:700; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:24px; color:#fff; }
+.mp-play button:hover{ background:var(--primary-dark); }   /* 2026-09-29 畫廊回套：實心主綠 */
 /* 翻頁改成下拉（2026-09-14）：一顆藥丸打開全部句子，點一句就換預覽 */
 .sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }   /* 在容器裡展開，不是浮出來的選單（2026-09-14） */
 .sdd-trig{ height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit;
@@ -731,10 +735,13 @@ body{ padding-bottom:48px; }
 .sdd-trig:hover{ border-color:var(--text3); }
 .sdd-trig .mi{ font-size:18px; color:var(--text2); }
 .sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-menu{ max-height:calc(15 * 46px + 8px); overflow-y:auto; overscroll-behavior:contain; }   /* 2026-09-29：超過 15 列就在清單裡捲，版面不再整個變長 */
 .sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
   font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
 .sdd-item:hover{ background:var(--grey200); }
 .sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .pl{ width:26px; height:26px; border-radius:50%; background:rgba(0,203,97,.1); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }   /* 2026-09-29 畫廊回套：每列一顆小播放鍵 */
+.sdd-item .pl:hover{ background:rgba(0,203,97,.22); } .sdd-item .pl .mi{ font-size:16px; }
 .sdd-item .z{ flex:1; min-width:0; }
 .sdd-item.on .z{ font-weight:600; } .sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
 .sdd-item .mi{ font-size:18px; color:var(--primary); }
@@ -1171,7 +1178,7 @@ function renderStep2(){
             Sentence ${S.idx + 1} of ${visible.length}<span class="mi">${S.listOpen ? 'expand_less' : 'expand_more'}</span></button>
           ${S.listOpen ? `<div class="sdd-menu" role="listbox">${visible.map((r, k) => `
             <button class="sdd-item ${k === S.idx ? 'on' : ''}" role="option" aria-selected="${k === S.idx}" data-act="pickrow" data-k="${k}">
-              <span class="n">${k + 1}</span><span class="z">${esc(r.zh)}</span>${k === S.idx ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}
+              <span class="n">${k + 1}</span><span class="pl" role="button" aria-label="Play this sentence" data-act="playrow" data-k="${k}" data-stop="1"><span class="mi">${S.rowPlay === k ? 'graphic_eq' : 'play_arrow'}</span></span><span class="z">${esc(r.zh)}</span>${k === S.idx ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}
         </div>` : ''}
       </div>
     </div>
@@ -1483,9 +1490,9 @@ document.addEventListener('click', (e) => {
     if (a === 'eye') S.trOpen = !S.trOpen;
     if (a === 'voicedd'){ S.voiceOpen = !S.voiceOpen; render(); return; }
     if (a === 'pickrow' && !e.target.closest('[data-stop]')){ S.idx = +ac.dataset.k; S.trOpen = false; }   // 清單留著，換句不收
-    if (a === 'playrow'){
-      S.idx = +ac.dataset.k; S.playSeq = +ac.dataset.i; render();
-      setTimeout(() => { S.playSeq = null; render(); }, 2000);
+    if (a === 'playrow'){   // 2026-09-29 畫廊回套：只聽那一句、不換預覽
+      S.rowPlay = +ac.dataset.k; render();
+      setTimeout(() => { S.rowPlay = null; render(); }, 1400);
       return;
     }
     if (a === 'allsent'){ e.preventDefault(); S.allOpen = !S.allOpen; }
