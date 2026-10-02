@@ -11,7 +11,7 @@
 1. **逾期規則是 assignment × class 的欄位**，跟 `startDate`／`expiredDate`／`isOptional` 同一層——一輪指派裡每一班各自一份（前端送同一組值 N 次，跟日期一樣）。
 2. **規則是一個最多三筆的陣列** `lateTiers:[{days, off, time?}]`：`days` ＝ Due 後第幾天起、`off` ＝ 扣幾 %、`time` ＝ 這段分界的時刻（沒設 ＝ Due 的時刻）。`null` 或空陣列 ＝ Full credit（＝ 現況）。
 3. **逾期不鎖、只扣**：學生端照常作答與提交；提交時落在哪一段就乘那一段的成數。最後一段 `off:100` ＝ 算 0 分，不是不收。
-4. **成績存 Original，Adjusted 用當下的 Due 算**（PM 問題 P3 的建議）：老師事後 Extend due date，Adjusted 自然回復。
+4. **成績存 Original，Adjusted 用當下的 Due 算**（PM 2026-10-02 定）：老師事後 Extend due date，Adjusted 自然回復。逾期看 **Submit to teacher 那一刻**（`submittedDate`）；老師手動改分（`overrideScore`）跟逾期扣分**分開**。
 
 ---
 
@@ -117,7 +117,7 @@ getStudentAssignments.assignments[].lateTiers: [LateTier!]   # 學生端清單�
 | 欄位 | 型別 | 說明 |
 |---|---|---|
 | `lateCredit` | `Int` | 算幾成，0–100；`null` ＝ 沒逾期／沒規則（＝ 100）。**存的是提交當下算出的值** |
-| `lateSubmittedAt` | `String` | 用來算的那個時刻（P1 定了是 `submittedDate` 還是 `lastDate`），之後 Due 改了要重算用 |
+| `lateSubmittedAt` | `String` | 用來算的那個時刻 ＝ **`submittedDate`**（PM 定：Submit to teacher 那一刻；沒按 Submit ＝ 沒交，不算），之後 Due 改了要重算用。跟 `submittedDate` 同值的話可以不另存，但重算時要明確讀這個欄位 |
 
 ```graphql
 # getAssignmentHistories / getStudentAssignmentAttempts / getTeacherAssignmentOverview.submissions 都多回
@@ -127,12 +127,12 @@ lateSubmittedAt
 
 前端：`adjusted = Math.round(getScorePercent(history) × lateCredit / 100)`；Original 仍是 `getScorePercent`。
 
-**跟 `overrideScore` 的關係（P4，建議）**：老師手動改分 ＝ 最終分，**不再乘 `lateCredit`**；成績頁的標籤分開——系統扣的叫 *Late · ×90%*，老師改的維持 *Adjusted*。
+**跟 `overrideScore` 的關係（P4，PM 定：分開）**：老師改分與逾期扣分是兩件事、各自一個欄位——`overrideScore` 有值時就是最終分，**不再乘 `lateCredit`**；成績頁兩個標籤分開：系統扣的叫 *Late · ×90%*，老師改的維持 *Adjusted*。`lateCredit` 仍照常寫入，只是顯示與計算時 override 優先。
 
-**Extend due date 之後（P3，建議）**：Due 改了就用 `lateSubmittedAt` 對新的分界**重算 `lateCredit`**（後端在 `upsertAssignment` 改 `expiredDate` 時順便做，或讀的時候算）。存 `lateSubmittedAt` 就是為了這一步。
+**Extend due date 之後（P3，PM 定：回算）**：Due 改了就用 `lateSubmittedAt` 對新的分界**重算 `lateCredit`**（後端在 `upsertAssignment` 改 `expiredDate` 時順便做，或讀的時候算）。存 `lateSubmittedAt` 就是為了這一步。
 
 > **要問（E3）**：後端存還是前端算？前端算的話 `getAssignmentHistories` 要同時回 `expiredDate`（已有）跟 `lateTiers`（要加）——可以，但 Dashboard 的 `submissions` 也要帶，三個 query 都要改，不如存一個 `lateCredit`。
-> **PM 先回 P1／P3／P4**，這一節才能定。成績頁與 Dashboard 的畫面另開一版。
+> PM 四條已於 2026-10-02 回（§6）。成績頁與 Dashboard 的畫面另開一版。
 
 ---
 
@@ -174,7 +174,7 @@ assignments {
 | E2 | `lateTiers` 放 assignment × class、`AssignClassInput` 一起帶？ | §2 |
 | E3 | `lateCredit` 後端存（建議）還是前端算？ | §3 |
 | E4 | `time` 的時區解讀、「第 n 天」是不是學校時區的日曆日 | §2、§3 |
-| P1 | 逾期看 `submittedDate` 還是 `lastDate` | §3 `lateSubmittedAt` |
-| P2 | Optional 不套（建議） | §2 忽略規則 |
-| P3 | Extend due date 回算（建議） | §3 重算 |
-| P4 | `overrideScore` ＝ 最終分、不再乘（建議） | §3、成績頁標籤 |
+| ~~P1~~ | **已定**：逾期看 `submittedDate`（Submit to teacher 那一刻） | §3 `lateSubmittedAt` |
+| ~~P2~~ | **已定**：Optional 不套 | §2 忽略規則 |
+| ~~P3~~ | **已定**：Extend due date 回算、存 Original | §3 重算 |
+| ~~P4~~ | **已定**：跟 `overrideScore` 分開，override 有值不再乘 | §3、成績頁標籤 |

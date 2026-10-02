@@ -143,7 +143,7 @@ AFTER THE DUE DATE · Due Sep 17, 23:59
 | **1** | 後端：每班 assignment 加 `lateTiers`（寫：`upsertAssignment` ＋ `AssignClassInput`；讀：`getAssignments.assignHistory` ＋ `getStudentAssignments`）；`assignHistory` 逐輪回、每班自帶日期（契約 §1、§2） | 可——沒人讀就沒有影響 |
 | **2** | 老師端第四步：HISTORY 清單（逐輪、In progress｜Past due、收合、Show all）、Edit／Extend due date／Unassign、HOW IT COUNTS 選項卡 ＋ 階段表 | 可——階段 1 沒好就先不出現 AFTER THE DUE DATE 那段 |
 | **3** | 學生端清單：規則那塊字 | 可 |
-| **4** | 逾期成績：後端在提交時算 `lateCredit`（契約 §3），成績頁／Dashboard 顯示 Original＋Adjusted | **PM 四條先回**；畫面另開一版 |
+| **4** | 逾期成績：後端在提交時算 `lateCredit`（契約 §3），成績頁／Dashboard 顯示 Original＋Adjusted | 可——PM 四條已回（見下）；成績頁的畫面另開一版 |
 
 階段 2 上線而階段 4 還沒好，老師設了 Reduced credit 但成績沒有真的扣——**別把 4 拖太久**，或在階段 4 好之前先不開放 Reduced credit 那張卡。
 
@@ -153,14 +153,15 @@ AFTER THE DUE DATE · Due Sep 17, 23:59
 
 全部細節在 [`API-CONTRACT.md`](API-CONTRACT.md)，這裡只列題目。
 
-**要問 PM（答案會改設計；畫面目前照建議畫）**
+**PM 已定（2026-10-02 回的，四條都跟畫面上的假設一致）**
 
-| # | 題目 | 畫面上的假設 |
+| # | 題目 | PM 的答案 |
 |---|---|---|
-| P1 | **逾期看哪個時間？** *Submit to teacher* 那一刻（`submittedDate`），還是最後一次作答（`lastDate`）？有學生做完不按 Submit | 有 Submit 用 `submittedDate`，沒 Submit 用 `lastDate` |
-| P2 | **Optional 套不套？** | **不套**：Optional 的 Due 多半是系統自動填的 30 天 |
+| P1 | **逾期看哪個時間？** | **Submit to teacher 那一刻（`submittedDate`）。** 沒按 Submit ＝ 沒交，沒有成績可扣；`lastDate` 不用 |
+| P2 | **Optional 套不套？** | **不套**（Optional 的 Due 多半是系統自動填的 30 天） |
 | P3 | **事後 Extend due date 要不要回算？** | **回算**：存 Original，Adjusted 每次用當下的 Due 算，延長就自然回復 |
-| P4 | **跟老師手動改分（`overrideScore`）的關係？** 改分是改 Original 再扣，還是直接定最終分？ | 老師手動 ＝ 最後決定，蓋過扣分；成績頁的標籤改叫 *Late · ×90%*，不再跟現有的 *Adjusted* 撞名 |
+| P4 | **跟老師手動改分（`overrideScore`）的關係？** | **分開**：老師改分與逾期扣分是兩件事，各自一個欄位、各自一個標籤（老師改的維持 *Adjusted*，系統扣的叫 *Late · ×90%*）；老師改過的分數不再乘逾期成數 |
+| P5 | 學生端要不要在 Due 前看到規則？ | **要，已處理好**：清單列那塊字（上一節）。完成頁跟成績頁一起另開一版 |
 
 **要問後端**
 
@@ -168,5 +169,5 @@ AFTER THE DUE DATE · Due Sep 17, 23:59
 |---|---|
 | E1 | `assignHistory` 現在一輪多班時日期回在哪一層？同一班再派一輪，是新的 entry 還是覆蓋？（契約 §1） |
 | E2 | `lateTiers` 放 assignment × class（跟 `isOptional` 同層）可以嗎？`AssignClassInput` 能不能一起帶？（契約 §2） |
-| E3 | Adjusted 是後端存還是前端算？建議後端在提交時寫 `lateCredit`，讀的時候照當下 Due 重算（配合 P3）（契約 §3） |
+| E3 | Adjusted 是後端存還是前端算？建議後端在提交時寫 `lateCredit`，Due 改了照當下 Due 重算（P3 已定要回算）（契約 §3） |
 | E4 | 「第 n 天」怎麼算：學校時區的日曆日、分界時刻 ＝ Due 的時刻（或老師改的 `time`）——跟 #968 同一套 `timezone`？（契約 §2） |

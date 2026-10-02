@@ -8,7 +8,7 @@
 - **設計檔**：`proposal.html`（提案，只有 Assign；`?step=4`）。基準對照 v3 的 `create-mirroring.html?step=2&assigned=1`
 - **學生端**（第四十輪）：`student-practice.html`（基準，/student/practice 現行複刻；`?tab=optional`、`&type=<id>`、`&empty=1`）、`student-proposal.html`（提案，同參數）、`student-mock.js`（共用假資料，NOW＝2026-09-19 10:00）
 - **程式碼基準**：dahua-dash `origin/develop` @ `5447ca51`（2026-09-21 重新 fetch；從 `7e2afa52` 之後只有 #968 學生端逾期判定改用學校時區，Assign 那步沒動；2026-10-02 交接時 fetch 到 `bcfdaa8d`，Assign 那一步、assignPractice／upsertAssignment／unassignPractice、getAssignments 的 assignHistory 都沒動，只有 updatedArticleArray 多兩個欄位）；Assign 的現況見 v7 spec §2 與 practice-shared 的 S8
-- **狀態**：**2026-10-02 定案（第四十九輪）並交接**——使用者說「這個提案通過了」。交接包 `handoff/assign-history/`：`assign-history.html`（＝ proposal.html 的複本，路徑改成絕對）、`student-practice-list.html`（＝ student-proposal.html 的複本）＋ `student-mock.js`、`HANDOFF.md`、`API-CONTRACT.md`（`lateTiers` 每班一個陣列、`assignHistory` 逐輪回、提交時寫 `lateCredit`）、`index.html`。線上（https://project-logeg.vercel.app/specs/chinese-modules/iterations/v8-assign-history/proposal.html?step=4&hist=1 ／ student-proposal.html）在這次部署前仍是 2026-09-30 的第四十輪；第四十一～四十九輪（10/1–10/2）：Remove 改 Unassign；例子改 100 分；FROM 改 AFTER（日期往前一天）；最後一段 and after、一段不寫範圍；分界時間放上來、可以選；AFTER 改成可見的原生 datetime-local 欄位（藏起來的 input 點不開）；CREDIT 的 % 做成看得出能打字；分界時間改了範圍跟著變。需求 1 歷史清單＋Edit／Unassign、需求 2 After the due date、學生端清單都畫完。PM 剩四條未正式回（逾期看哪個時間、Optional、延長回算、跟老師改分的關係），畫面上的假設：階梯式最多三段；沒有「不收」（最後一段 Score 0 ＝ 算 0）；Optional 不套；沒 Due 不套。Teacher Dashboard／成績頁的 Original／Adjusted 與學生端完成頁另開一版。
+- **狀態**：**2026-10-02 定案（第四十九輪）並交接**——使用者說「這個提案通過了」。交接包 `handoff/assign-history/`：`assign-history.html`（＝ proposal.html 的複本，路徑改成絕對）、`student-practice-list.html`（＝ student-proposal.html 的複本）＋ `student-mock.js`、`HANDOFF.md`、`API-CONTRACT.md`（`lateTiers` 每班一個陣列、`assignHistory` 逐輪回、提交時寫 `lateCredit`）、`index.html`。線上（https://project-logeg.vercel.app/specs/chinese-modules/iterations/v8-assign-history/proposal.html?step=4&hist=1 ／ student-proposal.html）在這次部署前仍是 2026-09-30 的第四十輪；第四十一～四十九輪（10/1–10/2）：Remove 改 Unassign；例子改 100 分；FROM 改 AFTER（日期往前一天）；最後一段 and after、一段不寫範圍；分界時間放上來、可以選；AFTER 改成可見的原生 datetime-local 欄位（藏起來的 input 點不開）；CREDIT 的 % 做成看得出能打字；分界時間改了範圍跟著變。需求 1 歷史清單＋Edit／Unassign、需求 2 After the due date、學生端清單都畫完。**PM 四條 2026-10-02 已回**：逾期看 Submit to teacher 那一刻（`submittedDate`）；Optional 不套；Extend due date 回算、存 Original；跟老師手動改分分開。學生端清單已處理好。畫面上的假設（都跟答案一致）：階梯式最多三段；沒有「不收」（最後一段 Score 0 ＝ 算 0）；Optional 不套；沒 Due 不套。Teacher Dashboard／成績頁的 Original／Adjusted 與學生端完成頁另開一版。
 
 ## 需求（PM 給的）
 
@@ -62,15 +62,15 @@
 | Mandatory 有沒有可能沒 Due | **有**：只有 Optional 擋清空 Due，Mandatory 可以 *No due date* | 沒 Due 的時候控制項要灰掉，寫一句 *Set a due date to use this*——設計上處理，不用問 |
 | 比例存在哪一層 | `upsertAssignment` 只有 `startDate／expiredDate／isOptional／skipped`，日期跟 Optional 都是**每班一筆 assignment** | 比例跟日期一樣是每班的欄位；這一輪共用一個值、Set dates per class 時可各自設 |
 
-### 仍要問 PM（答案會改設計）
+### 問 PM 的（2026-10-02 已回，答案都跟畫面上的假設一致）
 
 1. ~~**固定比例還是逐日遞減？**~~ **使用者 2026-09-24 定了：階梯式、最多三段**（例：1 天後扣 10%）。不是逐日遞減——每一段「From day n · deduct x%」，一段的扣分一直用到下一段開始；day 1 ＝ Due 過後的第一天。還要 PM 確認的只剩「第 n 天」怎麼算（照學校時區的日曆日？跨 23:59 就算下一天？），跟問題 2 綁在一起。工程的欄位從一個 `latePct` 變成一個陣列（每班最多三筆 `{days, off}`）。
-2. **逾期看哪個時間？** Submit to teacher 那一刻（`submittedDate`），還是最後一次作答（`lastDate`）？有學生做完不按 Submit。建議：有 Submit 用 `submittedDate`，沒 Submit 用 `lastDate`。
+2. **逾期看哪個時間？** Submit to teacher 那一刻（`submittedDate`），還是最後一次作答（`lastDate`）？有學生做完不按 Submit。建議：有 Submit 用 `submittedDate`，沒 Submit 用 `lastDate`。**PM 2026-10-02 定了：Submit to teacher 那一刻（`submittedDate`）。** 沒按 Submit ＝ 沒交，沒有成績可扣，`lastDate` 不用。
 3. ~~**0% 是不是「逾期不收」？**~~ **2026-09-24 定了：不是鎖，是算 0。** 學生端從來不鎖、產品沒有「不收」，所以第十八輪加的 Accept until 拿掉了；老師要「等於不收」就把最後一段設 −100%。要鎖住學生端是另一個功能，另外估。
-4. **Optional 套不套？** 因為 Optional 的 Due 多半是系統自動填的 30 天，**改建議不套**：Optional 時這一列灰掉，寫 *Optional work is never marked late*。（先前建議「一樣套」，看了 `resolveOptionalDates` 之後改。）
-5. **事後 Extend due date 要不要回算？** 建議回算——存 Original，Adjusted 每次用當下的 Due 算，延長就自然回復。這跟工程「算還是存」是同一題。
-6. **跟老師手動改分的關係。** 老師改分（`overrideScore`）是改 Original 再扣，還是直接定最終分？建議直接定最終分、蓋過扣分（老師手動 ＝ 最後決定）。成績頁的標籤不能再叫 Adjusted，建議 **Late · ×90%**。
-7. **學生端**：Due 前就在開始頁寫一句 *Late work counts 90%*？完成頁 Adjusted 為主、Original 小字？（維持原建議。）
+4. **Optional 套不套？** 因為 Optional 的 Due 多半是系統自動填的 30 天，**改建議不套**：Optional 時這一列灰掉，寫 *Optional work is never marked late*。（先前建議「一樣套」，看了 `resolveOptionalDates` 之後改。）**PM 2026-10-02 定了：不套。**
+5. **事後 Extend due date 要不要回算？** 建議回算——存 Original，Adjusted 每次用當下的 Due 算，延長就自然回復。這跟工程「算還是存」是同一題。**PM 2026-10-02 定了：回算——存 Original，Adjusted 用當下的 Due 算。**
+6. **跟老師手動改分的關係。** 老師改分（`overrideScore`）是改 Original 再扣，還是直接定最終分？建議直接定最終分、蓋過扣分（老師手動 ＝ 最後決定）。成績頁的標籤不能再叫 Adjusted，建議 **Late · ×90%**。**PM 2026-10-02 定了：分開。** 老師改分與逾期扣分是兩件事：各自一個欄位、各自一個標籤（*Adjusted*／*Late · ×90%*），老師改過的分數不再乘逾期成數。
+7. **學生端**：Due 前就在開始頁寫一句 *Late work counts 90%*？完成頁 Adjusted 為主、Original 小字？（維持原建議。）**2026-10-02：學生端已處理好**——清單頁（第四十輪）照做；完成頁跟成績頁一起另開一版。
 
 ### 仍要問工程
 
@@ -89,6 +89,7 @@
 
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
+| 文件 | **第五十一輪：PM 四條回了** | 2026-10-02。逾期看 Submit to teacher 那一刻（`submittedDate`）；Optional 不套；Extend due date 回算（存 Original、Adjusted 用當下 Due 算）；跟老師手動改分分開（各自欄位、各自標籤，改過的分數不再乘）；學生端清單已處理好。四條都跟畫面上的假設一致，設計沒改；交接包的 HANDOFF.md／API-CONTRACT.md 同步改成「已定」。 |
 | 文件 | **第五十輪：定案、交接** | 2026-10-02。使用者說「這個提案通過了」。交接包 `handoff/assign-history/`（老師端＋學生端原型複本、HANDOFF.md、API-CONTRACT.md）；index 卡片狀態改 done、第一顆鈕改成交接包。設計沒改。 |
 | 老師 | **第四十九輪：分界時間改了，範圍的日期跟著變** | 使用者指出（2026-10-02：把第二段改成 Sep 19 12:59，右邊仍寫 *Sep 20–23*）。範圍＝「這段的分界」到「下一段的分界」：分界時間跟 Due 一樣（23:59）才能用「隔天起」的日期寫法；時間不一樣就寫到分——第一段 *Sep 18–Sep 19 12:59*、第二段 *Sep 19 12:59–Sep 23*。歷史列與 Review 的句子同一套。 |
 | 老師 | **第四十八輪：CREDIT 的 % 做成看得出能打字** | 使用者指示（2026-10-02：「% 數也支援手打」）。欄位本來就能打（第二十五輪），但只有 20px 寬、沒有邊框、看起來像純文字，沒人會去點。改成固定 3 字寬、滑上去淡灰底、游標 text，點 % 那一格任何地方都聚焦並全選，Enter 套用（跟離開欄位一樣）；仍夾在前後段之間。天數欄沒有了（第三十八輪起日期是欄位），所以只剩這一處。 |
