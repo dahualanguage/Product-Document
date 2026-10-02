@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Assignments — v8 學生端提案 · 逾期規則</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@700&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— v8 學生端：老師在 Assign 設的 After the due date 規則，學生在 /student/practice/ 看得到。
+   對照組是 student-practice.html（現行複刻）。假資料兩邊共用 student-mock.js。
+
+   第四十輪（2026-09-30）：使用者說「這個會連動學生端也要知道規則」。只動 Mandatory 而且老師選了 Reduced credit 的列：
+     · 還沒到期：DUE CHIP 後面多一顆淡琥珀外框 chip「Late work 90%」——先知道晚交會算幾成，Optional 與 Full credit 的列沒有這顆（沒有規則就不講）。
+     · 已過期：chip 變成「Counts 80% now」（珊瑚色外框，跟實心的 Overdue chip 分得開），標題下面多一行階段：
+       Sep 18–19 90% · Sep 20–23 80% · from Sep 24 0%，現在這一段加粗變珊瑚色。學生看得到「再拖會更少」。
+     · 到 0 的那段寫 0%，不用「不收」——產品本來就不擋作答（v8 第二十四輪的結論）。
+   規則資料＝老師端 lateTiers 同一份（student-mock.js 的 late.tiers），第 n 天＝Due 後第 n 天，跟老師端表格的 FROM 一致。
+   沒做的（下一步）：練習完成頁的「Submitting now counts 80% · 80 → 64」、History 的 Original／Adjusted 兩個分數。
+
+
+   出處（dahua-dash origin/develop @ 08b5d762，2026-09-29 fetch）：
+     src/sections/student/practice/list/index.js          頁面：標題、Mandatory｜Optional 切頁、Type 篩選、Today／Later／Bonus 段、Load N more、空狀態
+     src/sections/student/practice/list/assignment-section.js   段標題（19px Fredoka）＋計數 badge ＋ hint；每列 PracticeRow size="md" ＋ listRowSx（白底、陰影）
+     src/sections/student/practice/list/practice-controls.js    SegmentTabs（50px、白底選中）／TypeFilterChips（All ＋ 八種）
+     src/sections/student/practice/list/utils.js           Today ＝ 到期日 ≤ 今天（含過期，沒有獨立 Overdue 段）；Later ＝ 明天起；CTA 三態 Start／Continue／Submit（Optional：Pick up）
+     src/sections/student/game-ui/practice-row.js          列：46px 型別方塊、TYPE TAG（大寫）＋ DUE CHIP、17px 標題、CTA 漸層鈕（綠／紫）
+     src/sections/student/game-ui/utils.js                 formatDueChip：Overdue · Nd（白字紅底）／Today · Nh／Tomorrow／週幾（≤6 天）／d MMM
+     src/sections/student/game-ui/stage.js                 GameStage（16px 內縮、20px 圓角卡、內部捲動）＋ GameCanvas（1000px 設計寬）
+     src/layouts/dashboard/student-game-nav/index.js       側欄：DAHUA AI、六個項目、Stars／Hearts、Report Issue
+     src/theme/student-game-tokens.js                      色票／圓角／陰影／到期 chip 顏色；型別顏色＝ PRACTICE_TYPE_COLUMNS 的 wash ＋ label
+     specs/chinese-modules/student-redesign.html           產品照這份 spec 的 #assign 畫面實作，殼的 CSS 從這裡抄
+
+   側欄項目名稱照 student-game-nav 的 NAV_ICONS 鍵（STUDENT_HOME／MY_PRACTICE_LIST／LEADERBOARD_STUDENT／WORD_GAME_V2／MY_PRACTICE_HISTORY／MY_SUBMITTED）
+   對到 student-redesign.html 的字；config-navigation 的實際標題沒對到，**待實機截圖對一次**。
+
+   網址參數：
+     ?tab=optional     看 Bonus practice（沒有規則，跟基準一樣）
+     &type=vocabulary-quiz   Type 篩選（八種 id 見 student-mock.js）
+     &empty=1          Mandatory 一個都沒有 → All caught up 卡
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#12A150; --green-d:#0B7A3B; --green-l:#DCF7E6; --green-ink:#0B5B30;
+  --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF;
+  --gold:#FFC219; --coral:#FF5A6E; --coral-l:#FFE1E5;
+  --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7; --paper:#fff; --shell:#EAF3EC;
+  --r-card:20px; --r-row:16px; --r-chip:8px;
+  --font-d:'Fredoka', system-ui, sans-serif; --font-b:'Nunito', system-ui, sans-serif;
+}
+html,body{ height:100%; }
+body{ font-family:var(--font-b); color:var(--ink); -webkit-font-smoothing:antialiased; overflow:hidden;
+  background: radial-gradient(1200px 600px at 80% -10%, #DDEBFF 0%, transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, #E7F7EC 0%, transparent 55%),
+              linear-gradient(160deg,#EFF5FB 0%, #EAF4EE 100%); }   /* student-game-shell.js 的 shell wash */
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; }
+button{ font-family:inherit; }
+
+/* ---------- shell：側欄 262 ＋ 舞台 ---------- */
+.app{ display:grid; grid-template-columns:262px 1fr; height:100vh; padding:16px; gap:16px; }
+.side{ background:var(--paper); border-radius:var(--r-card); box-shadow:0 12px 26px -14px rgba(11,91,48,.45); display:flex; flex-direction:column; padding:20px 16px 16px; position:relative; overflow:hidden; }
+.side::before{ content:""; position:absolute; inset:0 0 auto 0; height:120px; background:radial-gradient(120% 90% at 20% 0%, rgba(18,161,80,.10), transparent 70%); pointer-events:none; }
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 22px; position:relative; }
+.brand .logo{ width:40px; height:40px; border-radius:13px; flex:none; background:#fff; display:grid; place-items:center; box-shadow:0 6px 14px -4px rgba(18,161,80,.35), inset 0 0 0 1.5px var(--line); }
+.brand .logo img{ width:30px; height:30px; object-fit:contain; display:block; }
+.brand b{ font-family:var(--font-d); font-weight:700; font-size:21px; letter-spacing:.3px; background:linear-gradient(90deg,var(--green-d),#2CB763); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.nav{ display:flex; flex-direction:column; gap:4px; position:relative; }
+.nav a{ display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:var(--r-row); color:var(--ink-soft); font-weight:800; font-size:14.5px; text-decoration:none; position:relative; transition:.18s; }
+.nav a .ic{ width:24px; display:flex; justify-content:center; filter:grayscale(.4); }
+.nav a .ic .mi{ font-size:20px; color:var(--green); }
+.nav a:hover{ background:#F1F7F2; color:var(--ink); }
+.nav a.on{ background:linear-gradient(100deg,var(--green-l),#EAF9EF); color:var(--green-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.nav a.on .ic{ filter:none; }
+.nav a.on::before{ content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:5px; height:22px; border-radius:0 6px 6px 0; background:var(--green); }
+.side .grow{ flex:1; min-height:14px; }
+.stats{ display:flex; flex-direction:column; gap:9px; }
+.stat{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:var(--r-row); font-weight:900; }
+.stat .mi{ font-size:23px; }
+.stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; }
+.stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+.stat .col{ display:flex; flex-direction:column; gap:2px; }
+.stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; } .stat.gold .mi{ color:var(--gold); }
+.stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#B23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; } .stat.coral .mi{ color:var(--coral); }
+.report{ margin-top:12px; text-align:center; font-size:12px; font-weight:800; color:#C0576A; text-decoration:none; }
+
+.stage{ position:relative; border-radius:var(--r-card); overflow:hidden; box-shadow:0 26px 60px -24px rgba(11,60,35,.55); display:flex; flex-direction:column;
+  background: radial-gradient(900px 500px at 90% -20%, #E6EEFF 0%, transparent 55%), linear-gradient(165deg,#F4F8FD 0%, #EEF5F0 100%); }   /* list/index.js PAGE_BACKGROUND_SX */
+.scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; display:flex; flex-direction:column; }
+.scroll::-webkit-scrollbar{ width:10px; } .scroll::-webkit-scrollbar-thumb{ background:rgba(11,91,48,.18); border-radius:20px; border:3px solid transparent; background-clip:content-box; }
+.acct{ position:absolute; top:16px; right:16px; z-index:10; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(145,158,171,.08); }
+.acct .av{ width:36px; height:36px; border-radius:50%; background:#C8FAD6; color:#007B55; font-family:'Public Sans',sans-serif; font-weight:700; font-size:15px; display:grid; place-items:center; }
+
+/* ---------- canvas：1000px 設計寬 ---------- */
+.canvas{ position:relative; width:min(1000px,100%); margin:0 auto; padding:40px 28px 60px; }
+.canvas h1{ font-family:var(--font-d); font-weight:700; font-size:38px; letter-spacing:.2px; color:var(--ink); }
+.canvas .lead{ margin-top:2px; font-weight:700; font-size:15.5px; color:var(--ink-soft); }
+
+.segtabs{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; margin-top:22px; padding:6px; border-radius:18px; background:#EEF3F0; box-shadow:inset 0 0 0 1.5px var(--line); }
+.seg{ border:0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; height:50px; border-radius:13px; font-family:var(--font-d); font-weight:600; font-size:17px; color:var(--ink-soft); transition:.16s; }
+.seg .sico{ width:26px; height:26px; border-radius:9px; display:grid; place-items:center; font-size:15px; color:#fff; box-shadow:inset 0 -2px 0 rgba(0,0,0,.14); }
+.seg .scnt{ min-width:24px; height:24px; padding:0 7px; border-radius:8px; display:grid; place-items:center; font-family:var(--font-d); font-weight:600; font-size:14px; }
+.seg.mandatory .sico{ background:linear-gradient(150deg,var(--green),#37C46E); } .seg.optional .sico{ background:linear-gradient(150deg,var(--purple),#A78BFA); }
+.seg.mandatory .scnt{ background:var(--green-l); color:var(--green-d); } .seg.optional .scnt{ background:var(--purple-l); color:var(--purple-d); }
+.seg:hover{ color:var(--ink); }
+.seg.on{ background:#fff; }
+.seg.mandatory.on{ color:var(--green-d); box-shadow:0 6px 14px -8px rgba(18,161,80,.6), inset 0 0 0 2px #BEEBCE; }
+.seg.optional.on{ color:var(--purple-d); box-shadow:0 6px 14px -8px rgba(124,58,237,.5), inset 0 0 0 2px #D9C7FF; }
+
+.filter{ margin-top:22px; padding:12px 14px; border-radius:20px; background:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:10px; box-shadow:inset 0 0 0 1.5px var(--line); }
+.filter .lbl{ padding-left:6px; font-weight:900; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
+.fchip{ border:0; background:transparent; cursor:pointer; padding:8px 16px; border-radius:12px; font-weight:800; font-size:13.5px; color:var(--ink-soft); box-shadow:inset 0 0 0 1.5px var(--line); transition:.15s; }
+.fchip:hover{ color:var(--ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.fchip.on{ background:var(--green); color:#fff; box-shadow:inset 0 -2px 0 rgba(0,0,0,.15); }
+
+.sec-title{ display:flex; align-items:center; gap:9px; margin:26px 2px 12px; }
+.sec-title b{ font-family:var(--font-d); font-weight:600; font-size:19px; color:var(--ink); }
+.sec-title .badge{ min-width:24px; height:24px; padding:0 7px; border-radius:9px; display:grid; place-items:center; font-weight:900; font-size:13px; }
+.sec-title .badge.today{ background:var(--coral-l); color:var(--coral); }
+.sec-title .badge.later{ background:#E9EEF6; color:#64748B; }
+.sec-title .badge.bonus{ background:var(--purple-l); color:var(--purple-d); }
+.sec-title small{ font-weight:700; font-size:12.5px; color:var(--ink-soft); }
+
+.list{ display:flex; flex-direction:column; gap:12px; }
+.row{ display:flex; align-items:center; gap:15px; padding:15px 16px; border-radius:var(--r-row); background:#fff;
+  box-shadow:0 8px 20px -16px rgba(11,60,35,.6), inset 0 0 0 1.5px var(--line); transition:all .15s; animation:slide .4s ease both; }
+.row:hover{ transform:translateX(4px); box-shadow:0 14px 26px -18px rgba(11,60,35,.7), inset 0 0 0 1.5px #CFE9D6; }
+@keyframes slide{ from{ opacity:0; transform:translateX(-10px);} to{ opacity:1; transform:none;} }
+.row .tile{ width:46px; height:46px; border-radius:13px; display:grid; place-items:center; flex:none; }
+.row .tile .mi{ font-size:25px; }
+.row .meta{ flex:1; min-width:0; }
+.row .top{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-bottom:3px; }
+.chip{ padding:3px 9px; border-radius:var(--r-chip); font-weight:900; font-size:11px; line-height:1.4; white-space:nowrap; }
+.chip.type{ letter-spacing:.3px; text-transform:uppercase; }
+.chip.due-today{ background:#FFE1E5; color:#FF5A6E; } .chip.due-overdue{ background:#FF5A6E; color:#fff; }
+.chip.due-soon{ background:#FFF1CF; color:#B77A00; } .chip.due-ok{ background:#DCF7E6; color:#0B7A3B; }
+/* 第四十輪：規則 chip——外框式，跟實心的到期 chip 分開；顏色從側欄 Stars／Hearts 的環借（#FCE29A／#FFC3CC） */
+.chip.late{ background:#fff; color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; }
+.chip.late.now{ color:#C0576A; box-shadow:inset 0 0 0 1.5px #FFC3CC; }
+.ladder{ margin-top:4px; font-size:12px; font-weight:800; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ladder b{ color:var(--coral); font-weight:900; }
+.ladder .dot{ margin:0 5px; color:#CBD5E1; }
+.late-r{ flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:2px; text-align:right; margin-right:4px; }
+.late-r b{ font-size:14px; font-weight:800; color:#2563EB; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; }   /* 到期前藍色（student-game-design-system 的 Q&A 藍 #2563EB；一度用琥珀，使用者要藍） */
+.late-r b .mi{ font-size:17px; }   /* 提醒 icon 一律實心：到期前 info、過期 warning，顏色跟字一樣 */
+.late-r small{ font-size:12px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
+.late-r.now b{ color:var(--coral); }
+.row h5{ font-family:var(--font-d); font-weight:500; font-size:17px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .cta{ flex:none; height:40px; padding:0 20px; border:0; border-radius:12px; font-family:var(--font-d); font-weight:600; font-size:15px; color:#fff; cursor:pointer;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.16); transition:all .15s; }
+.row .cta.green{ background:linear-gradient(180deg,#20B95F,#12A150); } .row .cta.purple{ background:linear-gradient(180deg,#9B6BF2,#7C3AED); }
+.row .cta:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+
+.more{ margin:24px 0 8px; display:flex; justify-content:center; }
+.more button{ min-width:150px; height:42px; padding:0 20px; border-radius:14px; border:1.5px solid #BEEBCE; background:rgba(255,255,255,.75); font-weight:800; font-size:13.5px; color:#0B7A3B; cursor:pointer; }
+.more button:hover{ border-color:#8FE7AE; background:#fff; }
+
+.empty{ margin-top:24px; padding:38px; border-radius:20px; text-align:center; }
+.empty.clear{ background:linear-gradient(160deg,#EFFBF3,#E4F7EB); box-shadow:inset 0 0 0 2px #D2F0DC; }
+.empty.none{ background:linear-gradient(160deg,#F4F7FB,#EDF2F8); box-shadow:inset 0 0 0 2px #E4EDE7; }
+.empty .ico{ width:64px; height:64px; margin:0 auto 12px; border-radius:50%; display:grid; place-items:center; font-size:32px; color:#fff; }
+.empty.clear .ico{ background:linear-gradient(150deg,var(--green),#37C46E); box-shadow:0 12px 22px -10px rgba(18,161,80,.9); }
+.empty.none .ico{ background:#CBD5E1; }
+.empty h4{ font-family:var(--font-d); font-weight:600; font-size:22px; }
+.empty.clear h4{ color:var(--green-ink); } .empty.none h4{ color:#64748B; }
+.empty p{ margin-top:4px; font-weight:700; color:var(--ink-soft); }
+
+/* ---------- 底部狀態列（文件用，不是產品）---------- */
+.bl{ position:fixed; left:0; right:0; bottom:0; z-index:50; height:30px; padding:0 14px; display:flex; align-items:center; gap:14px; background:#111827; color:#9CA3AF; font-family:'Public Sans',sans-serif; font-size:11px; }
+.bl b{ color:#fff; } .bl a{ color:#D1D5DB; text-decoration:underline; } .bl a.cur{ color:#00CB61; font-weight:700; }
+.bl .bl-home{ display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border:1px solid #4B5563; border-radius:6px; text-decoration:none; color:#E5E7EB; }
+.bl .bl-home .mi{ font-size:13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#" class="on"><span class="ic"><span class="mi">assignment</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">task_alt</span></span>Submitted</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <main class="stage">
+    <div class="acct"><span class="av">L</span></div>
+    <div class="scroll"><div class="canvas" id="canvas"></div></div>
+  </main>
+</div>
+<div class="bl">
+  <a href="../index.html" class="bl-home"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v8 · 第四十輪 · 學生端看得到逾期規則 · 對照組 <a href="student-practice.html">現行複刻 ↗</a>
+  <span style="margin-left:auto"></span>
+  <a href="?" id="l0">Mandatory</a> · <a href="?tab=optional" id="l1">Optional</a> · <a href="?type=vocabulary-quiz" id="l2">Type 篩選</a> · <a href="?empty=1" id="l3">All caught up</a>
+</div>
+<script src="student-mock.js"></script>
+<script>
+/* ---------- 網址參數 ---------- */
+const qs = new URLSearchParams(location.search);
+const S = { tab: qs.get('tab') === 'optional' ? 'optional' : 'mandatory', type: qs.get('type') || 'all', empty: qs.get('empty') === '1', visible: 5,
+  chip: qs.get('chip') || 'first', ladder: qs.get('ladder') || 'overdue', style: qs.get('style') || 'text' };   // 預設不用膠囊：規則是右側一塊字（&style=chip 看膠囊版）   // 探索：&chip=first|seq · &ladder=overdue|all（還沒到期的三段怎麼寫）
+
+/* ---------- 日期（照 game-ui/utils.js formatDueChip ＋ assignment/classify getDayDifference）---------- */
+const dayDiff = (iso) => { const d = new Date(iso.slice(0, 10) + 'T12:00'), n = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), 12); return Math.round((d - n) / 864e5); };
+const dueChip = (iso) => {
+  if (!iso) return null;
+  const diff = dayDiff(iso);
+  if (diff < 0) return { label: `Overdue · ${Math.abs(diff)}d`, tone: 'overdue' };
+  if (diff === 0) { const h = Math.max(0, Math.floor((new Date(iso) - NOW) / 36e5)); return { label: h < 1 ? 'Today · <1h' : `Today · ${h}h`, tone: 'today' }; }
+  if (diff === 1) return { label: 'Tomorrow', tone: 'soon' };
+  const d = new Date(iso.slice(0, 10) + 'T12:00');
+  return { label: d.toLocaleDateString('en-NZ', diff <= 6 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }), tone: 'ok' };
+};
+const typeOf = (a) => TYPE_ENTRIES.find(t => t.id === a.typeId);
+const colorsOf = (a) => COLUMN_COLORS[typeOf(a).col];
+/* 第四十輪：規則→階段（跟老師端 renderTiers 同一個算法：第 n 天＝Due 後第 n 天） */
+const addDays = (iso, n) => { const d = new Date(iso.slice(0, 10) + 'T12:00'); d.setDate(d.getDate() + n); return d; };
+const dShort = (d) => d.toLocaleDateString('en-NZ', { month: 'short', day: 'numeric' });
+const stagesOf = (a) => { if (!a.late || a.isOptional) return null;
+  const st = a.late.tiers.map((t, k, arr) => ({ start: addDays(a.expiredDate, t.days), end: k < arr.length - 1 ? addDays(a.expiredDate, arr[k + 1].days - 1) : null, credit: 100 - t.off }));
+  const today = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), 12);
+  const cur = new Date(a.expiredDate) < NOW ? st.filter(x => x.start <= today).length - 1 : -1;
+  return { st, cur }; };
+const lateChip = (a) => { const L = stagesOf(a); if (!L || S.style === 'text') return '';
+  if (L.cur < 0) return `<span class="chip late">Late work ${S.chip === 'seq' && L.st.length > 1 ? L.st.map(x => `${x.credit}%`).join(' → ') : `${L.st[0].credit}%`}</span>`;
+  const c = L.st[Math.max(L.cur, 0)].credit; return `<span class="chip late now">${c ? `Counts ${c}% now` : 'No credit now'}</span>`; };
+/* 探索 &style=text：不用膠囊——規則是標題下一行 12px 字。到期前「Late work counts 90%」；過期後「Now counts 90%」＋ 後面幾段，現在這段珊瑚色 */
+/* 右側一塊字（使用者：字放大擺在右側）：第一行 14px 是現在的規則，第二行 12px 是後面幾段 */
+const lateText = (a) => { const L = stagesOf(a); if (!L) return '';
+  /* 第二行一律「數字 from 日期」的語序（使用者 2026-09-30 定）：80% from 20 Sept · 0% from 24 Sept；到期前前面加 then */
+  const rest = (list) => list.map(x => `${x.credit}% from ${dShort(x.start)}`).join(' · ');
+  if (L.cur < 0) return `<div class="late-r"><b><span class="mi">info</span>Late work counts ${L.st[0].credit}%</b>${L.st.length > 1 ? `<small>then ${rest(L.st.slice(1))}</small>` : ''}</div>`;
+  const c = L.st[L.cur].credit, after = L.st.slice(L.cur + 1);
+  return `<div class="late-r now"><b><span class="mi">warning</span>${c ? `Now counts ${c}%` : 'No credit now'}</b>${after.length ? `<small>${rest(after)}</small>` : ''}</div>`; };
+const ladder = (a) => { if (S.style === 'text') return ''; const L = stagesOf(a); if (!L || (L.cur < 0 && !(S.ladder === 'all' && L.st.length > 1))) return '';
+  const span = (x) => !x.end ? `from ${dShort(x.start)}` : x.start.getMonth() === x.end.getMonth() ? `${x.start.getDate()}–${dShort(x.end)}` : `${dShort(x.start)}–${dShort(x.end)}`;   // 同月：18–19 Sept
+  return `<div class="ladder">${L.st.map((x, k) => { const t = `${span(x)} ${x.credit}%`; return k === L.cur ? `<b>${t}</b>` : t; }).join('<span class="dot">·</span>')}</div>`; };
+const ctaOf = (a) => { const s = a.isComplete && !a.isSubmitted ? 'Submit' : a.progress > 0 ? 'Continue' : 'Start'; return a.isOptional ? (s === 'Start' ? 'Pick up' : s) : `${s} ▸`; };
+
+/* ---------- 分段（list/utils.js selectMandatorySections）---------- */
+const items = S.empty ? ASSIGNMENTS.filter(a => a.isOptional) : ASSIGNMENTS;
+const mandatory = items.filter(a => !a.isOptional && !(a.isComplete && a.isSubmitted));
+const today = mandatory.filter(a => dayDiff(a.expiredDate) <= 0).sort((x, y) => { const xo = new Date(x.expiredDate) < NOW, yo = new Date(y.expiredDate) < NOW; return xo === yo ? (xo ? new Date(y.expiredDate) - new Date(x.expiredDate) : new Date(x.expiredDate) - new Date(y.expiredDate)) : (xo ? 1 : -1); });
+const later = mandatory.filter(a => dayDiff(a.expiredDate) > 0).sort((x, y) => new Date(x.expiredDate) - new Date(y.expiredDate));
+const optional = items.filter(a => a.isOptional && !(a.isComplete && a.isSubmitted) && (a.isComplete || dayDiff(a.expiredDate) >= 0));
+const counts = { mandatory: today.length + later.length, optional: optional.length };
+const byType = (list) => list.filter(a => S.type === 'all' || a.typeId === S.type);
+
+/* ---------- render ---------- */
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function rowHTML(a, i){
+  const t = typeOf(a), c = colorsOf(a), d = dueChip(a.expiredDate);
+  return `<div class="row" style="animation-delay:${Math.min(i, 8) * 45}ms">
+    <span class="tile" style="background:${c.bg}; color:${c.text}"><span class="mi">${t.icon}</span></span>
+    <div class="meta"><div class="top"><span class="chip type" style="background:${c.bg}; color:${c.text}">${t.label}</span>${d ? `<span class="chip due-${d.tone}">${d.label}</span>` : ''}${lateChip(a)}</div>
+      <h5 title="${esc(a.name)}">${esc(a.name)}</h5>${ladder(a)}</div>
+    ${S.style === 'text' ? lateText(a) : ''}
+    <button class="cta ${a.isOptional ? 'purple' : 'green'}" aria-label="${ctaOf(a)}: ${esc(a.name)}">${ctaOf(a)}</button></div>`;
+}
+const section = (title, badge, hint, list) => `<div class="sec-title"><b>${title}</b><span class="badge ${badge}">${list.length}</span><small>${hint}</small></div><div class="list">${list.map(rowHTML).join('')}</div>`;
+const more = (shown, total) => total - shown > 0 ? `<div class="more"><button>Load ${Math.min(5, total - shown)} more</button></div>` : '';
+const typeLabel = S.type === 'all' ? null : TYPE_ENTRIES.find(t => t.id === S.type).label;
+const emptyTitle = typeLabel ? `No ${typeLabel} practice here` : 'No practice here';
+
+function render(){
+  let body = '';
+  if (S.tab === 'mandatory'){
+    const ft = byType(today), fl = byType(later);
+    const vt = ft.slice(0, S.visible), vl = fl.slice(0, Math.max(S.visible - vt.length, 0));
+    const secs = [vt.length ? section('Today', 'today', 'Required practice due today', vt) : '', vl.length ? section('Later', 'later', 'Save these for another time', vl) : ''].join('');
+    if (secs) body = secs + more(vt.length + vl.length, ft.length + fl.length);
+    else if (typeLabel && mandatory.length) body = `<div class="empty none"><div class="ico">∅</div><h4>${emptyTitle}</h4><p>Try another type filter.</p></div>`;
+    else body = `<div class="empty clear"><div class="ico">✓</div><h4>You have all caught up!</h4><p>You can relax or try a bonus practice. 🌱</p></div>`;
+  } else {
+    const fo = byType(optional), vo = fo.slice(0, S.visible);
+    body = vo.length ? section('Bonus practice', 'bonus', 'Extra credit — try if you like!', vo) + more(vo.length, fo.length)
+      : `<div class="sec-title"><b>Bonus practice</b><span class="badge bonus">0</span><small>Extra credit — try if you like!</small></div><div class="empty none" style="margin-top:0"><div class="ico">∅</div><h4>${emptyTitle}</h4><p>${typeLabel ? 'Try another type filter.' : 'Bonus practice will appear here when available.'}</p></div>`;
+  }
+  document.getElementById('canvas').innerHTML = `
+    <h1>My Assignments</h1><p class="lead">Pick one practice and give it your best! 💪</p>
+    <div class="segtabs">
+      <button class="seg mandatory ${S.tab === 'mandatory' ? 'on' : ''}" data-tab="mandatory"><span class="sico">✓</span>Mandatory<span class="scnt">${counts.mandatory}</span></button>
+      <button class="seg optional ${S.tab === 'optional' ? 'on' : ''}" data-tab="optional"><span class="sico">✦</span>Optional<span class="scnt">${counts.optional}</span></button>
+    </div>
+    <div class="filter"><span class="lbl">Type</span><button class="fchip ${S.type === 'all' ? 'on' : ''}" data-type="all">All</button>${TYPE_ENTRIES.map(t => `<button class="fchip ${S.type === t.id ? 'on' : ''}" data-type="${t.id}">${t.label}</button>`).join('')}</div>
+    ${body}`;
+  const cur = S.empty ? 'l3' : S.type !== 'all' ? 'l2' : S.tab === 'optional' ? 'l1' : 'l0';
+  document.querySelectorAll('.bl a').forEach(a => a.classList.toggle('cur', a.id === cur));
+}
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-tab]'); if (tab){ S.tab = tab.dataset.tab; S.visible = 5; render(); return; }
+  const ty = e.target.closest('[data-type]'); if (ty){ S.type = ty.dataset.type; S.visible = 5; render(); return; }
+  if (e.target.closest('.more button')){ S.visible += 5; render(); }
+});
+render();
+</script>
+</body>
+</html>
