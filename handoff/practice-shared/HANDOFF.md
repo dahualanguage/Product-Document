@@ -19,7 +19,7 @@ Content Mirroring 與 Vocabulary Mirroring 兩包定下來的決定裡，有一�
 - **S3 多兩條，六張一起套**（見 [`shared-practice-changes.html`](shared-practice-changes.html) §5）：①視窗裡的主 Play 鈕放大成實心主色；②「Sentence x of N ▾」原地展開整份清單、**每列一顆小播放鍵**（只聽那一句、不換預覽），**超過 15 列在清單裡捲**。這兩條已回套到 Content Mirroring 與 Vocabulary Mirroring 兩包的原型。
 - 畫廊頁頂多了麵包屑；spec §2 總表的 Vocabulary Quiz 列、§10、§11 依上面改寫。
 
-**還沒交接、不在這一包的**：Sentence Scramble（v7）仍在沙盒。Vocabulary Quiz 已於 2026-10-05 交接：[vocabulary-quiz](../vocabulary-quiz/)。Assign 那一步的兩個新需求（v8：指派歷史、逾期扣分）已於 2026-10-02 交接：[assign-history](../assign-history/)。
+**後來交接的、不在這一包的**：Vocabulary Quiz（2026-10-05）：[vocabulary-quiz](../vocabulary-quiz/)；Sentence Scramble（2026-10-05）：[sentence-scramble](../sentence-scramble/)。Assign 那一步的兩個新需求（v8：指派歷史、逾期扣分）已於 2026-10-02 交接：[assign-history](../assign-history/)。
 
 ---
 

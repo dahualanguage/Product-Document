@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v7 — 優化 Practice-Sentence Scramble · Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    td .cap { display: block; margin-top: 2px; }
+    /* 學生端排版示意（照 card-stack.js 的 sx 縮小畫） */
+    .stu { background:#E8EEF4; border-radius:12px; padding:28px 24px; margin:12px 0 8px; display:flex; justify-content:center; }
+    .stack { position:relative; width:420px; height:250px; }
+    .stack .c { position:absolute; left:0; top:0; width:420px; height:210px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .stack .c.b2 { transform:translate(12px,12px); z-index:1; }
+    .stack .c.b1 { transform:translate(6px,6px); z-index:2; }
+    .stack .c.f { z-index:3; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; overflow:hidden; }
+    .stack .img { width:50%; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center; color:#8AA69A; font-size:12px; }
+    .stack .txt { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; position:relative; }
+    .stack .txt .spk { position:absolute; top:8px; right:8px; color:#637381; font-size:12px; }
+    .stack .py { font-size:15px; color:#637381; }
+    .stack .w { font-size:30px; font-weight:600; color:#212B36; line-height:1.3; }
+    .stack .tr { font-size:12px; color:#637381; margin-top:12px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v7 · 優化 Sentence Scramble</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#flow">2 · 現況：四步走完</a></li>
+        <li><a href="#content">3 · 第一步 Content（其實是教學點）</a></li>
+        <li><a href="#edit">4 · 第二步 Edit Sentences</a></li>
+        <li><a href="#settings">5 · 第三步 Settings</a></li>
+        <li><a href="#student">6 · 學生端：拼句</a></li>
+        <li><a href="#issues">7 · 查到的問題</a></li>
+        <li><a href="#open">8 · 待決事項</a></li>
+        <li><a href="#base">9 · 基準檔</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v7 — 優化 Practice-Sentence Scramble</h1>
+        <p class="subtitle">Sentence Scramble 的建立流程是四步：Content → Edit Sentences → Settings → Assign Practice。第四步八種共用；前三步都是這張卡自己的：
+        第一步跟 Follow Pattern 共用 teaching point 的元件（<code>use-teaching-point-pool.js</code>、<code>teaching-point-picker.js</code>），第二、三步是同一支檔案的兩個 mode（<code>sentence-scramble-preview.js</code>）。
+        §2–§6 是現況與學生端，§7 是查到的問題，§8 是待決事項。<strong>登記完等使用者說要改哪裡，還沒有提案。</strong></p>
+        <div class="meta">
+          <span>2026-09-18</span>
+          <span>外殼與第四步從 v6 基準分岔</span>
+          <span>程式碼基準 origin/develop @ 7e2afa52</span>
+          <span>狀態：已登記</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+      <p>New Sentence Scramble 這條建立流程的四步（<code>?type=SENTENCE_SCRAMBLE</code>）。學生端不改，但 §6 把它抄出來了——老師端第二步的詞塊列跟學生看到的拼句畫面不是同一張，而且有幾個設定學生端根本沒讀。</p>
+      <div class="grid">
+        <div class="card"><h4>共用的（照 shared-practice-changes 套）</h4><p>S1 名稱搬第一步、S2 第一步元件（專案選單、teaching point 勾選）、S3 Settings 工具列＋畫布（Scramble 有 Speed／Voice／Pinyin／Max tries，畫布＝拼句畫面）、S4 Shown｜Hidden｜Choice by student、S6 Max tries、S7 Speed 試聽 Voice 分組、S8 Assign、S9 頁腳、S10 回第一步不鎖、S11 審句步。</p></div>
+        <div class="card"><h4>這張卡自己的</h4><p>教學點怎麼選、題數怎麼分、句子怎麼審（上下移／刪／改中文／剪刀切塊／改拼音聲調／再生一句）、第三步的句子清單跟第二步重複、老師端沒有學生畫面的預覽。</p></div>
+      </div>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="flow"><span class="num">2</span> 現況：四步走完</h2>
+      <table>
+        <thead><tr><th style="width:170px">步驟</th><th>畫面上有什麼</th><th style="width:260px">按 Next 發生什麼</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 Content</b></td><td>Select Projects（多選）→ Teaching Points Preview：逐專案一張卡、Select All (n/m)、每點一顆 chip（勾了綠底白字）、Custom Teaching Points 可加 → Number of questions（1–20，預設 8，選點時自動＝點數，上限 20）。生成後回來，底下多一段 Generated Sentences (n) 唯讀清單。</td><td>鈕叫 <b>Generate</b>：<code>upsertPractice</code> 建 practice ＋ 生成；第一步不開 ProcessingDialog，整步換 skeleton；完成<b>自動跳第二步</b>。生成後鈕變 Next；改了點或題數再按又叫 Generate，<b>整份重生</b>。</td></tr>
+          <tr><td><b>2 Edit Sentences</b></td><td>Practice Name → 標頭「Sentence Scramble」＋一句說明 → Teaching Points header（每點幾句的 chip、選一個點再生一句）→ 每句一張卡：上下移、Q 號、教學點 chip、剪刀／Edit／Delete；詞塊列（每塊上拼音下字，點拼音開 Edit Pinyin）；翻譯小字。</td><td>Next。名稱空白擋。每個動作（移、刪、切塊、改聲調、存中文）當下就 <code>upsertPractice</code>；改了中文存檔會重生拼音／翻譯／音檔，開 ProcessingDialog「Updating pinyin &amp; translation...」。</td></tr>
+          <tr><td><b>3 Settings</b></td><td>Practice Name → Audio Settings（Speed 含 Student choice、Voice）→ Student Settings（Pinyin 下拉是 enum 原字、Attempts per sentence ＋ ⓘ）→ Sentences (n)：逐句詞塊列＋播放鈕。</td><td>鈕叫 <b>Save</b>：flush 待存的欄位，失敗不前進。Speed／Voice 改了就重生音檔，ProcessingDialog 文案卻是「Generating sentences...」。</td></tr>
+          <tr><td><b>4 Assign Practice</b></td><td>八種共用（同 v3／v6）。</td><td>Done → 回專案頁。</td></tr>
+        </tbody>
+      </table>
+      <p class="cap">Back 全程不鎖、不確認（跟 Vocabulary 不一樣）。沒有 draft 路徑。EDIT 模式第一步鎖住專案與題數，只能加點（append，不重生）。</p>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="content"><span class="num">3</span> 第一步 Content（其實是教學點）</h2>
+      <p>出處 <code>step-one-sentence-scramble.js</code> ＋ <code>shared/use-teaching-point-pool.js</code>、<code>shared/teaching-point-picker.js</code>（跟 Follow Pattern 共用）。</p>
+      <table>
+        <thead><tr><th style="width:200px">控制項</th><th>怎麼運作</th></tr></thead>
+        <tbody>
+          <tr><td>專案多選</td><td>Autocomplete，選項列右邊 <code>zh-CN</code>／<code>HSK 2</code> 兩個 tag。第一個選到的專案名會填進 practiceName（欄位在第二步才看得到）。deep-link <code>?projectConfigSk=</code> 可預填。</td></tr>
+          <tr><td>Teaching Points Preview</td><td>從專案的 <code>vocabHandlerResult</code> ＋ <code>teachingPointMeta</code> 抽點，第一次載入<b>全部自動勾選</b>。Select All 是 checkbox（indeterminate 有）。EDIT 模式已生成的點掛鎖頭不能取消。</td></tr>
+          <tr><td>Custom Teaching Points</td><td>一個小輸入框 ＋ Add；加了就勾上。存在 <code>scrambleCustomPoints</code>。</td></tr>
+          <tr><td>Number of questions</td><td>1–20。CREATE 時<b>每次勾選數變動就自動改成 min(20, 點數)</b>，老師改過的值會被蓋掉。點數 &gt; 題數才出黃色警告「some teaching points may not be covered」。句子怎麼分到點只有一句話：<em>Sentences are shared out over the selected teaching points</em>。</td></tr>
+          <tr><td>Generate / Next</td><td>「PM: Next appears after the sentences are generated, not before.」生成前叫 Generate，生成後選擇沒變叫 Next；選擇變了又變回 Generate，按下去<b>整份重生、第二步的編輯全丟</b>，沒有提醒。失敗（FAILED 或 0 句）出紅色 Alert 請老師調整再試；20 秒沒動靜出 snackbar「Generation is taking longer than expected」。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="edit"><span class="num">4</span> 第二步 Edit Sentences</h2>
+      <p>出處 <code>sentence-scramble-preview.js</code>（<code>mode="sentences"</code>）、<code>scramble-chunk-row.js</code>、<code>scramble-segment-editor.js</code>、<code>utils/scramble-tokens.js</code>。</p>
+      <div class="grid">
+        <div class="card"><h4>詞塊列（ScrambleChunkRow）</h4><p><code>splitContent</code> 一格一塊、<code>splitContentPinyin</code> 一格一個拼音，標點不成塊（灰字）。拼音對不齊（三種對法都失敗）就整句顯示不切塊。有 cells 才能點拼音改聲調；空 cell（兒化的兒）故意留空不能改。</p></div>
+        <div class="card"><h4>剪刀（ScrambleSegmentEditor）</h4><p>每個詞塊拆成字（拼音一字一音才拆），字與字之間一條可點的縫：切＝粉紅豎線、合＝連成一塊；標點旁邊不能切。有「Split into characters」一次全切。<b>只在有 cells 且中文沒改過時可用</b>，否則灰掉，tooltip 三種。存檔走 <code>scrambleSentences</code>，不重生。</p></div>
+        <div class="card"><h4>Edit（改中文／翻譯）</h4><p>兩個小輸入框 ＋ 一條「Auto-update on save」提示。中文改了存檔 → 後端重生拼音、翻譯、音檔，整步 skeleton ＋ ProcessingDialog「Updating pinyin &amp; translation...」。改到一半去點別句會自動存。</p></div>
+        <div class="card"><h4>Edit Pinyin 對話框</h4><p>點詞塊的拼音打開：大字 ＋ 每個音節一格（拼音輸入框 ＋ 聲調下拉 neutral／1st ˉ／2nd ˊ／3rd ˇ／4th ˋ）。Save 當下就存。</p></div>
+        <div class="card"><h4>Teaching Points header</h4><p>「Teaching Points (7) · Sentences (7)」＋ 每點幾句的粉紅 chip ＋ 選一個點按 Generate 再生一句（append，不重生舊的）。有沒存的編輯時整塊鎖住，只有一行小字「Save your changes first.」。</p></div>
+        <div class="card"><h4>上下移／刪</h4><p>每張卡左邊兩顆小箭頭；刪到剩一句擋「Keep at least one sentence.」。這一步<b>沒有</b>試聽（播放鈕在第三步）。</p></div>
+      </div>
+
+      <!-- ===================== 5 ===================== -->
+      <h2 id="settings"><span class="num">5</span> 第三步 Settings</h2>
+      <table>
+        <thead><tr><th style="width:200px">控制項</th><th>值</th><th style="width:260px">存到哪、動了什麼</th></tr></thead>
+        <tbody>
+          <tr><td>Speed</td><td>Student choice ／ Fast 1.0 ／ Normal 0.8（預設）／ Slow 0.6；選項列有耳機試聽鈕</td><td><code>changeSpeed</code> → <code>updatePracticeAI</code>，<b>重生音檔</b>，ProcessingDialog 文案是 scramble 的「Generating sentences...」（copy 走錯分支）</td></tr>
+          <tr><td>Voice</td><td>zh-CN 四個（Xiaorou／Xiaoyi／Yunxiao／Yunxia）</td><td>同上，重生音檔</td></tr>
+          <tr><td>Pinyin</td><td><code>PINYIN</code>／<code>NO_PINYIN</code>／<code>STUDENT_CHOICE</code>——<b>老師看到的是 enum 原字</b></td><td><code>pinyinPreference</code> → <code>upsertPractice</code>；學生端有讀</td></tr>
+          <tr><td>Attempts per sentence</td><td>1–10，預設 3，旁邊 ⓘ「How many times a student may check one sentence (default 3).」</td><td><code>maxAttempts</code>；學生端用完會揭曉正解（不是 auto pass）</td></tr>
+          <tr><td>Sentences (n)</td><td>逐句詞塊列（NO_PINYIN 時不顯示拼音）＋ 播放鈕（改過中文沒存的不能播）</td><td>唯讀，跟第二步重複一遍</td></tr>
+        </tbody>
+      </table>
+      <p class="cap">沒有 Translation 設定、沒有 Audio Mode（Practice mode）。Practice Name 在這一步又出現一次。</p>
+
+      <!-- ===================== 6 ===================== -->
+      <h2 id="student"><span class="num">6</span> 學生端：拼句</h2>
+      <p>出處 <code>src/sections/assignments/content/sentence-scramble/</code>。整頁粉紅系（<code>#EC4899</code>），底 <code>#E8EEF4</code>。</p>
+      <div class="formula">// index.js
+開始頁：練習名（粉紅）→「Sentence Scramble」→「Listen, then rearrange the words」→ 句數 ＋ ~MIN（max(2, ceil(n×0.5))）
+        → pinyinPreference === STUDENT_CHOICE 才有「Show Pinyin」開關 → Start Practice（粉紅漸層）
+練習頁：頂欄（型別 chip ＋ 名稱 ＋ 頭像）＋ 進度條 n / total；右上齒輪只在 pinyin 或 speed 是 STUDENT_CHOICE 時出現
+  卡片：「Rearrange the words to form the correct sentence.」＋（上限 &gt; 1 才有）「1 / 3 tries」
+        Listen to sentence（進到這一題自動播一次）
+        答案區：虛線框，每個詞一個 slot（拼音在上、字在下），標點黏在前一個 slot 後面
+        詞塊池：打散的 tiles（同樣拼音＋字）——點一下填進第一個空 slot、點 slot 退回池子；沒有拖曳
+        Check（全填才亮）→ 對：綠框 Correct!；錯且還有次數：黃框「Not quite right. n tries left.」＋ Try Again（對的 slot 鎖住變綠、錯的退回）
+        錯且沒次數：紅框「The correct order is shown below.」＋ 正確句（字＋拼音）＋ 翻譯小字 → Next／Finish
+完成頁：平均星星（第一次對 5★、第二次 4★…、錯 0★）、Score／Correct、逐句列表、Back to Assignments</div>
+      <table>
+        <thead><tr><th style="width:220px">老師設定</th><th>學生端</th></tr></thead>
+        <tbody>
+          <tr><td><code>pinyinPreference</code></td><td><b>有讀</b>。NO_PINYIN 藏拼音（揭曉區例外，永遠有拼音）；STUDENT_CHOICE 才有開關，預設開。</td></tr>
+          <tr><td><code>speedPreference</code>／<code>changeSpeed</code></td><td><b>有讀</b>。STUDENT_CHOICE 且有音檔才出 Speed 下拉；否則照老師烤好的檔播。</td></tr>
+          <tr><td><code>maxAttempts</code></td><td><b>有讀</b>。tries 計數、Try Again、用完揭曉、扣星。</td></tr>
+          <tr><td><code>translationPreference</code></td><td><b>沒讀</b>（老師端也沒得設）。翻譯只在揭曉區出現一次。</td></tr>
+          <tr><td><code>audioOption</code>（Voice）</td><td>只烤進音檔，畫面不知道。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 7 ===================== -->
+      <h2 id="issues"><span class="num">7</span> 查到的問題</h2>
+      <div class="card"><h4>1 · 第一步叫 Content，裡面是教學點</h4><p>Planning（<a class="inline" href="../../teacher-planning-flow-spec.html">§6 Sentence Scramble</a>）早就指出「名字騙人是這條流程最早的誤解來源」，把它叫 scrpts。名稱也是在第一步被設、第二步才看到（S1）。</p></div>
+      <div class="card"><h4>2 · Generate 之後改一個點，整份重生</h4><p>選擇一變鈕就從 Next 變回 Generate，按下去舊句子全換、第二步的上下移／刪／切塊／改聲調全丟，畫面沒提醒。但產品<b>已經有 append</b>（EDIT 模式加點、第二步 header 再生一句都只補新的）——CREATE 第一步卻不走這條。跟 v4 契約 §1 同一題（S10）。</p></div>
+      <div class="card"><h4>3 · 題數欄位會被勾選蓋掉</h4><p>每勾一個點題數就自動重設成點數，老師改成 10 再多勾一個點就變回 8。「句子在點之間怎麼分」只有一句話，Planning 說的是輪流分配。</p></div>
+          <div class="card"><h4>4 · 剪刀為什麼灰，看不出來</h4><p>三種原因（沒塊、中文改過沒存、拼音沒有 cells）都只在 tooltip。改過中文之後要先存，存了會重生，重生完才能切——這條路老師走不出來。</p></div>
+      <div class="card"><h4>5 · 改一句中文，整步被遮住</h4><p>存中文 → 全螢幕 ProcessingDialog「Updating pinyin &amp; translation...」＋ skeleton，其他六句也不能動。跟 practice-shared 的 E3 同一題：純內容改動能不能不擋整步。</p></div>
+      <div class="card"><h4>6 · Pinyin 下拉是 enum 原字</h4><p><code>PINYIN</code>／<code>NO_PINYIN</code>／<code>STUDENT_CHOICE</code> 直接當選項字。S4 的 Shown｜Hidden｜Choice by student 直接套。</p></div>
+      <div class="card"><h4>7 · Attempts per sentence</h4><p>S6：改 Max tries ＋ ⓘ，tooltip 單位寫 sentence。注意 Scramble 用完是<b>揭曉正解</b>，不是 auto pass，tooltip 的後果要寫對。</p></div>
+      <div class="card"><h4>8 · 第三步的 Sentences 清單是第二步再抄一遍</h4><p>七句詞塊列唯讀重列，只多了播放鈕；第二步反而不能試聽。R11 的畫布應該是<b>學生的拼句畫面</b>，不是老師的詞塊列。</p></div>
+      <div class="card"><h4>9 · 老師端從頭到尾沒看過學生畫面</h4><p>第二步的詞塊列是「正確順序、拼音在上」，學生看到的是打散的 tiles ＋ 虛線 slot、粉紅系。v6 做的「點一下看學生那一題」這裡也需要（R6）。</p></div>
+      <div class="card"><h4>10 · 換 Speed／Voice 的等待文案走錯分支</h4><p><code>resolveProcessingCopy</code> 的 scramble 分支先於 audio 分支，重生音檔時標題是「Generating sentences...」、說明是「Creating scramble sentences」。一行的事，記下來給工程。</p></div>
+      <div class="card"><h4>11 · 學生端的小事（這一版不改，記下來）</h4><p>只能點不能拖（Planning 寫「拖回」）；答對時 slot 不變綠，只有外框變；揭曉區不理 pinyin 開關；翻譯只在答錯用完才出現、老師端沒得設。</p></div>
+
+      <!-- ===================== 8 ===================== -->
+      <h2 id="open"><span class="num">8</span> 待決事項</h2>
+      <h3>要決定的</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th style="width:300px">題目</th><th>選項</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-open">D1</span></td><td>第一步照 Planning 改成「教學點」那一步？</td><td>改名不改事：Teaching Points（跟 v4 第一步同一個版面：專案多選、勾點、Add、名稱 A + B）；題數獨立於點數、句子輪流分配。</td></tr>
+          <tr><td><span class="stat st-open">D2</span></td><td>共用改動哪些直接套</td><td>S1／S2／S3／S4／S6／S7／S8／S9 都套得上；S10（回第一步只生新的）要問工程；S11（審句步眼睛＝隱藏）這張卡是「刪」不是「藏」，要不要改。</td></tr>
+          <tr><td><span class="stat st-open">D3</span></td><td>第二步跟第三步的關係</td><td>第三步的 Sentences 清單拿掉、畫布換成學生的拼句畫面；試聽搬到第二步。</td></tr>
+          <tr><td><span class="stat st-open">D4</span></td><td>學生畫面的預覽</td><td>照 v6：第二步每句一顆 Preview 開 Student view（拼句畫面）；或第三步畫布就是它。</td></tr>
+        </tbody>
+      </table>
+      <h3>要問工程的</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th style="width:300px">題目</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">E1</span></td><td>CREATE 第一步能不能也走 append？</td><td>EDIT 模式與第二步 header 已經只補新的（<code>scrambleAppendTeachingPoints</code>）；CREATE 改點卻整份重生。同 S10。</td></tr>
+          <tr><td><span class="stat st-todo">E2</span></td><td>改一句中文重生，是只重生那一句還是整份？</td><td>畫面上是整步遮住；如果後端只動那一句，前端可以只鎖那一張卡（E3 同類）。</td></tr>
+          <tr><td><span class="stat st-todo">E3</span></td><td>剪刀存的 <code>splitContent</code>，後端會不會改回去？</td><td><code>scrambleSentences</code> 的 payload 沒有 <code>splitContentPinyin</code>，後端重推 cells；切塊之後拼音怎麼對回來。</td></tr>
+          <tr><td><span class="stat st-todo">E4</span></td><td>學生端要不要做拖曳</td><td>Planning 寫拖回，產品是點一下。跟老師端預覽畫哪一種有關。</td></tr>
+          <tr><td><span class="stat st-todo">E5</span></td><td>Translation 要不要給 Scramble 設</td><td>學生端只在揭曉時用；老師端沒得設。如果不設，S4 那一格就不畫。</td></tr>
+          <tr><td><span class="stat st-todo">E6</span></td><td>換 Speed／Voice 的等待文案</td><td>問題 10，一行的事。</td></tr>
+          <tr><td><span class="stat st-todo">E7</span></td><td>建立 practice 時能不能直接帶指定的句子進去？</td><td>PM 需求（2026-09-21）：老師勾專案 teaching point 的例句當題目。<code>scrambleSentences</code> 現在只在編輯時用；要在 create 就帶進去，後端切詞、生音檔跟生成的走同一條。</td></tr>
+          <tr><td><span class="stat st-todo">E8</span></td><td>專案例句本身有沒有音檔？</td><td>沒有的話勾進來的句子要為這個 practice 重錄，跟生成的一樣要等。</td></tr>
+          <tr><td><span class="stat st-todo">E9</span></td><td>同一個點既勾了例句又要生新句，生成能不能避開勾的那幾句？</td><td>不然會撞句。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 9 ===================== -->
+      <h2 id="base"><span class="num">9</span> 基準檔</h2>
+      <p><a class="inline" href="create-scramble.html?step=0&amp;sel=1">create-scramble.html</a>，外殼與第四步從 v6 基準分岔、前三步新畫。用網址參數切狀態（<code>?step=</code> 從 0 數）：</p>
+      <table>
+        <thead><tr><th style="width:300px">網址</th><th>看到什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>?step=0</code></td><td>第一步，還沒選專案</td></tr>
+          <tr><td><code>?step=0&amp;sel=1</code> / <code>&amp;warn=1</code></td><td>選了「我的一天」：七個點全勾、題數自動 7；<code>&amp;warn=1</code> 題數改成 4 的黃色警告</td></tr>
+          <tr><td><code>?step=0&amp;gen=1</code> / <code>&amp;done=1</code> / <code>&amp;fail=1</code></td><td>生成中（skeleton、Generate 轉圈）／生成完回到第一步（Generated Sentences 清單、鈕變 Next）／失敗的紅色 Alert</td></tr>
+          <tr><td><code>?step=1</code></td><td>第二步 Edit Sentences：Teaching Points header ＋ 七張句子卡</td></tr>
+          <tr><td><code>?step=1&amp;edit=1</code> / <code>&amp;cut=1</code> / <code>&amp;py=1</code> / <code>&amp;regen=1</code></td><td>第一句編輯中（Auto-update on save）／第二句剪刀模式／Edit Pinyin 對話框／存檔後重生的 ProcessingDialog</td></tr>
+          <tr><td><code>?step=2</code> / <code>&amp;sc=1</code> / <code>&amp;audio=1</code></td><td>第三步 Settings／Speed 選 Student choice 的 helper／換聲音重生音檔的 ProcessingDialog</td></tr>
+          <tr><td><code>?step=3</code> / <code>&amp;assigned=1</code></td><td>第四步 Assign（八種共用）</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><strong>下一步。</strong>現況在 §2–§6，問題在 §7，要決定的在 §8。基準檔保留不動，之後的提案跟它並排看。實機截圖使用者尚未提供，基準檔照程式碼複刻，之後拿截圖對一次。</p>
+
+      <footer>v7 · 優化 Practice-Sentence Scramble — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+</body>
+</html>
