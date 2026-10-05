@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Vocabulary Quiz — v6 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 這一頁是「現行產品」的複刻，不是提案。
+   出處：dahua-dash origin/develop @ 3e821fa4（2026-09-17 fetch）
+     從 v4 的基準檔（create-vocabulary.html）分岔：第一步 Vocabulary 跟 Vocabulary Mirroring 是同一支
+     step-one-vocabulary.js（isVocabMC 時只少了 Read Sentences Only 那個開關：showReadModes={!isVocabMC}）；
+     第四步 Assign 八種共用。這張卡自己的是中間兩步：
+     src/sections/practice/view/unified/steps/vocabulary-mc-question-types-step.js （Step 2 Question Types：
+        Random／Advanced 兩種模式、八種題型卡、逐字矩陣；VOCABULARY_MC_STEPS 多出來的那一步）
+     src/sections/practice/view/unified/steps/vocabulary-step-three-section.js （Step 3 Settings 的 isMultipleChoice 分支：
+        只有 Practice Name ＋ McQuestionsPreview ＋ Add Question；Display／Audio／Max attempts 全在 !isMultipleChoice 裡）
+     src/sections/practice/components/mc-questions-preview.js （題目卡：Q 標、題型 chip、題幹、換題、刪除、選項兩欄、正解打勾）
+     src/sections/practice/view/unified/practice-unified-view.js （isVocabMC：practice 在第二步按 Next 時才帶
+        generateVocaUpdatedArticleArrayType = MULTIPLE_CHOICE ＋ mcQuestionTypeSelection 一起送，生成只跑一次；
+        再經過這一步不重生，除非選擇變了）
+     src/enum/practices.js （MC_QUESTION_TYPE_LABELS 八種、IMAGE_STEM_MC_QUESTION_TYPES、MC_TYPE_COLORS）
+     學生端 src/sections/assignments/content/mc/{index,vocab-mc}.js （adaptVocabMCQuestions → MCPractice；沒有 examMode）
+   顏色、字級、圓角、間距逐項照抄 theme + sx。題幹圖片／音檔拿不到，用佔位。
+
+   網址參數：?step=0|1|2|3
+     step 0：同 v4 基準（&empty=1 / &gen=1 / &loaded=1）
+     step 1：Question Types。預設 Random；&adv=1 Advanced（八張題型卡 ＋ 逐字矩陣）· &zero=1 一個都沒選的警告
+     step 2：Settings（Practice Name ＋ 題目清單）。&add=1 Add Question 對話框打開
+     step 3：Assign（&assigned=1 已指派一個班）
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --success:#22C55E; --success-lighter:#D3FCD2;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-lighter:#DCECFE;
+  --warning-lighter:#FFF5CC; --warning-dark:#B76E00;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* /dashboard/practice 走 hasTintedBg（main.js），底色是 #f4f7fb 不是白的 */
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80，出自 config-layout.js ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; cursor:pointer; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.nav a.on:hover{ background:rgba(0,203,97,.16); }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px; }
+.h5{ font-size:20px; font-weight:700; line-height:1.5; }
+.h6{ font-size:18px; font-weight:700; line-height:1.55; }
+
+/* ---------- Stepper ---------- */
+.stepper{ display:flex; align-items:center; margin-bottom:32px; }
+.step{ display:flex; align-items:center; gap:8px; }
+.step-dot{ width:24px; height:24px; border-radius:50%; background:var(--divider); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:500; flex-shrink:0; }
+.step.active .step-dot, .step.done .step-dot{ background:var(--primary); }
+.step-label{ font-size:14px; font-weight:400; color:var(--text3); }
+.step.active .step-label{ font-weight:600; color:var(--text); }
+.step.done .step-label{ font-weight:400; color:var(--text); }
+.step-line{ flex:1; height:1px; background:var(--divider); margin:0 8px; min-width:24px; }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- Paper / 通用 ---------- */
+.paper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.paper + .paper{ margin-top:16px; }        /* Step 2 的 Stack spacing={2} */
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.row-l{ display:flex; align-items:center; gap:8px; }
+.sub2{ font-size:14px; font-weight:600; }
+.sub1{ font-size:16px; font-weight:600; }
+.body2{ font-size:14px; }
+.cap{ font-size:12px; color:var(--text2); line-height:1.5; }
+.cap.dis{ color:var(--text3); }
+.mi.info{ font-size:18px; color:var(--text2); cursor:help; }
+
+/* ---------- TextField / Select（outlined） ---------- */
+.field{ position:relative; }
+.field.full{ width:100%; }
+.field > label{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1;
+  font-size:12px; color:var(--text2); line-height:1.2; }
+.field.dis > label{ color:var(--text3); }
+.ctrl{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 14px; font-size:14px; color:var(--text); font-family:inherit;
+  display:flex; align-items:center; gap:8px; cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.field.sm .ctrl{ height:40px; }          /* size="small" */
+.field.dis .ctrl{ background:var(--grey100); color:var(--text3); cursor:default; }
+.field.dis .ctrl:hover{ border-color:var(--divider); }
+.field.dis > label{ background:linear-gradient(#fff 50%, var(--grey100) 50%); }
+.ctrl .caret{ margin-left:auto; font-size:22px; color:var(--text2); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.helper{ font-size:12px; color:var(--text2); margin:3px 14px 0; }
+
+.menu{ position:absolute; top:60px; left:0; right:0; z-index:30; background:#fff; border-radius:8px;
+  box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:8px;
+  max-height:300px; overflow:auto; }
+.field.sm .menu{ top:44px; }
+.menu .opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:14px; cursor:pointer; }
+.menu .opt:hover{ background:var(--grey200); }
+.menu .opt.sel{ background:rgba(0,203,97,.08); }
+.menu .opt .play{ width:28px; height:28px; border-radius:50%; border:0; background:transparent; color:var(--text2);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.menu .opt .play:hover{ background:var(--grey200); }
+.chip-lang{ padding:1px 8px; background:#EFF6FF; color:#1D4ED8; font-size:11.2px; font-weight:600; border-radius:6px; }
+.chip-lvl{ padding:1px 8px; background:#F0FDF4; color:#065F46; font-size:11.2px; font-weight:600; border-radius:6px; }
+.opt .cnt{ margin-left:auto; font-size:12px; color:var(--text3); flex-shrink:0; }
+.opt .cnt.err{ color:var(--error); }
+
+/* ---------- Autocomplete multiple（Step 1） ---------- */
+.ac .ctrl{ height:auto; min-height:56px; flex-wrap:wrap; padding:9px 14px; gap:6px; }
+.ac .tagchip{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 4px 0 12px;
+  border:1px solid rgba(145,158,171,.32); border-radius:16px; font-size:13px; font-weight:500; }
+.ac .tagchip .mi{ font-size:18px; color:rgba(145,158,171,.6); }
+.ac .tagchip .mi:hover{ color:var(--text2); }
+.field.dis .tagchip{ color:var(--text3); }
+.ac .ph{ color:var(--text3); flex:1; }
+.ac .caret2{ margin-left:auto; display:flex; gap:4px; color:var(--text2); }
+.ac .caret2 .mi{ font-size:22px; }
+
+/* ---------- Step 1 · Teaching Points Preview ---------- */
+.tp-card{ border:1px solid var(--divider); border-radius:16px; overflow:hidden; background:#fff; }
+.tp-card + .tp-card{ margin-top:16px; }
+.tp-card .hd{ display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--divider); background:#FAFBFC; }
+.tp-card .hd .mi{ font-size:20px; color:var(--text2); }
+.tp-card .bd{ padding:20px; display:flex; flex-wrap:wrap; gap:6px; }
+.chip{ display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:16px;
+  border:1px solid rgba(145,158,171,.32); font-size:14px; font-weight:600; white-space:nowrap; }
+.chip.sm{ height:24px; padding:0 8px; font-size:12px; }
+.chip.primary{ border-color:rgba(0,203,97,.48); color:var(--primary); }
+.chip.info{ border-color:rgba(80,138,252,.48); color:var(--info); }
+.chip.secondary{ border-color:rgba(142,51,255,.48); color:#8E33FF; }
+.chip.n{ font-weight:600; }
+.genbar{ display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:16px;
+  background:#F0FDF4; border:1px solid #D1FAE5; margin-top:16px; }
+
+/* ---------- Step 1 · Loading（VocabularyLoadingState） ---------- */
+.loading{ margin:32px 0; padding:48px 24px; border-radius:24px; text-align:center;
+  background:linear-gradient(135deg, rgba(187,241,208,.3) 0%, rgba(211,252,210,.3) 100%); }
+.loading .orb{ width:80px; height:80px; border-radius:50%; margin:0 auto 24px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--primary) 0%, var(--success) 100%); box-shadow:0 8px 24px rgba(0,203,97,.3); color:#fff; }
+.loading .orb .mi{ font-size:36px; animation:spin 1.2s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.loading .h6{ background:linear-gradient(90deg, var(--primary), var(--success)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+.loading .dots{ display:flex; gap:8px; justify-content:center; margin-top:24px; }
+.loading .dots i{ width:8px; height:8px; border-radius:50%; background:var(--primary); opacity:.35; }
+.loading .dots i:nth-child(2){ opacity:.7; } .loading .dots i:nth-child(3){ opacity:1; }
+.skel{ background:rgba(145,158,171,.16); border-radius:6px; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:.5;} }
+.skel-grid{ display:flex; gap:16px; flex-wrap:wrap; margin-top:32px; }
+.skel-card{ width:280px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; }
+
+/* ---------- Step 1 · Vocabulary Content（Accordion + 卡） ---------- */
+.acc{ background:#fff; border-radius:16px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); margin-bottom:16px; overflow:hidden; }
+.acc .sum{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; background:var(--grey200); cursor:pointer; min-height:48px; }
+.acc .sum .l{ display:flex; align-items:center; gap:16px; }
+.acc .sum .l .mi{ font-size:24px; }
+.acc .sum .r{ display:flex; align-items:center; gap:16px; padding-right:16px; }
+.acc .sum .r > .mi{ font-size:24px; color:var(--text2); }
+.btn.success{ background:var(--success); color:#fff; box-shadow:0 8px 16px 0 rgba(34,197,94,.24); font-size:12px; padding:4px 12px; }
+.btn.success .mi{ font-size:16px; }
+.acc .det{ padding:8px 16px 16px; display:flex; flex-wrap:wrap; gap:16px; }
+.vcard{ min-width:280px; max-width:320px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; position:relative; transition:all .3s; }
+.vcard:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.vcard.hidden{ opacity:.45; }
+.vcard.hidden .word{ text-decoration:line-through; }
+.vcard .acts{ display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; }
+.vcard .ib{ width:36px; height:36px; border-radius:50%; border:0; background:rgba(0,0,0,.04); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.vcard .ib .mi{ font-size:20px; }
+.vcard .ib.edit{ color:var(--primary); } .vcard .ib.edit:hover{ background:var(--primary); color:#fff; }
+.vcard .ib.eye{ color:var(--text2); } .vcard .ib.eye:hover{ background:rgba(0,0,0,.08); color:var(--text); }
+.vcard .ib.eye.off{ color:var(--text3); } .vcard .ib.eye.off:hover{ background:#FFAB00; color:#fff; }
+.imgph{ width:100%; max-width:280px; height:160px; border-radius:8px; margin-bottom:8px;
+  background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.imgph .mi{ font-size:28px; }
+.thumbs{ display:flex; gap:6px; margin-bottom:16px; }
+.thumbs i{ width:48px; height:36px; border-radius:6px; background:#E9F5EE; border:2px solid transparent; display:block; }
+.thumbs i.sel{ border-color:var(--primary); }
+.vcard .word{ font-size:18px; font-weight:700; margin-bottom:5.6px; }
+.vcard .py{ font-size:14px; color:var(--text2); margin-bottom:5.6px; }
+.vcard .tr{ font-size:14px; color:var(--primary); margin-bottom:5.6px; }
+.vcard .tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+.vcard .ro{ margin-top:16px; padding:12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.vcard .ex{ margin-top:16px; padding:12px; background:var(--grey200); border-radius:8px; }
+.vcard .ex + .ex{ margin-top:12px; }
+.vcard .ex .c{ font-size:12px; display:block; margin-bottom:5.6px; }
+.vcard .ex .c.py{ color:var(--text2); margin-bottom:0; } .vcard .ex .c.tr{ color:var(--primary); margin:0; }
+.vcard .gram{ font-size:12px; color:var(--text3); font-style:italic; }
+
+/* ---------- Switch ---------- */
+.sw{ display:flex; align-items:center; gap:8px; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; transition:background .2s; cursor:pointer; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .track::after{ transform:translateX(13px); }
+
+/* ---------- Divider with label ---------- */
+.divlabel{ display:flex; align-items:center; gap:16px; margin:24px 0; }
+.divlabel::before, .divlabel::after{ content:''; flex:1; height:1px; background:var(--divider); }
+.divlabel span{ font-size:14px; font-weight:600; color:var(--text2); padding:0 8px; }
+
+/* ---------- Alert / ProcessingIndicator ---------- */
+.alert{ display:flex; gap:12px; align-items:center; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:16px; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.spin{ width:18px; height:18px; border-radius:50%; border:2px solid rgba(80,138,252,.3); border-top-color:var(--info); animation:spin 1s linear infinite; flex-shrink:0; }
+.proc{ display:flex; align-items:center; gap:16px; padding:16px; border-radius:8px; background:var(--warning-lighter); margin-bottom:24px; font-size:14px; color:var(--warning-dark); }
+.proc .spin{ width:24px; height:24px; border-width:3px; border-color:#FFD666; border-top-color:#FFAB00; }
+
+/* ---------- Step 2 · Display Settings Accordion ---------- */
+.dsacc{ border:1px solid var(--divider); border-radius:8px; background:#fff; }
+.dsacc .sum{ display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:8px 16px; cursor:pointer; }
+.dsacc .sum .l{ display:flex; align-items:center; gap:8px; }
+.dsacc .sum .l .mi{ font-size:20px; color:var(--primary); }
+.dsacc .sum > .mi{ font-size:24px; color:var(--text2); }
+.dsacc .det{ padding:0 16px 16px; display:flex; gap:16px; flex-wrap:wrap; }
+.dsacc .det .field{ flex:1; min-width:180px; }
+
+/* ---------- Step 2 · Vocabulary Preview ---------- */
+.pv-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:24px; margin-bottom:32px; }
+.pv{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; transition:all .2s; }
+.pv:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.pv .hd{ margin-bottom:16px; }
+.pv .box{ display:flex; gap:24px; margin-bottom:24px; padding:16px; border-radius:16px; background:rgba(0,203,97,.05); border:2px solid rgba(0,203,97,.2); }
+.pv .box .col{ flex:1; min-width:0; }
+.pv .ov{ display:block; font-size:10.4px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--text2); line-height:1.5; }
+.pv .w{ font-size:20px; font-weight:700; }
+.pv .p{ font-size:18px; font-weight:700; color:var(--text2); }
+.pv .t{ font-size:18px; font-weight:700; color:var(--primary); }
+.pv .box .wcol{ display:flex; align-items:center; gap:8px; }
+.play{ border:0; background:transparent; border-radius:50%; color:var(--success); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.play.lg{ width:48px; height:48px; } .play.lg .mi{ font-size:32px; }
+.play.sm{ width:34px; height:34px; } .play.sm .mi{ font-size:24px; }
+.play:hover{ background:rgba(34,197,94,.08); }
+.pv .tags{ display:flex; flex-direction:column; gap:4px; }
+.pv .exs{ display:flex; gap:16px; }
+.pv .exs .ex{ flex:1; padding:16px; border-radius:8px; background:var(--grey200); border:1px solid var(--divider); }
+.pv .ex .lbl{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pv .ex .lbl .lt{ font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2); }
+.pv .ex .s{ font-size:14px; font-weight:500; margin-bottom:4px; }
+.pv .ex .py{ font-size:12px; color:var(--text2); display:block; margin-bottom:4px; }
+.pv .ex .tr{ font-size:12px; color:var(--primary); display:block; }
+.pv .imgph{ max-width:280px; }
+
+/* ---------- Step 3 ---------- */
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card + .card{ margin-top:8px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.dt{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-size:12.8px;
+  width:190px; font-family:inherit; color:var(--text); cursor:pointer; background:#fff; }
+.opt-chip{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+.iconbtn{ width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--primary);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.iconbtn:hover{ background:rgba(0,203,97,.08); }
+
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+
+/* ---------- ProcessingDialog ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center;
+  justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:24px; overflow:hidden; width:100%; max-width:600px; }
+.dlg .bar{ height:4px; background:#D3FCD2; position:relative; overflow:hidden; }
+.dlg .bar::after{ content:''; position:absolute; inset:0 60% 0 0; background:#22C55E; animation:sl 1.6s infinite ease-in-out; }
+@keyframes sl{ 0%{ transform:translateX(-100%);} 100%{ transform:translateX(260%);} }
+.dlg .body{ text-align:center; padding:40px 24px; }
+.dlg h5{ font-size:20px; font-weight:700; margin-bottom:4px; }
+.dlg .pipe{ display:flex; justify-content:center; align-items:flex-start; margin:32px 16px; }
+.dlg .pipe .st{ width:120px; display:flex; flex-direction:column; align-items:center; }
+.dlg .pipe .dot{ width:40px; height:40px; border-radius:50%; background:var(--primary); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+.dlg .pipe .st.todo .dot{ background:var(--grey300); color:#C4CDD5; }
+.dlg .pipe .cl{ font-size:12px; font-weight:700; color:var(--primary); }
+.dlg .pipe .st.todo .cl{ color:var(--text3); }
+.dlg .pipe .ln{ flex:1; height:3px; margin-top:20px; border-radius:2px; background:var(--primary); }
+.dlg .pipe .ln.todo{ background:var(--grey300); }
+.dlg .note{ background:#F0FDF4; border-radius:16px; padding:20px; margin-bottom:24px; display:flex; gap:16px; align-items:center; text-align:left; }
+.dlg .note .circ{ width:48px; height:48px; border-radius:50%; background:#DCFCE7; color:#10B981;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+/* ---------- 基準檔的說明條（不是產品的一部分） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#212B36; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; color:#fff; text-decoration:none; } .baseline .bl-home .mi{ font-size:14px; }   /* 回 Versions & Iteration index */
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; }
+  .main{ padding:88px 16px; }
+}
+@media (max-width:900px){ .stepper .step-label{ display:none; } .pv-grid{ grid-template-columns:1fr; } }
+/* ---------- Quiz 自己的兩步（照 sx） ---------- */
+.btn.outlined{ background:transparent; border:1px solid var(--divider); color:var(--text); }
+.btn.outlined:hover{ background:var(--grey200); }
+.btn.sm{ padding:4px 12px; font-size:13px; border-radius:8px; }
+.btn.xs{ padding:2px 8px; font-size:12px; display:inline-flex; align-items:center; gap:4px; border-radius:8px; }
+.sw.sm .track{ width:28px; height:16px; } .sw.sm .track::after{ width:12px; height:12px; } .sw.sm.on .track::after{ transform:translateX(12px); }
+.qt-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.qt-card{ display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--divider); border-radius:8px; }
+.qt-ic{ width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex:none; } .qt-ic .mi{ font-size:20px; }
+.qt-tx{ flex:1; min-width:0; }
+.qt-lb{ font-size:.8rem; font-weight:700; display:flex; align-items:center; gap:6px; }
+.qt-adv{ height:18px; padding:0 6px; border-radius:9px; background:#FEF3C7; color:#92400E; font-size:.6rem; font-weight:700; display:inline-flex; align-items:center; }
+.qt-desc{ font-size:.65rem; color:var(--text3); }
+.mtbl-wrap{ border:1px solid var(--divider); border-radius:8px; overflow:auto; margin-bottom:16px; }
+.mtbl{ width:100%; border-collapse:collapse; font-size:13px; }
+.mtbl th, .mtbl td{ padding:6px 8px; border-bottom:1px solid var(--divider); text-align:center; vertical-align:middle; }
+.mtbl th{ font-weight:600; font-size:12px; }
+.mth{ display:flex; flex-direction:column; align-items:center; gap:2px; } .mth span:first-child{ font-size:11px; font-weight:600; }
+.mrow{ display:flex; align-items:center; gap:8px; text-align:left; } .mrow b{ display:block; font-size:14px; font-weight:600; } .mrow i{ display:block; font-style:normal; font-size:12px; color:var(--text2); }
+.cb{ display:inline-flex; color:var(--text3); cursor:pointer; } .cb .mi{ font-size:22px; } .cb.on{ color:var(--primary); } .cb.dis{ opacity:.35; cursor:default; }
+.alert.warn{ background:var(--warning-lighter); color:var(--warning-dark); }
+.mcq-list{ display:flex; flex-direction:column; gap:12px; }
+.mcq{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:12px 16px; cursor:grab; }
+.mcq-hd{ display:flex; align-items:center; gap:8px; } .mcq-hd .drag{ color:var(--text3); font-size:20px; }
+.chip.primary.filled{ background:var(--primary); color:#fff; border-color:var(--primary); }
+.iconbtn.err{ color:var(--error); }
+.mcq-bd{ margin-top:12px; padding-left:28px; display:flex; gap:16px; align-items:flex-start; }
+.mc-img{ width:120px; height:90px; border-radius:6px; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center; color:#8AA69A; flex:none; } .mc-img .mi{ font-size:28px; }
+.mc-audio{ width:48px; height:48px; border:0; border-radius:50%; background:transparent; color:#22C55E; cursor:pointer; flex:none; } .mc-audio .mi{ font-size:40px; }
+.mc-opts{ flex:1; display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.mc-opt{ padding:6px 8px; border-radius:4px; border:1.5px solid var(--divider); font-size:14px; }
+.mc-opt.ok{ border-color:var(--success); background:rgba(34,197,94,.08); color:#118D57; font-weight:700; }
+.dashbtn{ margin-top:16px; width:100%; padding:12px; border:2px dashed var(--divider); border-radius:8px; background:transparent; font-family:inherit; font-size:15px; font-weight:600; color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+.dashbtn .mi{ font-size:20px; }
+.scrim2{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center; justify-content:center; z-index:60; }
+.dlg2{ background:#fff; border-radius:12px; width:100%; max-width:444px; padding:16px 24px 8px; }
+.dlg2-t{ font-size:18px; font-weight:700; padding:8px 0 16px; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo">
+    <img src="../../assets/dh_single.png" alt="Dahua.ai">
+    <b>Dahua<i>.ai</i></b>
+  </div>
+  <nav class="nav">
+    <div class="grp">
+      <div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
+    </div>
+    <div class="grp">
+      <div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a>
+    </div>
+    <div class="grp">
+      <div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a>
+    </div>
+    <div class="grp">
+      <div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a>
+    </div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr">
+    <div class="acct"><div class="av">L</div></div>
+  </div>
+
+  <div class="main">
+<div class="container">
+
+  <!-- `New ${getTypeLabel(VOCABULARY, MULTIPLE_CHOICE)}` = New Vocabulary Quiz -->
+  <div class="h4">New Vocabulary Quiz</div>
+
+  <!-- STEPS_BY_TYPE[VOCABULARY] = ['Vocabulary', 'Settings', 'Assign Practice'] -->
+  <div class="stepper" id="stepper"></div>
+
+  <div class="content" id="content"></div>
+
+  <div class="footer">
+    <button class="btn text" id="back">Back</button>
+    <button class="btn contained" id="next">Next</button>
+  </div>
+</div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" style="display:none">
+  <div class="dlg">
+    <div class="bar"></div>
+    <div class="body">
+      <h5>Generating audio...</h5>
+      <div class="cap" style="margin-bottom:32px">This may take a few moments.</div>
+      <div class="pipe">
+        <div class="st"><div class="dot"><span class="mi">auto_awesome</span></div><div class="cl">Analyzing</div></div>
+        <div class="ln"></div>
+        <div class="st"><div class="dot"><span class="mi">record_voice_over</span></div><div class="cl">Generating</div></div>
+        <div class="ln todo"></div>
+        <div class="st todo"><div class="dot"><span class="mi">check_circle</span></div><div class="cl">Finalizing</div></div>
+      </div>
+      <div class="note">
+        <div class="circ"><span class="mi">record_voice_over</span></div>
+        <div>
+          <div class="sub2">Creating audio, pinyin &amp; translations</div>
+          <div class="cap">We&rsquo;re generating natural voice audio for each sentence in your practice.</div>
+        </div>
+      </div>
+      <div class="cap dis">Please don&rsquo;t close this page</div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準檔</b>　現行產品複刻 · dahua-dash <code>origin/develop</code> @ 3e821fa4</span>
+  <span>
+    <a href="?step=0&amp;empty=1" id="l0e">1 未選</a> ·
+    <a href="?step=0" id="l0">1 Vocabulary</a> ·
+    <a href="?step=0&amp;gen=1" id="l0g">1 Generating</a> ·
+    <a href="?step=0&amp;loaded=1" id="l0l">1 已載入</a> ·
+    <a href="?step=1" id="lq">2 Question Types</a> ·
+    <a href="?step=1&amp;adv=1" id="lqa">2 Advanced</a> ·
+    <a href="?step=1&amp;adv=1&amp;zero=1" id="lqz">2 沒選</a> ·
+    <a href="?step=2" id="l2">3 Settings</a> ·
+    <a href="?step=2&amp;add=1" id="l2d">3 Add Question</a> ·
+    <a href="?step=3" id="l3">4 Assign</a> ·
+    <a href="?step=3&amp;assigned=1" id="l3a">4 已指派</a>
+  </span>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   假資料：照著 dahua-dash-dev 上的樣子捏的。專案「我的一天」zh-CN · HSK 2，
+   六個詞 ＋ 一個文法點（一……就）。文法點在產品裡是 teachingPointType GRAMMAR，
+   預設 examplesOnly → 卡片上只印斜體小字 ＋ Read Sentences Only 開關。
+   --------------------------------------------------------------------------- */
+const S = {
+  step:0, empty:false, gen:false, loaded:false, img:'SHOW', banner:false, assigned:false, dlg:false,
+  projects:['我的一天'],
+  practiceName:'我的一天',
+  pinyin:'PINYIN', translation:'STUDENT_CHOICE',
+  speed:'0.8', voice:'Xiaorou (Female)', attempts:3,
+  open:null,
+};
+
+/* Autocomplete 的候選：hasVocabularyData() 只留 splitArticleArray 裡有中文字的專案。
+   每列右邊那個數字是 teachingPointMeta + vocabHandlerResult 加起來的詞數。 */
+const PROJECTS = [
+  ['我的一天','zh-CN','HSK 2', 7],
+  ['环境保护与可持续发展','zh-CN','HSK 4', 12],
+  ['餐厅点餐（对话）','zh-CN','HSK 3', 0],
+];
+
+const WORDS = [
+  { w:'起床', py:'qǐ chuáng', tr:'get up', pos:'verb', type:'VERB',
+    ex:[['我每天七点起床。','wǒ měi tiān qī diǎn qǐ chuáng.','I get up at seven every day.'],
+        ['周末我起床很晚。','zhōu mò wǒ qǐ chuáng hěn wǎn.','On weekends I get up late.']] },
+  { w:'早饭', py:'zǎo fàn', tr:'breakfast', pos:'noun', type:'NOUN',
+    ex:[['我早饭吃面包。','wǒ zǎo fàn chī miàn bāo.','I eat bread for breakfast.'],
+        ['你吃早饭了吗？','nǐ chī zǎo fàn le ma?','Have you had breakfast?']] },
+  { w:'上课', py:'shàng kè', tr:'attend class', pos:'verb', type:'VERB',
+    ex:[['我八点上课。','wǒ bā diǎn shàng kè.','I have class at eight.'],
+        ['今天我们不上课。','jīn tiān wǒ men bù shàng kè.','We do not have class today.']] },
+  { w:'图书馆', py:'tú shū guǎn', tr:'library', pos:'noun', type:'NOUN',
+    ex:[['下午我去图书馆看书。','xià wǔ wǒ qù tú shū guǎn kàn shū.','In the afternoon I go to the library to read.'],
+        ['图书馆里很安静。','tú shū guǎn lǐ hěn ān jìng.','It is very quiet in the library.']] },
+  { w:'运动', py:'yùn dòng', tr:'exercise', pos:'verb', type:'WORD',
+    ex:[['我喜欢晚上运动。','wǒ xǐ huan wǎn shang yùn dòng.','I like to exercise in the evening.'],
+        ['运动对身体很好。','yùn dòng duì shēn tǐ hěn hǎo.','Exercise is good for the body.']] },
+  { w:'睡觉', py:'shuì jiào', tr:'sleep', pos:'verb', type:'VERB', hidden:true,
+    ex:[['我十一点睡觉。','wǒ shí yī diǎn shuì jiào.','I go to sleep at eleven.'],
+        ['睡觉前我看一会儿书。','shuì jiào qián wǒ kàn yí huìr shū.','I read for a while before sleeping.']] },
+  { w:'一……就', py:'yī … jiù', tr:'as soon as', pos:'', type:'GRAMMAR', examplesOnly:true,
+    ex:[['我一起床就喝水。','wǒ yì qǐ chuáng jiù hē shuǐ.','I drink water as soon as I get up.'],
+        ['他一下课就回家。','tā yí xià kè jiù huí jiā.','He goes home as soon as class ends.']] },
+];
+/* TEACHING_POINT_TYPE_LABEL（enum/projects.js） */
+const TYPE_LABEL = { WORD:'Word / Vocabulary', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adjective',
+  GRAMMAR:'Grammar / Structure', PHRASE:'Phrase / Idiom', MEASURE_WORD:'Measure Word', OTHER:'Other' };
+const NON_WORD = new Set(['GRAMMAR','PHRASE','OTHER']);
+
+const STEPS = ['Vocabulary','Question Types','Settings','Assign Practice'];   // VOCABULARY_MC_STEPS
+
+/* SPEED_OPTIONS ＋ SPEED_PREFERENCES.STUDENT_CHOICE（allowStudentChoice 在 Vocabulary 是開的） */
+const SPEEDS = [['STUDENT_CHOICE','Student choice'],['1','Fast'],['0.8','Normal'],['0.6','Slow']];
+/* getVoiceList('zh-CN') 只回 SIMPLIFIED 那組四個 */
+const VOICES = ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'];
+/* DisplaySettingsAccordion 直接 Object.entries(ENUM)，老師看到的就是這些值 */
+const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];
+const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];
+const IMAGES = ['SHOW','HIDE'];
+
+/* ---------- 讀網址 ---------- */
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(3, Math.max(0, parseInt(qs.get('step') ?? '0', 10) || 0));
+S.adv = qs.get('adv') === '1';       // Question Types：Advanced（逐字矩陣）
+S.zero = qs.get('zero') === '1';     // 一個題型都沒選
+S.add = qs.get('add') === '1';       // Add Question 對話框
+S.qcount = 12;
+S.empty = qs.get('empty') === '1';
+S.gen = qs.get('gen') === '1';
+S.loaded = qs.get('loaded') === '1' || S.step > 0;
+S.banner = qs.get('banner') === '1';
+S.assigned = qs.get('assigned') === '1';
+S.dlg = qs.get('dlg') === '1';
+if (qs.get('img') === '0') S.img = 'HIDE';
+if (S.empty) S.projects = [];
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+const practiceReady = () => S.gen || S.loaded;   // Boolean(practice?.id)
+
+/* ---------- Stepper ---------- */
+function renderStepper(){
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const dot = i < S.step ? '<span class="mi" style="font-size:16px">check</span>' : (i + 1);
+    return (i ? '<div class="step-line"></div>' : '') +
+      `<div class="step ${cls}"><div class="step-dot">${dot}</div><div class="step-label">${label}</div></div>`;
+  }).join('');
+}
+
+/* ---------- 共用：select ---------- */
+function select({ id, label, value, options, disabled, width, helper, small }){
+  const cur = options.find(o => (Array.isArray(o) ? o[0] : o) === value);
+  const text = Array.isArray(cur) ? cur[1] : (cur ?? value);
+  return `<div class="field ${disabled ? 'dis' : ''} ${small ? 'sm' : ''}" style="${width ? 'width:' + width : ''}">
+    <label>${label}</label>
+    <div class="ctrl" ${disabled ? '' : `data-menu="${id}"`}>
+      <span>${esc(text)}</span><span class="mi caret">arrow_drop_down</span>
+    </div>
+    ${helper ? `<div class="helper">${helper}</div>` : ''}
+    ${S.open === id ? `<div class="menu">${options.map(o => {
+      const v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
+      const play = (id === 'speed' && v !== 'STUDENT_CHOICE') || id === 'voice'
+        ? `<button class="play"><span class="mi" style="font-size:18px">play_arrow</span></button>` : '';
+      return `<div class="opt ${v === value ? 'sel' : ''}" data-pick="${id}" data-val="${esc(v)}">${play}<span>${esc(t)}</span></div>`;
+    }).join('')}</div>` : ''}
+  </div>`;
+}
+
+const imgph = (w) => `<div class="imgph"><span class="mi">image</span>${esc(w)}</div>`;
+
+/* =====================================================================
+   Step 1 · Vocabulary（step-one-vocabulary.js）
+   practice 不存在時：Autocomplete ＋ Teaching Points Preview ＋ Load Content。
+   按下 Load Content → ensurePracticeCreated → status GENERATING →
+   VocabularyDisplaySection 先顯示 VocabularyLoadingState，完成後換成生詞卡；
+   Autocomplete 從此 disabled（isPracticeReady）。Next 在 practice 存在前是 disabled。
+   ===================================================================== */
+function renderAutocomplete(){
+  const dis = practiceReady();
+  const tags = S.projects.map(p => `<span class="tagchip">${esc(p)}${dis ? '' : '<span class="mi">cancel</span>'}</span>`).join('');
+  const ph = S.projects.length ? '' : '<span class="ph">&nbsp;</span>';
+  return `<div class="field ac ${dis ? 'dis' : ''}" style="margin-bottom:16px">
+    <label>Pick projects to source vocabulary from</label>
+    <div class="ctrl" ${dis ? '' : 'data-menu="project"'}>
+      ${tags}${ph}
+      <span class="caret2">${S.projects.length && !dis ? '<span class="mi">close</span>' : ''}<span class="mi">arrow_drop_down</span></span>
+    </div>
+    ${S.open === 'project' ? `<div class="menu">${PROJECTS.map(p => {
+      const sel = S.projects.includes(p[0]);
+      return `<div class="opt ${sel ? 'sel' : ''}" data-pick="project" data-val="${esc(p[0])}">
+        <span>${esc(p[0])}</span><span class="chip-lang">${p[1]}</span><span class="chip-lvl">${p[2]}</span>
+        <span class="cnt ${p[3] ? '' : 'err'}">${p[3] ? p[3] + ' words' : 'No teaching points'}</span>
+      </div>`;
+    }).join('')}</div>` : ''}
+  </div>`;
+}
+
+function renderTeachingPoints(){
+  return S.projects.map(name => {
+    const proj = PROJECTS.find(p => p[0] === name);
+    const points = name === '我的一天' ? WORDS.map(w => w.w) : Array.from({ length: proj[3] }, (_, i) => `词${i + 1}`);
+    return `<div class="tp-card">
+      <div class="hd"><span class="mi">folder</span><span class="sub2">${esc(name)}</span>
+        <span class="chip sm primary">${points.length} teaching points</span></div>
+      <div class="bd">${points.length
+        ? points.map(t => `<span class="chip">${esc(t)}</span>`).join('')
+        : '<span class="body2" style="color:var(--text2)">No teaching points. You can add words after generating.</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderVocabCard(v){
+  const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+  const head = isRO
+    ? `<div class="gram">${esc(v.w)}${v.py ? ` (${esc(v.py)})` : ''}</div>`
+    : `<div class="word">${esc(v.w)}</div><div class="py">${esc(v.py)}</div><div class="tr">${esc(v.tr)}</div>`;
+  const tags = [
+    v.pos ? `<span class="chip sm">${esc(v.pos)}</span>` : '',
+    v.type ? `<span class="chip sm ${NON_WORD.has(v.type) ? 'secondary' : ''}">${TYPE_LABEL[v.type]}</span>` : '',
+    `<span class="chip sm info">HSK 2</span>`,
+  ].join('');
+  const ro = ''; const _roMirroring = NON_WORD.has(v.type) ? `<div class="ro">
+      <div style="line-height:1.2"><div class="sub2" style="line-height:1.3">Read Sentences Only</div>
+        <div class="cap" style="line-height:1.2">Students will only read the example sentences below</div></div>
+      <div class="sw ${isRO ? 'on' : ''}"><span class="track"></span></div>
+    </div>` : '';
+  const img = v.type === 'GRAMMAR' ? '' : imgph(v.w) + '<div class="thumbs"><i class="sel"></i><i></i><i></i><i></i></div>';
+  return `<div class="vcard ${v.hidden ? 'hidden' : ''}">
+    <div class="acts">
+      <button class="ib edit" title="Edit examples"><span class="mi">edit</span></button>
+      <button class="ib eye ${v.hidden ? 'off' : ''}" title="${v.hidden ? 'Show to students' : 'Hide from students'}"><span class="mi">${v.hidden ? 'visibility_off' : 'visibility'}</span></button>
+    </div>
+    ${img}
+    ${head}
+    <div class="tags" style="margin-top:${isRO ? 0 : 16}px">${tags}</div>
+    ${ro /* isVocabMC：showReadModes={false}，Read Sentences Only 不出現 */}
+    ${v.ex.map((e, i) => `<div class="ex">
+      <span class="c"><strong>例句 ${i + 1}:</strong> ${esc(e[0])}</span>
+      <span class="c py">${esc(e[1])}</span>
+      <span class="c tr">${esc(e[2])}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderStep0(){
+  const ac = renderAutocomplete();
+
+  if (S.gen) {
+    // VocabularyLoadingState（practice.status === 'GENERATING'）。
+    // 注意：ProcessingDialog 在 step 0 不會開（activeStep > 0 才開），所以第一步是這個 inline 狀態。
+    return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}
+      <div class="loading">
+        <div class="orb"><span class="mi">autorenew</span></div>
+        <div class="h6">Generating vocabulary content...</div>
+        <div class="body2" style="color:var(--text2); max-width:400px; margin:0 auto">This may take a few moments. Please wait while we prepare your vocabulary content.</div>
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="skel-grid">${[0,1,2].map(() => `<div class="skel-card">
+          <div class="skel" style="height:120px; margin-bottom:16px"></div>
+          <div class="skel" style="height:24px; width:70%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:60%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:80%"></div></div>`).join('')}</div>
+      </div>`;
+  }
+
+  if (S.loaded) {
+    const total = WORDS.length;
+    return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}
+      <div style="margin-top:16px">
+        <div class="h5" style="margin-bottom:24px">Vocabulary Content</div>
+        <div class="acc">
+          <div class="sum">
+            <div class="l"><span class="mi">folder</span><span class="h6">我的一天</span><span class="chip sm primary">${total} vocabs</span></div>
+            <div class="r">
+              <button class="btn success"><span class="mi">add</span>Add Vocab<span class="mi">expand_more</span></button>
+              <span class="mi">expand_less</span>
+            </div>
+          </div>
+          <div class="det">${WORDS.map(renderVocabCard).join('')}</div>
+        </div>
+      </div>`;
+  }
+
+  const body = S.projects.length === 0
+    ? `<div class="body2" style="color:var(--text2)">Pick at least one project to preview teaching points.</div>`
+    : `<div style="margin-bottom:16px">
+        <div class="sub1" style="font-weight:700; margin-bottom:4px">Teaching Points Preview</div>
+        <div class="body2" style="color:var(--text2); margin-bottom:16px">Review the teaching points that will be used to generate vocabulary.</div>
+        ${renderTeachingPoints()}
+        <div class="genbar">
+          <span class="body2" style="color:var(--text2)">Content will be loaded from the selected project.</span>
+          <button class="btn contained" id="loadbtn">Load Content</button>
+        </div>
+      </div>`;
+
+  return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}${body}`;
+}
+
+/* =====================================================================
+   Step 2 · Settings（vocabulary-step-three-section.js）
+   Practice Name → Divider「Practice Config」→ ProcessingIndicator →
+   DisplaySettingsAccordion（Pinyin / Translation / Image）→ AudioSettingsPanel →
+   MaxAttemptsField → Divider「Vocabulary Preview」→ 兩欄生詞卡。
+   ===================================================================== */
+function renderPreviewCard(v){
+  const showPy = S.pinyin === 'PINYIN';          // showPinyin = pinyinPreference === PINYIN
+  const showTr = S.translation === 'SHOW';       // showTranslation = translationPreference === SHOW
+  const img = (S.img === 'SHOW' && v.type !== 'GRAMMAR') ? imgph(v.w) : '';
+  return `<div class="pv">
+    <div class="hd"><span class="chip sm primary">我的一天</span></div>
+    ${img}
+    <div class="box">
+      <div class="col wcol"><div style="flex:1"><span class="ov">Vocabulary</span><div class="w">${esc(v.w)}</div></div>
+        <button class="play lg"><span class="mi">play_circle</span></button></div>
+      ${showPy ? `<div class="col"><span class="ov">Pinyin</span><div class="p">${esc(v.py)}</div></div>` : ''}
+      ${showTr ? `<div class="col"><span class="ov">Translation</span><div class="t">${esc(v.tr)}</div></div>` : ''}
+      <div class="tags">${v.pos ? `<span class="chip sm">${esc(v.pos)}</span>` : ''}<span class="chip sm info">HSK 2</span></div>
+    </div>
+    <div class="exs">${v.ex.map((e, i) => `<div class="ex">
+      <div class="lbl"><span class="lt">Example ${i + 1}</span><button class="play sm"><span class="mi">play_circle</span></button></div>
+      <div class="s">${esc(e[0])}</div>
+      ${showPy ? `<span class="py">${esc(e[1])}</span>` : ''}
+      ${showTr ? `<span class="tr">${esc(e[2])}</span>` : ''}
+    </div>`).join('')}</div>
+  </div>`;
+}
+
+/* =====================================================================
+   Step 2 · Question Types（vocabulary-mc-question-types-step.js）
+   標題 Choose Question Types；Question Configuration ＋ 「N questions · M words」chip；
+   Random（一個數字，系統隨機分配題型）／ Advanced（八張題型卡各一顆 Switch ＋ 逐字矩陣）。
+   圖片題型（Image → Chinese / Pinyin）在圖還沒好的字上 disabled，tooltip「No image yet — generated once available」。
+   ===================================================================== */
+const MC_TYPES = [
+  ['VOCAB_MC_CN_TO_EN','Chinese → Translation','translate','#2563EB','#EFF6FF','Pick the correct English word',false],
+  ['VOCAB_MC_IMAGE_TO_CN','Image → Chinese','image','#059669','#F0FDF4','See image, pick Chinese meaning',false],
+  ['VOCAB_MC_IMAGE_TO_PINYIN','Image → Pinyin','image','#D97706','#FFFBEB','See image, pick correct pinyin',true],
+  ['VOCAB_MC_EN_TO_CN','Translation → Chinese','translate','#7C3AED','#F5F3FF','Pick the correct Chinese meaning',false],
+  ['VOCAB_MC_EN_TO_PINYIN','Translation → Pinyin','translate','#2563EB','#EFF6FF','Pick the correct pinyin',true],
+  ['VOCAB_MC_AUDIO_TO_EN','Audio → Translation','volume_up','#059669','#F0FDF4','Listen, pick correct English',false],
+  ['VOCAB_MC_AUDIO_TO_CN','Audio → Chinese','volume_up','#E11D48','#FFF1F2','Listen, pick correct Chinese',false],
+  ['VOCAB_MC_AUDIO_TO_PINYIN','Audio → Pinyin','volume_up','#D97706','#FFFBEB','Listen, pick correct pinyin',true],
+];
+const IMAGE_TYPES = new Set(['VOCAB_MC_IMAGE_TO_CN','VOCAB_MC_IMAGE_TO_PINYIN']);
+// buildWordRows：pattern 類（GRAMMAR/PHRASE/OTHER）在生成前就被丟掉（isPatternVocabEntry），hidden 的也不列
+const QT_ROWS = () => WORDS.filter(v => !v.hidden && !NON_WORD.has(v.type)).map(v => ({ key:v.w, vocabulary:v.w, translation:v.tr, imageReady: v.w !== '运动' }));
+function renderStepQT(){
+  const rows = QT_ROWS();
+  const on = S.zero ? new Set() : new Set(MC_TYPES.map(t => t[0]));
+  const total = S.zero ? 0 : (S.adv ? rows.reduce((k, r) => k + MC_TYPES.filter(t => !(IMAGE_TYPES.has(t[0]) && !r.imageReady)).length, 0) : S.qcount);
+  const typeCards = MC_TYPES.map(([id, label, icon, color, bg, desc, adv]) => {
+    const isOn = on.has(id);
+    return `<div class="qt-card" style="border-color:${isOn ? color : 'var(--divider)'}; background:${isOn ? bg : '#fff'}">
+      <div class="qt-ic" style="background:${bg}; color:${color}"><span class="mi">${icon}</span></div>
+      <div class="qt-tx"><div class="qt-lb">${label}${adv ? '<span class="qt-adv">Advanced</span>' : ''}</div><div class="qt-desc">${desc}</div></div>
+      <div class="sw sm ${isOn ? 'on' : ''}"><span class="track"></span></div>
+    </div>`;
+  }).join('');
+  const matrix = `<div class="mtbl-wrap"><table class="mtbl">
+    <thead><tr><th style="text-align:left">Word</th>${MC_TYPES.map(t => `<th><div class="mth"><span>${t[1]}</span><span class="cb ${on.has(t[0]) ? 'on' : ''}" title="Apply to every word"><span class="mi">${on.has(t[0]) ? 'check_box' : 'check_box_outline_blank'}</span></span></div></th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => {
+      const cells = MC_TYPES.map(t => { const dis = IMAGE_TYPES.has(t[0]) && !r.imageReady; const chk = on.has(t[0]) && !dis;
+        return `<td><span class="cb ${chk ? 'on' : ''} ${dis ? 'dis' : ''}" title="${dis ? 'No image yet — generated once available' : ''}"><span class="mi">${chk ? 'check_box' : 'check_box_outline_blank'}</span></span></td>`; }).join('');
+      const nOn = MC_TYPES.filter(t => on.has(t[0]) && !(IMAGE_TYPES.has(t[0]) && !r.imageReady)).length;
+      const rowIc = nOn === MC_TYPES.length ? 'check_box' : nOn > 0 ? 'indeterminate_check_box' : 'check_box_outline_blank';
+      return `<tr><td><div class="mrow"><span class="cb ${nOn ? 'on' : ''}" title="${nOn === MC_TYPES.length ? 'Clear this word' : 'Select every type'}"><span class="mi">${rowIc}</span></span><span><b>${esc(r.vocabulary)}</b><i>${esc(r.translation)}</i></span></div></td>${cells}</tr>`;
+    }).join('')}</tbody></table></div>`;
+  return `
+    <div class="h6" style="margin-bottom:4px">Choose Question Types</div>
+    <div class="body2" style="color:var(--text2); margin-bottom:24px">Questions will be generated for each word based on the selected types.</div>
+    <div class="paper">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px">
+        <span class="sub1">Question Configuration</span>
+        <span class="chip sm ${total ? 'primary' : ''}" style="font-weight:600">${total} ${total === 1 ? 'question' : 'questions'} · ${rows.length} ${rows.length === 1 ? 'word' : 'words'}</span>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:20px">
+        <a class="btn ${S.adv ? 'outlined' : 'contained'} sm" href="?step=1">Random</a>
+        <a class="btn ${S.adv ? 'contained' : 'outlined'} sm" href="?step=1&amp;adv=1">Advanced</a>
+      </div>
+      ${S.adv ? `
+        <div class="body2" style="color:var(--text2); margin-bottom:16px">Toggle question types and customize per word.</div>
+        <div class="qt-grid">${typeCards}</div>
+        ${matrix}
+        ${S.zero ? '<div class="alert warn" style="margin:0"><span class="mi">warning_amber</span>No question types are selected, so this practice will have no questions.</div>' : ''}`
+      : `
+        <div class="body2" style="color:var(--text2); margin-bottom:16px">Enter the number of questions. The system will randomly assign question types across all words.</div>
+        <div class="field sm" style="width:200px"><label>Number of questions</label><div class="ctrl"><input type="number" min="1" max="${rows.length * 8}" value="${S.qcount}"><span class="mi caret" style="font-size:18px">expand_less</span></div></div>`}
+    </div>`;
+}
+
+/* =====================================================================
+   Step 3 · Settings（vocabulary-step-three-section.js 的 isMultipleChoice 分支）
+   只有 Practice Name ＋ McQuestionsPreview（editable：拖曳換順序、換題、刪除）＋ Add Question。
+   Display Settings／Audio Settings／Max attempts 全部在 !isMultipleChoice 裡——Quiz 沒有這些。
+   ===================================================================== */
+const MCQ = [
+  { t:'VOCAB_MC_CN_TO_EN', stem:['text','起床'], src:'起床', opts:[['A','get up',true],['B','breakfast'],['C','library'],['D','exercise']] },
+  { t:'VOCAB_MC_EN_TO_CN', stem:['text','breakfast'], src:'早饭', opts:[['A','上课'],['B','早饭',true],['C','图书馆'],['D','睡觉']] },
+  { t:'VOCAB_MC_AUDIO_TO_CN', stem:['audio'], src:'上课', opts:[['A','上课',true],['B','运动'],['C','起床'],['D','早饭']] },
+  { t:'VOCAB_MC_IMAGE_TO_CN', stem:['image'], src:'图书馆', opts:[['A','早饭'],['B','图书馆',true],['C','上课'],['D','运动']] },
+  { t:'VOCAB_MC_EN_TO_PINYIN', stem:['text','exercise'], src:'运动', opts:[['A','yùn dòng',true],['B','shàng kè'],['C','qǐ chuáng'],['D','tú shū guǎn']] },
+  { t:'VOCAB_MC_AUDIO_TO_EN', stem:['audio'], src:'起床', opts:[['A','library'],['B','sleep'],['C','get up',true],['D','attend class']] },
+];
+const MC_LABEL = Object.fromEntries(MC_TYPES.map(t => [t[0], t[1]]));
+function renderMcCard(q, i){
+  const stemHead = q.stem[0] === 'text' ? q.stem[1] : q.src;
+  const media = q.stem[0] === 'image' ? `<div class="mc-img"><span class="mi">image</span></div>`
+    : q.stem[0] === 'audio' ? `<button class="mc-audio" title="Play"><span class="mi">play_circle</span></button>` : '';
+  return `<div class="mcq" draggable="true">
+    <div class="mcq-hd">
+      <span class="mi drag">drag_indicator</span>
+      <span class="chip sm primary filled">Q${i + 1}</span>
+      <span class="chip sm">${MC_LABEL[q.t]}</span>
+      <span class="body2" style="font-weight:600; color:var(--text2)">${esc(stemHead)}</span>
+      <span style="flex:1"></span>
+      <button class="btn outlined xs"><span class="mi" style="font-size:16px">swap_horiz</span>Raffle</button>
+      <button class="iconbtn err" title="Delete question"><span class="mi">delete</span></button>
+    </div>
+    <div class="mcq-bd">${media}<div class="mc-opts">${q.opts.map(([l, v, ok]) => `<div class="mc-opt ${ok ? 'ok' : ''}"><strong>${l}.</strong> ${esc(v)} ${ok ? '✓' : ''}</div>`).join('')}</div></div>
+  </div>`;
+}
+function renderStep1(){
+  return `
+    <div style="margin-bottom:24px">
+      <div class="field" style="max-width:600px">
+        <label>Practice Name</label>
+        <div class="ctrl"><input type="text" value="${esc(S.practiceName)}"></div>
+      </div>
+    </div>
+    <div class="divlabel"><span>Multiple Choice Questions Preview (${MCQ.length} questions)</span></div>
+    <div class="body2" style="color:var(--text2); margin-bottom:16px">Drag a question onto another to reorder, or remove it with the delete button.</div>
+    <div class="mcq-list">${MCQ.map(renderMcCard).join('')}</div>
+    <button class="dashbtn"><span class="mi">add</span>Add Question</button>
+    ${S.add ? `<div class="scrim2"><div class="dlg2">
+      <div class="dlg2-t">Add Question</div>
+      <div class="body2" style="color:var(--text2); margin-bottom:16px">Select a vocabulary word. A random question type will be generated.</div>
+      ${select({ id:'addvocab', label:'Vocabulary', value:'起床 — get up', options:WORDS.filter(v => !v.hidden && !NON_WORD.has(v.type)).map(v => `${v.w} — ${v.tr}`) })}
+      <button class="btn contained" style="width:100%; margin-top:16px; margin-bottom:16px">Generate &amp; Add</button>
+    </div></div>` : ''}`;
+}
+
+/* =====================================================================
+   Step 3 · Assign Practice（step-three.js，八種練習共用，跟 v3 一樣）
+   ===================================================================== */
+function renderStep2(){
+  const list = S.assigned ? `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+        <div style="min-width:0">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="sub2">Chinese 3B</span><span class="opt-chip">Required</span>
+          </div>
+          <div class="cap dis" style="margin-top:2px">12 students · assigned 2 hours ago</div>
+          <div class="cap" style="margin-top:4px">陳小明, 林佳蓉, 王大衛, 張怡君, 李承恩, 吳宜庭, 黃柏翰, 劉映彤, 蔡宗翰, 鄭雅文, 許博涵, 楊子萱</div>
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:8px">
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+            <span class="cap">Start</span><input class="dt" type="datetime-local" value="2026-09-10T08:00">
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+            <span class="cap">Due</span><input class="dt" type="datetime-local" value="2026-09-17T23:59">
+          </div>
+          <button class="btn contained sm">Edit</button>
+          <button class="btn outerr sm">Cancel</button>
+        </div>
+      </div>
+    </div>` : `<div class="card empty">No classes assigned yet.</div>`;
+
+  return `
+    <div class="row" style="margin-bottom:16px">
+      <span class="sub1">Assigned students</span>
+      <button class="btn contained"><span class="mi" style="font-size:20px">add_circle_outline</span>Assign Practice</button>
+    </div>
+    ${list}`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStepQT, renderStep1, renderStep2][S.step]();
+
+  const back = el('back'), next = el('next');
+  back.classList.toggle('dis', S.step === 0);
+  if (S.step === 3) { next.textContent = 'Done'; }
+  else { next.textContent = S.step === 2 ? 'Save' : 'Next'; }   // resolvePrimaryActionLabel：倒數第二步 Save
+  // disabled={ … || (activeStep === 0 && isVocab && mode === 'CREATE' && !effectiveId) }
+  next.classList.toggle('dis', S.step === 0 && !S.loaded);
+
+  el('scrim').style.display = S.dlg ? 'flex' : 'none';
+
+  ['l0e','l0','l0g','l0l','lq','lqa','lqz','l2','l2d','l3','l3a'].forEach(id => el(id).classList.remove('cur'));
+  const key = S.step === 0 ? (S.gen ? 'l0g' : S.loaded ? 'l0l' : S.empty ? 'l0e' : 'l0')
+    : S.step === 1 ? (S.zero ? 'lqz' : S.adv ? 'lqa' : 'lq')
+    : S.step === 2 ? (S.add ? 'l2d' : 'l2')
+    : (S.assigned ? 'l3a' : 'l3');
+  el(key).classList.add('cur');
+}
+
+/* ---------- 互動 ---------- */
+document.addEventListener('click', (e) => {
+  const menu = e.target.closest('[data-menu]');
+  const pick = e.target.closest('[data-pick]');
+
+  if (e.target.closest('.play')) { e.stopPropagation(); return; }
+  if (e.target.closest('#loadbtn')) { S.gen = true; S.empty = false; render(); return; }
+
+  if (pick){
+    const id = pick.dataset.pick, val = pick.dataset.val;
+    if (id === 'project') {
+      // Autocomplete multiple：點一下切換勾選；第一個選到的專案會被拿去當 practiceName
+      S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+      S.empty = S.projects.length === 0;
+      if (S.projects.length && !S.practiceName) S.practiceName = S.projects[0];
+      render(); return;                    // 多選：選單不關
+    }
+    if (id === 'pinyin') S.pinyin = val;
+    if (id === 'translation') S.translation = val;
+    if (id === 'image') S.img = val;
+    if (id === 'speed') S.speed = val;
+    if (id === 'voice') S.voice = val;
+    S.open = null; render(); return;
+  }
+  if (menu){ S.open = S.open === menu.dataset.menu ? null : menu.dataset.menu; render(); return; }
+  if (S.open !== null){ S.open = null; render(); }
+});
+
+el('back').addEventListener('click', () => { if (S.step > 0){ S.step -= 1; S.open = null; render(); } });
+el('next').addEventListener('click', () => {
+  if (S.step === 0 && !S.loaded) return;   // Please load vocabulary content before continuing.
+  if (S.step < 3){ S.step += 1; S.open = null; render(); }
+});
+el('scrim').addEventListener('click', () => { S.dlg = false; render(); });
+
+render();
+</script>
+</body>
+</html>

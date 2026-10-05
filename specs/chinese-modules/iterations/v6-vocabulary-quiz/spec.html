@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v6 — 優化 Practice-Vocabulary Quiz · Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    td .cap { display: block; margin-top: 2px; }
+    /* 學生端排版示意（照 card-stack.js 的 sx 縮小畫） */
+    .stu { background:#E8EEF4; border-radius:12px; padding:28px 24px; margin:12px 0 8px; display:flex; justify-content:center; }
+    .stack { position:relative; width:420px; height:250px; }
+    .stack .c { position:absolute; left:0; top:0; width:420px; height:210px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .stack .c.b2 { transform:translate(12px,12px); z-index:1; }
+    .stack .c.b1 { transform:translate(6px,6px); z-index:2; }
+    .stack .c.f { z-index:3; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; overflow:hidden; }
+    .stack .img { width:50%; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center; color:#8AA69A; font-size:12px; }
+    .stack .txt { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; position:relative; }
+    .stack .txt .spk { position:absolute; top:8px; right:8px; color:#637381; font-size:12px; }
+    .stack .py { font-size:15px; color:#637381; }
+    .stack .w { font-size:30px; font-weight:600; color:#212B36; line-height:1.3; }
+    .stack .tr { font-size:12px; color:#637381; margin-top:12px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v6 · 優化 Vocabulary Quiz</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#flow">2 · 現況：四步走完</a></li>
+        <li><a href="#types">3 · 第二步 Question Types</a></li>
+        <li><a href="#settings">4 · 第三步 Settings</a></li>
+        <li><a href="#student">5 · 學生端：一題一張卡</a></li>
+        <li><a href="#issues">6 · 查到的問題</a></li>
+        <li><a href="#open">7 · 待決事項</a></li>
+        <li><a href="#base">8 · 基準檔</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v6 — 優化 Practice-Vocabulary Quiz</h1>
+        <p class="subtitle">Vocabulary Quiz 的建立流程是四步：Vocabulary → Question Types → Settings → Assign Practice。第一步跟 Vocabulary Mirroring 是同一支檔案、第四步八種共用，
+        這張卡自己的是中間兩步。§2–§5 是現況與學生端，§6 是查到的問題，§7 是待決事項。<strong>登記完等使用者說要改哪裡，還沒有提案。</strong></p>
+        <div class="meta">
+          <span>2026-09-17</span>
+          <span>分岔自 v4（第一步、第四步沿用）</span>
+          <span>程式碼基準 origin/develop @ 3e821fa4</span>
+          <span>狀態：已登記</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+      <p>New Practice → <strong>Vocabulary Quiz</strong>（Choose Practice Type 的第四張卡；<code>?type=VOCABULARY&amp;subType=MULTIPLE_CHOICE</code>）這條建立流程。
+      跟 Vocabulary Mirroring 共用 <code>step-one-vocabulary.js</code>（差別只有 <code>isVocabMC</code> 時不出現 Read Sentences Only），共用 <code>vocabulary-step-three-section.js</code>（但走 <code>isMultipleChoice</code> 分支，內容完全不同），共用 Assign。</p>
+      <div class="formula">// practice-stepper-config.js @ 3e821fa4
+VOCABULARY_MC_STEPS = ['Vocabulary', 'Question Types', 'Settings', 'Assign Practice']
+getStepsForType(VOCABULARY, isVocabMC = true) → 上面這四步（Mirroring 是三步）
+
+// practice-unified-view.js
+isVocabMC      = isVocab && isMultipleChoiceType(vocabSubType)
+mcTypesStepIdx = 1
+// 第一步按 Next 建 practice 時 vocabSubType 先不送（null）——
+// Multiple Choice 在第二步按 Next 時才連同 mcQuestionTypeSelection 一起 patch，生成只跑一次</div>
+      <p><strong>已經定下來、可以直接套的</strong>（見 <a class="inline" href="../shared-practice-changes.html">共用改動 spec</a>）：S1 名稱搬第一步、S2 第一步的元件（v4 的第一步做完它就有）、S8 Assign、S9 頁腳與捲動。
+      <strong>不適用的</strong>：S3–S7——它的 Settings 步沒有顯示／音檔設定。</p>
+      <p><strong>沿用 v4 的</strong>：假資料（我的一天，六個字 ＋ 一個文法點）、第一步的基準複刻、Assign 的基準複刻。</p>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="flow"><span class="num">2</span> 現況：四步走完</h2>
+      <table>
+        <thead><tr><th style="width:150px">步</th><th>畫面上有什麼</th><th style="width:260px">出處</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 Vocabulary</b></td><td>跟 Vocabulary Mirroring 一模一樣：Autocomplete 多選專案、Teaching Points Preview、Load Content → 生詞卡（編輯／隱藏／選圖／Add Vocab）。<strong>少了 Read Sentences Only</strong>（<code>showReadModes={!isVocabMC}</code>）。Next 在 practice 存在前是灰的。</td><td><code>step-one-vocabulary.js</code>、<code>vocabulary-display-section.js</code></td></tr>
+          <tr><td><b>2 Question Types</b></td><td>標題 <em>Choose Question Types</em>；Paper 裡 <em>Question Configuration</em> ＋ 右上 chip <code>N questions · M words</code>；兩顆模式鈕 <em>Random</em>／<em>Advanced</em>。Random：一個 <em>Number of questions</em> 數字欄（上限 字數 × 8）。Advanced：八張題型卡各一顆 Switch ＋ 逐字矩陣（列＝字、欄＝題型，表頭每欄一顆「Apply to every word」、每列一顆三態）。一個都沒選 → warning Alert。</td><td><code>vocabulary-mc-question-types-step.js</code></td></tr>
+          <tr><td><b>3 Settings</b></td><td>只有 <em>Practice Name</em> ＋ Divider <em>Multiple Choice Questions Preview (N questions)</em> ＋ 一句 <em>Drag a question onto another to reorder, or remove it with the delete button.</em> ＋ 題目卡清單 ＋ 虛線 <em>Add Question</em>。<strong>沒有</strong> Display Settings、Audio Settings、Max attempts（全在 <code>!isMultipleChoice</code> 裡）。頁腳這一步叫 <em>Save</em>。</td><td><code>vocabulary-step-three-section.js</code>（isMultipleChoice 分支）、<code>mc-questions-preview.js</code></td></tr>
+          <tr><td><b>4 Assign Practice</b></td><td>八種共用。</td><td><code>step-three.js</code>、<code>assign-practice.js</code></td></tr>
+        </tbody>
+      </table>
+      <p class="cap">生成時機：第一步 Next 建 practice（帶 <code>projectConfigSks</code>，subType 先不送）；第二步 Next 才 patch <code>generateVocaUpdatedArticleArrayType = MULTIPLE_CHOICE</code> ＋ <code>mcQuestionTypeSelection</code>，後端照選擇生題。再經過第二步不重生，除非選擇變了——<strong>重生會丟掉第三步做過的刪除與排序</strong>（程式碼註解自己講的）。</p>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="types"><span class="num">3</span> 第二步 Question Types</h2>
+      <h3>3.1 八種題型（<code>MC_QUESTION_TYPE_LABELS</code>，順序照選擇矩陣）</h3>
+      <table>
+        <thead><tr><th style="width:230px">enum</th><th style="width:190px">標籤</th><th>卡片上的說明（<code>TYPE_META.desc</code>）</th><th style="width:90px">Advanced</th><th style="width:90px">題幹</th></tr></thead>
+        <tbody>
+          <tr><td><code>VOCAB_MC_CN_TO_EN</code></td><td>Chinese → Translation</td><td>Pick the correct English word</td><td></td><td>text</td></tr>
+          <tr><td><code>VOCAB_MC_IMAGE_TO_CN</code></td><td>Image → Chinese</td><td>See image, pick Chinese meaning</td><td></td><td>image</td></tr>
+          <tr><td><code>VOCAB_MC_IMAGE_TO_PINYIN</code></td><td>Image → Pinyin</td><td>See image, pick correct pinyin</td><td>✓</td><td>image</td></tr>
+          <tr><td><code>VOCAB_MC_EN_TO_CN</code></td><td>Translation → Chinese</td><td>Pick the correct Chinese meaning</td><td></td><td>text</td></tr>
+          <tr><td><code>VOCAB_MC_EN_TO_PINYIN</code></td><td>Translation → Pinyin</td><td>Pick the correct pinyin</td><td>✓</td><td>text</td></tr>
+          <tr><td><code>VOCAB_MC_AUDIO_TO_EN</code></td><td>Audio → Translation</td><td>Listen, pick correct English</td><td></td><td>audio</td></tr>
+          <tr><td><code>VOCAB_MC_AUDIO_TO_CN</code></td><td>Audio → Chinese</td><td>Listen, pick correct Chinese</td><td></td><td>audio</td></tr>
+          <tr><td><code>VOCAB_MC_AUDIO_TO_PINYIN</code></td><td>Audio → Pinyin（<span class="cap">599dd4cb 之後新增</span>）</td><td>Listen, pick correct pinyin</td><td>✓</td><td>audio</td></tr>
+        </tbody>
+      </table>
+      <p>「Advanced」是三個答案為拼音的題型的標記（琥珀小 chip），畫面上沒有解釋它代表什麼。圖片題型在圖還沒好的字上 disabled，tooltip <em>No image yet — generated once available</em>（<code>isImageReadyForMc</code>：<code>imageStatus === 'ready'</code> 或有 <code>customImage</code>）。
+      pattern 類 teaching point（GRAMMAR／PHRASE／OTHER）在生成前就被丟掉（<code>isPatternVocabEntry</code>），矩陣裡不會出現。</p>
+      <h3>3.2 兩種模式</h3>
+      <ul>
+        <li><strong>Random</strong>：只給一個總數，<code>buildRandomDistribution()</code> 把題型隨機分到每個字；老師看不到分配結果。上限 <code>字數 × 8</code>。</li>
+        <li><strong>Advanced</strong>：題型卡的 Switch 切整欄，矩陣切單格；兩者寫的是同一份 <code>selection</code>（切回 Random 會用總數重算一份）。</li>
+      </ul>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="settings"><span class="num">4</span> 第三步 Settings</h2>
+      <p>每張題目卡（<code>mc-questions-preview.js</code>，<code>editable</code>）：拖曳把手、<code>Q1</code> primary chip、題型 chip、題幹（文字題幹直接印字；圖／音題幹印來源字）、右邊 <em>Raffle</em> 鈕（outlined，swap 圖示）與紅色刪除鈕（最後一題不能刪：<em>At least one question is required</em>）；下方左邊圖片 120×90 或 64px 播放鈕，右邊選項<strong>兩欄</strong>，正解綠框 ＋ ✓。</p>
+      <ul>
+        <li><strong>Raffle</strong>：把這一題換成同一個字的<strong>另一種文字題幹題型</strong>（<code>TEXT_STEM_TYPES</code> 裡隨機挑，排除目前的）。圖／音題幹的題型不在候選裡。</li>
+        <li><strong>Add Question</strong>：對話框選一個字 → <em>A random question type will be generated</em>，同樣只在文字題幹題型裡隨機。</li>
+        <li>刪除、排序、Raffle、Add 都是前端改 <code>mcQuestions</code> 陣列再 <code>persistMcQuestions</code>；按 Save 時整份送出。</li>
+      </ul>
+      <p class="cap">跟 Comprehension Quiz 的差別：Comprehension Quiz 在同一位置多一張 <code>ExamModeCard</code>（Test mode ＋ 時限 1–60 分鐘），Vocabulary Quiz 沒有；學生端也不傳 <code>examMode</code>。</p>
+
+      <!-- ===================== 5 ===================== -->
+      <h2 id="student"><span class="num">5</span> 學生端：一題一張卡</h2>
+      <p>出處 <code>src/sections/assignments/content/mc/</code>。Vocabulary Quiz 與 Comprehension Quiz 用<strong>同一個</strong> <code>MCPractice</code>，只差資料來源（<code>adaptVocabMCQuestions(practice.multipleChoiceQuestions)</code>）與沒有 examMode。</p>
+      <div class="formula">// vocab-mc.js · adaptVocabMCQuestions()
+{ questionType, stem: { type: 'text'|'image'|'audio', value | s3Path }, question: stem.type==='text' ? stem.value : '',
+  choice: { A: …, B: …, C: …, D: … }, answer: [correctAnswer] }
+
+// index.js · QuestionScreen
+頂欄：進度條（#77ED8B→#22C55E）＋ 「current / total」；examMode 才有計時 chip
+卡片：題型 chip（MC_TYPE_COLORS[questionType] || '#666' —— 八種 vocab 題型都不在 MC_TYPE_COLORS 裡，chip 是灰的）
+      題幹框（grey.500 6% 底）：文字 h5 600 置中／圖片 maxHeight 200 置中／音檔 64px 播放鈕 ＋ 'Click to play audio'
+      選項單欄直排：32px 圓形字母 ＋ 選項文字；選了立刻回饋（正解綠框 ✓、選錯紅框 ✕），不能改
+      底部：Back（outlined）／ Next（contained，選了才亮）／ 最後一題 Finish（success）
+完成頁：分數圓環 /100、Correct／Wrong／Total 三格、Question Review 逐題（Q 標紅綠、題型 chip、你的答案 vs 正解）</div>
+      <p>「Translate」開關只在 <code>TRANSLATABLE_MC_CATEGORY</code>（Comprehension 的題）出現，vocab 題沒有。老師端第三步畫的是選項<strong>兩欄</strong>、正解打勾；學生看到的是<strong>單欄</strong>、沒有正解。</p>
+
+      <!-- ===================== 6 ===================== -->
+      <h2 id="issues"><span class="num">6</span> 查到的問題</h2>
+      <p>每一條都在程式碼裡看得到。編號只是編號。跟 v4 重複的只註明。</p>
+      <div class="card"><h4>1 · 第一步整套是 v4 的問題</h4><p>名稱在第一步被設、第三步才看到（S1）；Load Content 與灰 Next；生成後專案鎖死。v4 提案已經解掉，這裡<strong>直接套</strong>——第一步是同一支檔案。</p></div>
+      <div class="card"><h4>2 · 那一步叫 Settings，裡面沒有設定</h4><p><code>isMultipleChoice</code> 時只有 Practice Name ＋ 題目清單 ＋ Add Question。Comprehension Quiz 同樣內容的那一步叫 <em>Edit &amp; Preview</em>。名字講的是 Mirroring 才有的東西（R10）。</p></div>
+      <div class="card"><h4>3 · Random 模式看不到結果</h4><p>只給一個數字，題型怎麼分到哪個字是後端／<code>buildRandomDistribution</code> 決定的，畫面上沒有任何回饋；要看只能切到 Advanced（切過去它會用總數重算一份，不是「看」）。老師到第三步才第一次看到題目。</p></div>
+      <div class="card"><h4>4 · 逐字矩陣是 8 欄 × N 列</h4><p>字一多就是一面勾勾牆；欄標題是八個「A → B」，讀起來都像。圖片題型在圖還沒好的格子 disabled、tooltip 說 <em>generated once available</em>——是排隊等圖好了再生，還是靜默略過，要問（E1）。</p></div>
+      <div class="card"><h4>5 · 「Advanced」沒有說明</h4><p>三個拼音題型掛琥珀 chip <em>Advanced</em>，卡片上沒講它代表「答案是拼音、比較難」。R9。</p></div>
+      <div class="card"><h4>6 · 回到第二步改選擇會丟掉第三步的工</h4><p>程式碼註解：<em>Regenerating discards the questions that exist, including any the teacher deleted or reordered on the Settings step</em>。畫面上沒有任何提醒（R9）。</p></div>
+      <div class="card"><h4>7 · Raffle 與 Add Question 都是「隨機」</h4><p>Raffle 只在文字題幹的題型裡隨機換一種、老師不能指定；Add Question 也是選一個字然後隨機一種。「Raffle」這個字在講機制（抽籤），不是老師關心的事（R7）。</p></div>
+      <div class="card"><h4>8 · 老師端的題目卡跟學生端不是同一張</h4><p>老師端選項兩欄、正解打勾、題幹文字在標頭；學生端選項單欄直排、題幹在框裡置中、沒有正解。跟 v4 問題 2 同一類（R6）。</p></div>
+      <div class="card"><h4>9 · 學生端題型 chip 是灰的</h4><p><code>MC_TYPE_COLORS</code> 只有 <code>true_or_false</code> 與 <code>multi_choice</code>，八種 vocab 題型都落到 <code>'#666'</code>；老師端第二步每種題型倒是各有顏色（<code>TYPE_META</code>）。是不是漏了，要問（E5）。學生端的事，這一版不改，記下來。</p></div>
+      <div class="card"><h4>10 · 兩個小的</h4><p>Random 的 <em>Number of questions</em> 預設值從程式碼看不出來（<code>buildInitialSelection</code> 在 shared helper 裡，基準檔先放 12，<strong>待查</strong>）。第三步的 Add Question 對話框標題與按鈕都寫 <em>Add</em>，內容說 <em>random question type will be generated</em>——同一件事兩個動詞（R10）。</p></div>
+
+      <!-- ===================== 7 ===================== -->
+      <h2 id="open"><span class="num">7</span> 待決事項</h2>
+      <p>分兩類：<strong>要使用者決定的</strong>（設計方向），和<strong>只有工程答得出來的</strong>。</p>
+      <h3>要決定的</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th style="width:300px">題目</th><th>為什麼要先決定</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-open">D1</span></td><td>這一版要改哪裡？</td><td>照流程，登記完等使用者說。問題 2–8 是這張卡自己的，1 是 v4 已解的。</td></tr>
+          <tr><td><span class="stat st-open">D2</span></td><td>第一步直接套 v4 提案？</td><td>同一支檔案；套了就有多選、A + B、勾 teaching point、Add words、Next 生成、回頭不鎖。唯一要看的是 Quiz 不需要例句／圖片的部分要不要在第一步就少畫。</td></tr>
+          <tr><td><span class="stat st-open">D3</span></td><td>第二步與第三步要不要合成一步？</td><td>第二步選題型、第三步看題目——中間隔一次生成。合成「選了就看到」要後端能逐題生（E2）；不合的話至少第三步該改名。</td></tr>
+          <tr><td><span class="stat st-open">D4</span></td><td>Random 模式留不留？</td><td>它是「不想想」的捷徑，但結果看不到。留的話要顯示分配；不留的話 Advanced 就是唯一模式，矩陣得變好用。</td></tr>
+        </tbody>
+      </table>
+      <h3>要問工程的</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th style="width:300px">題目</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">E1</span></td><td>圖片題型在圖還沒好時勾了，是排隊生還是略過？</td><td>tooltip 寫 <em>generated once available</em>；決定矩陣那些格子要不要能勾。</td></tr>
+          <tr><td><span class="stat st-todo">E2</span></td><td>題目能不能逐題生／單題重生？</td><td>現在是第二步 Next 一次生全部；Raffle／Add 是前端用 <code>buildMcQuestion()</code> 在本地拼的（文字題幹才拼得出來）。決定 D3 與 Raffle 能不能指定題型。</td></tr>
+          <tr><td><span class="stat st-todo">E3</span></td><td>重生時能不能保留第三步的刪除與排序？</td><td>問題 6。</td></tr>
+          <tr><td><span class="stat st-todo">E4</span></td><td>Vocabulary Quiz 要不要 Test mode？</td><td>Comprehension Quiz 有（<code>ExamModeCard</code>：時限 1–60 分鐘），Vocabulary Quiz 沒有。是刻意還是沒做到。</td></tr>
+          <tr><td><span class="stat st-todo">E5</span></td><td>學生端題型 chip 顏色 <code>#666</code> 是不是漏了？</td><td>問題 9。一行的事，不必等定稿。</td></tr>
+          <tr><td><span class="stat st-todo">E6</span></td><td>Random 的預設題數與分配規則是什麼？</td><td>問題 10；<code>buildRandomDistribution</code> 在 shared helper，登記時沒讀。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 8 ===================== -->
+      <h2 id="base"><span class="num">8</span> 基準檔</h2>
+      <p><a class="inline" href="create-quiz.html?step=1">create-quiz.html</a>，從 v4 的基準檔分岔，第一步與第四步照抄、中間兩步新畫。用網址參數切狀態：</p>
+      <table>
+        <thead><tr><th style="width:280px">網址</th><th>看到什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>?step=0</code> / <code>&amp;empty=1</code> / <code>&amp;gen=1</code> / <code>&amp;loaded=1</code></td><td>第一步，同 v4（少了 Read Sentences Only）</td></tr>
+          <tr><td><code>?step=1</code></td><td>第二步 Question Types · Random</td></tr>
+          <tr><td><code>?step=1&amp;adv=1</code></td><td>Advanced：八張題型卡 ＋ 逐字矩陣（运动 的圖還沒好，兩個圖片題型 disabled）</td></tr>
+          <tr><td><code>?step=1&amp;adv=1&amp;zero=1</code></td><td>一個題型都沒選的警告</td></tr>
+          <tr><td><code>?step=2</code></td><td>第三步 Settings：Practice Name ＋ 六題預覽（文字／圖片／音檔題幹各有）＋ Add Question</td></tr>
+          <tr><td><code>?step=2&amp;add=1</code></td><td>Add Question 對話框</td></tr>
+          <tr><td><code>?step=3</code> / <code>&amp;assigned=1</code></td><td>第四步 Assign（八種共用）</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><strong>下一步。</strong>現況在 §2–§5，問題在 §6，要決定的在 §7。基準檔保留不動，之後的提案跟它並排看。</p>
+
+      <footer>v6 · 優化 Practice-Vocabulary Quiz — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+</body>
+</html>
