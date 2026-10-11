@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Content Mirroring — v3 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 這一頁是「現行產品」的複刻，不是提案。
+   出處：dahua-dash origin/develop @ 17990056（2026-09-10）
+     （c01d0ac0 → 17990056 這 14 個 commit 沒有動到 Mirroring 建立流程的任何一支
+      檔案，用 git diff --name-only 確認過，所以這份複刻不受影響。）
+     src/app/dashboard/practice/create/page.js
+     src/sections/practice/view/unified/practice-unified-view.js   （外殼／Stepper／Footer／ProcessingDialog）
+     src/sections/practice/view/unified/steps/step-one-mirroring.js（Step 1 Content）
+     src/sections/practice/view/unified/steps/mirroring-step-two-section.js（Step 2 Settings & Preview）
+     src/sections/practice/view/unified/steps/step-three.js        （Step 3 Assign Practice）
+     src/sections/practice/view/unified/components/{audio-mode-toggle-card,audio-settings-panel,max-attempts-field}.js
+     src/sections/practice/components/mirroring-sentence-editor.js
+       （splitMergeEnabled 那條路徑是逐字渲染、**不印拼音**；只有 CONVERSATION
+        內容走的另一條分支才用 SegmentedSentence 帶拼音）
+     src/sections/practice/view/qa/create/article-preview-section.js
+     src/utils/{practice-stepper-config,practice-type-labels,practice-step-gating,processing-dialog-copy}.js
+     src/layouts/dashboard/{index,main,header,nav-vertical,nav-items,menu-by-role}.js  （外殼：側邊欄 + 頂欄）
+     src/layouts/config-layout.js（NAV.W_VERTICAL 240 / HEADER.H_DESKTOP 80）
+     src/components/nav-section/vertical/{nav-section-vertical,nav-item}.js
+     src/layouts/common/nav-upgrade.js（底部 Report Issue）
+     src/enum/practices.js · src/config/practices.js · src/theme/{palette,typography}.js
+   顏色、字級、圓角、間距逐項照抄 theme + sx，不做自由發揮。
+   下拉裡的 PINYIN / NO_PINYIN / STUDENT_CHOICE 是產品真的長這樣（直接 map enum），不是筆誤。
+
+   網址參數：?step=0|1|2 · &audio=1 純聽力開 · &sent=1 Step1 顯示句子編輯器
+             &assigned=1 Step3 已指派 · &dlg=1 產生音檔對話框
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-lighter:#DCECFE;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* /dashboard/practice 走 hasTintedBg（main.js），底色是 #f4f7fb 不是白的 */
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80，出自 config-layout.js ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+/* ListSubheader：fontSize 11 / overline / grey.700 / p 16px 8px 8px 12px / mb 4 */
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; cursor:pointer; }
+.nav .grp > .sh.blank{ color:transparent; }
+/* NavItem：minHeight 44 / mb 4 / radius 8 / p 4px 8px 4px 12px / body2 500 / icon 24 + mr 16 */
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.nav a.on:hover{ background:rgba(0,203,97,.16); }
+/* NavUpgrade：px 2 / py 5 / 置中的紅色 Report Issue */
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+/* Header：fixed、高 80、bgBlur('#f4f7fb')、hasTintedBg 時沒有陰影也沒有底線 */
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+/* Main：pt 88（80+8）· px 40 · pb 88；裡面才是 Container maxWidth="lg" sx={{ py: 4 }} */
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* header: Typography h4 (lg → 24px / 700) */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px; }
+
+/* ---------- Stepper（MUI 水平 Stepper, mb:4） ---------- */
+.stepper{ display:flex; align-items:center; margin-bottom:32px; }
+.step{ display:flex; align-items:center; gap:8px; }
+.step-dot{ width:24px; height:24px; border-radius:50%; background:var(--divider); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:500; flex-shrink:0; }
+.step.active .step-dot, .step.done .step-dot{ background:var(--primary); }
+.step-label{ font-size:14px; font-weight:400; color:var(--text3); }
+.step.active .step-label{ font-weight:600; color:var(--text); }
+.step.done .step-label{ font-weight:400; color:var(--text); }
+.step-line{ flex:1; height:1px; background:var(--divider); margin:0 8px; min-width:24px; }
+
+/* ---------- 內容區（minHeight 320, mb:3） ---------- */
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- MUI Paper variant="outlined" ---------- */
+.paper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.paper + .paper{ margin-top:24px; }        /* Stack spacing={3} */
+.paper.on{ background:var(--primary-lighter); border-color:var(--primary); }
+.paper.off{ background:var(--grey100); opacity:.78; }
+
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.row-l{ display:flex; align-items:center; gap:8px; }
+.sub2{ font-size:14px; font-weight:600; line-height:22/14; }
+.sub1{ font-size:16px; font-weight:600; }
+.body2{ font-size:14px; }
+.cap{ font-size:12px; color:var(--text2); line-height:1.5; }
+.cap.dis{ color:var(--text3); }
+.mi.info{ font-size:18px; color:var(--text2); cursor:help; }
+
+/* ---------- MUI TextField / Select（outlined） ---------- */
+.field{ position:relative; }
+.field.full{ width:100%; }
+.field > label{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1;
+  font-size:12px; color:var(--text2); line-height:1.2; }
+.field.dis > label{ color:var(--text3); }
+.ctrl{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 14px; font-size:14px; color:var(--text); font-family:inherit;
+  display:flex; align-items:center; gap:8px; cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.field.dis .ctrl{ background:var(--grey100); color:var(--text3); cursor:default; }
+.field.dis .ctrl:hover{ border-color:var(--divider); }
+.ctrl .caret{ margin-left:auto; font-size:22px; color:var(--text2); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.helper{ font-size:12px; color:var(--text2); margin:3px 14px 0; }
+
+/* select 選項（展開時） */
+.menu{ position:absolute; top:60px; left:0; right:0; z-index:30; background:#fff; border-radius:8px;
+  box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:8px;
+  max-height:300px; overflow:auto; }
+.menu .opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:14px; cursor:pointer; }
+.menu .opt:hover{ background:var(--grey200); }
+.menu .opt.sel{ background:rgba(0,203,97,.08); }
+.menu .opt .play{ width:28px; height:28px; border-radius:50%; border:0; background:transparent; color:var(--text2);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.menu .opt .play:hover{ background:var(--grey200); }
+.chip-lang{ padding:1px 8px; background:#EFF6FF; color:#1D4ED8; font-size:11.2px; font-weight:600; border-radius:6px; }
+.chip-lvl{ padding:1px 8px; background:#F0FDF4; color:#065F46; font-size:11.2px; font-weight:600; border-radius:6px; }
+
+/* ---------- MUI Switch ---------- */
+.sw{ display:flex; align-items:center; gap:8px; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative;
+  transition:background .2s; cursor:pointer; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .track::after{ transform:translateX(13px); }
+.sw .lbl{ font-size:14px; }
+
+/* ---------- Divider with label ---------- */
+.divlabel{ display:flex; align-items:center; gap:16px; margin:32px 0 16px; }
+.divlabel::before, .divlabel::after{ content:''; flex:1; height:1px; background:var(--divider); }
+.divlabel span{ font-size:14px; font-weight:600; color:var(--text2); }
+.divlabel.primary::before, .divlabel.primary::after{ background:var(--primary); }
+.divlabel.primary span{ color:var(--text2); }
+
+/* ---------- Alert ---------- */
+.alert{ display:flex; gap:12px; align-items:flex-start; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:16px; }
+.alert .mi{ font-size:22px; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.alert.warn{ background:#FFF5CC; color:#7A4100; }
+
+/* ---------- 句子列 ---------- */
+.sentence{ border:1px solid var(--divider); border-radius:16px; padding:16px; display:flex; gap:16px; align-items:flex-start; }
+.sentence + .sentence{ margin-top:8px; }
+.iconbtn{ width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--primary);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.iconbtn:hover{ background:rgba(0,203,97,.08); }
+.iconbtn.dis{ color:var(--text3); cursor:default; }
+.iconbtn.dis:hover{ background:transparent; }
+.zh{ font-size:14px; }
+.py{ font-size:12px; color:var(--text3); display:block; }
+.tr{ font-size:12px; color:var(--text2); display:block; margin-top:4px; }
+.speaker{ font-size:14px; font-weight:600; width:64px; flex-shrink:0; padding-top:2px; }
+
+/* ---------- Step 1 · Content Preview ---------- */
+.article{ padding:16px; margin-bottom:16px; max-height:200px; overflow-y:auto;
+  background:rgba(0,203,97,.1); border:1px solid var(--primary); border-radius:8px;
+  font-size:16px; white-space:pre-wrap; line-height:1.5;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+.proj-name{ font-size:18px; font-weight:700; color:var(--primary); margin-bottom:12px; }
+
+/* ---------- Step 1 · 句子編輯器（回頭才看得到） ---------- */
+.tip{ border:1px solid var(--divider); border-radius:16px; background:var(--grey100);
+  padding:12px; display:flex; gap:12px; align-items:center; margin-bottom:16px; font-size:14px; color:var(--text2); }
+.tip .mi{ font-size:20px; color:var(--primary); }
+table.sent{ width:100%; border-collapse:collapse; }
+table.sent th{ text-align:left; font-size:14px; font-weight:600; color:var(--text2);
+  background:var(--grey200); padding:12px 16px; }
+table.sent th:first-child{ border-radius:8px 0 0 8px; width:48px; }
+table.sent th:last-child{ border-radius:0 8px 8px 0; width:64px; text-align:center; }
+table.sent td.act{ text-align:center; }
+/* 合併鈕：info.main 的實心藍圓，32×32，只出現在第 2 列以後 */
+.mergebtn{ width:32px; height:32px; border-radius:50%; border:0; background:var(--info); color:#fff;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; margin-top:4px; }
+.mergebtn:hover{ background:#193592; }
+/* 句子本體是一張 Paper elevation={3}，p:1，外圈有 2px 透明邊（hover 才變色） */
+.spaper{ flex:1; background:#fff; border-radius:8px; padding:8px; font-size:16px; line-height:1.6;
+  border:2px solid transparent; box-shadow:0 3px 6px rgba(145,158,171,.2), 0 0 2px rgba(145,158,171,.24); }
+.srow2{ display:flex; gap:8px; align-items:flex-start; }
+.iconbtn.err{ color:var(--error); }
+table.sent td{ padding:12px 16px; border-bottom:1px dashed var(--divider); vertical-align:top; }
+table.sent tr:hover td{ background:var(--grey100); }
+.cb{ width:20px; height:20px; border:2px solid var(--text3); border-radius:4px; display:inline-block; }
+.sticky-bar{ position:sticky; bottom:0; margin-top:8px; border:1px solid var(--divider); border-radius:16px;
+  background:#fff; padding:10px 16px; box-shadow:0 8px 16px 0 rgba(145,158,171,.16); font-size:14px; font-weight:600; }
+
+/* ---------- Step 3 ---------- */
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card + .card{ margin-top:8px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.card.nocls{ padding:48px 24px; text-align:center; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.dt{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-size:12.8px;
+  width:190px; font-family:inherit; color:var(--text); cursor:pointer; background:#fff; }
+.opt-chip{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+
+/* ---------- Footer ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+
+/* ---------- ProcessingDialog ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center;
+  justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:24px; overflow:hidden; width:100%; max-width:600px; }
+.dlg .bar{ height:4px; background:#D3FCD2; position:relative; overflow:hidden; }
+.dlg .bar::after{ content:''; position:absolute; inset:0 60% 0 0; background:#22C55E; animation:sl 1.6s infinite ease-in-out; }
+@keyframes sl{ 0%{ transform:translateX(-100%);} 100%{ transform:translateX(260%);} }
+.dlg .body{ text-align:center; padding:40px 24px; }
+.dlg h5{ font-size:20px; font-weight:700; margin-bottom:4px; }
+.dlg .pipe{ display:flex; justify-content:center; align-items:flex-start; margin:32px 16px; }
+.dlg .pipe .st{ width:120px; display:flex; flex-direction:column; align-items:center; }
+.dlg .pipe .dot{ width:40px; height:40px; border-radius:50%; background:var(--primary); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+.dlg .pipe .st.todo .dot{ background:var(--grey300); color:#C4CDD5; }
+.dlg .pipe .cl{ font-size:12px; font-weight:700; color:var(--primary); }
+.dlg .pipe .st.todo .cl{ color:var(--text3); }
+.dlg .pipe .ln{ flex:1; height:3px; margin-top:20px; border-radius:2px; background:var(--primary); }
+.dlg .pipe .ln.todo{ background:var(--grey300); }
+.dlg .note{ background:#F0FDF4; border-radius:16px; padding:20px; margin-bottom:24px; display:flex; gap:16px; align-items:center; text-align:left; }
+.dlg .note .circ{ width:48px; height:48px; border-radius:50%; background:#DCFCE7; color:#10B981;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+/* ---------- 基準檔的說明條（不是產品的一部分） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#212B36; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+/* lg 以下產品會把側欄收成抽屜；基準檔只做到「不會破版」 */
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; }
+  .main{ padding:88px 16px; }
+}
+@media (max-width:900px){ .stepper .step-label{ display:none; } }
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     Sidebar —— MENU_BY_ROLE[CLASS_TEACHER]（menu-by-role.js），非 ESL、非 annotator。
+     第一組的 subheader 是一個空白字元 ' '，所以產品真的會多渲染一條空的
+     subheader（不是留白，是一個看不見的字）。ESL 那幾項與 Annotation 被
+     shouldHide 濾掉，Word Bank Game History 在所有環境都隱藏。
+     Logo 產品用的是 /logo/dh_aI.webp（180×37 的字標），這個 repo 裡沒有，
+     所以用 dh_single.png 的圖標＋字重現。
+     ===================================================================== -->
+<aside class="side">
+  <div class="logo">
+    <img src="../../assets/dh_single.png" alt="Dahua.ai">
+    <b>Dahua<i>.ai</i></b>
+  </div>
+
+  <nav class="nav">
+    <div class="grp">
+      <div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
+    </div>
+
+    <div class="grp">
+      <div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a>
+    </div>
+
+    <div class="grp">
+      <div class="sh">practice</div>
+      <!-- PRACTICE_TEACHER 是 deep:true、pattern /dashboard/practice，
+           所以在 /dashboard/practice/create 這一頁它是 active 的 -->
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a>
+    </div>
+
+    <div class="grp">
+      <div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a>
+    </div>
+  </nav>
+
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <!-- Header：這條路徑走 hasTintedBg，所以沒有陰影也沒有底線，只剩右邊的頭像 -->
+  <div class="hdr">
+    <div class="acct"><div class="av">L</div></div>
+  </div>
+
+  <div class="main">
+<div class="container">
+
+  <!-- ============ Header：`New ${getTypeLabel(MIRRORING)}` = New Content Mirroring ============ -->
+  <div class="h4">New Content Mirroring</div>
+
+  <!-- ============ Stepper：STEPS_BY_TYPE[MIRRORING] ============ -->
+  <div class="stepper" id="stepper"></div>
+
+  <div class="content" id="content"></div>
+
+  <!-- ============ Footer ============ -->
+  <div class="footer">
+    <button class="btn text" id="back">Back</button>
+    <button class="btn contained" id="next">Next</button>
+  </div>
+</div>
+  </div><!-- /.main -->
+</div><!-- /.mainwrap -->
+
+<!-- 產生音檔對話框 -->
+<div class="scrim" id="scrim" style="display:none">
+  <div class="dlg">
+    <div class="bar"></div>
+    <div class="body">
+      <h5>Generating audio...</h5>
+      <div class="cap" style="margin-bottom:32px">This may take a few moments.</div>
+      <div class="pipe">
+        <div class="st"><div class="dot"><span class="mi">auto_awesome</span></div><div class="cl">Analyzing</div></div>
+        <div class="ln"></div>
+        <div class="st"><div class="dot"><span class="mi">record_voice_over</span></div><div class="cl">Generating</div></div>
+        <div class="ln todo"></div>
+        <div class="st todo"><div class="dot"><span class="mi">check_circle</span></div><div class="cl">Finalizing</div></div>
+      </div>
+      <div class="note">
+        <div class="circ"><span class="mi">record_voice_over</span></div>
+        <div>
+          <div class="sub2">Creating audio, pinyin &amp; translations</div>
+          <div class="cap">We&rsquo;re generating natural voice audio for each sentence in your practice.</div>
+        </div>
+      </div>
+      <div class="cap dis">Please don&rsquo;t close this page</div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><b>基準檔</b>　現行產品複刻 · dahua-dash <code>origin/develop</code> @ c01d0ac0</span>
+  <span>
+    <a href="?step=0" id="l0">1 Content</a> ·
+    <a href="?step=0&amp;sent=1" id="l0s">1 回頭看句子</a> ·
+    <a href="?step=1" id="l1">2 Settings</a> ·
+    <a href="?step=1&amp;audio=1" id="l1a">2 純聽力</a> ·
+    <a href="?step=2" id="l2">3 Assign</a> ·
+    <a href="?step=2&amp;assigned=1" id="l2a">3 已指派</a> ·
+    <a href="?step=1&amp;dlg=1" id="ld">產生音檔</a>
+  </span>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   資料：照著 dahua-dash-dev 上的樣子捏的假資料。
+   句子取自 Project「環境保護」，五句，含 pinyin 與 translation。
+   --------------------------------------------------------------------------- */
+const S = {
+  step: 0, audio:false, sent:false, assigned:false, dlg:false,
+  project:'环境保护与可持续发展',
+  practiceName:'环境保护与可持续发展',
+  pinyin:'PINYIN', translation:'STUDENT_CHOICE', tfirst:'ON',
+  speed:'0.8', voice:'Xiaorou (Female)', attempts:3,
+  open:null,
+};
+
+const ARTICLE =
+`近年来，全球暖化的问题越来越严重。许多国家开始重视环境保护，并且制定相关的政策。
+我们每个人都可以从日常生活做起，例如随手关灯、自备购物袋、减少使用一次性餐具。
+虽然一个人的力量看起来很小，但是如果每个人都愿意改变，就能产生很大的影响。
+保护环境不只是政府的责任，也是我们每一个人的责任。
+让我们一起努力，为下一代留下一个更干净、更美好的地球。`;
+
+const SENTENCES = [
+  { zh:'近年来，全球暖化的问题越来越严重。', py:'jìn nián lái, quán qiú nuǎn huà de wèn tí yuè lái yuè yán zhòng.', tr:'In recent years, global warming has become increasingly serious.' },
+  { zh:'许多国家开始重视环境保护，并且制定相关的政策。', py:'xǔ duō guó jiā kāi shǐ zhòng shì huán jìng bǎo hù, bìng qiě zhì dìng xiāng guān de zhèng cè.', tr:'Many countries have begun to value environmental protection and formulate related policies.' },
+  { zh:'我们每个人都可以从日常生活做起。', py:'wǒ men měi ge rén dōu kě yǐ cóng rì cháng shēng huó zuò qǐ.', tr:'Every one of us can start from daily life.' },
+  { zh:'虽然一个人的力量看起来很小，但是如果每个人都愿意改变，就能产生很大的影响。', py:'suī rán yí ge rén de lì liàng kàn qǐ lái hěn xiǎo, dàn shì rú guǒ měi ge rén dōu yuàn yì gǎi biàn, jiù néng chǎn shēng hěn dà de yǐng xiǎng.', tr:'Although one person’s power seems small, if everyone is willing to change, it can make a big difference.' },
+  { zh:'让我们一起努力，为下一代留下一个更干净的地球。', py:'ràng wǒ men yì qǐ nǔ lì, wèi xià yí dài liú xià yí ge gèng gān jìng de dì qiú.', tr:'Let us work together to leave a cleaner planet for the next generation.' },
+];
+
+/* targetLanguage 是 BCP-47（src/enum/languageTags.js：'zh-CN' / 'zh-TW' / 'zh-HK'），
+   下拉每一列直接印 cfg.targetLanguage —— 不縮寫也不轉大寫。 */
+const PROJECTS = [
+  ['环境保护与可持续发展','zh-CN','HSK 4'],
+  ['我的一天','zh-CN','HSK 2'],
+  ['餐厅点餐（对话）','zh-CN','HSK 3'],
+];
+
+const STEPS = ['Content','Settings & Preview','Assign Practice'];
+
+/* SPEED_OPTIONS（config/practices.js）＋ SPEED_PREFERENCES.STUDENT_CHOICE */
+const SPEEDS = [['STUDENT_CHOICE','Student choice'],['1','Fast'],['0.8','Normal'],['0.6','Slow']];
+/* useVoiceCatalog 依語言取回，每個聲音帶 sampleUrl。
+   getVoiceList('zh-CN') 只回 SIMPLIFIED 那組四個（config/practices.js）。 */
+const VOICES = ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'];
+/* 產品直接 map enum，老師看到的就是這些值 */
+const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];
+const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];
+const TFIRSTS = [['ON','On'],['OFF','Off'],['STUDENT_CHOICE','Student choice']];
+const TFIRST_CAP = {
+  ON:'Students hear the translation first, then repeat the Chinese sentence.',
+  OFF:'Students go straight to the Chinese sentence without the translation.',
+  STUDENT_CHOICE:'Students decide during practice whether the translation plays first.',
+};
+
+/* ---------- 讀網址 ---------- */
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(2, Math.max(0, parseInt(qs.get('step') ?? '0', 10) || 0));
+S.audio = qs.get('audio') === '1';
+S.sent = qs.get('sent') === '1';
+S.assigned = qs.get('assigned') === '1';
+S.dlg = qs.get('dlg') === '1';
+if (S.audio) { S.pinyin = 'STUDENT_CHOICE'; S.translation = 'STUDENT_CHOICE'; }
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+/* ---------- Stepper ---------- */
+function renderStepper(){
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const dot = i < S.step ? '<span class="mi" style="font-size:16px">check</span>' : (i + 1);
+    return (i ? '<div class="step-line"></div>' : '') +
+      `<div class="step ${cls}"><div class="step-dot">${dot}</div><div class="step-label">${label}</div></div>`;
+  }).join('');
+}
+
+/* ---------- 共用：select ---------- */
+function select({ id, label, value, options, disabled, width, helper }){
+  const cur = options.find(o => (Array.isArray(o) ? o[0] : o) === value);
+  const text = Array.isArray(cur) ? cur[1] : (cur ?? value);
+  // MUI Select 收合時渲染的是選中那個 MenuItem 的 children，
+  // 所以語言／級數兩個 chip 在收合狀態也看得到。
+  const proj = id === 'project' ? PROJECTS.find(p => p[0] === value) : null;
+  const face = proj
+    ? `<span>${esc(proj[0])}</span><span class="chip-lang">${proj[1]}</span><span class="chip-lvl">${proj[2]}</span>`
+    : `<span>${esc(text)}</span>`;
+  return `<div class="field ${disabled ? 'dis' : ''}" style="${width ? 'width:' + width : ''}">
+    <label>${label}</label>
+    <div class="ctrl" ${disabled ? '' : `data-menu="${id}"`}>
+      ${face}<span class="mi caret">arrow_drop_down</span>
+    </div>
+    ${helper ? `<div class="helper">${helper}</div>` : ''}
+    ${S.open === id ? `<div class="menu">${options.map(o => {
+      const v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
+      const play = (id === 'speed' && v !== 'STUDENT_CHOICE') || id === 'voice'
+        ? `<button class="play"><span class="mi" style="font-size:18px">play_arrow</span></button>` : '';
+      return `<div class="opt ${v === value ? 'sel' : ''}" data-pick="${id}" data-val="${esc(v)}">${play}<span>${esc(t)}</span></div>`;
+    }).join('')}</div>` : ''}
+  </div>`;
+}
+
+/* =====================================================================
+   Step 1 · Content
+   CREATE 模式下 practice 還不存在，所以只有 Project 下拉 + Content Preview。
+   句子編輯器（MirroringSentenceEditor）要等 practice 建好、從 Step 2 回頭
+   才會出現 —— &sent=1 就是那個狀態。
+   ===================================================================== */
+function renderStep0(){
+  const editor = !S.sent ? '' : `
+    <div style="margin-top:16px">
+      <div class="sub2" style="margin-bottom:8px">Current sentences (${SENTENCES.length})</div>
+      <div class="tip">
+        <span class="mi">info</span>
+        <div><strong>Tip:</strong> Hover a sentence to highlight it. Click between characters to place the caret,
+        then use the <em>&ldquo;New Line&rdquo;</em> tooltip to split the sentence.</div>
+      </div>
+      <table class="sent">
+        <thead><tr><th><span class="cb"></span></th><th>Sentence</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${SENTENCES.map((s, i) => `<tr>
+            <td><span class="cb"></span></td>
+            <td>
+              <div class="srow2">
+                ${i ? '<button class="mergebtn" title="Merge with previous"><span class="mi">call_merge</span></button>' : ''}
+                <div class="spaper">${esc(s.zh)}</div>
+              </div>
+            </td>
+            <td class="act"><button class="iconbtn err" title="Mark for deletion"><span class="mi">delete_outline</span></button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="sticky-bar">Marked for deletion: 0 / Kept: ${SENTENCES.length}</div>
+    </div>`;
+
+  // sourceLocked = Boolean(practice?.id)：練習一建立，Project 就鎖住、
+  // 文章預覽整個不再渲染，換成句子表。兩個狀態是互斥的。
+  const preview = S.sent ? '' : `
+    <div class="divlabel primary"><span>Content Preview</span></div>
+    <div class="proj-name">${esc(S.project)}</div>
+    <div class="sub2" style="color:var(--text2); margin-bottom:8px">Article Content</div>
+    <div class="article">${esc(ARTICLE)}</div>`;
+
+  return `
+    <div class="sub1" style="margin-bottom:8px">Select a Project</div>
+
+    ${select({ id:'project', label:'Project', value:S.project, options:PROJECTS.map(p => p[0]),
+               disabled:S.sent })}
+    ${preview}
+    ${editor}`;
+}
+
+/* =====================================================================
+   Step 2 · Settings & Preview
+   五塊 Paper：Audio Mode / Translation First / Display Settings /
+   Auto Pass / Audio Settings，底下是句子清單（逐句播放）。
+   ===================================================================== */
+function renderStep1(){
+  return `
+    <div style="margin-bottom:24px">
+      <div class="field full">
+        <label>Practice name</label>
+        <div class="ctrl"><input type="text" value="${esc(S.practiceName)}"></div>
+      </div>
+    </div>
+
+    <!-- AudioModeToggleCard -->
+    <div class="paper ${S.audio ? 'on' : ''}" style="margin-top:0">
+      <div class="row">
+        <div class="row-l"><span class="sub2">Audio Mode</span><span class="mi info" title="When Audio Mode is enabled, students can choose whether to show pinyin and translation during audio practice. Pinyin and Translation will be locked to Student Choice.">info</span></div>
+        <div class="sw ${S.audio ? 'on' : ''}" data-toggle="audio"><span class="track"></span><span class="lbl">${S.audio ? 'On' : 'Off'}</span></div>
+      </div>
+      <div class="cap" style="margin-top:12px">Audio Mode lets students control display support while listening and practicing.</div>
+    </div>
+
+    <!-- Translation First -->
+    <div class="paper">
+      <div class="row">
+        <div class="row-l"><span class="sub2">Translation First</span><span class="mi info" title="On plays each sentence&rsquo;s translation before the Chinese audio, Off sends students straight to the Chinese sentence, and Student choice lets each student decide during practice.">info</span></div>
+        ${select({ id:'tfirst', label:'Translation First', value:S.tfirst, options:TFIRSTS, width:'200px' })}
+      </div>
+      <div class="cap" style="margin-top:12px">${TFIRST_CAP[S.tfirst]}</div>
+    </div>
+
+    <!-- Display Settings -->
+    <div class="paper ${S.audio ? 'off' : ''}">
+      <div class="sub2">Display Settings</div>
+      <div class="cap" style="margin-bottom:16px">Controls what students can see during practice.</div>
+      <div style="display:flex; gap:16px">
+        ${select({ id:'pinyin', label:'Pinyin', value:S.pinyin, options:PINYINS, disabled:S.audio, width:'50%' })}
+        ${select({ id:'translation', label:'Translation', value:S.translation, options:TRANSLATIONS, disabled:S.audio, width:'50%' })}
+      </div>
+      ${S.audio ? '<div class="cap" style="margin-top:16px">Pinyin and Translation are locked to Student Choice while Audio Mode is on.</div>' : ''}
+    </div>
+
+    <!-- Auto Pass -->
+    <div class="paper">
+      <div class="row">
+        <span class="sub2">Auto Pass</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div class="field" style="width:260px">
+            <label>Max attempts before auto pass</label>
+            <div class="ctrl"><input type="number" min="1" max="10" value="${S.attempts}"><span class="mi caret" style="font-size:18px">expand_less</span></div>
+          </div>
+          <button class="iconbtn" style="color:var(--text3)" title="How many times a student may retry one item before it is let through (default 3)."><span class="mi">info</span></button>
+        </div>
+      </div>
+      <div class="cap" style="margin-top:12px">Students who use up their attempts on a sentence move on automatically, even if they have not passed it.</div>
+    </div>
+
+    <!-- AudioSettingsPanel -->
+    <div class="paper">
+      <div class="sub2">Audio Settings</div>
+      <div class="cap" style="margin-bottom:16px">Controls audio playback speed, pronunciation precision, and voice.</div>
+      <div style="display:flex; gap:16px">
+        ${select({ id:'speed', label:'Speed', value:S.speed, options:SPEEDS, width:'31%',
+                   helper:S.speed === 'STUDENT_CHOICE' ? 'Students pick their own speed and start at Normal.' : '' })}
+        ${select({ id:'voice', label:'Voice', value:S.voice, options:VOICES, width:'31%' })}
+      </div>
+    </div>
+
+    <!-- 句子清單 -->
+    <div class="divlabel"><span>Sentences (${SENTENCES.length})</span></div>
+    ${SENTENCES.map(s => `
+      <div class="sentence">
+        <button class="iconbtn"><span class="mi">play_arrow</span></button>
+        <div style="flex:1">
+          <div class="zh">${esc(s.zh)}</div>
+          ${S.pinyin === 'PINYIN' ? `<span class="py">${esc(s.py)}</span>` : ''}
+          ${S.translation === 'SHOW' ? `<span class="tr">${esc(s.tr)}</span>` : ''}
+        </div>
+      </div>`).join('')}`;
+}
+
+/* =====================================================================
+   Step 3 · Assign Practice
+   ===================================================================== */
+function renderStep2(){
+  const list = S.assigned ? `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+        <div style="min-width:0">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="sub2">Chinese 3B</span><span class="opt-chip">Required</span>
+          </div>
+          <div class="cap dis" style="margin-top:2px">12 students · assigned 2 hours ago</div>
+          <div class="cap" style="margin-top:4px">陳小明, 林佳蓉, 王大衛, 張怡君, 李承恩, 吳宜庭, 黃柏翰, 劉映彤, 蔡宗翰, 鄭雅文, 許博涵, 楊子萱</div>
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:8px">
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+            <span class="cap">Start</span><input class="dt" type="datetime-local" value="2026-09-09T08:00">
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+            <span class="cap">Due</span><input class="dt" type="datetime-local" value="2026-09-16T23:59">
+          </div>
+          <button class="btn contained sm">Edit</button>
+          <button class="btn outerr sm">Cancel</button>
+        </div>
+      </div>
+    </div>` : `<div class="card empty">No classes assigned yet.</div>`;
+
+  return `
+    <div class="row" style="margin-bottom:16px">
+      <span class="sub1">Assigned students</span>
+      <button class="btn contained"><span class="mi" style="font-size:20px">add_circle_outline</span>Assign Practice</button>
+    </div>
+    ${list}`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2][S.step]();
+
+  const back = el('back'), next = el('next');
+  back.classList.toggle('dis', S.step === 0);
+  if (S.step === 2) { next.textContent = 'Done'; }
+  else { next.textContent = S.step === 1 ? 'Save' : 'Next'; }   // resolvePrimaryActionLabel
+
+  el('scrim').style.display = S.dlg ? 'flex' : 'none';
+
+  ['l0','l0s','l1','l1a','l2','l2a','ld'].forEach(id => el(id).classList.remove('cur'));
+  const key = S.dlg ? 'ld'
+    : S.step === 0 ? (S.sent ? 'l0s' : 'l0')
+    : S.step === 1 ? (S.audio ? 'l1a' : 'l1')
+    : (S.assigned ? 'l2a' : 'l2');
+  el(key).classList.add('cur');
+}
+
+/* ---------- 互動 ---------- */
+document.addEventListener('click', (e) => {
+  const menu = e.target.closest('[data-menu]');
+  const pick = e.target.closest('[data-pick]');
+  const tog  = e.target.closest('[data-toggle]');
+
+  if (e.target.closest('.play')) { e.stopPropagation(); return; }   // 試聽鍵不關選單
+
+  if (pick){
+    const id = pick.dataset.pick, val = pick.dataset.val;
+    if (id === 'project') S.project = val;
+    if (id === 'pinyin') S.pinyin = val;
+    if (id === 'translation') S.translation = val;
+    if (id === 'tfirst') S.tfirst = val;
+    if (id === 'speed') S.speed = val;
+    if (id === 'voice') S.voice = val;
+    S.open = null; render(); return;
+  }
+  if (menu){ S.open = S.open === menu.dataset.menu ? null : menu.dataset.menu; render(); return; }
+  if (tog){
+    S.audio = !S.audio;
+    // handleAudioMode：打開就把兩個偏好鎖成 STUDENT_CHOICE
+    if (S.audio){ S.pinyin = 'STUDENT_CHOICE'; S.translation = 'STUDENT_CHOICE'; }
+    render(); return;
+  }
+  if (S.open !== null){ S.open = null; render(); }
+});
+
+el('back').addEventListener('click', () => { if (S.step > 0){ S.step -= 1; S.sent = S.step === 0; S.open = null; render(); } });
+el('next').addEventListener('click', () => { if (S.step < 2){ S.step += 1; S.open = null; render(); } });
+el('scrim').addEventListener('click', () => { S.dlg = false; render(); });
+
+render();
+</script>
+</body>
+</html>

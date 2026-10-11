@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submit &amp; Redo Flow · 提交與重做流程 — 中文模組</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.8; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #2563eb; font-weight: 700; }
+    .langbtn { margin-left: auto; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 700; font-size: 12px; padding: 6px 14px; border-radius: 999px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: .15s; }
+    .langbtn:hover { border-color: #2563eb; color: #2563eb; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 250px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #2563eb; border-left-color: #2563eb; font-weight: 700; background: #eff6ff; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #2563eb; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    p { margin-bottom: 10px; }
+    ol.steps { margin: 0 0 16px 0; padding: 0; list-style: none; counter-reset: s; }
+    ol.steps > li { position: relative; padding: 10px 0 10px 44px; border-bottom: 1px solid #f1f5f9; counter-increment: s; }
+    ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 9px; width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    ol.steps > li b { color: #0f172a; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; color: #b91c1c; }
+    strong { color: #0f172a; }
+    a.inline { color: #2563eb; font-weight: 600; text-decoration: none; } a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.8; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-new { background: #e0e7ff; color: #4338ca; } .p-ask { background: #fce7f3; color: #9d174d; }
+    h2 .p-new, h3 .p-new { font-size: 10px; vertical-align: middle; }
+    .diagram { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 12px 0 20px; overflow-x: auto; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    /* language toggle */
+    html[data-lang="en"] .zh { display: none !important; }
+    html[data-lang="zh"] .en { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../index.html"><span class="en">Home</span><span class="zh">首頁</span></a>
+    <span class="sep">/</span>
+    <a href="overview.html" class="muted"><span class="en">Chinese Modules</span><span class="zh">中文模組</span></a>
+    <span class="sep">/</span>
+    <span class="current"><span class="en">Submit &amp; Redo Attempt Flow</span><span class="zh">提交與重做流程</span></span>
+    <button class="langbtn" id="langBtn" type="button"><span class="en">中文</span><span class="zh">EN</span></button>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title"><span class="en">On this page</span><span class="zh">本頁目錄</span></div>
+      <ol>
+        <li><a href="#concepts">1 · <span class="en">Concepts</span><span class="zh">概念</span></a></li>
+        <li><a href="#lifecycle">2 · <span class="en">Attempt lifecycle</span><span class="zh">Attempt 生命週期</span></a></li>
+        <li><a href="#submit">3 · <span class="en">Submit flow</span><span class="zh">提交流程</span></a></li>
+        <li><a href="#redo">4 · <span class="en">Redo (new attempt)</span><span class="zh">重做（新的一次）</span></a></li>
+        <li><a href="#mc">5 · <span class="en">MC vs non-MC</span><span class="zh">選擇題 vs 非選擇題</span></a></li>
+        <li><a href="#fields">6 · <span class="en">States &amp; fields</span><span class="zh">狀態與欄位</span></a></li>
+        <li><a href="#edge">7 · <span class="en">Edge cases</span><span class="zh">邊界情況</span></a></li>
+        <li><a href="#newflow">8 · <span class="en">Feedback &amp; Mail Box</span><span class="zh">回饋與 Mail Box</span> <span class="pill p-new">NEW</span></a></li>
+        <li><a href="#discuss">9 · <span class="en">Open questions</span><span class="zh">待討論</span> <span class="pill p-ask">?</span></a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1><span class="en">Submit &amp; Redo Attempt Flow</span><span class="zh">提交與重做流程</span></h1>
+        <p class="subtitle"><span class="en">How a student practice becomes an <strong>attempt</strong>, how attempts are <strong>redone</strong>, and how a result gets <strong>submitted</strong> to the teacher.</span><span class="zh">學生一次練習如何變成一次 <strong>attempt</strong>、如何<strong>重做（redo）</strong>、以及結果如何<strong>提交（submit）</strong>給老師。</span></p>
+        <div class="meta">
+          <span><span class="en">Student · Chinese Modules</span><span class="zh">學生端 · 中文模組</span></span>
+          <span>sections/student/practice/completed</span>
+          <span><span class="en">Reflected in: student-redesign.html</span><span class="zh">已反映於：student-redesign.html</span></span>
+          <span><span class="en">Updated: July 2026</span><span class="zh">更新：2026 年 7 月</span></span>
+        </div>
+      </div>
+
+      <!-- 1 -->
+      <h2 id="concepts"><span class="num">1</span> <span class="en">Concepts</span><span class="zh">概念</span></h2>
+      <p><span class="en"><strong>Attempt</strong> and <strong>submit</strong> are two different things:</span><span class="zh"><strong>Attempt</strong>（練習一次）和 <strong>submit</strong>（提交）是兩件不同的事：</span></p>
+      <table>
+        <thead><tr><th><span class="en">Term</span><span class="zh">名詞</span></th><th><span class="en">Meaning</span><span class="zh">意思</span></th></tr></thead>
+        <tbody>
+          <tr><td><strong><span class="en">Attempt</span><span class="zh">Attempt（一次練習）</span></strong></td><td><span class="en">One run at a practice. Each run is stored with its own score, date and completion state. Practising again = a new attempt.</span><span class="zh">對一份練習做一次。每一次都會存成獨立一筆，含自己的分數、日期與完成狀態。再練一次 = 新的一次 attempt。</span></td></tr>
+          <tr><td><strong><span class="en">Redo / new attempt</span><span class="zh">Redo / 新的一次</span></strong></td><td><span class="en">Starting a fresh attempt on the same assignment. Increases <code>attemptCount</code>.</span><span class="zh">對同一份作業重新開始一次。<code>attemptCount</code> 會 +1。</span></td></tr>
+          <tr><td><strong><span class="en">Submit</span><span class="zh">Submit（提交）</span></strong></td><td><span class="en">A separate, deliberate action that sends the result <em>to the teacher</em>. Per-assignment, not per-attempt.</span><span class="zh">另一個明確的動作：把結果<em>送給老師</em>。以「作業」為單位，不是每一次 attempt。</span></td></tr>
+          <tr><td><strong>Best / Last</strong></td><td><span class="en"><strong>Best</strong> = highest score across all attempts. <strong>Last</strong> = the most recent attempt's score.</span><span class="zh"><strong>Best</strong> = 所有 attempt 中的最高分；<strong>Last</strong> = 最近一次的分數。</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><span class="en"><strong>Key idea:</strong> you can practise (attempt) many times; submitting is the one moment you hand it to the teacher. After submitting, the assignment is marked <span class="pill p-green">SUBMITTED</span>.</span><span class="zh"><strong>核心概念：</strong>你可以練很多次（attempt）；submit 是唯一把它交給老師的那一刻。提交後，該作業標記為 <span class="pill p-green">SUBMITTED</span>。</span></div>
+      <div class="callout callout-warn"><span class="en"><strong>Student wording:</strong> "attempt" is a backend term; the <strong>student UI always shows "Try"</strong> (Try 1, Try 2…), never the word "attempt".</span><span class="zh"><strong>學生端用字：</strong>「attempt」是後端術語；<strong>學生介面一律顯示「Try」</strong>（第 1 次、第 2 次…），不出現「attempt」這個字。</span></div>
+
+      <!-- 2 -->
+      <h2 id="lifecycle"><span class="num">2</span> <span class="en">Attempt lifecycle</span><span class="zh">Attempt 生命週期</span></h2>
+      <div class="diagram en">
+        <pre class="mermaid">
+flowchart TD
+  start(["Open assignment"]):::start --> practice["Practice the exercise"]:::default
+  practice --> done{"Finished all items?"}:::decision
+  done -- No --> incomplete["Attempt saved as in-progress"]:::warn
+  incomplete --> resume["Continue later via Continue link"]:::info
+  resume --> practice
+  done -- Yes --> scored["Attempt completed and scored 0-100"]:::ai
+  scored --> record["History: attempt N added / Best=max, Last=latest"]:::default
+  record --> choice{"What next?"}:::decision
+  choice -- "Redo (non-MC)" --> newAttempt["Start new attempt / attemptCount+1"]:::default
+  newAttempt --> practice
+  choice -- "MC" --> mcLock["MC: one attempt per version"]:::gate
+  choice -- "Submit" --> submit["Submit to teacher"]:::done
+  submit --> submitted["Status: SUBMITTED + submittedDate"]:::endnode
+  submitted --> teacher["Teacher reviews / comment and AI feedback"]:::info
+  classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3;
+  classDef default fill:#dbeafe,stroke:#93c5fd,color:#1e40af;
+  classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46;
+  classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e;
+  classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+  classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+  classDef done fill:#f0fdf4,stroke:#86efac,color:#166534;
+  classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1;
+  classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d;
+        </pre>
+      </div>
+      <div class="diagram zh">
+        <pre class="mermaid">
+flowchart TD
+  s2(["打開作業"]):::start --> p2["練習"]:::default
+  p2 --> d2{"全部做完了嗎？"}:::decision
+  d2 -- 否 --> i2["存成未完成的 attempt"]:::warn
+  i2 --> r2["之後用 Continue 續做"]:::info
+  r2 --> p2
+  d2 -- 是 --> sc2["完成並評分 0-100"]:::ai
+  sc2 --> rec2["歷史：新增第 N 次 / Best=最高, Last=最近"]:::default
+  rec2 --> c2{"接下來？"}:::decision
+  c2 -- "重做（非MC）" --> n2["開始新的一次 / attemptCount+1"]:::default
+  n2 --> p2
+  c2 -- "MC" --> m2["MC：每版本只能一次"]:::gate
+  c2 -- "提交" --> sub2["提交給老師"]:::done
+  sub2 --> done2["狀態：SUBMITTED + submittedDate"]:::endnode
+  done2 --> t2["老師審閱 / 評語與 AI 回饋"]:::info
+  classDef start fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3;
+  classDef default fill:#dbeafe,stroke:#93c5fd,color:#1e40af;
+  classDef ai fill:#ecfdf5,stroke:#6ee7b7,color:#065f46;
+  classDef decision fill:#fef9c3,stroke:#fde047,color:#854d0e;
+  classDef gate fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+  classDef warn fill:#fef2f2,stroke:#ef4444,color:#991b1b;
+  classDef done fill:#f0fdf4,stroke:#86efac,color:#166534;
+  classDef info fill:#f0f9ff,stroke:#bae6fd,color:#0369a1;
+  classDef endnode fill:#fce7f3,stroke:#f9a8d4,color:#9d174d;
+        </pre>
+      </div>
+
+      <!-- 3 -->
+      <h2 id="submit"><span class="num">3</span> <span class="en">Submit flow</span><span class="zh">提交流程</span></h2>
+      <p><span class="en">Submit sends the assignment's result to the teacher. Available on a record that has a completed attempt and is <strong>not yet submitted</strong>.</span><span class="zh">提交會把該作業的結果送給老師。只有在記錄「已有完成的 attempt」且「<strong>尚未提交</strong>」時可用。</span></p>
+      <ol class="steps">
+        <li><span class="en">In <strong>History</strong>, the student opens a record with a completed attempt (status <span class="pill p-gray">Not submitted</span>).</span><span class="zh">在 <strong>History</strong>，學生打開一筆已有完成 attempt 的記錄（狀態 <span class="pill p-gray">Not submitted</span>）。</span></li>
+        <li><span class="en">Student taps <b>Submit to teacher</b>.</span><span class="zh">學生按 <b>Submit to teacher（提交給老師）</b>。</span></li>
+        <li><span class="en">App calls <code>upsertAssignmentHistory</code> → marks <code>isSubmitted = true</code> and records <code>submittedDate</code>.</span><span class="zh">App 呼叫 <code>upsertAssignmentHistory</code> → 把作業標記 <code>isSubmitted = true</code> 並記下 <code>submittedDate</code>。</span></li>
+        <li><span class="en">The latest completed attempt becomes the submission; status flips to <span class="pill p-green">SUBMITTED</span> with the date shown.</span><span class="zh">最近一次完成的 attempt 成為提交版本；狀態翻成 <span class="pill p-green">SUBMITTED</span> 並顯示日期。</span></li>
+        <li><span class="en">The teacher can review — leaving a <code>teacherComment</code>; AI feedback (<code>aiFeedbackForStudent</code>) and <code>rubric</code> may also attach.</span><span class="zh">老師即可審閱 — 留下 <code>teacherComment</code>；也可能附上 AI 回饋（<code>aiFeedbackForStudent</code>）與 <code>rubric</code>。</span></li>
+      </ol>
+      <div class="callout callout-warn"><span class="en"><strong>One submission per assignment.</strong> Submit is not per-attempt — it commits the assignment. In the prototype, submitting flips the row to <span class="pill p-green">Submitted</span> and stamps the date (Today).</span><span class="zh"><strong>一份作業只提交一次。</strong>Submit 不是針對單次 attempt，而是提交整份作業。原型裡按下 Submit 會把該列翻成 <span class="pill p-green">Submitted</span> 並蓋上日期（Today）。</span></div>
+
+      <!-- 4 -->
+      <h2 id="redo"><span class="num">4</span> <span class="en">Redo — start a new attempt</span><span class="zh">重做 — 開始新的一次</span></h2>
+      <p><span class="en">Redo lets the student practise the same assignment again to improve. Each redo is a new attempt; Best/Last recompute.</span><span class="zh">重做讓學生對同一份作業再練一次以求進步。每次重做都是新的一次；Best/Last 會重算。</span></p>
+      <ol class="steps">
+        <li><span class="en">In <strong>History</strong>, expand a record to reveal its attempts and the action row.</span><span class="zh">在 <strong>History</strong> 展開一筆記錄，露出各次記錄與動作列。</span></li>
+        <li><span class="en">Student taps <b>↻ Redo</b> (labelled "Start new attempt" in the live app).</span><span class="zh">學生按 <b>↻ Redo</b>（正式 App 裡稱「Start new attempt」）。</span></li>
+        <li><span class="en">App opens the practice fresh: <code>/dashboard/assignments/content?sk=&lt;id&gt;&amp;type=&lt;type&gt;</code>.</span><span class="zh">App 重新開啟練習：<code>/dashboard/assignments/content?sk=&lt;id&gt;&amp;type=&lt;type&gt;</code>。</span></li>
+        <li><span class="en">On completion, <strong>attempt N+1</strong> is stored; <strong>Best</strong> = max, <strong>Last</strong> = this attempt.</span><span class="zh">完成後存成 <strong>第 N+1 次</strong>；<strong>Best</strong> = 最高分，<strong>Last</strong> = 這一次。</span></li>
+      </ol>
+      <div class="callout callout-tip"><span class="en"><strong>Availability:</strong> non-MC can be redone freely. MC is blocked once there is an attempt on the current version (see §5).</span><span class="zh"><strong>可用性：</strong>非選擇題可自由重做。選擇題只要當前版本已有一次 attempt，就不能再重做（見 §5）。</span></div>
+
+      <!-- 5 -->
+      <h2 id="mc"><span class="num">5</span> <span class="en">MC vs non-MC</span><span class="zh">選擇題 vs 非選擇題</span></h2>
+      <table>
+        <thead><tr><th><span class="en">Rule</span><span class="zh">規則</span></th><th><span class="en">Q&amp;A / Mirroring / Vocabulary</span><span class="zh">Q&amp;A / 口說跟讀 / 詞彙</span></th><th><span class="en">Multiple Choice</span><span class="zh">選擇題</span></th></tr></thead>
+        <tbody>
+          <tr><td><span class="en">Redo (new attempt)</span><span class="zh">重做（新的一次）</span></td><td style="background:#f0fdf4;color:#047857"><span class="en">Unlimited</span><span class="zh">無限</span></td><td style="background:#fffbeb;color:#92400e"><span class="en">One attempt per version</span><span class="zh">每個練習版本一次</span></td></tr>
+          <tr><td><span class="en">Condition</span><span class="zh">條件</span></td><td><span class="en">Always (unless practice removed)</span><span class="zh">一律可用（除非練習被刪）</span></td><td><code>!submitted &amp;&amp; !hasCurrentVersionAttempt</code></td></tr>
+          <tr><td><span class="en">UI</span><span class="zh">介面</span></td><td><span class="en">Shows <b>↻ Redo</b></span><span class="zh">顯示 <b>↻ Redo</b></span></td><td><span class="en">Hides Redo; shows <span class="pill p-purple">Multiple Choice · one try</span></span><span class="zh">隱藏 Redo；顯示 <span class="pill p-purple">Multiple Choice · one try</span></span></td></tr>
+          <tr><td>Submit</td><td colspan="2"><span class="en">Same for both — available while not yet submitted.</span><span class="zh">兩者相同 — 尚未提交前都可提交。</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><span class="en">Rationale: MC answers are fixed, so unlimited retries would let a student grind the exact answer. Open-ended types (speaking / writing) benefit from repeated practice.</span><span class="zh">原因：選擇題答案固定，無限重做會讓學生刷出正確答案；開放式（口說 / 寫作）則需要反覆練習才有幫助。</span></div>
+
+      <!-- 6 -->
+      <h2 id="fields"><span class="num">6</span> <span class="en">States &amp; fields</span><span class="zh">狀態與欄位</span></h2>
+      <h3><span class="en">Assignment statuses</span><span class="zh">作業狀態</span></h3>
+      <table>
+        <thead><tr><th><span class="en">Status</span><span class="zh">狀態</span></th><th><span class="en">Meaning</span><span class="zh">意思</span></th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill p-blue">PRACTICED</span></td><td><span class="en">Has at least one attempt, not submitted.</span><span class="zh">至少練過一次、尚未提交。</span></td></tr>
+          <tr><td><span class="pill p-green">SUBMITTED</span></td><td><span class="en">Handed to the teacher; carries <code>submittedDate</code>.</span><span class="zh">已交給老師；帶有 <code>submittedDate</code>。</span></td></tr>
+          <tr><td><span class="pill p-gray">REMOVED</span></td><td><span class="en">Practice deleted by teacher; read-only history.</span><span class="zh">老師刪了練習；歷史唯讀。</span></td></tr>
+        </tbody>
+      </table>
+      <h3><span class="en">Per-attempt fields</span><span class="zh">單次 attempt 的欄位</span></h3>
+      <table>
+        <thead><tr><th><span class="en">Field</span><span class="zh">欄位</span></th><th><span class="en">Meaning</span><span class="zh">意思</span></th></tr></thead>
+        <tbody>
+          <tr><td><code>attempt</code></td><td><span class="en">Attempt number (1, 2, 3 …).</span><span class="zh">第幾次（1、2、3…）。</span></td></tr>
+          <tr><td><code>date</code>（<code>createdAt</code>）</td><td><span class="en">When the attempt was made.</span><span class="zh">這次何時做的。</span></td></tr>
+          <tr><td><code>score</code>（<code>percentageScore</code>）</td><td><span class="en">0–100. Drives Best / Last.</span><span class="zh">0–100，決定 Best / Last。</span></td></tr>
+          <tr><td><code>isCompleted</code></td><td><span class="en">Whether finished (else resumable).</span><span class="zh">這次是否完成（否則可續做）。</span></td></tr>
+          <tr><td><code>isSubmitted</code></td><td><span class="en">Whether this attempt is part of the submission.</span><span class="zh">這次是否屬於提交版本。</span></td></tr>
+          <tr><td><code>teacherComment</code> · <code>aiFeedbackForStudent</code> · <code>rubric</code></td><td><span class="en">Feedback attached after review.</span><span class="zh">審閱後附上的回饋。</span></td></tr>
+          <tr><td><code>practiceVersion</code></td><td><span class="en">Which version of the practice this attempt belongs to.</span><span class="zh">這次屬於哪個練習版本。</span></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 7 -->
+      <h2 id="edge"><span class="num">7</span> <span class="en">Edge cases</span><span class="zh">邊界情況</span></h2>
+      <table>
+        <thead><tr><th><span class="en">Case</span><span class="zh">情況</span></th><th><span class="en">Behaviour</span><span class="zh">行為</span></th></tr></thead>
+        <tbody>
+          <tr><td><strong><span class="en">Incomplete attempt</span><span class="zh">未完成的 attempt</span></strong></td><td><span class="en"><code>isCompleted = false</code> → resumable via a <b>Continue</b> link instead of showing a score.</span><span class="zh"><code>isCompleted = false</code> → 這次可透過 <b>Continue</b> 續做，而不是顯示分數。</span></td></tr>
+          <tr><td><strong><span class="en">Outdated version</span><span class="zh">版本過期</span></strong></td><td><span class="en">Teacher edits the practice → <code>practiceVersion</code> bumps. Old attempts flagged outdated (<code>PracticeOutdatedDialog</code>); redo starts on the new version.</span><span class="zh">老師改了練習 → <code>practiceVersion</code> 進版。舊 attempt 會被標記過期（<code>PracticeOutdatedDialog</code>）；重做會用新版本。</span></td></tr>
+          <tr><td><strong><span class="en">Removed practice</span><span class="zh">練習被刪</span></strong></td><td><span class="en">Status <span class="pill p-gray">REMOVED</span>; history stays visible but no new attempts / submit.</span><span class="zh">狀態 <span class="pill p-gray">REMOVED</span>；歷史仍可見，但不能新做 / 提交。</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><span class="en">The prototype (<a class="inline" href="student-redesign.html">student-redesign.html</a> · History) implements §3–§5 at demo level: expand → <b>Redo</b> (non-MC) and <b>Submit to teacher</b>; MC shows the single-attempt note. Incomplete-resume and version-outdated are documented here but not yet in the prototype.</span><span class="zh">原型（<a class="inline" href="student-redesign.html">student-redesign.html</a> · History）已用 demo 程度實作 §3–§5：展開 → <b>Redo</b>（非MC）與 <b>Submit to teacher</b>；MC 顯示單次標記。未完成續做與版本過期只在本文件記錄，尚未進原型。</span></div>
+
+      <!-- 8 · NEW -->
+      <h2 id="newflow"><span class="num">8</span> <span class="en">Feedback &amp; Mail Box</span><span class="zh">回饋與 Mail Box</span> <span class="pill p-new">NEW</span></h2>
+      <p><span class="en">The items below <strong>extend</strong> today's product — discussed &amp; built in the prototype, <strong>not yet in the app</strong>. Each carries a <span class="pill p-new">NEW</span> tag.</span><span class="zh">以下項目是對現有產品的<strong>延伸</strong> — 已討論並在原型完成，<strong>尚未進正式 App</strong>。各項標上 <span class="pill p-new">NEW</span>。</span></p>
+
+      <h3><span class="en">A · "Reviewed" state</span><span class="zh">A · 「Reviewed」狀態</span> <span class="pill p-new">NEW</span></h3>
+      <p><span class="en">History gains a third status: <span class="pill p-gray">Not submitted</span> → <span class="pill p-amber">Waiting</span> → <span class="pill p-green">Reviewed</span>. Once the teacher reviews, the record becomes Reviewed and carries the feedback.</span><span class="zh">History 新增第三種狀態：<span class="pill p-gray">Not submitted</span> → <span class="pill p-amber">Waiting</span> → <span class="pill p-green">Reviewed</span>。老師審閱後，該筆變成 Reviewed 並帶著回饋。</span></p>
+
+      <h3><span class="en">B · Feedback is read in History</span><span class="zh">B · 回饋在 History 讀</span> <span class="pill p-new">NEW</span></h3>
+      <p><span class="en">The full teacher comment (+ AI Summary) is read <strong>inside the History record</strong> when expanded. Right after reading, <b>↻ Redo to improve</b> is the natural next step — it turns feedback straight back into practice.</span><span class="zh">完整老師評語（+ AI Summary）在<strong>展開 History 記錄</strong>時閱讀。讀完後，<b>↻ Redo to improve</b> 就是最自然的下一步 — 把回饋直接接回練習。</span></p>
+
+      <h3><span class="en">C · Mail Box — notification inbox</span><span class="zh">C · Mail Box — 通知收件匣</span> <span class="pill p-new">NEW</span></h3>
+      <p><span class="en">A brand-new inbox (no equivalent in today's product). It <strong>notifies</strong> the student ("Teacher reviewed your X"); tapping the message <strong>deep-links into History</strong> and opens that record. Mail Box only notifies — the feedback content lives in History. Unread count shows on the sidebar badge.</span><span class="zh">一個全新的收件匣（現有產品沒有）。它負責<strong>通知</strong>學生（「老師回饋了你的 X」）；點訊息會<strong>深連結跳進 History</strong> 並展開該筆。Mail Box 只通知 — 回饋內容住在 History。未讀數顯示在側欄徽章。</span></p>
+
+      <div class="diagram en">
+        <pre class="mermaid">
+flowchart LR
+  submit["Submit"]:::default --> review["Teacher reviews"]:::default
+  review --> notify["Mail Box notifies"]:::newn
+  notify --> openh["Open in History"]:::newn
+  openh --> read["Read feedback + AI Summary"]:::newn
+  read --> redo["Redo to improve"]:::newn
+  redo --> submit
+  classDef default fill:#dbeafe,stroke:#93c5fd,color:#1e40af;
+  classDef newn fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3;
+        </pre>
+      </div>
+      <div class="diagram zh">
+        <pre class="mermaid">
+flowchart LR
+  sub3["提交"]:::default --> rev3["老師審閱"]:::default
+  rev3 --> not3["Mail Box 通知"]:::newn
+  not3 --> open3["跳進 History"]:::newn
+  open3 --> read3["讀回饋 + AI Summary"]:::newn
+  read3 --> redo3["Redo 再進步"]:::newn
+  redo3 --> sub3
+  classDef default fill:#dbeafe,stroke:#93c5fd,color:#1e40af;
+  classDef newn fill:#e0e7ff,stroke:#a5b4fc,color:#3730a3;
+        </pre>
+      </div>
+
+      <h3><span class="en">D · AI Summary — clarification</span><span class="zh">D · AI Summary — 釐清</span></h3>
+      <div class="callout callout-warn"><span class="en">The product already has AI feedback (<code>aiFeedbackForStudent</code>), shown <strong>per Try</strong> and <strong>auto-generated</strong>, labelled <strong>"AI Summary"</strong> — separate from the teacher's manual review. The prototype currently bundles it into the Reviewed card as "AI coach"; <strong>to do:</strong> rename to "AI Summary" and move it under each Try.</span><span class="zh">產品本來就有 AI 回饋（<code>aiFeedbackForStudent</code>），是<strong>每個 Try 各一份</strong>、<strong>自動生成</strong>，叫 <strong>「AI Summary」</strong> — 與老師人工審閱分開。原型目前把它放進 Reviewed 卡並叫「AI coach」；<strong>待辦：</strong>改名為「AI Summary」並移到每個 Try 底下。</span></div>
+
+      <h3><span class="en">Status summary</span><span class="zh">狀態總覽</span></h3>
+      <table>
+        <thead><tr><th><span class="en">Item</span><span class="zh">項目</span></th><th><span class="en">Where</span><span class="zh">狀態</span></th></tr></thead>
+        <tbody>
+          <tr><td><span class="en">Attempt / Submit / Redo, Best·Last, MC rule (§1–§6)</span><span class="zh">Attempt / Submit / Redo、Best·Last、MC 規則（§1–§6）</span></td><td><span class="pill p-green"><span class="en">Existing product</span><span class="zh">現有產品</span></span></td></tr>
+          <tr><td><span class="en">Reviewed state · feedback in History · Mail Box · Redo-to-improve</span><span class="zh">Reviewed 狀態 · 回饋在 History · Mail Box · Redo-to-improve</span></td><td><span class="pill p-new">NEW</span> <span class="en">— in prototype, not in app</span><span class="zh">— 原型有、App 未有</span></td></tr>
+          <tr><td><span class="en">AI Summary reposition · incomplete-resume · outdated-version</span><span class="zh">AI Summary 歸位 · 未完成續做 · 版本過期</span></td><td><span class="pill p-amber"><span class="en">To do</span><span class="zh">待辦</span></span></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 9 · Open questions -->
+      <h2 id="discuss"><span class="num">9</span> <span class="en">Open questions</span><span class="zh">待討論</span> <span class="pill p-ask">DISCUSS</span></h2>
+      <p><span class="en">Design questions raised but not yet decided — to resolve before building.</span><span class="zh">已提出、尚未拍板的設計問題 — 動工前需決定。</span></p>
+      <table>
+        <thead><tr><th><span class="en">Question</span><span class="zh">問題</span></th><th><span class="en">Current behaviour</span><span class="zh">目前行為</span></th><th><span class="en">To decide</span><span class="zh">待決定</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="pill p-ask">Q1</span> <span class="en">Can a student still <b>Redo</b> after the <b>due date</b> has passed (overdue)?</span><span class="zh"><b>過了截止日（overdue）</b>還能不能 <b>Redo</b>？</span></td>
+            <td><span class="en">Redo availability currently <strong>ignores the due date</strong> — gated only by submitted / MC rules.</span><span class="zh">目前 Redo 可用性<strong>不看截止日</strong> — 只受 submitted / MC 規則限制。</span></td>
+            <td><span class="en">Allow always? · block after due? · allow but the new score doesn't count?</span><span class="zh">一律允許？ · 過期就鎖？ · 可做但新分數不計？</span></td>
+          </tr>
+          <tr>
+            <td><span class="pill p-ask">Q2</span> <span class="en">Should <b>Multiple Choice</b> open up <b>Redo</b> (allow more than one try)?</span><span class="zh"><b>選擇題</b>要不要<b>開放 Redo</b>（可做超過一次）？</span></td>
+            <td><span class="en">MC = one attempt per practice version, to prevent grinding the exact answer.</span><span class="zh">MC = 每個練習版本只能一次，避免刷出正確答案。</span></td>
+            <td><span class="en">Keep single? · allow N tries? · allow but only the first counts?</span><span class="zh">維持單次？ · 開放 N 次？ · 可做但只計第一次？</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <footer>DAHUA AI · Submit &amp; Redo Attempt Flow · 提交與重做流程 · 中文模組 · July 2026</footer>
+    </main>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'base', flowchart: { curve: 'basis', useMaxWidth: true } });
+    // language toggle
+    const langBtn = document.getElementById('langBtn');
+    langBtn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.dataset.lang === 'zh' ? 'en' : 'zh';
+      root.dataset.lang = next;
+      root.setAttribute('lang', next === 'zh' ? 'zh-Hant' : 'en');
+    });
+    // active TOC on scroll
+    const links = document.querySelectorAll('.sidebar a');
+    const sections = [...links].map((a) => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let idx = 0;
+      sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top <= 90) idx = i; });
+      links.forEach((a, i) => a.classList.toggle('active', i === idx));
+    };
+    window.addEventListener('scroll', onScroll); onScroll();
+  </script>
+</body>
+</html>

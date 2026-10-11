@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UI Versions — Teacher Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    color:#1e293b; background:#f8fafc; line-height:1.5; font-size:13px; }
+
+  .topbar{ background:#fff; border-bottom:1px solid #e2e8f0; padding:12px 30px; display:flex; align-items:center; gap:8px; font-size:12.5px; color:#64748b; }
+  .topbar a{ color:#64748b; text-decoration:none; font-weight:600; }
+  .topbar a:hover{ color:#0f172a; }
+  .topbar .sep{ color:#cbd5e1; }
+  .topbar .current{ color:#059669; font-weight:700; }
+
+  .container{ max-width:920px; margin:0 auto; padding:30px 24px; }
+  .page-header{ margin-bottom:24px; }
+  .page-header h1{ font-size:21px; font-weight:800; color:#0f172a; margin-bottom:4px; letter-spacing:-.3px; }
+  .page-header p{ font-size:12.5px; color:#64748b; }
+
+  .version-grid{ display:flex; flex-direction:column; gap:14px; }
+  .version-card{ background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); transition:all .2s; }
+  .version-card:hover{ box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:#cbd5e1; }
+  .version-card-inner{ display:flex; }
+  .version-preview{ width:340px; height:213px; flex-shrink:0; overflow:hidden; position:relative; background:#f1f5f9; border-right:1px solid #e2e8f0; }
+  .version-preview iframe{ width:1440px; height:900px; border:none; transform:scale(0.2361); transform-origin:top left; pointer-events:none; }
+  .version-preview .none{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#94a3b8; padding:20px; }
+  .version-preview .none svg{ width:34px; height:34px; color:#cbd5e1; margin-bottom:8px; }
+  .version-preview .none b{ color:#64748b; font-weight:700; font-size:12.5px; }
+
+  .version-info{ flex:1; min-width:0; padding:18px 22px; display:flex; flex-direction:column; justify-content:center; }
+  .version-label{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#64748b; margin-bottom:6px; align-self:flex-start; }
+  .version-label.latest{ background:#ecfdf5; color:#059669; padding:2px 8px; border-radius:4px; }
+  .version-name{ font-size:15px; font-weight:800; color:#0f172a; margin-bottom:3px; letter-spacing:-.2px; }
+  .version-date{ font-size:11.5px; color:#94a3b8; font-weight:700; margin-bottom:10px; }
+  .version-notes{ font-size:12px; color:#64748b; line-height:1.6; }
+  .version-notes ul{ margin:6px 0 0 15px; padding:0; }
+  .version-notes li{ margin-bottom:3px; }
+  .version-notes li b, .version-notes li strong{ color:#0f172a; font-weight:700; }
+  .version-notes code{ background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:11px; font-family:"SF Mono",monospace; }
+
+  .screens-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .screen-tag{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:5px; background:#ecfdf5; color:#065f46; border:1px solid #6EE7B7; }
+
+  .version-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .version-btn{ font-size:11.5px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:all .15s; }
+  .version-btn.primary{ background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:1px solid #059669; box-shadow:0 4px 10px -4px rgba(5,150,105,.6); }
+  .version-btn.primary:hover{ filter:brightness(1.05); }
+  .version-btn.secondary{ background:#fff; color:#475569; border:1px solid #e2e8f0; }
+  .version-btn.secondary:hover{ background:#f8fafc; border-color:#cbd5e1; }
+  .version-btn.disabled{ opacity:.5; pointer-events:none; }
+
+  footer{ text-align:center; padding:24px 0; color:#94a3b8; font-size:11.5px; border-top:1px solid #e2e8f0; margin-top:34px; }
+
+  @media (max-width:720px){ .version-card-inner{ flex-direction:column; } .version-preview{ width:100%; border-right:none; border-bottom:1px solid #e2e8f0; } }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <a href="teacher-redesign.html">Teacher Redesign</a>
+    <span class="sep">/</span>
+    <span class="current">Version History</span>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Teacher Redesign — Version History</h1>
+      <p>UI iteration log for the Chinese-module teacher dashboard. Each version captures design progress across the screens.</p>
+    </div>
+    <div class="version-grid" id="grid"></div>
+    <footer>DAHUA AI &middot; UI Versions &middot; Teacher Redesign &middot; July 2026</footer>
+  </div>
+
+<script>
+(function(){
+  const VERSIONS = [
+    {
+      v:'Redesign v14', latest:true, title:'Redesign v14 — in progress', date:'2026-10-05',
+      pages:[['提案比較','teacher-planning-proposals.html'], ['提案一 · 助手欄＋產品頁','teacher-planning-b.html'], ['提案二 · 對話→草稿卡','teacher-planning.html'], ['Spec','teacher-planning-spec.html']],
+      desc:'方向 C：Planning 只負責決定——對話決定、邊問邊生，收尾一張草稿卡；審稿是 Preview as a student 全畫面走查，Assign／Edit 是彈窗（產品建立頁第四步／第二步），不換分頁。右側面板不再用；v13 的面板流程、Confirm 雙段預覽、Assign 五連問都拿掉。側邊欄換成線上產品的殼（照 2.4 v8 的複刻）。',
+      changes:[['方向 C','對話六到七回合：要做什麼 → 來源／Project → 教學點 → 每種練習自己的一題（Mirroring 哪幾句／Scramble 幾句＋從哪來／Quiz 幾題＋怎麼挑＋必考）→ 設定一句話列預設、Change 才展開 → 草稿卡。一次可做多個 practice，各自一張卡、各自 Open。'],['邊問邊生','每個練習的問題答完就開始生；後面的回合頂上一條生成狀態，草稿卡上的 Open 等生好才亮。'],['進度條','步數＝決定數，選完練習就算得出來（Quiz 的分支會長出來）。'],['側邊欄','跟 2.4 v8 一模一樣：teacher-nav.js 不再注入、Public Sans 只套側欄、選中 Practice List。'],['B 提案（另一支檔）','teacher-planning-b.html：主欄就是 2.4 定案的建立頁面（iframe 嵌 v3 Content Mirroring，四步是真的），左邊 380px 助手欄問決定、預填、解釋設定，Back／Next 與四步條都住在助手欄；助手欄用網址參數驅動主欄。接了 Content Mirroring（v3）與 Vocabulary Mirroring（v4）。']],
+      tags:['In progress'],
+    },
+    {
+      v:'Redesign v13', latest:false, title:'Redesign v13 — 面板吃下所有內容', date:'2026-08-26',
+      pages:[['Planning','versions/redesign-v13-planning.html'], ['Spec','versions/redesign-v13-planning-spec.html'], ['Dashboard','teacher-redesign.html'], ['Practice','teacher-practice.html'], ['Projects','teacher-projects.html'], ['Question Banks','teacher-question-banks.html'], ['Slides','teacher-slides.html'], ['Handout','teacher-handout.html'], ['Classes','teacher-classes.html'], ['Program','teacher-program.html'], ['Leaderboard','teacher-leaderboard.html'], ['Students','teacher-students.html'], ['Word Game','teacher-wordgame-v10.html'], ['Word Game v9','teacher-wordgame-v9.html']],
+      desc:'右側面板從附屬預覽變成主要工作區：面板＝東西本身、對話＝決定（對話只問五件事）。Sentence Scramble 三步、Vocabulary Cards＋Quiz 全流程（兩欄字卡、選圖、固定兩則例句、Add a word 走對話）、Confirm 雙段預覽（面板唯讀全內容 → Preview as a student 全畫面走查）、Assign 鏈路、全寬任務進度條。QA 與 Sentence Response／Building 面板未做。凍結 2026-10-05。',
+      changes:[['面板＝東西本身','七項設定不再逐題問，進到那一步套預設、細調在右側面板；面板修改仍記復原點、Back 退得回來，但不往對話寫 Q&A。'],['Scramble／Vocabulary','教學點驅動的三步、字卡兩欄、Quiz 三段式提問＋字 × 題型矩陣。'],['Confirm 雙段預覽','真實產品只有 Test；這裡做面板唯讀＋全畫面走查。']],
+      tags:['Frozen'],
+    },
+    {
+      v:'Redesign v12', latest:false, title:'Redesign v12 — 端點改名、Slide、句型兩張新卡', date:'2026-08-24',
+      pages:[['Planning','versions/redesign-v12-planning.html'], ['Spec','versions/redesign-v12-planning-spec.html'], ['Dashboard','versions/redesign-v12-dashboard.html'], ['Practice','versions/redesign-v12-practice.html'], ['Projects','versions/redesign-v12-projects.html'], ['Question Banks','versions/redesign-v12-question-banks.html'], ['Slides','versions/redesign-v12-slides.html'], ['Handout','versions/redesign-v12-handout.html'], ['Classes','versions/redesign-v12-classes.html'], ['Program','versions/redesign-v12-program.html'], ['Leaderboard','versions/redesign-v12-leaderboard.html'], ['Students','versions/redesign-v12-students.html'], ['Word Game','versions/redesign-v12-wordgame.html']],
+      desc:'Planning 的開場清單整理過一輪：八個練習依素材分成四家（課文／生詞／句型／理解），名稱一律「素材 + 練法」，並補上兩張句型的新卡。原本的「只要 content」換成 Slide —— 不再有只產出內容、沒有產出物的路徑。',
+      changes:[
+        ['端點全面改名','Mirroring Practice → Content Mirroring、Vocabulary Practice → Vocabulary Mirroring、Vocabulary × MC → Vocabulary Quiz、Multiple Choice → Comprehension Quiz、QA Practice → Open End Question。Sentence Scramble 不變。'],
+        ['Just the content → Slide','不只是改名：Slide 不再獨佔（可以跟練習一起做）、可以從既有 Project 做、也拿掉了「寫一課文」直接跳到只產內容的捷徑。'],
+        ['兩張新卡','Sentence Response 與 Sentence Building。縮圖沿用 2.4 v1 提案 C 已經畫好的那兩張，同一套語彙。內容尚未設計（EP 上標 stub:true）。'],
+        ['卡片一行一家','3/2/3/2 —— 每一行就是一種素材，靠列距（16px）大於欄距（10px）表達分組，不加標題也不加框線。Content Mirroring 移到第一行跟 Handout、Slide 並排。'],
+        ['卡片拿掉副標','只留縮圖與名字。渲染器同時修掉「沒有副標就印出 undefined」的問題。'],
+        ['Spec 同步','§1 併入定位與三個階段、§6.1 對齊 v12 的開場、§8.2 補上右側預覽面板、§10 改成二十條路徑。'],
+      ],
+      tags:['Planning','Spec'],
+    },
+    {
+      v:'Redesign v11', latest:false, title:'Redesign v11 — building a Project, against the real screens', date:'2026-08-18',
+      pages:[['Planning','versions/redesign-v11-planning.html'], ['Spec','versions/redesign-v11-planning-spec.html'], ['Dashboard','versions/redesign-v11-dashboard.html'], ['Practice','versions/redesign-v11-practice.html'], ['Projects','versions/redesign-v11-projects.html'], ['Question Banks','versions/redesign-v11-question-banks.html'], ['Slides','versions/redesign-v11-slides.html'], ['Handout','versions/redesign-v11-handout.html'], ['Classes','versions/redesign-v11-classes.html'], ['Program','versions/redesign-v11-program.html'], ['Leaderboard','versions/redesign-v11-leaderboard.html'], ['Students','versions/redesign-v11-students.html'], ['Word Game','versions/redesign-v11-wordgame.html']],
+      desc:'The opening question flattens into one list of everything the product can make, each card showing the screen a student will meet. The new-Project path is rebuilt against screenshots of the real Create New Project —— which corrected several things this prototype had invented.',
+      changes:[
+        ['One list, not two levels','“A Project or Practices?” is gone. Eight endpoints in one multi-select, the two material outputs on their own first row. Just the content stays exclusive.'],
+        ['Cards show the student screen','Each endpoint carries a small inline drawing of what the student actually meets —— play buttons and sentence lines for Mirroring, a question and three options for Multiple Choice, a sheet of paper for Handout. Green marks the parts a student touches, so the two material cards have none.'],
+        ['A preview panel that edits','Toggle in the pagebar. During the Mirroring settings it shows the sentences and all eight settings as live controls —— flip pinyin to Hidden there and the sentences change. A change made in the panel is recorded in the thread as a question and an answer, so Back undoes it and a setting answered early is skipped later.'],
+        ['Building a Project, rebuilt','Three ways in (write it for me / adapt my article / use it as it is), then Course Settings and Generate Content —— one message per real step, not one per field. Revise carries the same Content Type, Word Limit and Teaching Points as Create; Summary carries none. Both take images (max 10) or pasted text.'],
+        ['Teaching points are an input, not an output','The content is written around them, not mined for them afterwards. Earlier drafts had this backwards.'],
+        ['Picked by clicking the content','The teaching-points step is the word picker the product actually has: the article as clickable chips with pinyin, every instance of a word lighting up together, and a separate box for grammar and sentence patterns that cannot be selected in the text.'],
+        ['Asked only when something uses them','Mirroring runs on sentences and QA runs on a bank, so both skip the step. Required only for the practices built from them; a Project or Handout can finish with none —— and says so.'],
+        ['A pause after the content','A run that only asked for content stops once it can be read, and asks what it is for: practices, a handout, or nothing yet. That answer is what decides whether teaching points or a question bank are needed.'],
+        ['Review & Edit','Project name, Article Content, and a character count against the word limit. The name the teacher types is the name that gets used —— it was being replaced by a generated one.'],
+        ['Corrections from the real screens','Teaching points are optional to generate (not required). Content type has seven values, word limit is a 100–800 slider at 150. Course Settings has four fields, two of them languages this prototype did not know about.'],
+        ['“text” becomes “content”','Throughout, to match the product. The step is Review & Edit and the box is Article Content.'],
+        ['Spec: design progress tracking','New §10 tracks all sixteen paths —— eight endpoints × two sources —— built by walking each one. Three are complete. New §3.5 cross-tabulates what every output needs, which surfaced that Article Content underpins all of them and that OTHER teaching points are drilled by nothing.'],
+      ],
+      tags:['Planning','Create New Project','Spec'],
+    },
+    {
+      v:'Redesign v10', latest:false, title:'Redesign v10 — Planning becomes a conversation', date:'2026-08-14',
+      pages:[['Planning','versions/redesign-v10-planning.html'], ['Spec','versions/redesign-v10-planning-spec.html'], ['Dashboard','versions/redesign-v10-dashboard.html'], ['Practice','versions/redesign-v10-practice.html'], ['Projects','versions/redesign-v10-projects.html'], ['Question Banks','versions/redesign-v10-question-banks.html'], ['Slides','versions/redesign-v10-slides.html'], ['Handout','versions/redesign-v10-handout.html'], ['Classes','versions/redesign-v10-classes.html'], ['Program','versions/redesign-v10-program.html'], ['Leaderboard','versions/redesign-v10-leaderboard.html'], ['Students','versions/redesign-v10-students.html'], ['Word Game','versions/redesign-v10-wordgame.html']],
+      desc:'The funnel screens are gone. Planning is now one continuous thread —— one question, one answer, each in its own message —— that works backwards from what the teacher said to the features we actually have. Everything the teacher answers is now visible before anything is created: the passage, the questions, and the screen the student will meet.',
+      changes:[
+        ['One question per message','The chip bar, the progress badge and the separate step screens are gone. Every exchange stays on screen and scrolls back; only the last message carries controls.'],
+        ['Back on every step','Top corner of the message being asked, not in the answer row. It restores the snapshot taken before the previous answer —— an edit made inside a step (reordering sentences, deleting one) is kept, and steps derived from a changed answer are dropped.'],
+        ['History sidebar','Past plans listed by when, titled by what they made, with New plan at the top. Opening one replays its real thread —— the steps redraw from their own answers. Switching back restores an unfinished plan down to the question it was sitting on.'],
+        ['Mirroring settings become questions','Seven of them, one per message: Audio Mode, English First, pinyin, translation, Auto Pass, speed, voice. Sentences can be split, reordered and deleted first.'],
+        ['Corrected against the real settings','Auto Pass is a number the teacher types (no “never”), speed has three steps not five, and pronunciation strictness —— which is not a real setting —— was removed.'],
+        ['Voices you can audition','The voice question lists every voice with its own play button instead of three plain buttons.'],
+        ['A student view before assigning','One item exactly as a student meets it, with the settings already applied —— hide the pinyin and it is hidden here too. Mirroring shows the whole sentence list, each line with its own play. Multiple Choice does not give the answer away.'],
+        ['Assigning asks what the real form asks','Class, start time (with Now), due date (+1/+2/+3/+5/+7 days from the start, or typed), required or optional, and which students —— the whole roster, everyone in by default, tap to leave someone out.'],
+        ['Steps that do not apply are skipped','Picking Mirroring no longer asks about teaching points or shows a question bank —— it runs on the passage sentences.'],
+        ['One rule for where buttons sit','Every clickable in a thread shares one size. A row hangs off the right unless it is a long list of cards; the primary action is always last.'],
+        ['Spec rewritten to match','Draft v4: the start-screen, proposal-table and sample-list sections are deleted and replaced by the conversation model, the funnel, the steps, and “see it before you create it”. Five new open questions, including whether conversations are stored server-side.'],
+      ],
+      tags:['Planning','Conversation','Spec'],
+    },
+    {
+      v:'Redesign v9', latest:false, title:'Redesign v9 — Planning mode, and the whole teacher surface', date:'2026-08-12',
+      pages:[['Planning','versions/redesign-v9-planning.html'], ['Spec','versions/redesign-v9-planning-spec.html'], ['Dashboard','versions/redesign-v9-dashboard.html'], ['Practice','versions/redesign-v9-practice.html'], ['Projects','versions/redesign-v9-projects.html'], ['Question Banks','versions/redesign-v9-question-banks.html'], ['Slides','versions/redesign-v9-slides.html'], ['Handout','versions/redesign-v9-handout.html'], ['Classes','versions/redesign-v9-classes.html'], ['Program','versions/redesign-v9-program.html'], ['Leaderboard','versions/redesign-v9-leaderboard.html'], ['Students','versions/redesign-v9-students.html'], ['Word Game','versions/redesign-v9-wordgame.html']],
+      desc:'The teacher side becomes complete: every sidebar destination now has a page, Slides and Handout exist, and Planning is added —— a funnel that converges on two questions (what to make, where the material comes from) and then expands into passage → teaching points → what will be created.',
+      changes:[
+        ['Planning (new)','Two-question funnel, endpoints multi-select across all 8+1 outputs, filled slots shown as removable chips, the conversation only asks what it cannot infer, translates the teacher’s wording onto system types, and says plainly when something is not supported.'],
+        ['Passage first, teaching points once','Any run that creates a Project reads the passage first (editable), then confirms the teaching points pulled out of it —— mandatory, and flagged when a point is no longer in the passage.'],
+        ['See it before you create it','Every row in “what this creates” expands to the real content —— the sentences with per-word pinyin, sample questions with the answer marked, the word cards, the scrambled sentence, the handout sections, the slide deck.'],
+        ['Seven pages that did not exist','Projects, Question Banks, Practice List, Program, Classes, Leaderboard, plus Slides and Handout —— all built from what the dahua-dash code actually does.'],
+        ['One sidebar, one stylesheet','assets/teacher-nav.js and assets/teacher-shell.css replace the per-page copies. Frozen here alongside the pages, with every link rewritten so the snapshot is self-contained.'],
+      ],
+      tags:['Planning','Slides','Handout','All teacher pages'],
+    },
+    {
+      v:'Redesign v8', latest:false, title:'Redesign v8 — RWD (Dashboard + Students + Word Game)', date:'2026-08-06',
+      file:'versions/redesign-v8-dashboard.html', wordgame:'versions/redesign-v8-wordgame.html', students:'versions/redesign-v8-students.html',
+      desc:'Continues from v7 (frozen). This version makes all three teacher pages responsive: tablet fully optimised, phone readable and operable without horizontal scroll.',
+      changes:[
+        ['Sidebar → drawer (≤1024px)','All three pages: hamburger in the topbar opens the sidebar over a scrim. Closes on scrim click, nav click, Escape, or resize back to desktop. Replaces the old rule that simply hid the sidebar with no way to navigate.'],
+        ['Tables → cards (≤820/700px)','Word Game assignments / behind lists / student roster and the dashboard assignment table reflow into stacked cards; column headers hide and the key numbers get inline labels.'],
+        ['Students: list ↔ detail page switch (≤900px)','The 380px master-detail collapses to one pane — tap a student for the full-page detail, back button returns to the roster (same pattern as the Word Game stages page).'],
+        ['Word Game narrow-screen fixes','Calendar drops to a single month, stage grid to one column, dialogs become full-screen sheets, Assign button goes full width.'],
+        ['Dashboard','Stat cards 4 → 2 → 1, Search kept at every width (previously hidden below 820px), review drawer and score split stack.'],
+      ],
+      tags:['RWD','Dashboard','Students','Word Game'],
+    },
+    {
+      v:'Redesign v7', latest:false, title:'Redesign v7 — Word Game + Students', date:'2026-08-05',
+      wordgame:'versions/redesign-v7-wordgame.html', students:'versions/redesign-v7-students.html',
+      desc:'Calendar-based scheduling, a Manage modal, locked levels, and a two-panel left column. Frozen snapshot.',
+      changes:[
+        ['Assign flow','Pick classes first, then a collapsible two-month date-range calendar that disables dates a class is already booked on. Goal types: complete stages / reach level / play minutes-per-day with a weekday / weekend / custom day picker.'],
+        ['Manage assignments','A “Manage” modal lists each assignment as a card (dates, goal, students) with Edit and Delete — both update the live data.'],
+        ['Game Content','Levels 2–6 are locked (“Coming soon”); the stages-page Insights panel was removed.'],
+        ['Left panel','Split into two panels — “Word Game Assignments” and “Student Levels” (roster with an All-students option). Minute goals show a weekly missed-days tracker.'],
+        ['Students page','Removed the Manage button, HSK filter and per-student edit button; renamed the detail section to “Word Game and Achievement”.'],
+      ],
+      tags:['Word Game','Students'],
+    },
+    {
+      v:'Redesign v6', latest:false, title:'Redesign v6 — wordgame', date:'2026-08-04',
+      wordgame:'versions/redesign-v6-wordgame.html',
+      desc:'Due-date-centric Assignments panel, a minutes-per-day goal, and a collapsible Insights panel on the stages page. Frozen snapshot.',
+      changes:[
+        ['Assignments panel','Reworked into a cross-class list sorted by due date. Each row shows Due · class · goal · Reached X / total, with the reached number coloured by due-date urgency (red / amber / grey) and “All complete” when everyone met it. Expanding a row lists the students who haven’t met the goal.'],
+        ['All students','Replaced the class switcher with a class multi-select dropdown (same control as the Assign dialog); pick one or more classes to view a sortable roster.'],
+        ['New goal type','The Assign dialog adds “Play a set time each day” — minutes per day with quick presets (10 / 15 / 20 / 30) and a custom value. Its behind-list shows today’s minutes vs the goal.'],
+        ['Insights','The stages page gained a collapsible Insights panel: three side-by-side leaderboards — Most time spent, Hardest quizzes, Most drop-offs (numbers only, top 5). Metrics are mock pending telemetry.'],
+        ['Dashboard','Word Game assignments (including the minutes goal) now appear in the dashboard’s Active Assignments.'],
+      ],
+      tags:['Word Game'],
+    },
+    {
+      v:'Redesign v5', latest:false, title:'Redesign v5 — wordgame', date:'2026-08-03',
+      wordgame:'versions/redesign-v5-wordgame.html',
+      desc:'Re-proposed the left “Word Game Assignments” panel and moved game content to a dedicated stages page. Frozen snapshot.',
+      changes:[
+        ['Assignments panel','One class at a time (switcher: dropdown + prev/next arrows). Each assignment shows a progress bar (X / N reached) and a “Behind” list of the students who haven’t met the goal — with how many stages they still need. The all-students roster is collapsed and sortable (progress low↔high).'],
+        ['Removed','Dropped the leaderboard, stars, and the class-level distribution bar — the panel is about class progress, not a ranking.'],
+        ['Game Content','World rows (Level + teaching-content name; HSK · stages coloured green→red) open a full stages page with search, a type filter and pagination.'],
+        ['Assign dialog','Class multi-select dropdown; two goal types — Complete N stages / Reach a level · stage.'],
+      ],
+      tags:['Word Game'],
+    },
+    {
+      v:'Redesign v4', latest:false, title:'Redesign v4 — wordgame', date:'2026-07-30',
+      file:'versions/redesign-v4-dashboard.html', students:'versions/redesign-v4-students.html', wordgame:'versions/redesign-v4-wordgame.html',
+      desc:'An assignable Word Game — a new Practice ▸ Word Game page: review the game content stage-by-stage and assign it to classes as goal-based work, with the left panel tracking each class’s progress.',
+      changes:[
+        ['Word Game page','New Practice ▸ Word Game entry in the sidebar. Two panels in the dashboard visual language: left “Word Game Assignments” (class progress), right “Game Content”.'],
+        ['Assigning','Pick classes from a multi-select dropdown, then set a goal — either “complete N stages” or “reach a level / stage” (the big level and a specific small stage are both selectable) — plus a due date. (The earlier “just play” mode and the star-count goal were dropped.)'],
+        ['Class progress, not a leaderboard','Switch between classes with a header dropdown + prev/next arrows. Each class shows a level-distribution bar (green→red, L0–L6), an assignments table (goal · due · not-done), and an all-students list of each student’s current Level + Stage (behind-first). Stars were removed — they’re account-wide, not Word-Game-specific.'],
+        ['Game Content','7 worlds (Level 0–6 = HSK 0–6). Click a world to open a full stages page (not a popup) with search, a type filter (Teaching / Quiz / Boss) and pagination (12 stages/page); each stage card shows its words or questions.'],
+      ],
+      tags:['Word Game','Assignments','Students'],
+    },
+    {
+      v:'Redesign v3', latest:false, title:'Redesign v3 — Review States & Outstanding Assignments', date:'2026-07-24',
+      file:'versions/redesign-v3-dashboard.html', students:'versions/redesign-v3-students.html',
+      desc:'Reworked the review flow into an approve/mark-reviewed model, turned the student Assignment Status into an outstanding-only list with reminder/skip popups, and reorganised the To Review filter.',
+      changes:[
+        ['Review flow','Send review now marks the submission Reviewed (green stamp + clipboard icon) instead of skipping to the next student; the button greys out and only re-enables after the score or note is changed. Teacher Score shows an “edited” save hint.'],
+        ['To Review','filter split into <b>To Review</b> / <b>Reviewed</b> tabs plus a practice-type dropdown; removed the header count pill.'],
+        ['Students · Assignment Status','shows only not-submitted items — within-deadline can send a reminder, overdue can Skip or remind — using the same confirmation popups as the dashboard.'],
+        ['Students · Assignment History','renamed from “Practice History”, columns aligned with Assignment Status (shared Type/Date), compact “Detail” button.'],
+        ['Naming & polish','renamed the “Multiple Choice” practice type to <b>Follow the Pattern</b>; added colour-coded urgency bands to Active Assignments; fixed the student-page popups failing to open.'],
+      ],
+      tags:['Dashboard','Assignments','Students'],
+    },
+    {
+      v:'Redesign v2', latest:false, title:'Redesign v2 — Practice Detail Popup', date:'2026-07-23',
+      file:'versions/redesign-v2-dashboard.html', students:'versions/redesign-v2-students.html',
+      desc:'Split review scoring, reworked the review drawer, and added a per-practice detail popup shared by the Students page and the dashboard.',
+      changes:[
+        ['Review score','split the single Score into read-only <b>AI Score</b> + editable <b>Teacher Score</b> (defaults to the AI score; the teacher can override it).'],
+        ['Review drawer','single-select Quick Review; <b>Send review</b> + <b>Previous</b> / <b>Next student</b> navigation; <b>Detail</b> under the questions; Q&A shows the student’s spoken answer per question.'],
+        ['Students · Practice History','added a <b>Practice name</b> column; scores shown as plain numbers (colour grading removed); each row gained a <b>Review detail</b> button.'],
+        ['Practice detail popup','new modal opened from Practice History and from the dashboard’s <b>View practice detail</b>. Speaking types (Q&A / Mirroring / Vocabulary) show a per-character pronunciation breakdown — pinyin, character coloured by result, a ✓/!/✕ marker, star rating, toggles and Play Audio — above a Score breakdown. Multiple Choice shows a per-question review (Q badge, format + category tags, student-vs-correct answers) with an X / Y correct summary.'],
+        ['Removed','Quick Create panel removed from the dashboard.'],
+      ],
+      tags:['Dashboard','Assignments','Students'],
+    },
+    {
+      v:'Redesign v1', latest:false, title:'Redesign v1 — Assignments Deep-Dive & Students Page', date:'2026-07-22',
+      file:'versions/redesign-v1-dashboard.html', students:'versions/redesign-v1-students.html',
+      desc:'Reworked Active Assignments into an assignment → class → student drill-down, and added a Students page.',
+      changes:[
+        ['Active Assignments','assignment-centric, expandable to each class then to the not-submitted student list (3 levels).'],
+        ['Progress','replaced bars with numbers emphasizing <b>Not submitted</b>, coloured by urgency.'],
+        ['Due dates','show the actual date — red for today/overdue, amber for tomorrow, grey for later, with today/overdue tags. Optional assignments not tracked.'],
+        ['Trimmed','removed the Needs Attention and Classes panels, the “See all” link, and the submitted fraction.'],
+        ['Students page','master-detail roster + student detail (Word Game Level, Assignment Status, Practice History). Reachable from Overview → Students and by clicking a not-submitted name on the dashboard.'],
+      ],
+      tags:['Dashboard','Assignments','Students'],
+    },
+    {
+      v:'Redesign v0', latest:false, title:'Redesign v0 — Students (baseline)', date:'2026-08-04',
+      students:'versions/redesign-v0-students.html',
+      desc:'Baseline Students page kept for reference — the version before the v7 simplification.',
+      changes:[
+        ['Students list','Had a Manage button and an HSK-level filter next to the class filter and the search box.'],
+      ],
+      tags:['Students'],
+    },
+  ];
+
+  const grid=document.getElementById('grid');
+  grid.innerHTML = VERSIONS.map(d=>{
+    const psrc = (d.pages && d.pages[0] && d.pages[0][1]) || d.wordgame || d.students || d.file;
+    const preview = psrc
+      ? '<iframe src="'+psrc+'" title="'+d.v+' preview" loading="lazy"></iframe>'
+      : '<div class="none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg><b>No snapshot for '+d.v+'</b></div>';
+    const label = d.latest ? '<span class="version-label latest">Latest</span>' : '<span class="version-label">'+d.v+'</span>';
+    const notes = d.desc + '<ul>' + d.changes.map(c=>'<li><b>'+c[0]+':</b> '+c[1]+'</li>').join('') + '</ul>';
+    const tags = '<div class="screens-list">' + d.tags.map(t=>'<span class="screen-tag">'+t+'</span>').join('') + '</div>';
+    let btns = '';
+    if(d.pages){
+      btns += d.pages.map(function(pg,i){
+        return '<a class="version-btn '+(i?'secondary':'primary')+'" href="'+pg[1]+'" target="_blank" rel="noopener">'+pg[0]+'</a>';
+      }).join('');
+    }
+    if(d.file) btns += '<a class="version-btn primary" href="'+d.file+'" target="_blank" rel="noopener">Open '+(d.openLabel||'Dashboard')+' '+d.v+'</a>';
+    if(d.students) btns += '<a class="version-btn secondary" href="'+d.students+'" target="_blank" rel="noopener">Open Students '+d.v+'</a>';
+    if(d.wordgame) btns += '<a class="version-btn '+(d.file?'secondary':'primary')+'" href="'+d.wordgame+'" target="_blank" rel="noopener">Open Word Game '+d.v+'</a>';
+    if(!btns) btns = '<span class="version-btn secondary disabled">Snapshot unavailable</span>';
+    return '<div class="version-card"><div class="version-card-inner">'+
+      '<div class="version-preview">'+preview+'</div>'+
+      '<div class="version-info">'+label+
+        '<div class="version-name">'+d.title+'</div>'+
+        '<div class="version-date">'+d.date+'</div>'+
+        '<div class="version-notes">'+notes+tags+'</div>'+
+        '<div class="version-actions">'+btns+'</div>'+
+      '</div></div></div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

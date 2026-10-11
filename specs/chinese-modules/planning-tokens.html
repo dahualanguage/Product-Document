@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning mode — Design tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   Planning mode · design tokens（2026-10-06 第三版）
+   前兩版的問題：「選中」是畫面上最常出現的狀態，拿一個色相（琥珀→藍）去標它，那個色就會滿版。
+   這一版：中性色撐 90%，產品綠只給「現在要按的那一顆」與「進度」，選中狀態不用色相、用墨色邊框 ＋ 小綠勾；
+   第二個色相拿掉。所有值都從線上產品的 palette 來（text.primary #212B36、text.secondary #637381、grey、primary #00CB61）。
+   =========================================================================== */
+:root{
+  /* --- 中性 --- */
+  --ink:#212B36;        /* 主要文字、選中邊框 */
+  --ink-2:#454F5B;      /* 內文 */
+  --ink-3:#637381;      /* 次要文字、眉標 */
+  --muted:#919EAB;      /* 停用、提示 */
+  --line:#E6EBF1;       /* 邊框 */
+  --line-2:rgba(145,158,171,.24);
+  --paper:#F4F6F8;      /* 老師的泡泡、唸出來的答案 */
+  --canvas:#F9FAFB;     /* 畫布底 */
+  --surface:#FFFFFF;
+  /* --- 產品綠：只有三個用途（主按鈕、現在這一步／進度、完成） --- */
+  --green:#00CB61; --green-d:#00A749; --green-dd:#00754A; --green-wash:#EFFBF4; --green-line:#BBF1D0;
+  /* --- 練習類型色：只在練習卡的縮圖與列線上出現（照產品 PRACTICE_TYPE_ENTRIES） --- */
+  --t-content:#00B95C; --t-vocab:#EFA00B; --t-sentence:#EC4899; --t-comp:#8B5CF6;
+  /* --- 形狀 --- */
+  --r-ctl:8px; --r-card:12px; --r-pill:999px;
+  --sh-card:0 1px 2px rgba(33,43,54,.06);
+  /* --- 字 --- */
+  --font:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --fs-body:14px; --fs-sm:13px; --fs-xs:12px; --fs-eyebrow:10.5px;
+  /* --- 動 --- */
+  --t-fast:.15s; --t-base:.2s;
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:var(--font); font-size:var(--fs-body); color:var(--ink-2); background:var(--canvas); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.wrap{ max-width:1100px; margin:0 auto; padding:44px 28px 80px; }
+h1{ font-size:26px; font-weight:800; color:var(--ink); letter-spacing:-.3px; }
+.sub{ color:var(--ink-3); margin-top:6px; max-width:760px; }
+h2{ font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--ink-3); margin:40px 0 12px; }
+.rule{ font-size:13px; color:var(--ink-3); margin:-6px 0 12px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.sw{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); overflow:hidden; }
+.sw i{ display:block; height:54px; }
+.sw b{ display:block; font-size:12px; color:var(--ink); padding:8px 10px 0; }
+.sw span{ display:block; font-size:11px; color:var(--ink-3); padding:0 10px 9px; }
+.two{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:860px){ .two{ grid-template-columns:1fr; } }
+.panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:18px; box-shadow:var(--sh-card); }
+.panel h3{ font-size:12px; font-weight:800; color:var(--ink-3); text-transform:uppercase; letter-spacing:.6px; margin-bottom:12px; }
+.note{ font-size:12px; color:var(--ink-3); margin-top:10px; }
+
+/* ---------- 元件（跟兩個提案同名的 class，之後直接搬） ---------- */
+.rail{ width:380px; max-width:100%; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:14px; }
+.msg{ display:flex; margin-bottom:12px; }
+.msg .bub{ flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:11px 13px; font-size:var(--fs-sm); color:var(--ink-2); line-height:1.5; }
+.msg.you{ justify-content:flex-end; }
+.msg.you .bub{ flex:0 1 auto; max-width:80%; background:var(--paper); border-color:transparent; color:var(--ink); font-weight:700; }
+.stag{ display:block; margin-bottom:5px; font-size:var(--fs-eyebrow); font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-3); }
+.qopts{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.qopt{ padding:8px 12px; line-height:1.3; border:1px solid var(--line); border-radius:var(--r-ctl); background:var(--surface); font:inherit; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer; text-align:left; transition:border-color var(--t-fast), background var(--t-fast); }
+.qopt:hover{ border-color:var(--muted); }
+.qopt.multi .material-icons-round{ font-size:15px; vertical-align:-3px; margin-right:4px; color:var(--muted); }
+/* 選中（2026-10-07 定案：候選 B）：1px 產品綠框、白底、墨字、綠勾 */
+.qopt.multi.on{ border-color:var(--green); color:var(--ink); background:var(--surface); }
+.qopt.multi.on .material-icons-round{ color:var(--green); }
+.qopt.go{ background:var(--green); border-color:var(--green); color:#fff; }
+.qopt.go:hover{ background:var(--green-d); border-color:var(--green-d); }
+.qopt:disabled{ opacity:.45; cursor:not-allowed; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.chip{ padding:4px 9px; border-radius:var(--r-pill); border:1px solid var(--line); background:var(--surface); font:inherit; font-size:11.5px; font-weight:700; color:var(--ink-2); cursor:pointer; }
+.chip.on{ border-color:var(--green); color:var(--ink); }
+/* 回答框（2026-10-07）：綠淡底＋綠淺線——它是這一題的答案，要比紙灰醒目 */
+.explain{ margin-top:9px; padding:10px 12px; border-radius:var(--r-ctl); background:var(--green-wash); border:1px solid var(--green-line); font-size:12.5px; color:var(--ink-2); }
+.explain b{ color:var(--ink); }
+/* 步驟條：做過的實心綠、現在這步綠＋外圈、還沒到的灰 */
+.steps{ display:flex; align-items:center; width:100%; }
+.steps .st{ display:inline-flex; align-items:center; gap:7px; flex:none; }
+.steps .st i{ width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:11px; font-weight:800; background:#EEF2F7; color:var(--ink-3); }
+.steps .st i .material-icons-round{ font-size:14px; }
+.steps .st.cur i{ background:var(--green); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.steps .st.done i{ background:var(--green); color:#fff; }
+.steps .st b{ font-size:12.5px; color:var(--ink); white-space:nowrap; }
+.steps .ln{ flex:1; height:2px; background:var(--line); margin:0 6px; border-radius:2px; min-width:10px; }
+.steps .ln.done{ background:var(--green); }
+/* 佇列（2026-10-07）：一排小點 ＋「n of N · 現在這個」——四個一起選也不擠 */
+.pq{ display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:11.5px; font-weight:700; color:var(--ink); }
+.pq .dots{ display:inline-flex; gap:5px; align-items:center; }
+.pq .dots i{ width:8px; height:8px; border-radius:50%; background:#DFE3E8; display:block; }
+.pq .dots i.done{ background:var(--green); } .pq .dots i.cur{ background:var(--ink); box-shadow:0 0 0 3px #EEF2F7; }
+.pq .n{ color:var(--muted); font-weight:600; margin-right:2px; }
+/* 生成中／完成：同一個綠，只差圖示在轉 */
+.cgen{ display:flex; flex-wrap:wrap; gap:6px 14px; margin-bottom:10px; font-size:12px; font-weight:700; }
+.cgen span{ display:inline-flex; align-items:center; gap:5px; color:var(--ink-3); }
+.cgen span.ok{ color:var(--green-dd); }
+.cgen .material-icons-round{ font-size:16px; }
+.cgen .run .material-icons-round{ color:var(--green); animation:spin 1.2s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+/* 草稿卡：一顆實心、一顆框線、一行字 */
+.cdraft{ display:flex; align-items:center; gap:14px; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-card); background:var(--surface); }
+.cdraft .thumb{ width:84px; height:56px; flex:none; border-radius:8px; background:#EEF2F7; }
+.cdraft .tx{ flex:1; min-width:0; }
+.cdraft .tx b{ display:block; font-size:14px; color:var(--ink); }
+.cdraft .tx span{ display:block; font-size:12px; color:var(--ink-3); font-weight:600; }
+.cdraft .tx .st{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:800; color:var(--green-dd); margin-top:3px; }
+.cdraft .st .material-icons-round{ font-size:15px; color:var(--green); }
+.acts{ display:flex; flex-direction:column; gap:6px; }
+.btnp{ border:0; border-radius:var(--r-ctl); background:var(--green); color:#fff; font:inherit; font-weight:800; font-size:13px; padding:9px 15px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:background var(--t-fast); }
+.btnp:hover{ background:var(--green-d); }
+.btnp .material-icons-round{ font-size:16px; }
+.btns{ border:1px solid var(--line); border-radius:var(--r-ctl); background:var(--surface); color:var(--ink); font:inherit; font-weight:800; font-size:13px; padding:8px 15px; cursor:pointer; }
+.btns:hover{ border-color:var(--ink); }
+.btnt{ border:0; background:transparent; color:var(--ink-3); font:inherit; font-weight:700; font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.btnt:hover{ color:var(--ink); }
+/* 練習卡：軌道色只在縮圖與列線；選中是墨色邊框 */
+.eprow-h{ display:block; font-size:var(--fs-eyebrow); font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); padding-bottom:5px; margin-bottom:8px; border-bottom:2px solid var(--tk); }
+.eprow-c{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.ep{ padding:10px 11px; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:var(--r-ctl); background:var(--surface); cursor:pointer; text-align:left; font:inherit; }
+.ep .thumb{ height:48px; border-radius:6px; margin-bottom:9px; background:color-mix(in srgb, var(--tk) 10%, #fff); border:1px solid color-mix(in srgb, var(--tk) 25%, #fff); }
+.ep .lbl{ display:flex; align-items:flex-start; gap:6px; font-size:12.5px; font-weight:700; color:var(--ink-2); }
+.ep .lbl .material-icons-round{ font-size:15px; color:var(--muted); flex:none; }
+.ep.on{ border-color:var(--green); color:var(--ink); }
+.ep.on .lbl .material-icons-round{ color:var(--green); }
+.composer{ display:flex; align-items:center; gap:8px; margin-top:12px; padding:6px 6px 6px 12px; border:1px solid var(--line); border-radius:var(--r-card); background:var(--surface); }
+.composer input{ flex:1; border:0; outline:0; font:inherit; font-size:13px; color:var(--ink); }
+.composer .send{ width:30px; height:30px; border-radius:50%; border:0; background:var(--green); color:#fff; display:grid; place-items:center; cursor:pointer; }
+.composer .send .material-icons-round{ font-size:18px; }
+.railnav{ display:flex; justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--line-2); }
+.done-turn b{ display:block; font-size:14px; color:var(--ink); }
+.done-turn .material-icons-round{ font-size:18px; color:var(--green); vertical-align:-4px; margin-right:5px; }
+.budget{ display:flex; gap:6px; flex-wrap:wrap; }
+.budget span{ font-size:12px; font-weight:700; padding:5px 10px; border-radius:var(--r-pill); border:1px solid var(--line); background:var(--surface); color:var(--ink-2); }
+.budget span.g{ color:var(--green-dd); border-color:var(--green-line); background:var(--green-wash); }
+
+/* ---------- 選中狀態的四個候選（2026-10-07：使用者「墨色邊框太深」） ---------- */
+.vars{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media (max-width:1000px){ .vars{ grid-template-columns:1fr 1fr; } }
+.var{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); padding:14px; }
+.var h4{ font-size:13px; font-weight:800; color:var(--ink); margin-bottom:2px; }
+.var p{ font-size:12px; color:var(--ink-3); margin-bottom:10px; min-height:54px; }
+.var .qopts{ margin-top:8px; }
+.var .ep{ margin-top:8px; }
+.var .eprow-c{ grid-template-columns:1fr 1fr; }
+/* A 中灰框 */
+.v-a .qopt.multi.on, .v-a .chip.on, .v-a .ep.on{ border-color:#919EAB; box-shadow:none; color:var(--ink); }
+.v-a .qopt.multi.on .material-icons-round, .v-a .ep.on .lbl .material-icons-round{ color:var(--green); }
+/* B 綠細框、白底 */
+.v-b .qopt.multi.on, .v-b .chip.on, .v-b .ep.on{ border-color:var(--green); box-shadow:none; color:var(--ink); background:var(--surface); }
+.v-b .qopt.multi.on .material-icons-round, .v-b .ep.on .lbl .material-icons-round{ color:var(--green); }
+/* C 淺灰實底、不描邊 */
+.v-c .qopt.multi.on, .v-c .chip.on, .v-c .ep.on{ border-color:transparent; box-shadow:none; background:#EEF2F7; color:var(--ink); }
+.v-c .ep.on .thumb{ border-color:transparent; }
+.v-c .qopt.multi.on .material-icons-round, .v-c .ep.on .lbl .material-icons-round{ color:var(--green); }
+/* D 產品的 chip.on：綠淡底＋綠淺線（跟嵌進來的建立頁一樣） */
+.v-d .qopt.multi.on, .v-d .chip.on, .v-d .ep.on{ border-color:var(--green-line); box-shadow:none; background:var(--green-wash); color:var(--ink); }
+.v-d .qopt.multi.on .material-icons-round, .v-d .ep.on .lbl .material-icons-round{ color:var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Planning mode · Design tokens</h1>
+  <p class="sub">第三版。前兩版把「選中」當成一個顏色（琥珀、藍），而選中是畫面上最常出現的狀態，所以那個顏色一定會滿版。這一版沒有第二個色相：<b>中性色撐 90%，產品綠只在三個地方出現</b>——現在要按的那一顆、現在這一步／進度、完成。選中狀態改用<b>1px 產品綠框、白底、墨字、小綠勾</b>（2026-10-07 定案，候選 B）。所有值從線上產品的 palette 來。</p>
+
+  <h2>綠的額度 <small style="font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px">一個畫面裡最多同時出現這幾個</small></h2>
+  <div class="budget"><span class="g">1 顆主按鈕</span><span class="g">現在這一步的圓點 ＋ 走過的線</span><span class="g">完成的勾</span><span class="g">生成中的轉圈</span><span>其餘：墨色、灰、白</span></div>
+
+  <h2>色票</h2>
+  <div class="grid">
+    <div class="sw"><i style="background:#212B36"></i><b>--ink</b><span>#212B36 主要文字、選中邊框</span></div>
+    <div class="sw"><i style="background:#454F5B"></i><b>--ink-2</b><span>#454F5B 內文</span></div>
+    <div class="sw"><i style="background:#637381"></i><b>--ink-3</b><span>#637381 眉標、次要</span></div>
+    <div class="sw"><i style="background:#919EAB"></i><b>--muted</b><span>#919EAB 停用、提示</span></div>
+    <div class="sw"><i style="background:#E6EBF1"></i><b>--line</b><span>#E6EBF1 邊框</span></div>
+    <div class="sw"><i style="background:#F4F6F8"></i><b>--paper</b><span>#F4F6F8 老師的泡泡、解釋</span></div>
+    <div class="sw"><i style="background:#F9FAFB;border-bottom:1px solid #E6EBF1"></i><b>--canvas</b><span>#F9FAFB 畫布</span></div>
+    <div class="sw"><i style="background:#00CB61"></i><b>--green</b><span>#00CB61 主按鈕、現在這步</span></div>
+    <div class="sw"><i style="background:#00A749"></i><b>--green-d</b><span>#00A749 hover</span></div>
+    <div class="sw"><i style="background:#00754A"></i><b>--green-dd</b><span>#00754A 綠底上的字</span></div>
+    <div class="sw"><i style="background:#EFFBF4;border-bottom:1px solid #BBF1D0"></i><b>--green-wash</b><span>#EFFBF4 回答框、做過的佇列 chip、Ready</span></div>
+  </div>
+  <p class="rule" style="margin-top:12px">練習類型色（Content 綠、Vocabulary 琥珀、Sentence 粉、Comprehension 紫）只出現在練習卡的縮圖與列線上，是產品自己的 practice type 色，不是 Planning 的色。</p>
+
+  <h2>字 · 形狀 · 動</h2>
+  <div class="two">
+    <div class="panel"><h3>字</h3>
+      <div style="font-size:14px;color:var(--ink)">Public Sans 14 · 內文與泡泡</div>
+      <div style="font-size:13px;color:var(--ink-2);margin-top:6px">13 · 助手欄的泡泡、按鈕</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:6px">12 · 次要、草稿卡摘要</div>
+      <div class="stag" style="margin-top:8px">10.5 · 眉標，灰、全大寫、+.5 字距</div>
+      <p class="note">粗細只用 400／700／800：內文 400、可按的 700、標題與眉標 800。</p>
+    </div>
+    <div class="panel"><h3>形狀 ＆ 動</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span style="width:60px;height:34px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:11px">8 控制項</span>
+        <span style="width:60px;height:34px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;font-size:11px">12 卡片</span>
+        <span style="width:60px;height:34px;border:1px solid var(--line);border-radius:999px;display:grid;place-items:center;font-size:11px">999 chip</span>
+      </div>
+      <p class="note">動畫只配給「發生了什麼」：回合進場 180ms 淡入上移、選項 30ms 遞延、完成的勾彈一下、現在這步外圈擴一圈、走查與彈窗淡入。顏色不閃、不呼吸；生成中只讓轉圈動。</p>
+    </div>
+  </div>
+
+  <h2>套在真的元件上 <small style="font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px">class 名稱跟兩個提案一樣，確認了就直接搬</small></h2>
+  <div class="two">
+    <div>
+      <div class="rail">
+        <div class="pq"><span class="dots"><i class="done"></i><i class="cur"></i><i></i><i></i></span><span><span class="n">2 of 4 ·</span>Vocabulary Mirroring</span></div>
+        <div class="steps">
+          <span class="st done"><i><span class="material-icons-round">check</span></i></span><span class="ln done"></span>
+          <span class="st cur"><i>2</i><b>Vocabulary</b></span><span class="ln"></span>
+          <span class="st"><i>3</i></span><span class="ln"></span><span class="st"><i>4</i></span>
+        </div>
+        <div style="height:14px"></div>
+        <div class="msg"><div class="bub">What do you want to make? Pick one or more.
+          <div class="qopts" style="display:block">
+            <span class="eprow-h" style="--tk:var(--t-content)">Content</span>
+            <div class="eprow-c"><button class="ep on" style="--tk:var(--t-content)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Content Mirroring</span></button></div>
+            <span class="eprow-h" style="--tk:var(--t-vocab);margin-top:12px">Vocabulary</span>
+            <div class="eprow-c"><button class="ep on" style="--tk:var(--t-vocab)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Vocabulary Mirroring</span></button>
+              <button class="ep" style="--tk:var(--t-vocab)" disabled><span class="thumb" style="opacity:.5"></span><span class="lbl" style="color:var(--muted)"><span class="material-icons-round">check_box_outline_blank</span>Vocabulary Quiz</span></button></div>
+          </div>
+          <div class="qopts"><button class="qopt go">Start 2 practices</button></div>
+        </div></div>
+        <div class="msg you"><div class="bub">Content Mirroring + Vocabulary Mirroring</div></div>
+        <div class="msg"><div class="bub">Which Project?<div class="qopts"><button class="qopt">我的一天</button><button class="qopt" disabled>环境保护与可持续发展</button></div></div></div>
+        <div class="msg you"><div class="bub">我的一天</div></div>
+        <div class="msg"><div class="bub"><span class="stag">3 · Settings</span>Tap a setting to see what it does.
+          <div class="chips"><button class="chip">Practice mode</button><button class="chip on">Pinyin</button><button class="chip">Translation</button><button class="chip">Speed</button><button class="chip">Voice</button><button class="chip">Max tries</button></div>
+          <div class="explain"><b>Pinyin</b> —— Whether the sentence shows pinyin above the characters. <b>Choice by student</b> puts a toggle in the student’s own settings panel.</div>
+        </div></div>
+        <div class="msg"><div class="bub"><span class="stag">4 · Assign Practice</span>Who is it for?
+          <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Same as Content Mirroring</button></div>
+          <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 3B</button><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 4A</button><button class="qopt multi"><span class="material-icons-round">check_box_outline_blank</span>Chinese 5C</button></div>
+        </div></div>
+        <div class="msg"><div class="bub done-turn"><span class="material-icons-round">check_circle</span><b style="display:inline">Assigned to 2 classes · 14 students</b><div class="qopts"><button class="qopt go">Next: Vocabulary Mirroring</button></div></div></div>
+        <div class="railnav"><button class="btns">Back</button><button class="btnp">Assign to 2 classes</button></div>
+        <div class="composer"><input placeholder="Ask about any step or setting…"><button class="send"><span class="material-icons-round">arrow_upward</span></button></div>
+      </div>
+      <p class="note">提案一的助手欄：一眼掃過去只有 Next 那顆、現在這一步、完成的勾是綠的；選中的班級是墨色框＋綠勾。</p>
+    </div>
+    <div>
+      <div class="panel" style="padding:18px 20px">
+        <div class="cgen"><span class="ok"><span class="material-icons-round">check_circle</span>Content Mirroring · 14 sentences ready</span><span class="run"><span class="material-icons-round">autorenew</span>Generating Vocabulary Mirroring · 12 words…</span></div>
+        <div style="font-size:14px;color:var(--ink);font-weight:600">Defaults are on —— change any, or keep them.</div>
+        <div style="margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px"><b style="font-size:14px;color:var(--ink)">Content Mirroring</b><span style="font-size:12px;color:var(--ink-3);flex:1">Say it back · Pinyin shown · Translation shown · Normal speed · Xiaorou · 3 tries</span><button class="btns" style="padding:5px 10px;font-size:12px">Change</button></div>
+        <div class="qopts" style="justify-content:flex-end"><button class="qopt go">Keep these</button></div>
+      </div>
+      <div class="panel" style="padding:18px 20px;margin-top:14px">
+        <div style="font-size:14px;color:var(--ink);font-weight:600;margin-bottom:10px">Drafts are ready —— preview as a student, then assign.</div>
+        <div class="cdraft"><span class="thumb" style="background:color-mix(in srgb,var(--t-content) 10%,#fff)"></span><div class="tx"><b>Content Mirroring</b><span>食物 — What we eat · 14 sentences · Say it back · Pinyin shown</span><span class="st"><span class="material-icons-round">check_circle</span>Ready</span></div>
+          <div class="acts"><button class="btnp"><span class="material-icons-round">visibility</span>Preview as a student</button><button class="btns">Assign</button><button class="btnt">Edit on the create page</button></div></div>
+        <div class="cdraft" style="margin-top:10px"><span class="thumb" style="background:color-mix(in srgb,var(--t-vocab) 10%,#fff)"></span><div class="tx"><b>Vocabulary Mirroring</b><span>食物 — What we eat · 12 words · Pinyin shown · Images shown</span><span class="st" style="color:var(--ink-3)"><span class="material-icons-round" style="color:var(--green);animation:spin 1.2s linear infinite">autorenew</span>Generating…</span></div>
+          <div class="acts"><button class="btnp" disabled style="opacity:.45"><span class="material-icons-round">visibility</span>Preview as a student</button><button class="btns" disabled style="opacity:.45">Assign</button><button class="btnt">Edit on the create page</button></div></div>
+        <div class="qopts" style="justify-content:flex-end"><button class="btns">Plan another</button></div>
+      </div>
+      <p class="note">提案二的對話：生成中與完成用同一個綠，只差圖示有沒有在轉；每張草稿卡一顆實心（Preview）、一顆框線（Assign）、一行字（Edit）。</p>
+    </div>
+  </div>
+
+  <h2>選中狀態的候選 <small style="font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px">墨色框太深（2026-10-07）——同一組元件、四種選中，挑一個</small></h2>
+  <div class="vars">
+    <div class="var v-a"><h4>A · 中灰框</h4><p>邊框換成 #919EAB、字仍是墨色、綠勾。最接近第三版，只是輕了一階；缺點是跟 hover 的灰框差不多，選了跟滑過去不太分得開。</p>
+      <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 3B</button><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 4A</button><button class="qopt multi"><span class="material-icons-round">check_box_outline_blank</span>Chinese 5C</button></div>
+      <div class="chips"><button class="chip">Practice mode</button><button class="chip on">Pinyin</button><button class="chip">Translation</button></div>
+      <div class="eprow-c"><button class="ep on" style="--tk:var(--t-content)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Content Mirroring</span></button><button class="ep" style="--tk:var(--t-vocab)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box_outline_blank</span>Vocabulary Mirroring</span></button></div>
+    </div>
+    <div class="var v-b"><h4>B · 綠細框、白底</h4><p>1px 產品綠的框、白底、墨字、綠勾。選中看得很清楚、不鋪色；綠只多了細線，額度還算守得住。</p>
+      <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 3B</button><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 4A</button><button class="qopt multi"><span class="material-icons-round">check_box_outline_blank</span>Chinese 5C</button></div>
+      <div class="chips"><button class="chip">Practice mode</button><button class="chip on">Pinyin</button><button class="chip">Translation</button></div>
+      <div class="eprow-c"><button class="ep on" style="--tk:var(--t-content)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Content Mirroring</span></button><button class="ep" style="--tk:var(--t-vocab)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box_outline_blank</span>Vocabulary Mirroring</span></button></div>
+    </div>
+    <div class="var v-c"><h4>C · 淺灰實底</h4><p>不描邊、底色 #EEF2F7、墨字、綠勾。選中＝「填起來」，跟白底的未選一眼就分；完全不佔綠的額度。我比較推這個。</p>
+      <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 3B</button><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 4A</button><button class="qopt multi"><span class="material-icons-round">check_box_outline_blank</span>Chinese 5C</button></div>
+      <div class="chips"><button class="chip">Practice mode</button><button class="chip on">Pinyin</button><button class="chip">Translation</button></div>
+      <div class="eprow-c"><button class="ep on" style="--tk:var(--t-content)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Content Mirroring</span></button><button class="ep" style="--tk:var(--t-vocab)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box_outline_blank</span>Vocabulary Mirroring</span></button></div>
+    </div>
+    <div class="var v-d"><h4>D · 產品的樣子</h4><p>綠淡底 #EFFBF4 ＋ 綠淺線 #BBF1D0，跟嵌進來的建立頁（v3／v4 的 chip）一模一樣。一致性最好，但勾得多的時候畫面會偏綠。</p>
+      <div class="qopts"><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 3B</button><button class="qopt multi on"><span class="material-icons-round">check_box</span>Chinese 4A</button><button class="qopt multi"><span class="material-icons-round">check_box_outline_blank</span>Chinese 5C</button></div>
+      <div class="chips"><button class="chip">Practice mode</button><button class="chip on">Pinyin</button><button class="chip">Translation</button></div>
+      <div class="eprow-c"><button class="ep on" style="--tk:var(--t-content)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box</span>Content Mirroring</span></button><button class="ep" style="--tk:var(--t-vocab)"><span class="thumb"></span><span class="lbl"><span class="material-icons-round">check_box_outline_blank</span>Vocabulary Mirroring</span></button></div>
+    </div>
+  </div>
+
+  <h2>跟前兩版比，拿掉了什麼</h2>
+  <div class="panel" style="font-size:13.5px">
+    <ul style="padding-left:20px;line-height:1.8">
+      <li><b>第二個色相</b>（琥珀→藍）整個拿掉。AI 頭像已拿掉，步驟眉標改灰，解釋框改紙灰底，選中狀態改墨色邊框。</li>
+      <li><b>選中狀態不鋪底色</b>：練習卡、班級、chip 選中都是 1px 綠框＋綠勾，底仍是白的，所以選得再多畫面也不會變色。</li>
+      <li><b>佇列</b>改成一排小點＋「n of N · 現在這個」：做過的綠點、現在墨點；四個一起選也不擠。</li>
+      <li><b>生成中不呼吸、不變色</b>：只有轉圈在動。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

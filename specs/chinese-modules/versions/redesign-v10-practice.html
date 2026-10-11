@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher · Practice List (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets-v10/teacher-shell.css" />
+<style>
+  /* assignment status strip — the summary the real Practice List already shows */
+  .statusbar{ display:flex; align-items:center; gap:18px; padding:16px 20px; border-radius:var(--r-lg);
+    background:#f8f9fa; border:1px solid var(--line-2); margin-bottom:20px; flex-wrap:wrap; }
+  .statusbar .sl{ display:flex; align-items:center; gap:12px; }
+  .statusbar .sl .material-icons-round{ color:var(--amber); font-size:24px; }
+  .statusbar .sl b{ font-size:13.5px; font-weight:800; color:var(--ink); }
+  .statusbar .sl .cnt{ font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; background:var(--amber); color:#fff; }
+  .statusbar .sl span.note{ display:block; font-size:12px; color:var(--muted); font-weight:600; }
+  .statusbar .sstats{ margin-left:auto; display:flex; align-items:center; }
+  .sstat{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:0 22px; }
+  .sstat + .sstat{ border-left:1px solid rgba(0,0,0,.07); }
+  .sstat .top{ display:flex; align-items:center; gap:8px; }
+  .sstat .ic{ width:28px; height:28px; border-radius:8px; display:grid; place-items:center; }
+  .sstat .ic .material-icons-round{ font-size:16px; }
+  .sstat .v{ font-size:22px; font-weight:800; color:var(--ink); letter-spacing:-.5px; }
+  .sstat .k{ font-size:11.5px; color:var(--muted); font-weight:700; white-space:nowrap; }
+
+  /* practice card — mirrors PracticeCardItem in the app */
+  .pcard{ border:1px solid var(--line); border-radius:var(--r-lg); background:#fff; display:flex; flex-direction:column;
+    overflow:hidden; box-shadow:var(--sh-sm); transition:.18s; }
+  .pcard:hover{ box-shadow:var(--sh-md); transform:translateY(-2px); }
+  .pcard .ph{ padding:15px 16px 13px; border-bottom:1px solid; display:flex; gap:11px; align-items:flex-start; cursor:pointer; }
+  .pcard .ph .pi{ width:38px; height:38px; border-radius:11px; flex:none; display:grid; place-items:center; }
+  .pcard .ph .pi .material-icons-round{ font-size:20px; }
+  .pcard .ph .pt{ min-width:0; flex:1; }
+  .pcard .ph .pt .nm{ display:flex; align-items:baseline; gap:6px; }
+  .pcard .ph .pt b{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pcard .ph .pt .ver{ font-size:11px; font-weight:700; color:var(--faint); flex:none; }
+  .pcard .ph .pt .row2{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .pcard .more{ border:none; background:none; cursor:pointer; color:var(--faint); display:grid; place-items:center;
+    width:28px; height:28px; border-radius:8px; flex:none; }
+  .pcard .more:hover{ background:rgba(255,255,255,.7); color:var(--slate); }
+  .pcard .pb{ padding:14px 16px; flex:1; }
+  .pcard .lbl{ font-size:11px; font-weight:700; color:var(--faint); display:block; margin-bottom:4px; }
+  .pcard .belong{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:800; color:var(--slate); }
+  .pcard .belong .material-icons-round{ font-size:17px; color:var(--muted); }
+  .pcard .assigned{ margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+  .aline{ display:flex; align-items:center; gap:6px; font-size:12px; }
+  .aline + .aline{ margin-top:7px; }
+  .aline .material-icons-round{ font-size:14px; color:var(--faint); flex:none; }
+  .aline .cls{ font-weight:800; color:var(--slate); background:#f1f5f9; padding:1px 7px; border-radius:6px; }
+  .aline .due{ font-weight:700; }
+  .aline .due.late{ color:var(--rose); } .aline .due.soon{ color:var(--emerald); } .aline .due.far{ color:var(--faint); }
+  .astu{ font-size:11.5px; color:var(--muted); font-weight:600; padding-left:20px; margin-top:2px; }
+  .assign-now{ width:100%; margin-top:14px; padding:10px; border:1.5px dashed var(--line); border-radius:10px; background:none;
+    cursor:pointer; font:inherit; font-size:13px; font-weight:800; color:var(--faint); display:flex; align-items:center;
+    justify-content:center; gap:7px; transition:.15s; }
+  .assign-now:hover{ color:var(--rose); border-color:var(--rose); background:var(--rose-bg); }
+  .assign-now .material-icons-round{ font-size:17px; }
+  .pcard .pf{ padding:0 16px 16px; display:flex; gap:9px; }
+  .pcard .pf button{ flex:1; height:36px; border-radius:9px; cursor:pointer; font:inherit; font-size:12.5px; font-weight:800;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:.14s; }
+  .pcard .pf .test{ border:1px solid; background:#fff; }
+  .pcard .pf .res{ border:none; color:#fff; }
+  .pcard .pf .material-icons-round{ font-size:16px; }
+  .newchip{ position:absolute; top:-9px; right:14px; z-index:2; font-size:11px; font-weight:800; color:#fff;
+    background:linear-gradient(145deg,#10b981,#059669); padding:2px 10px; border-radius:999px; box-shadow:var(--sh-md); }
+
+  .pmenu{ position:absolute; z-index:50; width:196px; background:#fff; border:1px solid var(--line); border-radius:12px;
+    box-shadow:var(--sh-lg); padding:6px; display:none; }
+  .pmenu.on{ display:block; }
+  .pmenu button{ width:100%; display:flex; align-items:center; gap:10px; padding:8px 10px; border:none; border-radius:8px;
+    background:none; cursor:pointer; text-align:left; font:inherit; font-size:13px; font-weight:700; color:var(--slate); }
+  .pmenu button:hover{ background:#f5f8fb; color:var(--ink); }
+  .pmenu button.danger{ color:var(--rose); }
+  .pmenu .material-icons-round{ font-size:18px; }
+
+  @media (max-width:900px){ .statusbar .sstats{ margin-left:0; width:100%; justify-content:space-between; } .sstat{ padding:0 10px; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" id="side" data-current="practice"></aside>
+
+  <div class="main">
+    <div class="pagebar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
+      <div class="hdr-ic"><span class="material-icons-round">assignment</span></div>
+      <div class="dt"><b>Practice List</b><span>Create and assign practice sessions</span></div>
+      <div class="pb-acts">
+        <div class="segmented" id="viewSeg">
+          <button class="on" data-view="card" aria-label="Card view"><span class="material-icons-round">view_module</span></button>
+          <button data-view="table" aria-label="List view"><span class="material-icons-round">table_rows</span></button>
+        </div>
+        <a class="btnp" href="redesign-v10-planning.html"><span class="material-icons-round">auto_awesome</span> New Practice</a>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="statusbar">
+        <div class="sl">
+          <span class="material-icons-round">schedule</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <b>Assignment Status</b><span class="cnt" id="totalAssigned">0</span>
+            </div>
+            <span class="note" id="needAssign"></span>
+          </div>
+        </div>
+        <div class="sstats">
+          <div class="sstat"><div class="top"><span class="ic" style="background:#FEF3C7;color:#F59E0B"><span class="material-icons-round">event_note</span></span><span class="v" id="sNone">0</span></div><span class="k">No due date</span></div>
+          <div class="sstat"><div class="top"><span class="ic" style="background:#DCFCE7;color:#10B981"><span class="material-icons-round">event_available</span></span><span class="v" id="sSoon">0</span></div><span class="k">Due within 7 days</span></div>
+          <div class="sstat"><div class="top"><span class="ic" style="background:#FEE2E2;color:#EF4444"><span class="material-icons-round">event_busy</span></span><span class="v" id="sLate">0</span></div><span class="k">Overdue</span></div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div class="tabs" id="typeTabs" style="padding:0;gap:6px"></div>
+          <span class="spacer"></span>
+          <span class="sbox"><span class="material-icons-round">search</span><input id="q" placeholder="Search practices" aria-label="Search practices" /></span>
+        </div>
+        <div id="body"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="pmenu" id="pmenu"></div>
+<div class="toast" id="toast"></div>
+
+<script src="assets-v10/teacher-nav.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s);};
+  var tt; function say(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},2400);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var TYPE={
+    MIRRORING:{label:'Mirroring',pill:'mir',icon:'mic',bg:'var(--mir-bg)',fg:'var(--mir)',border:'#f6dcc0',btn:'var(--mir)'},
+    QA:{label:'Q&A',pill:'qa',icon:'chat_bubble',bg:'var(--qa-bg)',fg:'var(--qa)',border:'#c8dbff',btn:'var(--qa)'},
+    VOCABULARY:{label:'Vocabulary',pill:'voc',icon:'bookmark',bg:'var(--voc-bg)',fg:'var(--voc)',border:'#bfe8cf',btn:'var(--voc)'},
+    MULTIPLE_CHOICE:{label:'Multiple Choice',pill:'mc',icon:'quiz',bg:'var(--mc-bg)',fg:'var(--mc)',border:'#ddc9fb',btn:'var(--mc)'}
+  };
+  var TABS=[['all','All'],['QA','Q&A'],['MIRRORING','Mirroring'],['VOCABULARY','Vocabulary'],['MULTIPLE_CHOICE','Multiple Choice']];
+
+  /* due = days from today; null = never given a due date */
+  var DATA=[
+    {id:1,n:'食物 · Read the six sentences',t:'MIRRORING',v:3,py:'PINYIN',from:'食物 — What we eat',isNew:true,
+     cls:[{c:'4A',due:-2,s:['Emma Chen','Liam Wu','Sofia Ríos','+9']},{c:'3B',due:-2,s:['Ada Lin','Theo Brandt','+8']}]},
+    {id:2,n:'食物 · Exit quiz',t:'MULTIPLE_CHOICE',v:1,py:null,from:'食物 — Exit questions',
+     cls:[{c:'4A',due:-1,s:['Emma Chen','Liam Wu','+10']}]},
+    {id:3,n:'食物 · Twelve new words',t:'VOCABULARY',v:2,py:'PINYIN',from:'食物 — What we eat',
+     cls:[{c:'4A',due:1,s:['Emma Chen','+11']},{c:'3B',due:3,s:['Ada Lin','+9']}]},
+    {id:4,n:'家人 · Talk about your family',t:'QA',v:1,py:'STUDENT_CHOICE',from:'家人 — My family',
+     cls:[{c:'5C',due:2,s:['Ruby Ng','Jonas Weber','+12']}]},
+    {id:5,n:'家人 · Say it back',t:'MIRRORING',v:1,py:'PINYIN',from:'家人 — My family',
+     cls:[{c:'5C',due:4,s:['Ruby Ng','+13']},{c:'6A',due:5,s:['Iris Zhao','+10']}]},
+    {id:6,n:'数字 · Numbers to one hundred',t:'MULTIPLE_CHOICE',v:2,py:null,from:'数字 — Number drill',
+     cls:[{c:'3B',due:6,s:['Ada Lin','+9']}]},
+    {id:7,n:'打招呼 · Greeting words',t:'VOCABULARY',v:1,py:'NO_PINYIN',from:'打招呼 — Saying hello',
+     cls:[{c:'4A',due:9,s:['Emma Chen','+11']}]},
+    {id:8,n:'天气 · What is it like today?',t:'QA',v:1,py:'STUDENT_CHOICE',from:'天气 — Weather today',
+     cls:[{c:'6A',due:11,s:['Iris Zhao','+10']}]},
+    {id:9,n:'数字 · Count out loud',t:'MIRRORING',v:1,py:'PINYIN',from:'数字 — Counting',
+     cls:[{c:'5C',due:null,s:['Ruby Ng','+13']}]},
+    {id:10,n:'家人 · Unit check',t:'MULTIPLE_CHOICE',v:1,py:null,from:'家人 — Unit check',cls:[]},
+    {id:11,n:'天气 · Weather words',t:'VOCABULARY',v:1,py:'PINYIN',from:'天气 — Weather today',cls:[]},
+    {id:12,n:'打招呼 · Four greetings',t:'MIRRORING',v:2,py:'PINYIN',from:'打招呼 — Saying hello',
+     cls:[{c:'3B',due:3,s:['Ada Lin','Theo Brandt','+8']}]},
+    {id:13,n:'食物 · What did you eat?',t:'QA',v:1,py:'STUDENT_CHOICE',from:'食物 — What we eat',
+     cls:[{c:'4A',due:5,s:['Emma Chen','+11']},{c:'5C',due:5,s:['Ruby Ng','+13']}]},
+    {id:14,n:'打招呼 · Quick check',t:'MULTIPLE_CHOICE',v:1,py:null,from:'打招呼 — Quick check',
+     cls:[{c:'6A',due:-4,s:['Iris Zhao','+10']}]},
+    {id:15,n:'学校 · Classroom objects',t:'VOCABULARY',v:1,py:'PINYIN',from:'学校 — At school',cls:[]}
+  ];
+
+  var filter='all', view='card', query='';
+
+  /* ---------- status strip ---------- */
+  function status(){
+    var assigned=DATA.filter(function(p){return p.cls.length;});
+    var none=0,soon=0,late=0;
+    assigned.forEach(function(p){
+      var ds=p.cls.map(function(c){return c.due;}).filter(function(d){return d!==null;});
+      if(!ds.length){ none++; return; }
+      var e=Math.min.apply(null,ds);
+      if(e<0) late++; else if(e<7) soon++;
+    });
+    $('#totalAssigned').textContent=assigned.length;
+    $('#sNone').textContent=none; $('#sSoon').textContent=soon; $('#sLate').textContent=late;
+    var un=DATA.length-assigned.length;
+    $('#needAssign').textContent = un>0 ? un+' session'+(un===1?'':'s')+' need to be assigned' : 'All sessions assigned';
+  }
+
+  /* ---------- tabs ---------- */
+  function tabs(){
+    $('#typeTabs').innerHTML=TABS.map(function(t){
+      var n = t[0]==='all' ? DATA.length : DATA.filter(function(p){return p.t===t[0];}).length;
+      return '<button class="tab'+(filter===t[0]?' on':'')+'" data-t="'+t[0]+'">'+t[1]+' <span class="n">('+n+')</span></button>';
+    }).join('');
+  }
+  $('#typeTabs').addEventListener('click',function(e){
+    var b=e.target.closest('[data-t]'); if(!b) return; filter=b.dataset.t; tabs(); render();
+  });
+  $('#q').addEventListener('input',function(){ query=this.value.toLowerCase(); render(); });
+  $('#viewSeg').addEventListener('click',function(e){
+    var b=e.target.closest('[data-view]'); if(!b) return;
+    view=b.dataset.view;
+    [].forEach.call(this.children,function(c){c.classList.toggle('on',c===b);});
+    render();
+  });
+
+  /* ---------- rendering ---------- */
+  function rows(){
+    return DATA.filter(function(p){
+      if(filter!=='all' && p.t!==filter) return false;
+      if(query && p.n.toLowerCase().indexOf(query)<0) return false;
+      return true;
+    });
+  }
+  function dueTxt(d){
+    if(d===null) return {t:'',c:''};
+    var day=86400000, base=new Date(); base.setHours(0,0,0,0);
+    var dt=new Date(base.getTime()+d*day);
+    var s=dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    return {t:' · Due '+s, c: d<0?'late':(d<7?'soon':'far')};
+  }
+  function pyPill(py){
+    if(!py||py==='STUDENT_CHOICE') return '';
+    return '<span class="pill line">'+(py==='PINYIN'?'Pinyin':'No Pinyin')+'</span>';
+  }
+
+  function card(p){
+    var T=TYPE[p.t];
+    var assigned = p.cls.length
+      ? '<div class="assigned"><span class="lbl">Assigned to</span>'+ p.cls.map(function(c){
+          var d=dueTxt(c.due);
+          return '<div><div class="aline"><span class="material-icons-round">groups</span>'+
+            '<span class="cls">'+esc(c.c)+'</span>'+(d.t?'<span class="due '+d.c+'">'+esc(d.t)+'</span>':'')+'</div>'+
+            '<div class="astu">'+esc(c.s.join(', '))+'</div></div>';
+        }).join('') +'</div>'
+      : '<button class="assign-now" data-assign="'+p.id+'"><span class="material-icons-round">groups</span>Assign Now</button>';
+
+    return '<div style="position:relative">'+(p.isNew?'<span class="newchip">NEW</span>':'')+
+      '<div class="pcard">'+
+        '<div class="ph" style="background:'+T.bg+';border-bottom-color:'+T.border+'" data-edit="'+p.id+'">'+
+          '<span class="pi" style="background:#fff;color:'+T.fg+'"><span class="material-icons-round">'+T.icon+'</span></span>'+
+          '<span class="pt"><span class="nm"><b>'+esc(p.n)+'</b><span class="ver">v'+p.v+'</span></span>'+
+            '<span class="row2"><span class="pill '+T.pill+'">'+T.label+'</span>'+pyPill(p.py)+'</span></span>'+
+          '<button class="more" data-menu="'+p.id+'" aria-label="More actions"><span class="material-icons-round">more_horiz</span></button>'+
+        '</div>'+
+        '<div class="pb">'+
+          '<span class="lbl">Belongs to</span>'+
+          '<div class="belong"><span class="material-icons-round">folder</span>'+esc(p.from)+'</div>'+
+          assigned+
+        '</div>'+
+        '<div class="pf">'+
+          '<button class="test" style="border-color:'+T.border+';color:'+T.fg+'" data-test="'+p.id+'"><span class="material-icons-round">science</span>Test</button>'+
+          '<button class="res" style="background:'+T.btn+'" data-result="'+p.id+'"><span class="material-icons-round">grading</span>Result</button>'+
+        '</div>'+
+      '</div></div>';
+  }
+
+  function row(p){
+    var T=TYPE[p.t];
+    var due = p.cls.length ? p.cls.map(function(c){var d=dueTxt(c.due); return '<span class="due '+d.c+'">'+esc(c.c+(d.t||' · no due date'))+'</span>';}).join(' &nbsp; ') : '<span class="pill amber">Not assigned</span>';
+    return '<div class="lrow" data-edit="'+p.id+'">'+
+      '<span class="tile" style="background:'+T.bg+';color:'+T.fg+'"><span class="material-icons-round">'+T.icon+'</span></span>'+
+      '<span class="lt"><b>'+esc(p.n)+' <span style="font-weight:700;color:var(--faint);font-size:11px">v'+p.v+'</span></b>'+
+        '<span class="sub">'+esc(p.from)+'<span class="dot">·</span>'+due+'</span></span>'+
+      '<span class="pill '+T.pill+'">'+T.label+'</span>'+
+      '<span class="lacts"><button class="btn-sm" data-test="'+p.id+'">Test</button>'+
+      '<button class="btn-sm go" data-result="'+p.id+'">Result</button>'+
+      '<button class="btn-sm" data-menu="'+p.id+'" aria-label="More"><span class="material-icons-round">more_horiz</span></button></span>'+
+    '</div>';
+  }
+
+  function render(){
+    var list=rows();
+    if(!list.length){
+      $('#body').innerHTML='<div class="empty"><span class="material-icons-round">inbox</span><b>No practices found</b><span>Try another type, or clear the search.</span></div>';
+      return;
+    }
+    $('#body').innerHTML = view==='card'
+      ? '<div class="cgrid">'+list.map(card).join('')+'</div>'
+      : '<div class="lrows">'+list.map(row).join('')+'</div>';
+  }
+
+  /* ---------- actions ---------- */
+  var menu=$('#pmenu'), menuFor=null;
+  document.addEventListener('click',function(e){
+    var m=e.target.closest('[data-menu]');
+    if(m){
+      e.stopPropagation();
+      var p=DATA.filter(function(x){return x.id==m.dataset.menu;})[0];
+      menuFor=p;
+      menu.innerHTML =
+        (p.cls.length?'<button data-act="assign"><span class="material-icons-round">groups</span>Assign Practice</button>':'')+
+        '<button data-act="clone"><span class="material-icons-round">content_copy</span>Clone</button>'+
+        '<button data-act="edit"><span class="material-icons-round">edit</span>Edit</button>'+
+        '<button class="danger" data-act="delete"><span class="material-icons-round">delete</span>Delete</button>';
+      var r=m.getBoundingClientRect();
+      menu.style.top=(window.scrollY+r.bottom+6)+'px';
+      menu.style.left=Math.min(window.scrollX+r.right-196, window.innerWidth-206)+'px';
+      menu.classList.add('on');
+      return;
+    }
+    if(!e.target.closest('#pmenu')) menu.classList.remove('on');
+
+    var a=e.target.closest('[data-act]');
+    if(a && menuFor){
+      menu.classList.remove('on');
+      var act=a.dataset.act;
+      if(act==='delete') say('Deleted “'+menuFor.n+'”');
+      else if(act==='clone') say('Cloning “'+menuFor.n+'” — opening the copy');
+      else if(act==='assign') say('Assign “'+menuFor.n+'” — pick classes and a due date');
+      else say('Opening the editor for “'+menuFor.n+'”');
+      return;
+    }
+    var t=e.target.closest('[data-test]'), rs=e.target.closest('[data-result]'),
+        an=e.target.closest('[data-assign]'), ed=e.target.closest('[data-edit]');
+    if(t){ e.stopPropagation(); say('Opening the practice the way a student sees it'); return; }
+    if(rs){ e.stopPropagation(); say('Opening submissions'); return; }
+    if(an){ e.stopPropagation(); say('Assign — pick classes and a due date'); return; }
+    if(ed) say('Opening the editor');
+  },true);
+
+  status(); tabs(); render();
+})();
+</script>
+</body>
+</html>

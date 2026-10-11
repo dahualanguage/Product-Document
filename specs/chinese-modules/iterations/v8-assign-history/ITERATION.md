@@ -89,6 +89,7 @@
 
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
+| 老師 | **第五十一輪（2026-10-07，從 Planning 回套）：送出前的覆核框只在有例外時才跳** | 使用者看 Planning 提案一的第四步問「這個有必要嗎」——框裡把畫面上剛勾、剛設的班級、人數、日期再唸一次。改成：整班、同一組日期、Mandatory、Full credit → 按 Assign 直接派（派完 HISTORY 有 Edit／Unassign）；有例外才跳，框裡只列例外（部分學生＋沒選到誰、被別班派走的、各班日期不同、Optional、逾期扣分階梯、沒 Due），副標寫 *everything else is as shown on the page*。班名不再用軌道色。交接包 `handoff/assign-history/` 的複本沒動。 |
 | 文件 | **第五十一輪：PM 四條回了** | 2026-10-02。逾期看 Submit to teacher 那一刻（`submittedDate`）；Optional 不套；Extend due date 回算（存 Original、Adjusted 用當下 Due 算）；跟老師手動改分分開（各自欄位、各自標籤，改過的分數不再乘）；學生端清單已處理好。四條都跟畫面上的假設一致，設計沒改；交接包的 HANDOFF.md／API-CONTRACT.md 同步改成「已定」。 |
 | 文件 | **第五十輪：定案、交接** | 2026-10-02。使用者說「這個提案通過了」。交接包 `handoff/assign-history/`（老師端＋學生端原型複本、HANDOFF.md、API-CONTRACT.md）；index 卡片狀態改 done、第一顆鈕改成交接包。設計沒改。 |
 | 老師 | **第四十九輪：分界時間改了，範圍的日期跟著變** | 使用者指出（2026-10-02：把第二段改成 Sep 19 12:59，右邊仍寫 *Sep 20–23*）。範圍＝「這段的分界」到「下一段的分界」：分界時間跟 Due 一樣（23:59）才能用「隔天起」的日期寫法；時間不一樣就寫到分——第一段 *Sep 18–Sep 19 12:59*、第二段 *Sep 19 12:59–Sep 23*。歷史列與 Review 的句子同一套。 |

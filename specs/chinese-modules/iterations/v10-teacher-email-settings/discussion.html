@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v10 提案：老師自訂寄信規則 — Teacher Email Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#f6f8f6;
+  --surface:#ffffff;
+  --surface-2:#eef2ee;
+  --ink:#172019;
+  --muted:#5f6b63;
+  --line:#dce3dd;
+  --line-strong:#b9c4bc;
+  --teacher:#059669;
+  --teacher-soft:#dcfce7;
+  --teacher-ink:#065f46;
+  --student:#2563eb;
+  --student-soft:#dbeafe;
+  --student-ink:#1e40af;
+  --warn:#b45309;
+  --warn-soft:#fef3c7;
+  --locked:#6b7280;
+  --locked-soft:#f3f4f6;
+  --shadow:0 8px 24px rgba(23,32,25,.08);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#10150f;
+    --surface:#171d17;
+    --surface-2:#1f271f;
+    --ink:#e8eee8;
+    --muted:#98a59c;
+    --line:#2a332b;
+    --line-strong:#3d483f;
+    --teacher:#34d399;
+    --teacher-soft:#143324;
+    --teacher-ink:#8ee8bd;
+    --student:#60a5fa;
+    --student-soft:#172a4a;
+    --student-ink:#a5c6fb;
+    --warn:#f5b04c;
+    --warn-soft:#3a2a10;
+    --locked:#9ca3af;
+    --locked-soft:#22282a;
+    --shadow:0 8px 24px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10150f;
+  --surface:#171d17;
+  --surface-2:#1f271f;
+  --ink:#e8eee8;
+  --muted:#98a59c;
+  --line:#2a332b;
+  --line-strong:#3d483f;
+  --teacher:#34d399;
+  --teacher-soft:#143324;
+  --teacher-ink:#8ee8bd;
+  --student:#60a5fa;
+  --student-soft:#172a4a;
+  --student-ink:#a5c6fb;
+  --warn:#f5b04c;
+  --warn-soft:#3a2a10;
+  --locked:#9ca3af;
+  --locked-soft:#22282a;
+  --shadow:0 8px 24px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0}
+.mono{font-family:var(--mono);font-size:.9em}
+a{color:var(--teacher);text-decoration-thickness:1px;text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--teacher);outline-offset:2px}
+
+.page{max-width:1040px;margin:0 auto;padding:48px 28px 96px}
+.prose{max-width:720px}
+h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+h1{font-size:34px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:22px;font-weight:700;margin-top:64px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:16px;font-weight:700;margin-top:28px}
+p{margin:12px 0}
+ul,ol{margin:10px 0;padding-left:22px}
+li{margin:4px 0}
+strong{font-weight:700}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;color:var(--muted);margin-top:14px;max-width:640px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:20px;font-size:13px;color:var(--muted)}
+.meta .mono{font-size:12.5px}
+
+/* lane badges */
+.lane{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 9px;border-radius:4px;white-space:nowrap}
+.lane::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.lane.t{background:var(--teacher-soft);color:var(--teacher-ink)}
+.lane.s{background:var(--student-soft);color:var(--student-ink)}
+.lane.x{background:var(--locked-soft);color:var(--locked)}
+.tid{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px;background:var(--surface)}
+
+/* tables */
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.5;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);font-weight:700}
+tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums}
+.dim{color:var(--muted)}
+.chg{color:var(--teacher-ink);font-weight:600}
+.warnc{color:var(--warn);font-weight:600}
+
+/* callouts */
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 16px;border-radius:0 6px 6px 0;margin:16px 0;font-size:14px}
+.note.t{border-color:var(--teacher);background:var(--teacher-soft)}
+.note .eyebrow{color:inherit;opacity:.8;display:block;margin-bottom:4px}
+
+/* option cards */
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.opt.rec{border-color:var(--teacher);box-shadow:0 0 0 3px var(--teacher-soft)}
+.opt .eyebrow{display:flex;justify-content:space-between;align-items:center}
+.opt .eyebrow .tag{background:var(--teacher);color:#fff;border-radius:4px;padding:1px 7px;font-size:10.5px}
+.opt h3{margin:0;font-size:17px}
+.opt ul{padding-left:18px;margin:4px 0}
+.opt .cost{margin-top:auto;padding-top:10px;border-top:1px dashed var(--line);color:var(--muted);font-size:13px}
+@media (max-width:760px){.options{grid-template-columns:1fr}}
+
+/* mockup frame */
+.mock{margin:20px 0 8px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.mock-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);font-size:12.5px;color:var(--muted)}
+.mock-bar .crumb{font-family:var(--mono);font-size:12px}
+.mock-bar .where{margin-left:auto;font-weight:600}
+.mock-body{padding:22px 24px}
+.cap{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+/* settings page mock */
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:22px;font-size:14px;font-weight:600;color:var(--muted)}
+.tabs span{padding:8px 0}
+.tabs .on{color:var(--ink);border-bottom:2px solid var(--teacher)}
+.scope{display:flex;align-items:center;gap:10px;font-size:13.5px;margin-bottom:18px;flex-wrap:wrap}
+.chipsel{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:6px;padding:4px 10px;background:var(--surface);font-weight:600;cursor:default}
+.chipsel::after{content:"▾";font-size:11px;color:var(--muted)}
+.group{margin-bottom:26px}
+.group-h{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.group-h h4{margin:0;font-size:15px;font-weight:700}
+.group-h .sub{font-size:13px;color:var(--muted)}
+.rows{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.row{display:grid;grid-template-columns:5px 1fr auto;gap:0 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.row:last-child{border-bottom:none}
+.row .stripe{background:var(--line)}
+.row.t .stripe{background:var(--teacher)}
+.row.s .stripe{background:var(--student)}
+.row.x .stripe{background:var(--locked)}
+.row .main{padding:14px 0 14px 12px;min-width:0}
+.row .ctl{padding:14px 14px 14px 0;display:flex;align-items:flex-start;gap:10px}
+.row .title{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row .desc{font-size:13px;color:var(--muted);margin-top:2px}
+.row .sub{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px}
+.row.off .sub{opacity:.45}
+.row.x .main{opacity:.75}
+.prev{font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.field{display:inline-flex;align-items:center;gap:6px}
+.field input,.field select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:5px;padding:3px 7px;font-variant-numeric:tabular-nums}
+.field input[type=number]{width:52px}
+.field input[type=time]{width:118px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden}
+.seg button{font:inherit;font-size:12.5px;font-weight:600;padding:4px 10px;border:none;background:var(--surface);color:var(--muted);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button.on{background:var(--ink);color:var(--paper)}
+.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.chk input{accent-color:var(--teacher);width:15px;height:15px;margin:0}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--locked);font-weight:600}
+
+/* toggle */
+.tg{position:relative;width:38px;height:22px;border-radius:11px;background:var(--line-strong);border:none;cursor:pointer;flex:0 0 auto;padding:0;transition:background .15s}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.tg[aria-checked="true"]{background:var(--teacher)}
+.tg[aria-checked="true"]::after{transform:translateX(16px)}
+.row.s .tg[aria-checked="true"]{background:var(--student)}
+@media (prefers-reduced-motion: reduce){.tg,.tg::after{transition:none}}
+
+/* inline mocks */
+.dlg{max-width:600px;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.dlg-h{padding:14px 18px;font-weight:700;border-bottom:1px solid var(--line)}
+.dlg-b{padding:16px 18px;font-size:14px;color:var(--muted)}
+.dlg-b .sum{display:flex;gap:18px;flex-wrap:wrap;color:var(--ink)}
+.dlg-f{padding:12px 18px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface-2)}
+.dlg-f .left,.dlg-f .right{display:inline-flex;align-items:center;gap:10px}
+.btn{font:inherit;font-size:13.5px;font-weight:700;padding:7px 14px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--teacher);border-color:var(--teacher);color:#fff}
+.btn.sm{font-size:12.5px;padding:4px 10px}
+.link{font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+
+.subs{font-size:14px}
+.subs .hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.subs .hd .name{font-weight:700;font-size:15px}
+.subs .hd .due{color:var(--muted)}
+.autochip{display:inline-flex;align-items:center;gap:8px;border:1px dashed var(--student);color:var(--student-ink);background:var(--student-soft);border-radius:6px;padding:3px 10px;font-size:12.5px;font-weight:600}
+.autochip .edit{font-weight:500;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.stu{display:grid;grid-template-columns:1fr 130px 200px;gap:8px 14px;align-items:center;border-top:1px solid var(--line);padding:8px 0;font-variant-numeric:tabular-nums}
+.stu:first-of-type{border-top:none}
+.stu > :last-child{text-align:right}
+.pill{font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:10px}
+.pill.ok{background:var(--teacher-soft);color:var(--teacher-ink)}
+.pill.no{background:var(--warn-soft);color:var(--warn)}
+.pill.sent{background:var(--surface-2);color:var(--muted)}
+
+/* precedence */
+.prec{display:flex;align-items:stretch;gap:0;margin:16px 0;font-size:13.5px;flex-wrap:wrap}
+.prec div{flex:1 1 150px;background:var(--surface);border:1px solid var(--line);padding:12px 14px;position:relative}
+.prec div+div{border-left:none}
+.prec div:first-child{border-radius:8px 0 0 8px}
+.prec div:last-child{border-radius:0 8px 8px 0}
+.prec b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.prec .win b{color:var(--teacher-ink)}
+.prec .win{background:var(--teacher-soft)}
+
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;margin:14px 0}
+code{font-family:var(--mono);font-size:.92em}
+
+/* phases */
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.ph{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px}
+.ph .eyebrow{margin-bottom:4px}
+.ph h3{margin:0 0 6px;font-size:15px}
+.ph ul{padding-left:18px;margin:6px 0}
+@media (max-width:760px){.phases{grid-template-columns:1fr}}
+
+.q li{margin:8px 0}
+.q .who{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-right:6px}
+
+/* topbar 照 iterations/index.html */
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 40px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap;font-family:var(--sans)}
+.topbar a{color:#64748b;text-decoration:none;font-size:13px;font-weight:600}
+.topbar a:hover{color:#1e293b}
+.topbar .sep{color:#cbd5e1}
+.topbar .muted{color:#64748b;font-size:13px;font-weight:600}
+.topbar .current{color:#8b5cf6;font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+.topbar .num{display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;background:#8b5cf6;padding:2px 7px;border-radius:5px}
+</style>
+
+
+<!-- ===========================================================================
+   v10 提案（第一輪，2026-09-30）—— 老師自訂寄信規則。
+   這一版沒有基準檔：產品裡還沒有通知設定頁，基準是「九封信現在怎麼寄」，
+   收在 DAHUA AI Email Templates（artifact，連結在頁首）。
+   程式碼基準：dahua-dash origin/develop（見 ITERATION.md 檔頭的 commit）
+     src/layouts/common/account-popover.js（Account 選單只有 Home／Profile／Payment and Billings）
+     src/app/dashboard/users/edit（Profile 頁，提案把 Notifications 分頁掛在這裡）
+     src/sections/assignments/view/assign-practice.js（派作業流程，沒有寄信選項）
+     src/api/graphql/mutations/updateUser.js（提案優先擴充它的 input）
+   commerce-api：src/email/brevo/templates/ 九封（12/13/14/15/17/22/48/49/59）
+   畫面稿的開關與分段控制項可以點，只改本頁狀態。
+   =========================================================================== -->
+</head>
+<body>
+<div class="topbar">
+  <a href="../../../../index.html">Home</a>
+  <span class="sep">/</span>
+  <span class="muted">Chinese Modules</span>
+  <span class="sep">/</span>
+  <a href="../index.html"><span class="num" style="margin-right:4px">2.4</span>Versions &amp; Iteration</a>
+  <span class="sep">/</span>
+  <span class="current">v10 · Teacher Email Settings</span>
+</div>
+<div class="page">
+  <div class="prose">
+    <div class="eyebrow">DAHUA AI · Proposal · 2026-09-30</div>
+    <h1 style="margin-top:8px">Teacher Email Settings</h1>
+    <p class="lede">現在九封信全由系統代老師決定何時寄、寄給誰。這份提案把其中值得交給老師的部分開放出來，同時守住「老師不動設定，一切照舊」。</p>
+    <div class="meta">
+      <span>基準：<a href="https://claude.ai/code/artifact/dce51479-50bc-47b7-9309-4eedd21ff9d7">DAHUA AI Email Templates</a>（九封信、觸發、參數）</span>
+      <span>前端：dahua-dash <span class="mono">origin/develop@96d64382</span> · <span class="mono">app/dashboard/users/edit</span>（基準 profile.html）、<span class="mono">sections/assignments</span></span>
+      <span>後端：commerce-api <span class="mono">src/email/brevo/</span>、cron</span>
+    </div>
+  </div>
+
+  <!-- ============ 1. 現況 ============ -->
+  <div class="prose">
+    <h2>1. 現況：誰觸發、誰收、老師能不能改</h2>
+    <p>九封信依「觸發來源」分成三類，這個分法決定了哪些該開放、哪些不該。</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>信</th><th>收件者</th><th>觸發</th><th>老師現在能控制的</th><th>類型</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tid">12</span></td><td>Welcome（student）</td><td><span class="lane s">Student</span></td><td>學生接受邀請、帳號建立</td><td class="dim">無，也不需要</td><td>系統事件</td></tr>
+        <tr><td><span class="tid">13</span></td><td>Welcome（teacher）</td><td><span class="lane t">Teacher</span></td><td>老師／協調員／管理員帳號建立</td><td class="dim">無，也不需要</td><td>系統事件</td></tr>
+        <tr><td><span class="tid">22</span></td><td>Question bank ready</td><td><span class="lane t">Teacher</span></td><td>AI 題庫生成完成</td><td class="dim">無</td><td>系統事件</td></tr>
+        <tr><td><span class="tid">14</span></td><td>New assignment</td><td><span class="lane s">Student</span></td><td>老師派作業（含延後開始 cron）</td><td>只能「派」或「不派」，每派必寄</td><td>老師動作</td></tr>
+        <tr><td><span class="tid">15</span></td><td>Teacher feedback</td><td><span class="lane s">Student</span></td><td>老師留評語</td><td>每留必寄</td><td>老師動作</td></tr>
+        <tr><td><span class="tid">48</span></td><td>Outstanding reminder</td><td><span class="lane s">Student</span></td><td>老師按 Remind</td><td>手動、一次一人、沒有自動</td><td>老師動作</td></tr>
+        <tr><td><span class="tid">49</span></td><td>Word Game goal reminder</td><td><span class="lane s">Student</span></td><td>老師按 Remind</td><td>手動，可附 MESSAGE</td><td>老師動作</td></tr>
+        <tr><td><span class="tid">17</span></td><td>Due today summary</td><td><span class="lane t">Teacher</span></td><td>每日 cron，當天到期的作業</td><td class="dim">無：時間、要不要、合併都固定</td><td>排程</td></tr>
+        <tr><td><span class="tid">59</span></td><td>Daily assignment digest</td><td><span class="lane s">Student</span></td><td>每日 cron，每位學生一封</td><td class="dim">無</td><td>排程</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>三類的處理方式不同：</p>
+    <ul>
+      <li><strong>系統事件</strong>（12、13、22）：一次性或跟帳號綁在一起，只給 22 一個開關就夠。</li>
+      <li><strong>老師動作</strong>（14、15、48、49）：老師已經「在做那件事」，設定應該長在動作旁邊，而不是藏在設定頁。</li>
+      <li><strong>排程</strong>（17、59）：最需要開放的一類，但 59 寄給學生、跨老師跨班，不能讓單一老師關掉。</li>
+    </ul>
+    <div class="note">
+      <span class="eyebrow">前端目前的缺口</span>
+      dahua-dash 沒有任何通知設定頁；Account 選單只有 Profile。派作業（<span class="mono">assign-practice.js</span>）和留評語流程裡沒有「要不要寄信」的選項。48／49 的 Remind 已經在三個地方：<strong>Teacher Dashboard</strong> 的 Active assignments 列（展開後一顆 Send reminder，一次寄給整列未交的學生，前端只有 3 秒 cooldown）、<strong>Students</strong> 頁的學生明細（一人一顆 Remind）、<strong>Word Game</strong> 頁（一人一顆，可改訊息）。後端不去重，按兩次寄兩封，程式註解寫明是刻意的。
+    </div>
+  </div>
+
+  <!-- ============ 2. 原則 ============ -->
+  <div class="prose">
+    <h2>2. 設計原則</h2>
+    <ol>
+      <li><strong>預設值等於今天的行為。</strong>老師一個設定都不碰，寄信結果和現在一模一樣。開放設定不能變成「多一步才會寄」。</li>
+      <li><strong>分兩層講：「我收什麼」和「我的學生收什麼」。</strong>老師對自己信箱的控制是完全的；對學生信箱的控制是代理，要有邊界。頁面上用綠／藍兩色帶一路區分。</li>
+      <li><strong>設定長在動作旁邊，設定頁只是總覽。</strong>派作業時勾「Email students」，留評語時勾「Notify」，Remind 旁邊設自動規則；設定頁存的是這些勾選的「預設值」。</li>
+      <li><strong>老師設規則，不改文案。</strong>Brevo 模板仍是唯一來源。老師能改的是「寄不寄、何時寄、寄給誰」，加上 49 已有的自訂訊息欄位。</li>
+      <li><strong>不能讓學生被轟炸。</strong>任何自動規則都有系統上限，跨老師合併計算。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 3. 三個方案 ============ -->
+  <div class="prose">
+    <h2>3. 三個方案</h2>
+    <p>差別在「開放到哪一層」。三案都以同一頁設定頁為底，B 和 C 往上疊。</p>
+  </div>
+  <div class="options">
+    <div class="opt">
+      <div class="eyebrow"><span>方案 A</span></div>
+      <h3>設定頁，老師層級</h3>
+      <ul>
+        <li>Profile 多一個 Notifications 分頁</li>
+        <li>17：開關、寄送時間、只在有人未交時寄</li>
+        <li>22：開關</li>
+        <li>14／15：Always／Ask each time／Never</li>
+        <li>48／49：維持手動</li>
+      </ul>
+      <div class="cost">前端一頁、後端一個 preferences 欄位、cron 17 讀設定。最快能上。</div>
+    </div>
+    <div class="opt rec">
+      <div class="eyebrow"><span>方案 B</span><span class="tag">建議</span></div>
+      <h3>A ＋ 動作旁的設定 ＋ 自動提醒</h3>
+      <ul>
+        <li>A 的全部</li>
+        <li>派作業對話框、留評語各長出對應的 inline 控制</li>
+        <li>48：自動提醒規則（到期前 n 天、逾期後 n 天、最多幾次）</li>
+        <li>Dashboard 那一列的改動（Reminded n ago）另開一版</li>
+        <li>系統上限：同一學生同一作業 24 小時最多一封</li>
+      </ul>
+      <div class="cost">多兩個 inline 元件、一個 reminder cron。老師真正會用到的都在這裡。</div>
+    </div>
+    <div class="opt">
+      <div class="eyebrow"><span>方案 C</span></div>
+      <h3>B ＋ 班級覆寫 ＋ 學校預設</h3>
+      <ul>
+        <li>B 的全部</li>
+        <li>每個班可以覆寫老師的預設</li>
+        <li>協調員／管理員設學校層級預設與上限</li>
+        <li>學生自己的偏好（digest 時間、關閉）</li>
+        <li>Quiet hours、每週摘要</li>
+      </ul>
+      <div class="cost">多一層 precedence 和權限。等 B 上線看老師實際怎麼調再決定。</div>
+    </div>
+  </div>
+  <div class="prose">
+    <p>建議走 <strong>B</strong>，把 C 的「班級覆寫」留成第二期。理由：A 的設定頁老師一年開不了幾次，真正的痛點是「派作業當下要不要吵學生」和「逾期了要一個一個按 Remind」，這兩件事只有 B 解。</p>
+  </div>
+
+  <!-- ============ 4. 設定項目明細 ============ -->
+  <div class="prose">
+    <h2>4. 每封信開放什麼（方案 B）</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>信</th><th>老師可設</th><th>預設值（＝今天）</th><th>設定在哪</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tid">17</span></td><td><span class="lane t">Teacher</span> Due today summary</td><td>開關；寄送時間；只在有人未交時才寄；一封合併 or 每個作業一封</td><td>On · cron 現在的時間 · 一律寄 · 每個作業一封</td><td>設定頁</td></tr>
+        <tr><td><span class="tid">22</span></td><td><span class="lane t">Teacher</span> Question bank ready</td><td>開關</td><td>On</td><td>設定頁</td></tr>
+        <tr><td><span class="tid">14</span></td><td><span class="lane s">Student</span> New assignment</td><td>Always／Ask each time／Never；延後開始的作業改在開始日寄（現況）或派的當下寄</td><td>Always · 開始日寄</td><td>設定頁預設，派作業對話框可改當次</td></tr>
+        <tr><td><span class="tid">15</span></td><td><span class="lane s">Student</span> Teacher feedback</td><td>Always／Ask each time／Never</td><td>Always</td><td>設定頁預設，留評語時可改當次</td></tr>
+        <tr><td><span class="tid">48</span></td><td><span class="lane s">Student</span> Outstanding reminder</td><td>自動規則：到期前 n 天、逾期後 n 天、之後每 n 天、最多 n 次；手動 Send reminder 照舊</td><td>自動 Off（只有手動）</td><td>設定頁（Dashboard 那一列的改動不在這一版）</td></tr>
+        <tr><td><span class="tid">49</span></td><td><span class="lane s">Student</span> Word Game goal reminder</td><td>自動規則同 48；預設 MESSAGE 文字</td><td>自動 Off</td><td>設定頁預設，Word Game 目標頁可覆寫</td></tr>
+        <tr><td><span class="tid">59</span></td><td><span class="lane x">Locked</span> Daily digest（student）</td><td class="warnc">不開放給老師</td><td>照舊</td><td>設定頁顯示為鎖定，附說明</td></tr>
+        <tr><td><span class="tid">12</span> <span class="tid">13</span></td><td><span class="lane x">Locked</span> Welcome</td><td class="warnc">不出現在設定頁</td><td>照舊</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <div class="note">
+      <span class="eyebrow">為什麼 59 不給老師關</span>
+      Digest 是「每位學生一封」，內容橫跨這個學生所有班級和老師。老師 A 關掉不該讓老師 B 的作業從學生的信裡消失。它的開關屬於學生本人（方案 C），或屬於學校層級。設定頁仍列出它，讓老師知道學生每天會收到什麼，但顯示為鎖定。
+    </div>
+  </div>
+
+  <!-- ============ 5. 畫面 ============ -->
+  <h2>5. 畫面</h2>
+  <div class="prose"><p>兩個位置：設定頁（總覽與預設值）、派作業對話框（當次覆寫）。以下是可點的畫面稿，切換只改本頁狀態。</p></div>
+
+  <h3>5.1 設定頁：Profile › Notifications</h3>
+  <div class="mock">
+    <div class="mock-bar"><span class="crumb">dashboard / users / edit / :id</span><span class="where">Account ▸ Profile ▸ Notifications 分頁</span></div>
+    <div class="mock-body">
+      <div class="tabs"><span>General</span><span>Security</span><span class="on">Notifications</span></div>
+      <div class="scope"><span class="dim">These defaults apply to</span><span class="chipsel">All my classes</span><span class="dim">· per-class overrides in a later phase</span></div>
+
+      <div class="group">
+        <div class="group-h"><h4>Emails you receive</h4><span class="sub">Sent to your own inbox</span></div>
+        <div class="rows">
+          <div class="row t" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">17</span> Due-today submission summary <span class="prev">Preview</span></div>
+              <div class="desc">One email per assignment due today, with who has and hasn't submitted.</div>
+              <div class="sub">
+                <span class="field">Send at <input type="time" value="07:30"> <span class="dim">school time</span></span>
+                <label class="chk"><input type="checkbox"> Only when someone hasn't submitted</label>
+                <span class="seg"><button class="on">One per assignment</button><button>Combine into one</button></span>
+              </div>
+            </div>
+            <div class="ctl"><button class="tg" role="switch" aria-checked="true" aria-label="Due-today summary"></button></div>
+          </div>
+          <div class="row t" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">22</span> Question bank ready <span class="prev">Preview</span></div>
+              <div class="desc">When AI generation finishes for a question bank you started.</div>
+            </div>
+            <div class="ctl"><button class="tg" role="switch" aria-checked="true" aria-label="Question bank ready"></button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h4>Emails your students receive</h4><span class="sub">Triggered by what you do in their classes</span></div>
+        <div class="rows">
+          <div class="row s" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">14</span> New assignment <span class="prev">Preview</span></div>
+              <div class="desc">When you assign work. You can change this for a single assignment in the assign dialog.</div>
+              <div class="sub">
+                <span class="seg"><button class="on">Always</button><button>Ask me each time</button><button>Never</button></span>
+                <span class="field">Deferred start: <select><option>send on the start date</option><option>send when I assign</option></select></span>
+              </div>
+            </div>
+            <div class="ctl"></div>
+          </div>
+          <div class="row s" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">15</span> Feedback notification <span class="prev">Preview</span></div>
+              <div class="desc">When you leave feedback on a submission.</div>
+              <div class="sub"><span class="seg"><button class="on">Always</button><button>Ask me each time</button><button>Never</button></span></div>
+            </div>
+            <div class="ctl"></div>
+          </div>
+          <div class="row s off" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">48</span> Automatic assignment reminders <span class="prev">Preview</span></div>
+              <div class="desc">You can always send a reminder from the Dashboard. Turn this on to also remind on a schedule.</div>
+              <div class="sub">
+                <span class="field"><input type="number" value="2" min="0" max="14"> days before due</span>
+                <span class="field"><input type="number" value="1" min="0" max="14"> day after due</span>
+                <span class="field">then every <input type="number" value="3" min="1" max="14"> days, up to <input type="number" value="2" min="1" max="5"> times</span>
+              </div>
+            </div>
+            <div class="ctl"><button class="tg" role="switch" aria-checked="false" aria-label="Automatic assignment reminders"></button></div>
+          </div>
+          <div class="row s off" data-row>
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">49</span> Automatic Word Game goal reminders <span class="prev">Preview</span></div>
+              <div class="desc">For students behind a Word Game goal you set.</div>
+              <div class="sub">
+                <span class="field"><input type="number" value="3" min="0" max="14"> days before the goal date</span>
+                <span class="field">Default message <input type="text" value="Keep going, you're close!" style="width:200px"></span>
+              </div>
+            </div>
+            <div class="ctl"><button class="tg" role="switch" aria-checked="false" aria-label="Automatic Word Game reminders"></button></div>
+          </div>
+          <div class="row x">
+            <div class="stripe"></div>
+            <div class="main">
+              <div class="title"><span class="tid">59</span> Daily assignment digest <span class="prev">Preview</span></div>
+              <div class="desc">Every student gets one digest a day covering all their classes. Managed by the school, not per teacher.</div>
+            </div>
+            <div class="ctl"><span class="lock">Managed by school</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn">Reset to defaults</button><button class="btn pri">Save</button></div>
+    </div>
+  </div>
+  <p class="cap">綠色帶＝老師自己收，藍色帶＝學生收，灰色帶＝鎖定。每列右上的 Preview 開對應的 Brevo 模板。48／49 關閉時規則欄位淡出但保留，開啟後不用重填。</p>
+
+  <h3>5.2 派作業對話框：當次覆寫</h3>
+  <div class="mock">
+    <div class="mock-bar"><span class="crumb">sections/assignments/view/assign-practice.js</span><span class="where">Assign 對話框最後一步</span></div>
+    <div class="mock-body">
+      <div class="dlg">
+        <div class="dlg-h">Assign “Unit 3 Speaking Practice”</div>
+        <div class="dlg-b">
+          <div class="sum"><span>Class 5A · 24 students</span><span>Starts today</span><span>Due 2026-10-07</span></div>
+        </div>
+        <div class="dlg-f">
+          <span class="left"><label class="chk"><input type="checkbox" checked> Email students now <span class="tid">14</span></label>
+          <span class="link">Uses your default (Always)</span></span>
+          <span class="right"><button class="btn">Cancel</button><button class="btn pri">Assign</button></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap">勾選狀態從設定頁帶入。設定為 Ask each time 時預設不勾，並把說明改成「Choose for this assignment」。延後開始的作業，文字改為 “Email students on the start date”。</p>
+
+  <div class="prose"><div class="note"><span class="eyebrow">不在這一版</span>Teacher Dashboard 作業列的自動提醒 Set up 與 Reminded n ago 原本畫在這裡，2026-09-30 範圍收斂成只討論設定頁，拿掉。48／49 在這一版只有設定頁上的規則欄位；Dashboard 那一列要不要動，等設定頁定了再開一版。</div></div>
+
+  <!-- ============ 6. 規則 ============ -->
+  <div class="prose">
+    <h2>6. 規則怎麼疊、怎麼防轟炸</h2>
+    <h3>優先順序</h3>
+  </div>
+  <div class="prec">
+    <div><b>系統上限</b>永遠生效，任何層級都改不掉</div>
+    <div class="win"><b>當次覆寫</b>對話框裡的勾選、單一作業的自動規則</div>
+    <div><b>班級覆寫</b>第二期</div>
+    <div><b>老師預設</b>設定頁</div>
+    <div><b>系統預設</b>＝今天的行為</div>
+  </div>
+  <div class="prose">
+    <p>左邊贏。老師預設只是在填「當次覆寫」時的初始值，而不是最終決定。</p>
+    <h3>多位老師、多個班</h3>
+    <ul>
+      <li>寄給學生的信（14、15、48、49）以<strong>那個作業的老師</strong>的設定為準。同一個學生在兩個班有兩位老師，就分別依各自的設定。</li>
+      <li>59 digest 不受任何老師設定影響。</li>
+      <li>17 只看收信老師自己的設定。</li>
+    </ul>
+    <h3>系統上限（防轟炸）</h3>
+    <ul>
+      <li>同一學生、同一作業，<strong>24 小時內最多一封提醒</strong>，手動和自動合併計算。這一條改變現況：今天後端刻意不去重，按兩次寄兩封（見第 9 節第 4 條）。撞到上限時 Dashboard 怎麼顯示，不在這一版。</li>
+      <li>自動提醒每個作業<strong>最多 4 封</strong>（到期前 1 ＋ 逾期後 1 ＋ 重複最多 2）。</li>
+      <li>已繳交的學生立刻退出自動提醒序列。</li>
+      <li>作業結束日（若有）之後不再自動提醒。</li>
+      <li>寄送時間一律用學校時區；沒有時區資料時退回現在 cron 的固定時間。</li>
+    </ul>
+  </div>
+
+  <!-- ============ 7. 資料 ============ -->
+  <div class="prose">
+    <h2>7. 資料與後端接點</h2>
+    <p>老師層級的設定存一個 JSON 欄位就夠，不要為每封信開表。示意：</p>
+  </div>
+<pre>// User.notificationPreferences（teacher）
+{
+  "dueTodaySummary":   { "enabled": true,  "sendAt": "07:30", "onlyIfOutstanding": false, "combine": false },
+  "questionBankReady": { "enabled": true },
+  "newAssignment":     { "mode": "always", "deferred": "startDate" },   // always | ask | never
+  "feedback":          { "mode": "always" },
+  "autoReminder":      { "enabled": false, "daysBefore": 2, "daysAfter": 1, "everyDays": 3, "maxRepeats": 2 },
+  "wordGameReminder":  { "enabled": false, "daysBefore": 3, "message": "" }
+}
+
+// Assignment（per-assignment override, optional）
+{ "emailOnAssign": true, "autoReminder": { ...same shape } }
+
+// ReminderLog（for the 24h cap and the "Reminded 2h ago" pill）
+{ "studentId", "assignmentId", "templateId", "sentAt", "source": "manual" | "auto" }</pre>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>接點</th><th>改什麼</th><th>層</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">updateUser</span> 或新 <span class="mono">updateNotificationPreferences</span></td><td>寫入 preferences；前端已有 updateUser mutation，優先擴充 input</td><td>GraphQL</td></tr>
+        <tr><td><span class="mono">assignAssignment</span></td><td>多一個 <span class="mono">emailStudents</span> 參數；缺省時讀老師的 newAssignment.mode</td><td>GraphQL + cron（deferred）</td></tr>
+        <tr><td><span class="mono">teacherFeedback</span></td><td>多一個 <span class="mono">notifyStudent</span> 參數</td><td>GraphQL</td></tr>
+        <tr><td>Template 17 cron</td><td>依老師 sendAt 分批；onlyIfOutstanding 過濾；combine 時改組 params</td><td>cron</td></tr>
+        <tr><td>新 reminder cron（48／49）</td><td>每日掃有 autoReminder 的作業，查 ReminderLog 套上限，呼叫既有 <span class="mono">studentOutstandingReminder</span></td><td>cron</td></tr>
+        <tr><td><span class="mono">sendStudentAssignmentReminder</span>／<span class="mono">sendWordGame2AssignmentReminder</span>（手動，已存在）</td><td>寫 ReminderLog；撞上限回傳 <span class="mono">lastSentAt</span> 給前端顯示。取代現在 Teacher Dashboard 前端的 3 秒 cooldown</td><td>GraphQL</td></tr>
+        <tr><td>Brevo 模板</td><td>不動。所有九封的文案與參數維持現狀</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 8. 分期 ============ -->
+  <div class="prose"><h2>8. 分期</h2></div>
+  <div class="phases">
+    <div class="ph">
+      <div class="eyebrow">Phase 1</div>
+      <h3>設定頁 ＋ 派作業／評語 inline</h3>
+      <ul>
+        <li>Notifications 分頁（17、22、14、15，59 鎖定）</li>
+        <li>Assign 對話框的 Email students 勾選</li>
+        <li>留評語的 Notify student 勾選</li>
+        <li>17 cron 讀 sendAt／onlyIfOutstanding</li>
+      </ul>
+    </div>
+    <div class="ph">
+      <div class="eyebrow">Phase 2</div>
+      <h3>自動提醒（規則與 cron）</h3>
+      <ul>
+        <li>48／49 自動規則（設定頁 ＋ 單一作業覆寫）</li>
+        <li>ReminderLog 與 24 小時上限</li>
+        <li>Dashboard 作業列的 Set up 與 Reminded n ago（另開一版）</li>
+        <li>17 的 combine 選項</li>
+      </ul>
+    </div>
+    <div class="ph">
+      <div class="eyebrow">Phase 3（方案 C）</div>
+      <h3>班級覆寫 ＋ 學校預設 ＋ 學生偏好</h3>
+      <ul>
+        <li>All my classes 下拉變成可選單一班級</li>
+        <li>協調員設學校預設與上限</li>
+        <li>學生自己開關 59、選時間</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ 9. 待確認 ============ -->
+  <div class="prose">
+    <h2>9. 待確認</h2>
+    <ol class="q">
+      <li><span class="who">PM</span>59 digest 真的不給老師關？如果學校端要求「老師能關」，就得改成班級層級才不會互相蓋掉。</li>
+      <li><span class="who">PM</span>14 的 Ask each time 值不值得做？如果多數老師只會選 Always／Never，這個選項可以砍掉讓設定頁更短。</li>
+      <li><span class="who">Backend</span>School／Program 有沒有時區欄位？17 的 sendAt 和自動提醒的「n 天」都靠它。</li>
+      <li><span class="who">Backend</span>手動 Remind 今天刻意不去重（按兩次寄兩封）。24 小時上限會改掉這個行為，要不要？要的話 ReminderLog 得在後端，前端的 3 秒 cooldown 不夠。</li>
+      <li><span class="who">Backend</span>17 現在的 cron 固定幾點寄？那個時間就是設定頁的預設值，要寫在畫面上。</li>
+      <li><span class="who">Design</span>Notifications 放 Profile 分頁（本提案）還是 Account 選單獨立一項？Profile 分頁的好處是不動導覽；缺點是 users/edit 現在也被管理員拿來編別人的資料，要確定分頁只在「編自己」時出現。</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tg').forEach(function(t){
+  t.addEventListener('click', function(){
+    var on = t.getAttribute('aria-checked') === 'true';
+    t.setAttribute('aria-checked', on ? 'false' : 'true');
+    var row = t.closest('.row');
+    if (row) row.classList.toggle('off', on);
+  });
+});
+document.querySelectorAll('.seg').forEach(function(seg){
+  seg.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){
+      seg.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+    });
+  });
+});
+</script>
+
+</body>
+</html>

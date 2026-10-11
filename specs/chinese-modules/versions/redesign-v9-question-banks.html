@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher · Question Banks (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets-v9/teacher-shell.css" />
+<style>
+  .qhead{ display:flex; align-items:center; gap:11px; padding:15px 16px; border-bottom:1px solid var(--line-2); }
+  .qhead .qi{ width:38px; height:38px; border-radius:11px; background:var(--mc-bg); color:var(--mc);
+    display:grid; place-items:center; flex:none; }
+  .qhead .qi .material-icons-round{ font-size:20px; }
+  .qhead .qt{ min-width:0; flex:1; }
+  .qhead .qt b{ display:block; font-size:14.5px; font-weight:800; color:var(--ink); letter-spacing:-.15px; }
+  .qhead .qt span{ font-size:12px; font-weight:600; color:var(--muted); }
+  .qbody{ padding:13px 16px; }
+  .qstat{ display:flex; align-items:baseline; gap:6px; }
+  .qstat .big{ font-size:26px; font-weight:800; color:var(--ink); letter-spacing:-.8px; }
+  .qstat .lb{ font-size:12.5px; font-weight:700; color:var(--muted); }
+  .qmeta{ margin-top:11px; padding-top:11px; border-top:1px solid var(--line-2); display:flex; flex-wrap:wrap; gap:6px; }
+  .prev{ margin-top:11px; padding:10px 12px; border-radius:10px; background:#f8fafc; border:1px solid var(--line-2); }
+  .prev .qq{ font-size:12.5px; font-weight:700; color:var(--slate); line-height:1.45; }
+  .prev .qa{ margin-top:6px; display:flex; gap:5px; flex-wrap:wrap; }
+  .prev .opt{ font-size:11px; font-weight:700; color:var(--muted); background:#fff; border:1px solid var(--line);
+    padding:2px 8px; border-radius:6px; }
+  .prev .opt.right{ color:var(--emerald-d); border-color:var(--emerald-l2); background:var(--emerald-l); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" id="side" data-current="banks"></aside>
+
+  <div class="main">
+    <div class="pagebar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
+      <div class="hdr-ic"><span class="material-icons-round">quiz</span></div>
+      <div class="dt"><b>Question Banks</b><span>The questions your quizzes draw from</span></div>
+      <div class="pb-acts">
+        <div class="segmented" id="viewSeg">
+          <button class="on" data-view="card" aria-label="Card view"><span class="material-icons-round">view_module</span></button>
+          <button data-view="table" aria-label="List view"><span class="material-icons-round">table_rows</span></button>
+        </div>
+        <button class="btnp" id="genBtn"><span class="material-icons-round">auto_awesome</span> Generate questions</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <section class="panel">
+        <div class="toolbar">
+          <div class="tabs" id="tabs" style="padding:0;gap:6px"></div>
+          <span class="spacer"></span>
+          <span class="sbox"><span class="material-icons-round">search</span><input id="q" placeholder="Search banks" aria-label="Search question banks" /></span>
+        </div>
+        <div id="body"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="mh"><span class="material-icons-round" style="color:var(--emerald)">auto_awesome</span>
+    <h3 id="mTitle">Generate questions</h3>
+    <button class="x" id="mClose" aria-label="Close"><span class="material-icons-round">close</span></button></div>
+  <div class="mb">
+    <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">
+      Pick a project and how many questions you need. The generator writes them from that text, then you edit before saving.</p>
+    <label style="display:block;font-size:12px;font-weight:800;color:var(--slate);margin-bottom:6px">From project</label>
+    <select class="sel" id="mProj" style="width:100%;margin-bottom:14px">
+      <option>食物 — What we eat</option><option>家人 — My family</option>
+      <option>打招呼 — Saying hello</option><option>数字 — Counting</option><option>天气 — Weather today</option>
+    </select>
+    <label style="display:block;font-size:12px;font-weight:800;color:var(--slate);margin-bottom:6px">How many</label>
+    <div class="tabs" id="mCount" style="padding:0;gap:6px">
+      <button class="tab" data-c="5">5</button><button class="tab on" data-c="10">10</button>
+      <button class="tab" data-c="15">15</button><button class="tab" data-c="20">20</button>
+    </div>
+  </div>
+  <div class="mf"><button class="btn-sm" id="mCancel">Cancel</button><button class="btnp" id="mGo">Generate</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="assets-v9/teacher-nav.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s);};
+  var tt; function say(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},2400);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var DATA=[
+    {id:1,n:'食物 — Exit questions',lv:'Level 1',qs:10,src:'AI',proj:'食物 — What we eat',used:2,up:'2 days ago',
+     q:'“我喜欢吃___。” 哪一个最合适？',opts:['米饭','跑步','很好'],right:0},
+    {id:2,n:'家人 — Unit check',lv:'Level 1',qs:12,src:'AI',proj:'家人 — My family',used:1,up:'6 days ago',
+     q:'妈妈的妈妈是谁？',opts:['姐姐','外婆','阿姨'],right:1},
+    {id:3,n:'数字 — Number drill',lv:'Level 1',qs:10,src:'Manual',proj:'数字 — Counting',used:2,up:'1 week ago',
+     q:'“十五” 是多少？',opts:['5','15','50'],right:1},
+    {id:4,n:'打招呼 — Quick check',lv:'Level 1',qs:8,src:'AI',proj:'打招呼 — Saying hello',used:1,up:'2 weeks ago',
+     q:'早上见到老师说什么？',opts:['晚安','早上好','再见'],right:1},
+    {id:5,n:'天气 — Mixed review',lv:'Level 2',qs:15,src:'AI',proj:'天气 — Weather today',used:0,up:'2 weeks ago',
+     q:'“今天很热” 的意思是？',opts:['It is cold today','It is hot today','It is raining'],right:1},
+    {id:6,n:'学校 — Objects',lv:'Level 2',qs:12,src:'Manual',proj:'学校 — At school',used:0,up:'3 weeks ago',
+     q:'写字用什么？',opts:['笔','书包','椅子'],right:0},
+    {id:7,n:'HSK 1 — End of term',lv:'Level 1',qs:40,src:'Manual',proj:'Multiple projects',used:0,up:'1 month ago',
+     q:'“你好吗？” 怎么回答？',opts:['我很好','谢谢你','不客气'],right:0},
+    {id:8,n:'买东西 — Prices',lv:'Level 3',qs:14,src:'AI',proj:'买东西 — Shopping',used:1,up:'1 month ago',
+     q:'“多少钱？” 在问什么？',opts:['How many people','How much money','What time'],right:1}
+  ];
+
+  var TABS=[['all','All'],['Level 1','Level 1'],['Level 2','Level 2'],['Level 3','Level 3'],['AI','AI generated'],['Manual','Written by hand']];
+  var filter='all', view='card', query='';
+
+  function match(b){
+    if(filter==='all') return true;
+    if(filter==='AI'||filter==='Manual') return b.src===filter;
+    return b.lv===filter;
+  }
+  function rows(){
+    return DATA.filter(function(b){
+      if(!match(b)) return false;
+      if(query && (b.n+' '+b.proj).toLowerCase().indexOf(query)<0) return false;
+      return true;
+    });
+  }
+  function tabs(){
+    $('#tabs').innerHTML=TABS.map(function(t){
+      var n = t[0]==='all' ? DATA.length : DATA.filter(function(b){
+        return (t[0]==='AI'||t[0]==='Manual') ? b.src===t[0] : b.lv===t[0];
+      }).length;
+      return '<button class="tab'+(filter===t[0]?' on':'')+'" data-t="'+esc(t[0])+'">'+t[1]+' <span class="n">('+n+')</span></button>';
+    }).join('');
+  }
+
+  function card(b){
+    return '<div class="ccard" data-open="'+b.id+'">'+
+      '<div class="qhead"><span class="qi"><span class="material-icons-round">quiz</span></span>'+
+        '<span class="qt"><b>'+esc(b.n)+'</b><span>'+esc(b.proj)+'</span></span></div>'+
+      '<div class="qbody">'+
+        '<span class="qstat"><span class="big">'+b.qs+'</span><span class="lb">questions</span></span>'+
+        '<div class="prev"><div class="qq">'+esc(b.q)+'</div><div class="qa">'+
+          b.opts.map(function(o,i){return '<span class="opt'+(i===b.right?' right':'')+'">'+esc(o)+'</span>';}).join('')+
+        '</div></div>'+
+        '<div class="qmeta">'+
+          '<span class="pill line">'+esc(b.lv)+'</span>'+
+          '<span class="pill '+(b.src==='AI'?'green':'')+'">'+(b.src==='AI'?'AI generated':'Written by hand')+'</span>'+
+          '<span class="pill">'+(b.used?'feeds '+b.used+' quiz'+(b.used===1?'':'zes'):'not used yet')+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="cf"><button class="btn-sm" data-edit="'+b.id+'" style="flex:1;justify-content:center">'+
+        '<span class="material-icons-round">edit</span>Edit questions</button>'+
+        '<button class="btn-sm go" data-quiz="'+b.id+'" style="flex:1;justify-content:center">'+
+        '<span class="material-icons-round">auto_awesome</span>Make a quiz</button></div>'+
+    '</div>';
+  }
+
+  function row(b){
+    return '<div class="lrow" data-open="'+b.id+'">'+
+      '<span class="tile" style="background:var(--mc-bg);color:var(--mc)"><span class="material-icons-round">quiz</span></span>'+
+      '<span class="lt"><b>'+esc(b.n)+'</b><span class="sub">'+esc(b.proj)+'<span class="dot">·</span>'+b.qs+' questions'+
+        '<span class="dot">·</span>'+(b.used?'feeds '+b.used+' quiz':'not used yet')+'</span></span>'+
+      '<span class="pill line">'+esc(b.lv)+'</span>'+
+      '<span class="pill '+(b.src==='AI'?'green':'')+'">'+(b.src==='AI'?'AI':'Manual')+'</span>'+
+      '<span class="lacts"><button class="btn-sm" data-edit="'+b.id+'">Edit</button>'+
+      '<button class="btn-sm go" data-quiz="'+b.id+'">Make a quiz</button></span>'+
+    '</div>';
+  }
+
+  function render(){
+    var list=rows();
+    if(!list.length){
+      $('#body').innerHTML='<div class="empty"><span class="material-icons-round">quiz</span><b>No banks found</b><span>Try another level, or generate a new set.</span></div>';
+      return;
+    }
+    $('#body').innerHTML = view==='card'
+      ? '<div class="cgrid">'+list.map(card).join('')+'</div>'
+      : '<div class="lrows">'+list.map(row).join('')+'</div>';
+  }
+
+  $('#tabs').addEventListener('click',function(e){ var b=e.target.closest('[data-t]'); if(!b) return; filter=b.dataset.t; tabs(); render(); });
+  $('#q').addEventListener('input',function(){ query=this.value.toLowerCase(); render(); });
+  $('#viewSeg').addEventListener('click',function(e){
+    var b=e.target.closest('[data-view]'); if(!b) return; view=b.dataset.view;
+    [].forEach.call(this.children,function(c){c.classList.toggle('on',c===b);}); render();
+  });
+  $('#body').addEventListener('click',function(e){
+    var q=e.target.closest('[data-quiz]'), ed=e.target.closest('[data-edit]');
+    if(q){ e.stopPropagation(); window.location.href='redesign-v9-planning.html'; return; }
+    if(ed){ e.stopPropagation(); say('Opening the question editor'); return; }
+    if(e.target.closest('[data-open]')) say('Opening the bank');
+  });
+
+  /* generate modal */
+  var count=10;
+  function open(){ $('#ov').classList.add('on'); $('#modal').classList.add('on'); }
+  function close(){ $('#ov').classList.remove('on'); $('#modal').classList.remove('on'); }
+  $('#genBtn').addEventListener('click',open);
+  $('#mClose').addEventListener('click',close);
+  $('#mCancel').addEventListener('click',close);
+  $('#ov').addEventListener('click',close);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+  $('#mCount').addEventListener('click',function(e){
+    var b=e.target.closest('[data-c]'); if(!b) return; count=+b.dataset.c;
+    [].forEach.call(this.children,function(c){c.classList.toggle('on',c===b);});
+  });
+  $('#mGo').addEventListener('click',function(){
+    close(); say('Generating '+count+' questions from '+$('#mProj').value+'…');
+  });
+
+  tabs(); render();
+})();
+</script>
+</body>
+</html>

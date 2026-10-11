@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Game V2 — v5 提案：關卡格三件組</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900&family=Public+Sans:wght@700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— v5 · 關卡格的三件組：Level 標頭卡 ／ Unit 標頭 ／ 關卡節點。
+   對照組：word-game.html?screen=stages（現行複刻）。假資料共用 mock.js。
+
+   第一輪（2026-09-15）只動節點。第二輪使用者說之後會多一個 Unit 元件（截圖：藍色膠囊、吉祥物、
+   「Unit 12 · 购物与消费 / Shopping & Spending」），要三個元件看起來是一體的。
+
+   一體的做法 —— 三個元件都是同一種「硬幣」：
+     · 同一組漸層：進行中 = 綠（#37C46E→#12A150）、過關的測驗／Boss = 金、Boss 未打倒 = 紫；完成 = 淡綠底綠字；鎖住 = 淡框灰字。
+     · 同一個 toy-press（inset 0 -3px 0 rgba(0,0,0,.16)）——只給填色的。
+     · 同一組字：Fredoka 600 當標題與數字，Nunito 800 當副標。中文照 skill 的 .zh：400、--ink-soft（填色時白 .85）。
+     · 同一階圓角：卡 20、Unit 列 16、磁磚 14、chip 8。
+     · Unit 標頭 = 一枚拉寬的硬幣（左邊 40px 吉祥物磁磚 ＋ 標題 ＋ 右邊一個狀態），底下十顆節點坐在它的淺色軌道裡，
+       Boss 收在最右邊 —— 一個 Unit 就是一個區塊。Level 標頭卡是最大的那一枚（左邊返回磁磚、右邊進度數字）。
+   Unit 的大小不固定：使用者的統計是 HSK 2–4 平均 20–25 關、最少 4–6、最多 43。所以 unit 區塊裝好幾列（每列 10），
+   最後一列不補滿；分頁改成對齊 unit（一頁裝整個 unit、累計到 60 關換頁、大 unit 自己一頁）。產品資料裡還沒有 Unit。
+   格子卡高度固定、不捲：卡吃掉標頭卡以下的全部高度，unit 區的高度量出來（resize 重算）再決定一頁裝幾個 unit，unit 不切頁。
+   視窗矮到連最高的 unit 都裝不下時，整頁允許捲，不裁掉分頁。
+   頁面沒裝滿時（剩 ≥100px），豆花站進卡裡講一句跟這一頁有關的話；那時右下角的大豆花收起來。
+
+   網址參數：?page=1..N（預設 1，N 由 unit 分頁算出）· &units=0 不畫 Unit（只看節點）· &sheet=1 只看狀態表
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#12A150; --green-d:#0B7A3B; --green-l:#DCF7E6; --green-ink:#0B5B30;
+  --gold:#FFC219; --gold-d:#E8A400; --coral:#FF5A6E; --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF; --info:#1CB0F6;
+  --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7; --shell:#EAF3EC; --track:#F8FBF9;
+  --font-d:'Fredoka', cursive; --font-b:'Nunito', sans-serif;
+  --g-green:linear-gradient(150deg,#37C46E,#12A150); --g-gold:linear-gradient(180deg,#FFD03A,#FFC219); --g-purple:linear-gradient(180deg,#9B6BF2,#7C3AED);
+  --press:inset 0 -3px 0 rgba(0,0,0,.16);
+  --mui-primary:#00CB61;
+}
+body.sheetonly .layout{ display:none; }
+body{ font-family:var(--font-b); color:var(--ink); background:var(--shell); -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal;
+     text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; display:inline-block; }
+img{ display:block; }
+button{ font-family:inherit; }
+:focus-visible{ outline:3px solid var(--green); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+
+/* ---------- 外殼：照基準檔（HUD、logo、吉祥物沒動） ---------- */
+.layout{ height:100vh; display:flex; flex-direction:column; align-items:center; position:relative; overflow:hidden; }
+/* 視窗矮到連最高的 unit 都裝不下時，寧可整頁捲也不裁掉分頁 */
+.layout.short{ height:auto; min-height:100vh; }
+.layout > .bgimg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.logo{ position:absolute; top:12px; left:12px; z-index:2; }
+.logo img{ height:80px; object-fit:contain; filter:drop-shadow(0 2px 8px rgba(0,0,0,.2)); }
+.hud{ position:absolute; top:28px; right:28px; z-index:30; display:flex; align-items:center; gap:12px; }
+.stars{ background:rgba(255,255,255,.95); border-radius:80px; padding:6px 16px; display:flex; align-items:center; gap:6px; box-shadow:0 3px 12px rgba(0,0,0,.12); border:2px solid #FDE68A; }
+.stars .mi{ font-size:28px; color:var(--gold); }
+.stars b{ font-family:'Public Sans',sans-serif; font-weight:800; font-size:18px; line-height:1.5; }
+.iconbtn{ all:unset; cursor:pointer; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.95); box-shadow:0 3px 12px rgba(0,0,0,.12); border:2px solid #E5E7EB; display:grid; place-items:center; }
+.iconbtn .mi{ font-size:24px; color:var(--ink); }
+.acct{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(145,158,171,.08); }
+.acct .av{ width:36px; height:36px; border-radius:50%; background:#C8FAD6; color:#007B55; font-family:'Public Sans',sans-serif; font-weight:700; font-size:15px; display:grid; place-items:center; }
+.content{ width:100%; flex:1; min-height:0; display:flex; flex-direction:column; position:relative; z-index:1; max-width:800px; padding:96px 16px 24px; }
+.mascot2{ position:absolute; bottom:0; right:0; z-index:5; pointer-events:none; }
+.mascot2 img{ width:360px; height:360px; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(0,0,0,.15)); margin:0 -24px -80px 0; }
+
+/* ===========================================================================
+   ★ 三件組共用：panel 20 ／ 磁磚 14 ／ 三態
+   =========================================================================== */
+.panel{ background:rgba(255,255,255,.95); backdrop-filter:blur(6px); border-radius:20px;
+  box-shadow:0 24px 52px -26px rgba(11,60,35,.6), inset 0 0 0 2px rgba(255,255,255,.6); animation:pop .6s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes pop{ 0%{ opacity:0; transform:scale(.96) translateY(14px);} 100%{ opacity:1; transform:none;} }
+@keyframes slide{ 0%{ opacity:0; transform:translateY(10px);} 100%{ opacity:1; transform:translateY(0);} }
+.tile{ width:40px; height:40px; border-radius:14px; display:grid; place-items:center; flex:none; }
+
+/* ---------- ① Level 標頭卡 ---------- */
+.hdr{ padding:14px 18px 14px 14px; margin-bottom:14px; display:flex; align-items:center; gap:14px; }
+.hdr .back{ background:var(--green-l); color:var(--green-d); text-decoration:none; box-shadow:inset 0 0 0 1.5px #BEEBCE; transition:transform .2s cubic-bezier(.34,1.56,.64,1); }
+.hdr .back:hover{ transform:translateX(-3px); }
+.hdr .back .mi{ font-size:22px; }
+.hdr .t{ flex:1; min-width:0; }
+.hdr .t b{ display:block; font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1.1; }
+.hdr .t b .zh{ font-family:var(--font-b); font-weight:400; font-size:15px; color:var(--ink-soft); margin-left:8px; }
+.hdr .t b .zh::before, .uhd .ut b .zh::before{ content:'· '; opacity:.6; }
+.hdr .t > span{ display:block; font-weight:800; font-size:12px; color:var(--ink-soft); margin:2px 0 7px; }
+.hdr .t .bar{ height:8px; border-radius:4px; background:var(--line); overflow:hidden; }
+.hdr .t .bar i{ display:block; height:100%; border-radius:4px; background:var(--g-green); }
+.hdr .cnt{ flex:none; text-align:right; }
+.hdr .cnt b{ display:block; font-family:var(--font-d); font-weight:600; font-size:22px; color:var(--green-d); line-height:1; }
+.hdr .cnt span{ display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-top:3px; }
+
+/* ---------- 格子卡 ---------- */
+/* 格子卡不是純白：淡綠水洗（--shell 那一階）＋ 一點霜面，讓底下的風景透一點進來；Unit 軌道改成白的才浮得起來 */
+/* 固定高度、不捲：格子卡吃掉標頭卡以下的全部高度，unit 區的高度量出來再決定一頁裝幾個 unit（不捲、不切 unit）；分頁釘在卡底 */
+.grid{ flex:1; min-height:0; display:flex; flex-direction:column; }
+.grid .units{ flex:1; min-height:var(--tallest, 0px); overflow:hidden; padding:0 2px; }
+.grid .pager{ flex:none; margin-top:12px; }
+/* 空白處：豆花站進卡裡講一句話。只在剩下 ≥100px 時出現；出現時右下角那隻大的就收起來，畫面上只有一隻 */
+.grid .units{ display:flex; flex-direction:column; }
+.filler{ flex:none; display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; padding:8px 4px 0; overflow:hidden; }
+.filler img{ object-fit:contain; filter:drop-shadow(0 6px 14px rgba(11,60,35,.25)); margin-right:-6px; animation:pop .6s cubic-bezier(.34,1.56,.64,1) both; }
+.filler .say{ background:rgba(255,255,255,.95); backdrop-filter:blur(6px); border-radius:20px 20px 4px 20px; padding:12px 16px; max-width:320px;
+  box-shadow:0 24px 52px -26px rgba(11,60,35,.6), inset 0 0 0 2px rgba(255,255,255,.6); font-weight:700; font-size:15px; line-height:1.45; color:var(--ink);
+  margin-bottom:34px; animation:pop .6s cubic-bezier(.34,1.56,.64,1) .15s both; }
+.filler .say b{ font-family:var(--font-d); font-weight:600; color:var(--green-d); }
+.row{ grid-template-columns:repeat(10, 59px); justify-content:space-between; gap:0; }
+.unit .row{ padding:12px 14px 0; }
+.grid{ padding:14px; background:linear-gradient(165deg, rgba(243,251,246,.92) 0%, rgba(226,243,232,.92) 60%, rgba(214,238,224,.92) 100%);
+  backdrop-filter:blur(10px); box-shadow:0 24px 52px -26px rgba(11,60,35,.6), inset 0 0 0 2px rgba(255,255,255,.7); }
+.grid.plain{ padding:22px 22px 18px; }
+.grid.plain .units{ padding:0 4px; }
+
+/* ---------- ② Unit 區塊 = 標頭列 + 軌道 ---------- */
+.unit{ border-radius:16px; background:#fff; box-shadow:inset 0 0 0 1.5px var(--line); padding:0 0 12px;
+  /* 一個 unit 可以有好幾列；標頭在最上面，Boss 在最後一列的尾巴 */ animation:slide .4s ease both; }
+.unit + .unit{ margin-top:10px; }
+.uhd{ display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 12px 8px 8px; border-radius:16px; }
+.uhd .tile{ overflow:hidden; background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7); }
+.uhd .tile img{ width:36px; height:36px; object-fit:contain; }
+.uhd .ut{ flex:1; min-width:0; }
+.uhd .ut b{ display:block; font-family:var(--font-d); font-weight:600; font-size:17px; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.uhd .ut b .zh{ font-family:var(--font-b); font-weight:400; font-size:15px; margin-left:8px; }
+.uhd .ut > span{ display:block; font-weight:800; font-size:12px; margin-top:2px; }
+.uhd .us{ flex:none; display:inline-flex; align-items:center; gap:4px; height:28px; padding:0 10px; border-radius:8px; font-family:var(--font-d); font-weight:600; font-size:13px; }
+.uhd .us .mi{ font-size:16px; }
+/* 進行中：綠硬幣 */
+.unit.current .uhd{ background:var(--g-green); color:#fff; box-shadow:var(--press); }
+.unit.current .uhd .ut b .zh, .unit.current .uhd .ut > span{ color:rgba(255,255,255,.85); }
+.unit.current .uhd .us{ background:rgba(255,255,255,.22); color:#fff; box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35); }
+/* 完成：淡綠底綠字 */
+.unit.done .uhd{ background:linear-gradient(100deg,var(--green-l),#EAF9EF); color:var(--green-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.unit.done .uhd .tile{ background:#fff; box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.unit.done .uhd .ut b .zh, .unit.done .uhd .ut > span{ color:var(--green-d); }
+.unit.done .uhd .us{ background:var(--g-gold); color:#fff; box-shadow:var(--press); }
+/* 鎖住：白底淡框灰字 */
+.unit.locked{ background:#fff; }
+.unit.locked .uhd{ background:#fff; color:#AEBCB2; box-shadow:inset 0 0 0 1.5px var(--line); }
+.unit.locked .uhd .tile{ background:#F1F5F2; box-shadow:inset 0 0 0 1.5px var(--line); }
+.unit.locked .uhd .tile img{ filter:grayscale(1); opacity:.45; }
+.unit.locked .uhd .ut b .zh, .unit.locked .uhd .ut > span{ color:#AEBCB2; }
+.unit.locked .uhd .us{ background:#F1F5F2; color:#AEBCB2; }
+.unit .row{ padding:12px 14px 0; }
+.ustrip .unit{ padding-bottom:0; }
+
+.row{ display:grid; grid-template-columns:repeat(10,1fr); gap:14px; }
+.grid.plain .row + .row{ margin-top:14px; }
+
+/* ---------- ③ 關卡節點 ---------- */
+.st{ position:relative; aspect-ratio:1; animation:slide .4s ease both; }
+.st .oring{ position:absolute; inset:0; border-radius:50%; border:4px solid var(--rc); }
+.st .oring.part{ border:none; background:conic-gradient(from -90deg, var(--gold-d) var(--deg), var(--line) var(--deg));
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px)); mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px)); }
+.st .coin{ position:absolute; inset:12%; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  font-family:var(--font-d); font-weight:600; font-size:14px; color:#fff; box-shadow:var(--press);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s; }
+.st .coin:hover{ transform:translateY(-3px); box-shadow:var(--press), 0 10px 18px -10px rgba(11,60,35,.6); }
+.st .coin .mi{ font-size:22px; }
+.st .coin .boss{ font-size:22px; line-height:1; }
+.st.done .coin{ background:var(--g-green); }
+.st.done.reward .coin{ background:var(--g-gold); }
+.st.done .coin .mi{ filter:drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
+.st.current .coin{ background:#fff; color:var(--green-d); box-shadow:0 0 0 3px var(--green), 0 10px 20px -8px rgba(18,161,80,.8); animation:hb 1.4s ease-in-out infinite; }
+.st.current .coin:hover{ transform:none; }
+.st.current .coin .mi{ color:var(--green); }
+@keyframes hb{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.1);} }
+.st.boss:not(.done):not(.locked) .coin{ background:var(--g-purple); color:#fff; box-shadow:0 0 0 3px var(--purple), var(--press); }
+.st.locked .coin{ background:#EEF3F0; color:#AEBCB2; box-shadow:inset 0 0 0 1.5px var(--line); cursor:default; }
+.st.locked .coin:hover{ transform:none; box-shadow:inset 0 0 0 1.5px var(--line); }
+.st.locked .coin .boss{ filter:grayscale(1); opacity:.35; }
+
+/* ---------- 分頁：跟三件組同一套 ---------- */
+.pager{ display:flex; justify-content:center; align-items:center; gap:8px; margin-top:16px; }
+.pager .nav{ all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:2px; height:32px; padding:0 12px 0 8px; border-radius:12px; font-weight:800; font-size:13px; color:var(--ink-soft); background:#fff; box-shadow:inset 0 0 0 1.5px #CFE3D6; }
+.pager .nav:last-child{ padding:0 8px 0 12px; }
+.pager .nav.dis{ opacity:.45; cursor:default; }
+.pager .nav .mi{ font-size:18px; }
+.pager .pg{ width:32px; height:32px; border-radius:12px; display:grid; place-items:center; font-family:var(--font-d); font-weight:600; font-size:13px; color:var(--ink-soft); background:#fff; box-shadow:inset 0 0 0 1.5px #CFE3D6; text-decoration:none; }
+.pager .pg.on{ background:var(--g-green); color:#fff; box-shadow:var(--press); }
+
+/* ---------- 狀態表 ---------- */
+.sheet{ max-width:980px; margin:0 auto; padding:40px 24px 80px; }
+.sheet h2{ font-family:var(--font-d); font-weight:600; font-size:22px; margin:0 0 6px; }
+.sheet h2 + p.lead{ margin-bottom:18px; }
+.sheet p.lead{ color:var(--ink-soft); font-weight:700; font-size:13.5px; max-width:760px; line-height:1.6; }
+.sheet .blk{ margin-bottom:40px; }
+.tbl{ background:#fff; border-radius:20px; padding:18px 20px 22px; box-shadow:0 12px 26px -14px rgba(11,91,48,.45), inset 0 0 0 1.5px var(--line); overflow-x:auto; }
+.tbl table{ border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }
+.tbl th{ font-size:11px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); padding:0 6px 12px; text-align:center; }
+.tbl th.g{ font-family:var(--font-d); font-weight:600; font-size:14px; text-transform:none; letter-spacing:0; color:var(--ink); }
+.tbl td{ padding:12px 6px; text-align:center; vertical-align:middle; border-top:1px solid var(--line); }
+.tbl td.k{ text-align:left; font-weight:900; font-size:13px; white-space:nowrap; width:76px; }
+.tbl td.k span{ display:block; font-weight:700; font-size:11px; color:var(--ink-soft); }
+.tbl .cell{ width:58px; height:58px; margin:0 auto; }
+.tbl.rules table{ min-width:0; }
+.tbl.rules th{ text-align:left; padding:0 12px 10px; }
+.tbl.rules td{ text-align:left; padding:10px 12px; font-weight:700; font-size:13.5px; }
+.tbl.rules td:first-child{ font-family:var(--font-d); font-weight:600; color:var(--green-d); }
+.tbl .cell .st{ animation:none; }
+.legend{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:16px; font-size:12.5px; font-weight:800; color:var(--ink-soft); }
+.legend i{ display:inline-block; width:12px; height:12px; border-radius:4px; margin-right:6px; vertical-align:-1px; box-shadow:inset 0 -2px 0 rgba(0,0,0,.16); }
+.ustrip{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.ustrip .unit{ animation:none; }
+.ustrip .cap{ font-size:11px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px; text-align:center; }
+
+/* 現行節點（複刻，狀態表用） */
+.old{ position:relative; aspect-ratio:1; }
+.old .oring{ position:absolute; inset:0; border-radius:50%; border:4px solid var(--rc); }
+.old .oring.part{ border:none; background:conic-gradient(from -90deg, var(--rc) var(--deg), #D0D0D0 var(--deg));
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px)); mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px)); }
+.old .coin{ position:absolute; inset:12%; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,.1); }
+.old.locked .coin{ opacity:.55; }
+.old .coin .n{ font-weight:800; font-size:13px; color:rgba(255,255,255,.6); }
+.old.done .coin .n, .old.current .coin .n{ color:#fff; }
+.old .coin .mi{ font-size:18px; color:rgba(255,255,255,.6); }
+.old.done .coin .mi{ font-size:22px; color:#fff; }
+.old.current .coin .mi{ color:rgba(255,255,255,.9); }
+.old .coin .boss{ font-size:22px; }
+.old.locked .coin .boss{ font-size:20px; opacity:.4; }
+.old .scroll{ position:absolute; bottom:-2px; right:-2px; font-size:14px; }
+
+@media (max-width:640px){ .row{ grid-template-columns:repeat(5,1fr); } .hdr .cnt span{ display:none; } }
+</style>
+</head>
+<body>
+<div class="layout" id="app"></div>
+<section class="sheet">
+  <div class="blk">
+    <h2>Unit 標頭 · 三種狀態</h2>
+    <p class="lead">一枚拉寬的硬幣：左邊吉祥物磁磚、標題「Unit N · 中文」、英文副標，右邊一顆狀態（進行中＝幾關／幾關，完成＝星星數，鎖住＝鎖）。底下的軌道裝這一單元的全部關卡（4–43 關不等，每列 10、最後一列不補滿），Boss 是最後一顆。</p>
+    <div class="ustrip" id="ustrip"></div>
+  </div>
+  <div class="blk">
+    <h2>分頁規則 · 一頁裝幾個 unit</h2>
+    <p class="lead">沒有用關卡數當門檻，是用高度算的。一個 unit 的高度＝標頭 68 ＋ 每列 71（一列 10 關），unit 之間隔 10；一頁能裝多少＝格子卡裡 unit 區實際量到的高度（視窗改變就重算）。裝得下就往同一頁塞，塞不下的 unit 整個換下一頁——所以「單獨一頁」是結果，不是設定。unit 不切頁、卡不捲；視窗矮到連最高的 unit 都裝不下時才讓整頁捲。</p>
+    <div class="tbl rules"><table>
+      <thead><tr><th>視窗高</th><th>unit 區約</th><th>一個 unit 單獨一頁最多</th><th>兩個 unit 同一頁的例子</th></tr></thead>
+      <tbody>
+        <tr><td>900px</td><td>600px</td><td>7 列＝70 關</td><td>30＋30 可以；30＋40 不行</td></tr>
+        <tr><td>1100px</td><td>800px</td><td>10 列＝100 關</td><td>43＋30 可以</td></tr>
+        <tr><td>720px</td><td>420px</td><td>4 列＝40 關；43 關的裝不下，整頁會捲</td><td>6＋22 也擠不進，各自一頁</td></tr>
+      </tbody></table></div>
+    <p class="lead" style="margin-top:12px">若要一個固定、跟視窗無關的規則（例如「超過 20 關的 unit 一律自己一頁、小的兩三個併一頁」），改成用關卡數算，高度不夠時再讓整頁捲。</p>
+  </div>
+  <div class="blk">
+    <h2>關卡節點 · 十種狀態</h2>
+    <p class="lead">第一列是現行產品的畫法，第二列是提案。外圈是「星星環」（bestScore ÷ 5），提案把它留下來，只換成金色。</p>
+    <div class="tbl" id="sheet"></div>
+    <div class="legend">
+      <span><i style="background:linear-gradient(150deg,#37C46E,#12A150)"></i>綠 = 進行中／完成的教學關（進度）</span>
+      <span><i style="background:linear-gradient(180deg,#FFD03A,#FFC219)"></i>金 = 過關的測驗／Boss、星星</span>
+      <span><i style="background:#fff; box-shadow:0 0 0 2px #12A150"></i>白＋綠環 = 目前這一關</span>
+      <span><i style="background:linear-gradient(180deg,#9B6BF2,#7C3AED)"></i>紫 = 還沒打倒的 Boss（挑戰）</span>
+      <span><i style="background:#EEF3F0; box-shadow:inset 0 0 0 1.5px #E4EDE7"></i>灰 = 鎖住</span>
+    </div>
+  </div>
+</section>
+<script src="mock.js"></script>
+<script>
+(() => {
+  const { world, units, student, subtitle, starPct, q, LEVELS } = window.WG;
+  const app = document.getElementById('app');
+  const A = '../../assets/game/v2';
+  if (q('sheet')) document.body.classList.add('sheetonly');
+  const showUnits = q('units', '1') !== '0';
+
+  // ③ 節點
+  const node = (s, idx, delay = 0) => {
+    const done = s.passed, cur = idx === world.currentIndex, locked = !s.unlocked;
+    const quiz = s.type === 'QUIZ' || s.type === 'BOSS', boss = s.type === 'BOSS';
+    const pct = starPct(s), part = pct > 0 && pct < 100;
+    let rc = '#EEF3F0';
+    if (done && quiz) rc = 'var(--gold-d)'; else if (done) rc = 'var(--green)'; else if (boss && !locked) rc = 'var(--purple-d)';
+    const inner = boss ? '<span class="boss">👹</span>' : quiz ? '<span class="mi">star</span>' : s.level;
+    return `<div class="st ${done ? 'done' : ''} ${done && quiz ? 'reward' : ''} ${cur ? 'current' : ''} ${locked ? 'locked' : ''} ${boss ? 'boss' : ''}"
+      style="--rc:${rc}; --deg:${pct * 3.6}deg; animation-delay:${delay}ms"><div class="oring ${part ? 'part' : ''}"></div><div class="coin">${inner}</div></div>`;
+  };
+  const oldNode = (s, idx) => {
+    const done = s.passed, cur = idx === world.currentIndex, locked = !s.unlocked;
+    const quiz = s.type === 'QUIZ' || s.type === 'BOSS', boss = s.type === 'BOSS';
+    const pct = starPct(s), part = pct > 0 && pct < 100;
+    const rc = cur ? '#0B7FB8' : done && quiz ? '#C89200' : done ? '#3D7A3F' : '#C0C0C0';
+    let bg = '#D5D5D5';
+    if (boss && done) bg = '#EA2B2B'; else if (cur) bg = '#1CB0F6'; else if (done && quiz && !boss) bg = '#FFC107'; else if (done && !boss) bg = '#6BAF6E';
+    const inner = boss ? '<span class="boss">👹</span>' : quiz ? '<span class="mi">star</span>' : `<span class="n">${s.level}</span>`;
+    return `<div class="old ${done ? 'done' : ''} ${cur ? 'current' : ''} ${locked ? 'locked' : ''}" style="--rc:${rc}; --bg:${bg}; --deg:${pct * 3.6}deg">
+      <div class="oring ${part ? 'part' : ''}"></div><div class="coin">${inner}${quiz && !boss && !locked ? '<span class="scroll">📜</span>' : ''}</div></div>`;
+  };
+
+  // ② Unit 標頭 + 軌道
+  const unitStars = (u) => world.stages.slice(u.from, u.to).reduce((n, s) => n + (s.type === 'TEACHING' ? 0 : s.bestScore), 0);
+  const unitStatus = (u) => {
+    if (u.status === 'current') return `<span class="us">${u.done} / ${u.count}</span>`;
+    if (u.status === 'done') return `<span class="us"><span class="mi">star</span>${unitStars(u)}</span>`;
+    return `<span class="us"><span class="mi">lock</span></span>`;
+  };
+  // 一個 unit = 標頭列 + 幾列（每列 10 顆，最後一列不補滿）。unit 的關卡數 4–43 不等（使用者統計）。
+  const unitRows = (u, ui) => {
+    const out = [];
+    for (let i = u.from; i < u.to; i += 10) out.push(`<div class="row">${world.stages.slice(i, Math.min(i + 10, u.to)).map((s, j) => node(s, i + j, ui * 80 + (i - u.from + j) * 12)).join('')}</div>`);
+    return out.join('');
+  };
+  const unitBlock = (u, ui, headerOnly = false) => `
+    <div class="unit ${u.status}" style="animation-delay:${ui * 80}ms">
+      <div class="uhd">
+        <div class="tile"><img src="${A}/moscot/6.webp" alt=""></div>
+        <div class="ut"><b>Unit ${u.id}<span class="zh">${u.zh}</span></b><span>${u.en} · ${u.count} stages</span></div>
+        ${unitStatus(u)}
+      </div>
+      ${headerOnly ? '' : unitRows(u, ui)}
+    </div>`;
+
+  // ---- 畫面 ----
+  // 分頁對齊 unit：先把殼畫出來、量 .units 的高度，再用 mock.js 的 buildPages 決定一頁裝幾個 unit（不捲、不切 unit）
+  const { buildPages, tallestUnit } = window.WG;
+  const lvl = LEVELS[world.id];
+  let wantPage = Math.max(1, Number(q('page', 1)));
+  let firstUnitId = null;   // 視窗改變重排時，盡量停在同一個 unit
+  const renderPages = () => {
+    const unitsEl = app.querySelector('.units');
+    const areaH = unitsEl.clientHeight;
+    const pagesArr = buildPages(Math.max(areaH, tallestUnit));
+    if (firstUnitId != null) wantPage = pagesArr.findIndex((p) => p.units.some((u) => u.id === firstUnitId)) + 1 || wantPage;
+    const page = Math.min(pagesArr.length, wantPage) - 1;
+    const pu = pagesArr[page].units;
+    firstUnitId = pu[0].id;
+    const start = pu[0].from, end = pu[pu.length - 1].to;
+    let body;
+    if (showUnits) {
+      body = pu.map((u, ui) => unitBlock(u, ui)).join('');
+    } else {
+      const rows = [];
+      for (let i = start; i < end; i += 10) rows.push(`<div class="row">${world.stages.slice(i, Math.min(i + 10, end)).map((s, j) => node(s, i + j, (i - start + j) * 15)).join('')}</div>`);
+      body = rows.join('');
+    }
+    unitsEl.innerHTML = body;
+    // 空白處交給豆花：這一頁在做什麼就講什麼
+    const leftover = areaH - pagesArr[page].height;
+    const showFiller = showUnits && leftover >= 100;   // 100px 就夠站一隻小的
+    if (showFiller) {
+      const cur = pu.find((u) => u.status === 'current');
+      const allLocked = pu.every((u) => u.status === 'locked');
+      const allDone = pu.every((u) => u.status === 'done');
+      let say;
+      if (cur) say = `Keep going! <b>${cur.count - cur.done} stages</b> left in Unit ${cur.id}.`;
+      else if (allLocked) say = `Clear <b>Unit ${pu[0].id - 1}</b> first and these will open up.`;
+      else if (allDone) say = `All cleared here! Next unit is on the next page.`;
+      else say = `Pick a stage to play.`;
+      const h = leftover - 8;
+      unitsEl.insertAdjacentHTML('beforeend', `<div class="filler" style="height:${h}px">
+        <div class="say" style="margin-bottom:${h > 180 ? 34 : 6}px">${say}</div>
+        <img src="${A}/moscot/1.webp" alt="Douhua" style="height:${Math.min(h, 230)}px">
+      </div>`);
+    }
+    app.querySelector('.mascot2').hidden = showFiller;
+    app.querySelector('.pager').innerHTML = `<button class="nav ${page === 0 ? 'dis' : ''}" data-go="${page}"><span class="mi">chevron_left</span>Prev</button>
+      ${pagesArr.map((_, i) => `<a class="pg ${i === page ? 'on' : ''}" href="?page=${i + 1}${showUnits ? '' : '&units=0'}">${i + 1}</a>`).join('')}
+      <button class="nav ${page === pagesArr.length - 1 ? 'dis' : ''}" data-go="${page + 2}">Next<span class="mi">chevron_right</span></button>`;
+    app.querySelectorAll('.pager .nav:not(.dis)').forEach((b) => b.addEventListener('click', () => { wantPage = Number(b.dataset.go); firstUnitId = null; renderPages(); }));
+    // 視窗矮到連最高的 unit 都裝不下：整頁允許捲（.layout.short），否則鎖 100vh
+    app.classList.toggle('short', areaH < tallestUnit);
+  };
+  app.style.setProperty('--tallest', `${tallestUnit}px`);
+  app.innerHTML = `
+    <img class="bgimg" src="${A}/bg1.webp" alt="">
+    <div class="logo"><img src="${A}/wordgame.webp" alt="Word Game"></div>
+    <div class="hud"><div class="stars"><span class="mi">star</span><b>${student.stars.toLocaleString()}</b></div>
+      <button class="iconbtn"><span class="mi">volume_up</span></button><div class="acct"><div class="av">${student.initials}</div></div></div>
+    <div class="content">
+      <div class="panel hdr"><a class="tile back" href="word-game.html?screen=map" aria-label="Back to map"><span class="mi">arrow_back</span></a>
+        <div class="t"><b>Level ${world.id}<span class="zh">${lvl.name}</span></b><span>${subtitle(world.id)}</span><div class="bar"><i style="width:${(world.completed / world.total) * 100}%"></i></div></div>
+        <div class="cnt"><b>${world.completed}<span style="font-size:14px;color:var(--ink-soft)"> / ${world.total}</span></b><span>stages</span></div></div>
+      <div class="panel grid ${showUnits ? '' : 'plain'}">
+        <div class="units"></div>
+        <div class="pager"></div>
+      </div>
+    </div>
+    <div class="mascot2"><img src="${A}/moscot/2.webp" alt="Douhua"></div>`;
+  renderPages();
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderPages, 120); });
+
+  // ---- 狀態表 ----
+  document.getElementById('ustrip').innerHTML = [['進行中', units[1]], ['完成', units[0]], ['鎖住', units[5]]].map(([cap, u]) =>
+    `<div><div class="cap">${cap}</div>${unitBlock(u, 0, true)}</div>`).join('');
+
+  const mk = (type, passed, unlocked, bestScore) => ({ level: 7, type, title: '', passed, unlocked, attempts: passed ? 1 : 0, bestScore });
+  const STATES = [
+    ['教學', [['完成', mk('TEACHING', true, true, 5), 0], ['目前', mk('TEACHING', false, true, 0), 'cur'], ['鎖住', mk('TEACHING', false, false, 0), 0]]],
+    ['測驗', [['過關 5★', mk('QUIZ', true, true, 5), 0], ['過關 3★', mk('QUIZ', true, true, 3), 0], ['目前 · 打過一次 2★', mk('QUIZ', false, true, 2), 'cur'], ['鎖住', mk('QUIZ', false, false, 0), 0]]],
+    ['Boss', [['打倒', mk('BOSS', true, true, 5), 0], ['目前', mk('BOSS', false, true, 0), 'cur'], ['鎖住', mk('BOSS', false, false, 0), 0]]],
+  ];
+  const cells = STATES.flatMap(([g, list]) => list.map(([label, s, cur]) => ({ g, label, s, cur })));
+  const render = (fn) => cells.map((c) => `<td><div class="cell">${fn(c.s, c.cur === 'cur' ? world.currentIndex : -1)}</div></td>`).join('');
+  document.getElementById('sheet').innerHTML = `<table>
+    <thead><tr><th></th>${STATES.map(([g, list]) => `<th class="g" colspan="${list.length}">${g}</th>`).join('')}</tr>
+      <tr><th></th>${cells.map((c) => `<th>${c.label}</th>`).join('')}</tr></thead>
+    <tbody><tr><td class="k">現行<span>level-screen-a.js</span></td>${render(oldNode)}</tr>
+      <tr><td class="k">提案<span>v5</span></td>${render(node)}</tr></tbody></table>`;
+})();
+</script>
+</body>
+</html>

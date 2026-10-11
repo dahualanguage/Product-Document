@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher · Leaderboard (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets-v11/teacher-shell.css" />
+<style>
+  .lb-wrap{ background:linear-gradient(180deg,#FFF7E6,#FFFDF7); border:1px solid #FBE3B4; border-radius:var(--r-lg);
+    padding:24px 22px 20px; }
+  .lb-top{ display:flex; align-items:center; gap:12px; margin-bottom:22px; flex-wrap:wrap; }
+  .cls-sel{ -webkit-appearance:none; appearance:none; border:1px solid #F3D9A6; border-radius:11px; background:#fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23B45309' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center; height:40px; padding:0 36px 0 14px; font:inherit; font-size:16px; font-weight:800;
+    color:#7C4A03; cursor:pointer; letter-spacing:-.2px; }
+  .cls-sel:focus{ outline:none; box-shadow:0 0 0 3px #FDECC8; }
+  .lb-top .note{ font-size:12.5px; font-weight:700; color:#B45309; }
+  .lb-top .acts{ margin-left:auto; display:flex; gap:9px; }
+  .btn-amber{ height:38px; padding:0 14px; border:1px solid #F3D9A6; border-radius:10px; background:#fff; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px; font:inherit; font-weight:800; font-size:13px; color:#B45309; transition:.15s; }
+  .btn-amber:hover{ background:#FFFBEB; border-color:#EFC97E; }
+  .btn-amber .material-icons-round{ font-size:17px; }
+
+  /* podium */
+  .podium{ display:grid; grid-template-columns:1fr 1.15fr 1fr; align-items:end; gap:12px; max-width:620px; margin:0 auto 26px; }
+  .pod{ text-align:center; }
+  .pod .av{ width:56px; height:56px; border-radius:50%; margin:0 auto 8px; display:grid; place-items:center;
+    color:#fff; font-size:18px; font-weight:800; border:3px solid #fff; box-shadow:0 6px 16px -8px rgba(120,53,15,.5); position:relative; }
+  .pod.p1 .av{ width:70px; height:70px; font-size:22px; }
+  .pod .crown{ position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:22px; color:#F59E0B; }
+  .pod .nm{ font-size:13.5px; font-weight:800; color:#4E342E; line-height:1.2; }
+  .pod .zh{ font-size:11.5px; font-weight:700; color:#8D6E63; }
+  .pod .pts{ font-size:17px; font-weight:800; color:#7C4A03; margin-top:3px; }
+  .pod .step{ margin-top:9px; border-radius:12px 12px 0 0; display:grid; place-items:center;
+    font-size:22px; font-weight:800; color:#fff; }
+  .pod.p1 .step{ height:92px; background:linear-gradient(180deg,#FBBF24,#D97706); }
+  .pod.p2 .step{ height:70px; background:linear-gradient(180deg,#CBD5E1,#94A3B8); }
+  .pod.p3 .step{ height:56px; background:linear-gradient(180deg,#E0A87E,#B4713F); }
+
+  /* ranked list */
+  .ranks{ background:#fff; border:1px solid #F3E3C4; border-radius:14px; overflow:hidden; }
+  .rk{ display:flex; align-items:center; gap:13px; padding:12px 16px; }
+  .rk + .rk{ border-top:1px solid #FBF1DD; }
+  .rk .no{ width:26px; text-align:right; font-size:14px; font-weight:800; color:#B08968; font-variant-numeric:tabular-nums; flex:none; }
+  .rk .av{ width:36px; height:36px; border-radius:11px; display:grid; place-items:center; color:#fff;
+    font-size:12.5px; font-weight:800; flex:none; }
+  .rk .nm{ flex:1; min-width:0; }
+  .rk .nm b{ display:block; font-size:13.5px; font-weight:800; color:#4E342E; }
+  .rk .nm span{ font-size:12px; font-weight:700; color:#8D6E63; }
+  .rk .pts{ font-size:15px; font-weight:800; color:#7C4A03; font-variant-numeric:tabular-nums; }
+  .rk .adj{ display:flex; align-items:center; gap:4px; }
+  .rk .adj button{ width:28px; height:28px; border-radius:8px; border:1px solid #F3D9A6; background:#fff; cursor:pointer;
+    display:grid; place-items:center; color:#B45309; font-size:16px; font-weight:800; }
+  .rk .adj button:hover{ background:#FFFBEB; }
+  .editing .rk .pts{ min-width:46px; text-align:right; }
+
+  .lb-empty{ text-align:center; padding:50px 20px; }
+  .lb-empty .material-icons-round{ font-size:42px; color:#E0C9A6; }
+  .lb-empty b{ display:block; margin-top:10px; font-weight:800; color:#4E342E; font-size:15px; }
+
+  @media (max-width:700px){
+    .lb-wrap{ padding:18px 14px 16px; }
+    .podium{ gap:8px; }
+    .pod .av{ width:46px; height:46px; font-size:15px; }
+    .pod.p1 .av{ width:56px; height:56px; font-size:18px; }
+    .lb-top .acts{ margin-left:0; width:100%; }
+    .lb-top .acts .btn-amber{ flex:1; justify-content:center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" id="side" data-current="leaderboard"></aside>
+
+  <div class="main">
+    <div class="pagebar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
+      <div class="hdr-ic"><span class="material-icons-round">emoji_events</span></div>
+      <div class="dt"><b>Leaderboard</b><span>Class points from practices and the word game</span></div>
+      <div class="pb-acts"><div class="ava">LW</div></div>
+    </div>
+
+    <div class="page">
+      <div class="lb-wrap">
+        <div class="lb-top">
+          <select class="cls-sel" id="clsSel"><option>4A</option><option>3B</option><option>5C</option><option>6A</option></select>
+          <span class="note" id="note"></span>
+          <span class="acts">
+            <button class="btn-amber" id="editBtn"><span class="material-icons-round">tune</span><span id="editLbl">Adjust points</span></button>
+            <button class="btn-amber" id="dlBtn"><span class="material-icons-round">download</span>Download</button>
+          </span>
+        </div>
+        <div id="lbBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets-v11/teacher-nav.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s);};
+  var tt; function say(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},2400);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var HUES=['#059669','#2563eb','#d97706','#7c3aed','#e11d48','#0891b2'];
+  function hue(s){ var h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return HUES[Math.abs(h)%HUES.length]; }
+  function initials(n){ return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+
+  var DATA={
+    '4A':[['Zoe Kim','金柔怡',940],['Sofia Ríos','苏菲亚',915],['Ben Cohen','班恩',880],['Emma Chen','陈恩美',860],
+          ['Hana Sato','佐藤花',810],['Mia Tanaka','田中美亚',740],['Liam Wu','吴立安',710],['Aria Singh','阿丽雅',680],
+          ['Ivan Petrov','伊凡',630],['Omar Haddad','欧玛',580],['Noah Park','朴诺亚',540],['Leo Alvarez','李欧',490]],
+    '3B':[['Nina Rossi','妮娜',900],['Elsa Berg','艾莎',890],['Yuki Mori','森由纪',840],['Ada Lin','林爱达',770],
+          ['Grace Hall','葛蕾丝',720],['Ravi Menon','拉维',690],['Sam Okafor','山姆',660],['Tom Fischer','汤姆',550],
+          ['Theo Brandt','布兰特',520],['Pablo Díaz','巴布罗',470]],
+    '5C':[['Lea Dubois','蕾雅',960],['Lucy Tan','陈露西',945],['Ruby Ng','吴如碧',930],['Anya Volkov','安雅',910],
+          ['Maya Levi','玛雅',850],['Kai Nakamura','中村凯',820],['Sara Ahmed','莎拉',800],['Jonas Weber','约拿斯',790],
+          ['Mark Ellis','马克',760],['Otto Klein','奥托',730],['Ken Ito','伊藤健',670],['Ines Costa','伊内丝',640],
+          ['Diego Cruz','迪亚哥',610],['Finn O’Brien','芬恩',580]],
+    '6A':[]
+  };
+
+  var cls='4A', editing=false;
+
+  function render(){
+    var list=(DATA[cls]||[]).slice().sort(function(a,b){return b[2]-a[2];});
+    $('#note').textContent = list.length ? list.length+' students · updated just now' : '';
+    if(!list.length){
+      $('#lbBody').innerHTML='<div class="lb-empty"><span class="material-icons-round">emoji_events</span>'+
+        '<b>No scores yet</b><span style="display:block;margin-top:4px;font-size:13px;font-weight:700;color:#8D6E63">'+
+        'Points appear once '+esc(cls)+' finishes a practice or plays the word game.</span></div>';
+      return;
+    }
+    var top=list.slice(0,3), rest=list.slice(3);
+    var order=[1,0,2]; // 2nd, 1st, 3rd
+    var podium='<div class="podium">'+order.map(function(i,pos){
+      var s=top[i]; if(!s) return '<div></div>';
+      var rank=i+1;
+      return '<div class="pod p'+rank+'">'+
+        '<div class="av" style="background:'+hue(s[0])+'">'+(rank===1?'<span class="crown material-icons-round">emoji_events</span>':'')+
+          esc(initials(s[0]))+'</div>'+
+        '<div class="nm">'+esc(s[0])+'</div><div class="zh">'+esc(s[1])+'</div>'+
+        '<div class="pts">'+s[2]+'</div>'+
+        '<div class="step">'+rank+'</div></div>';
+    }).join('')+'</div>';
+
+    var ranks = rest.length ? '<div class="ranks'+(editing?' editing':'')+'">'+rest.map(function(s,i){
+      return '<div class="rk"><span class="no">'+(i+4)+'</span>'+
+        '<span class="av" style="background:'+hue(s[0])+'">'+esc(initials(s[0]))+'</span>'+
+        '<span class="nm"><b>'+esc(s[0])+'</b><span>'+esc(s[1])+'</span></span>'+
+        (editing
+          ? '<span class="adj"><button data-d="-10" data-n="'+esc(s[0])+'" aria-label="Subtract 10">−</button>'+
+            '<span class="pts">'+s[2]+'</span>'+
+            '<button data-d="10" data-n="'+esc(s[0])+'" aria-label="Add 10">+</button></span>'
+          : '<span class="pts">'+s[2]+'</span>')+
+      '</div>';
+    }).join('')+'</div>' : '';
+
+    $('#lbBody').innerHTML=podium+ranks;
+  }
+
+  $('#clsSel').addEventListener('change',function(){ cls=this.value; render(); });
+  $('#editBtn').addEventListener('click',function(){
+    editing=!editing;
+    $('#editLbl').textContent = editing ? 'Done adjusting' : 'Adjust points';
+    render();
+    if(editing) say('Use − and + to correct a student’s points');
+  });
+  $('#dlBtn').addEventListener('click',function(){ say('Downloading '+cls+' leaderboard as CSV'); });
+  $('#lbBody').addEventListener('click',function(e){
+    var b=e.target.closest('[data-d]'); if(!b) return;
+    var d=+b.dataset.d, name=b.dataset.n;
+    var row=DATA[cls].filter(function(s){return s[0]===name;})[0];
+    if(!row) return;
+    row[2]=Math.max(0,row[2]+d);
+    render();
+    say(name+' '+(d>0?'+':'')+d+' points');
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

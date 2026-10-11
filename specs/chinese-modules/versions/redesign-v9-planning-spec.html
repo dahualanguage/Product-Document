@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Chinese Modules · Teacher · Planning Mode</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #d97706; font-weight: 700; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #d97706; border-left-color: #d97706; font-weight: 700; background: #fffbeb; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #d97706; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #d97706; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-new { background: #e0e7ff; color: #4338ca; }
+    .q { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .q.prio { border-color: #fcd34d; box-shadow: 0 1px 3px rgba(217,119,6,.12); }
+    .q h4 { margin: 0 0 6px; color: #0f172a; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .q .qid { font-size: 11px; font-weight: 700; color: #fff; background: #64748b; padding: 2px 8px; border-radius: 4px; }
+    .q.prio .qid { background: #d97706; }
+    .q .opts { margin: 8px 0 0 4px; }
+    .q .opts li { margin-bottom: 3px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <span class="current">Teacher · Planning Mode</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#what" class="active">1 · 這是什麼</a></li>
+        <li><a href="#problem">2 · 現況與問題</a></li>
+        <li><a href="#chain">3 · 內容鏈：教學點、題庫與練習</a></li>
+        <li><a href="#rationale">4 · 設計理念</a></li>
+        <li><a href="#start">5 · 起始畫面規格</a></li>
+        <li><a href="#preview">6 · 產出預覽與建立</a></li>
+        <li><a href="#samples">7 · 樣本清單</a></li>
+        <li><a href="#api">8 · 資料與 API 對應</a></li>
+        <li><a href="#status">9 · 現況：真 vs placeholder</a></li>
+        <li><a href="#open">10 · 待討論</a></li>
+        <li><a href="#scope">11 · Out of scope / 假設</a></li>
+        <li><a href="#next">12 · 下一步</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Teacher — Planning Mode</h1>
+        <p class="subtitle">老師用<strong>一句話</strong>或<strong>點一個樣本</strong>來開啟作業，系統在建立之前先把<strong>會產生什麼</strong>逐項攤開讓老師確認。</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>Role: CLASS_TEACHER</span>
+          <span>Status: Draft v3 · 提案中</span>
+          <span>Scope: 教師端</span>
+          <span>Updated: Aug 10, 2026</span>
+          <span>Prototype: Redesign v9</span>
+        </div>
+      </div>
+
+      <div class="callout callout-tip"><strong>用語：</strong>教材那個物件在產品裡叫 <strong>Project</strong>（側邊欄 Projects、<code>projectConfig</code>、New Project）—— 本文一律沿用，不另創「課文」這個說法。<strong>課文</strong>只用來指 Project 內部的那段文章內容。同理，練習型別一律用系統名稱（<code>MIRRORING</code> / <code>VOCABULARY</code> / <code>SENTENCE_SCRAMBLE</code> / <code>QA</code> / <code>MULTIPLE_CHOICE</code>），不另取代稱。</div>
+
+      <div class="callout callout-info"><strong>提案階段。</strong>本文描述的是 <strong>Redesign v9</strong> 新增的 Planning mode。原型：<a class="inline" href="redesign-v9-planning.html">redesign-v9-planning.html</a>（側邊欄 <em>Practice ▸ Planning</em>）。v9 沿用 v8 的設計系統，不改視覺語言；本功能是<strong>純新增</strong>，不改動既有的 practice stepper。<a class="inline" href="#open">§10</a> 有 11 個待拍板問題，其中 <strong>Q1 / Q2 / Q8 / Q9 / Q11</strong> 會影響能不能發包。<br/><strong>2026-08-11 修訂：</strong>§5 改寫為<strong>漏斗模型</strong> —— 兩題收斂（終點多選 8+1 ／ 素材來源）再展開，原本的三個起點降級為預設組合，並加入 <strong>Handout</strong> 與 <strong>Slide</strong> 兩個終點。<br/><strong>2026-08-10 修訂：</strong>補上 <a class="inline" href="#chain">§3 內容鏈</a> —— 先前把一堂課的內容用「主題 + 練習型別」描述，漏掉了系統裡真正的兩層結構（Project 的 <code>teachingPoints</code>、Question Bank 的題型 × 分類）。§6.2 / §7.1 / §8.2 一併改寫，<a class="inline" href="#status">§9.1</a> 列出本文領先原型的部分。</div>
+
+      <!-- 1 -->
+      <h2 id="what"><span class="num">1</span> 這是什麼</h2>
+      <p>Planning mode 是 Practice 的<strong>起始畫面</strong>，概念參照 Figma / Miro 開新檔案時的那張畫布：不先問「你要哪一種物件」，而是先讓人<strong>說出目的</strong>或<strong>挑一個現成的起點</strong>。</p>
+      <div class="grid2">
+        <div class="card">
+          <h4>兩條進入路徑</h4>
+          <ul>
+            <li><strong>自己打字</strong> —— 用自然語言描述要的練習，例如「用食物課文做一個跟讀練習，六句，顯示拼音」。</li>
+            <li><strong>點樣本</strong> —— 從樣本清單挑一個，等同於幫老師把那句話填好。</li>
+          </ul>
+          <p style="margin-top:8px">兩條路徑<strong>匯流到同一個結果畫面</strong>，不是兩套流程。</p>
+        </div>
+        <div class="card">
+          <h4>核心約束：先看見，再建立</h4>
+          <p>AI 的產出<strong>不會直接寫進資料庫</strong>。系統先列出「會建立哪些練習、每個多大、從哪個 Project 或題庫來、指派給哪一班」，老師逐項確認（可逐項關掉），按下 <span class="pill p-green">Create &amp; assign</span> 才真的建立。</p>
+        </div>
+      </div>
+      <div class="callout callout-tip"><strong>一句話定義：</strong>Planning mode 把「建立練習」從<strong>先選型別 → 照固定步驟走完 stepper</strong>，改成<strong>說出需求 → 看見會產出什麼 → 確認</strong>。</div>
+
+      <!-- 2 -->
+      <h2 id="problem"><span class="num">2</span> 現況與問題</h2>
+      <h3>2.1 現在怎麼建立一個練習</h3>
+      <p>以下取自 <code>dahua-dash</code> 現況程式碼，不是推測：</p>
+      <ol>
+        <li>Practice List 右上 <strong>New Practice</strong> → 開 <code>AddNewPracticeDialog</code>，標題「<strong>Choose Practice Type</strong>」，<strong>五張卡</strong>：Mirroring Practice / Vocabulary Practice / <strong>Sentence Scramble</strong> / Multiple Choice / QA Practice。註腳寫著「You can create one practice at a time.」</li>
+        <li>選定型別後導向 <code>/dashboard/practice/create?type=X</code>，進入該型別的 stepper（<code>practice-unified-view.js</code>）：
+          <table style="margin-top:8px">
+            <thead><tr><th style="width:170px">型別</th><th>步驟</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pill p-gray">MIRRORING</span></td><td>Content → Settings &amp; Preview → Assign Practice</td></tr>
+              <tr><td><span class="pill p-blue">QA</span></td><td>Content → Settings &amp; Preview → Assign Practice</td></tr>
+              <tr><td><span class="pill p-amber">VOCABULARY</span></td><td>Vocabulary → Practice Type → Settings → Assign Practice</td></tr>
+              <tr><td><span class="pill p-purple">MULTIPLE_CHOICE</span></td><td>Question Bank → Edit Questions → Preview → Assign Practice</td></tr>
+              <tr><td><span class="pill p-new">SENTENCE_SCRAMBLE</span></td><td class="tbd">待確認 —— 見 <a class="inline" href="#status">§9.2</a></td></tr>
+            </tbody>
+          </table>
+        </li>
+      </ol>
+
+      <h3>2.2 問題</h3>
+      <table>
+        <thead><tr><th style="width:200px">問題</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>入口要求老師先懂系統</strong></td><td>第一個決策是「四種練習型別選一個」。老師腦中想的是「我要教食物這課、要他們會唸」，不是「這屬於 MIRRORING」。型別是<strong>系統的分類</strong>，不是老師的語言。</td></tr>
+          <tr><td><strong>一次只能做一個</strong></td><td>對話框明講 <em>one practice at a time</em>。但一堂課通常需要 2–4 個練習（生詞 + 跟讀 + 測驗），老師得把整段流程重複三遍，每遍都重選 Project、重設拼音、重指派班級。</td></tr>
+          <tr><td><strong>看不到結果才決定</strong></td><td>要走到 stepper 第二、三步才知道系統會生出什麼；發現不對就得退回重來。</td></tr>
+          <tr><td><strong>樣本無處可放</strong></td><td>現在沒有任何「常見做法」的入口。每個練習都從零開始配置。</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-warn"><strong>注意：</strong>Planning mode <strong>不取代</strong> stepper。stepper 仍是精修與編輯的地方；Planning 只取代<strong>那張型別選擇對話框</strong>，並把「一次一個」放寬。詳見 <a class="inline" href="#open">Q7</a>。</div>
+
+      <!-- CHAIN -->
+      <h2 id="chain"><span class="num">3</span> 內容鏈：教學點、題庫與練習</h2>
+      <p>Planning 要能提出一份好的提案，得先知道教材在系統裡是怎麼組起來的。</p>
+
+      <div class="formula">Project
+  │
+  ├─ teachingPoints ──┬──▶ VOCABULARY          記住新詞
+  │   （這課要教什麼）  ├──▶ VOCABULARY × MC     考單字
+  │                   └──▶ SENTENCE_SCRAMBLE   練句型／語序
+  │
+  ├─ content（課文）  ─────▶ MIRRORING           唸出來
+  │
+  └─ content ──▶ Question Bank ──┬──▶ MULTIPLE_CHOICE  考課文內容
+                  題型 × 分類 × 題數 └──▶ QA               用它問答
+                                        （Content Base / Extension）</div>
+
+      <div class="callout callout-tip"><strong>教學點是整個教材系統的脊椎，不是「欄位之一」。</strong>六個產出裡，<strong>三個直接吃 teachingPoints</strong>（Vocabulary、Vocabulary × MC、Sentence Scramble）。Mirroring 走課文句子；<strong>QA 與 Multiple Choice 都走題庫</strong>。<strong>課文反而比較像是承載教學點的容器。</strong>這件事決定了 Planning 的提案品質該用什麼衡量 —— 見 <a class="inline" href="#preview">§6.2</a> 與 <a class="inline" href="#open">Q8</a>。</div>
+
+      <h3>3.1 Teaching Points：幾乎所有練習的內容來源</h3>
+      <p>不是講義上的一個區塊名稱而已，它有三重身分：</p>
+      <table>
+        <thead><tr><th style="width:190px">身分</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>projectConfig 的欄位</strong></td><td><code>teachingPoints</code> 與 <code>topic</code> / <code>wordLimit</code> / <code>contentType</code> / <code>levelType</code> 並列在 <code>getProjectConfigs</code> 的查詢裡。</td></tr>
+          <tr><td><strong>產生課文的輸入</strong></td><td>New Project 的 <em>Generate Content</em> 步驟是一個 tag 輸入框（<em>Type a word and press Enter</em>，以 <code>，</code><code>、</code><code>,</code> 分隔）。老師先寫下要教的點，生成才跑 —— 課文是<strong>為了這些教學點而寫</strong>，不是先有課文再挑生詞。</td></tr>
+          <tr><td><strong>建立流程的一個步驟</strong></td><td>New Project 共四步：<em>Course Settings → Generate Content → Review &amp; Edit → <strong>Teaching Points</strong></em>。最後一步就是確認教學點。</td></tr>
+        </tbody>
+      </table>
+      <h4>八種教學點型別</h4>
+      <p><code>TEACHING_POINT_TYPE_OPTIONS</code>，預設 <code>WORD</code>：</p>
+      <p>
+        <span class="pill p-gray">WORD 词汇</span>
+        <span class="pill p-gray">VERB 动词</span>
+        <span class="pill p-gray">NOUN 名词</span>
+        <span class="pill p-gray">ADJECTIVE 形容词</span>
+        <span class="pill p-purple">GRAMMAR 语法／句型</span>
+        <span class="pill p-purple">PHRASE 短语／成语</span>
+        <span class="pill p-blue">MEASURE_WORD 量词</span>
+        <span class="pill p-gray">OTHER 其他</span>
+      </p>
+      <div class="callout callout-warn"><strong>這推翻了本文較早版本的一個假設。</strong>先前把一堂課的內容用「主題 + 練習型別」描述（「食物 + 跟讀」）。但系統裡「這堂課教什麼」的正規表達是 <strong>teaching points</strong>；主題只是課文的題目。<strong>GRAMMAR / PHRASE / MEASURE_WORD 這幾類根本不是生詞</strong>，用「12 個生詞」描述會直接漏掉句型與量詞的教學。</div>
+
+      <div class="callout callout-info"><strong>2026-08-11 決議：QA 的素材是 question bank，不是 teaching points。</strong>本文較早版本記載為 teaching points（口述），現依產品裁定更正 —— 與程式碼一致：<code>qAndAQuestion</code> 是 <code>generateQuestions</code> 的三種題型之一，分類 Content Base / Extension。連帶影響：勾 QA 就跟勾 Multiple Choice 一樣<strong>需要一個題庫</strong>（見 <a class="inline" href="#open">Q9</a>），且 QA 不再計入教學點覆蓋（見 <a class="inline" href="#preview">§6.2</a>）。</div>
+
+      <h3>3.2 兩種 Multiple Choice，別混為一談</h3>
+      <table>
+        <thead><tr><th style="width:210px">哪一種</th><th style="width:150px">在系統裡是什麼</th><th>考什麼 · 素材</th></tr></thead>
+        <tbody>
+          <tr><td><strong>考課文</strong><br/><span class="pill p-purple">MULTIPLE_CHOICE</span></td>
+              <td>頂層練習型別，<em>Choose Practice Type</em> 的一張卡</td>
+              <td>Project 的課文內容 · 取自 <strong>Question Bank</strong>（見 §3.3）</td></tr>
+          <tr><td><strong>考單字</strong><br/><span class="pill p-amber">VOCABULARY</span> × MC 模式</td>
+              <td><strong>不是</strong>獨立型別 —— 是 Vocabulary practice 在 stepper 第二步「Practice Type」選的模式（<code>VOCABULARY_PRACTICE_TYPES = MIRRORING / MIXED / MULTIPLE_CHOICE</code>）</td>
+              <td>生詞 · 取自 <strong>teachingPoints</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-warn"><strong>本文較早版本把這兩者當成同一件事。</strong>它們的素材來源完全不同（題庫 vs 教學點），對老師也是兩個不同的動作。提案裡務必分開表述。</div>
+
+      <h3>3.3 Question Bank 是「題型 × 分類」的矩陣</h3>
+      <p>題庫不是一疊 N 題，而是三種題型、各自帶分類（<code>src/enum/questions-bank.js</code>）：</p>
+      <table>
+        <thead><tr><th style="width:180px">題型</th><th>分類</th><th style="width:190px">適合檢查什麼</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill p-purple">Multiple Choice</span><br/><code>multiChoiceQuestion</code></td>
+              <td><span class="pill p-gray">Comprehension</span> <span class="pill p-gray">Fill in blank</span><code>usage</code> <span class="pill p-gray">Pinyin</span> <span class="pill p-gray">Meaning</span></td>
+              <td>讀懂了沒 / 會不會用 / 會不會唸 / 知不知道意思</td></tr>
+          <tr><td><span class="pill p-blue">True &amp; False</span><br/><code>trueAndFalseQuestion</code></td>
+              <td><span class="pill p-gray">Comprehension</span> <span class="pill p-gray">Pinyin</span> <span class="pill p-gray">Meaning</span></td>
+              <td>同上，但沒有 Fill in blank</td></tr>
+          <tr><td><span class="pill p-green">Q&amp;A</span><br/><code>qAndAQuestion</code></td>
+              <td><span class="pill p-gray">Content Base</span><code>shortAnswer</code> <span class="pill p-amber">Extension (Beta)</span></td>
+              <td>就課文回答 / 延伸發揮</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:190px">事實</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>從 project 生成</strong></td><td><code>generateQuestions(projectConfigSk, questionsBankSk, questionOptions)</code>。題庫的題目掛在某個 project 底下。</td></tr>
+          <tr><td><strong>一庫綁一個 Project</strong></td><td>建立時寫死 <code>projectConfigSks: [selectedProjectSk]</code>（Step 1 是單選）。資料結構雖是陣列、也有 <code>useQuestionsBankProjects</code> 能從題目反推出每個 project 各幾題，但只要題庫連到一個以上的 project，<strong>Step 2 會直接停用生成</strong>並顯示 <em>“Linked to multiple projects — generation is disabled. Single-project only is supported for now.”</em>（<code>canGenerate = … &amp;&amp; !hasMultipleProjects</code>）。<br/><strong>結論：現況是 1 題庫 ↔ 1 Project。</strong>多 project 是要防守的遺留狀態，不是可用的能力。</td></tr>
+          <tr><td><strong>每次生成的粒度</strong></td><td>一種題型 + 一個分類 + 題數 <strong>1–10</strong>（<code>GENERATE_QUESTIONS_NUMBERS</code>）。三種題型可用 <code>bulkGenerateQuestions</code> 一次送。</td></tr>
+          <tr><td><strong>建立流程</strong></td><td>三步 wizard：<em>Select Project → Generate Questions → View &amp; Edit Questions</em>，另可手動加題（每種題型各一張表單）。</td></tr>
+          <tr><td><strong>題目的分組</strong></td><td>取用時是 <code>grouped[題型][分類] = questions[]</code>。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.4 為什麼 Planning 非知道這些不可</h3>
+      <p>老師講的話，落到系統裡就是<strong>教學點</strong>與<strong>題型 × 分類</strong>。少了這兩層，提案只能停在「10 題選擇題」這種說了等於沒說的程度：</p>
+      <table>
+        <thead><tr><th style="width:260px">老師說的</th><th>要落到的設定</th></tr></thead>
+        <tbody>
+          <tr><td>「檢查他們有沒有讀懂這篇」</td><td>Multiple Choice × <strong>Comprehension</strong></td></tr>
+          <tr><td>「練習用這幾個詞造句」</td><td>Multiple Choice × <strong>Fill in blank</strong></td></tr>
+          <tr><td>「考生詞的意思」</td><td>Multiple Choice × <strong>Meaning</strong></td></tr>
+          <tr><td>「看他們會不會唸」</td><td>Multiple Choice / True &amp; False × <strong>Pinyin</strong></td></tr>
+          <tr><td>「讓他們自己講一段」</td><td>Q&amp;A × <strong>Extension</strong></td></tr>
+          <tr><td>「這課要教『了』的用法」</td><td>Teaching point，型別 <strong>GRAMMAR</strong> —— 不是生詞，Vocabulary 練習蓋不到</td></tr>
+          <tr><td>「順便帶到量词『碗』」</td><td>Teaching point，型別 <strong>MEASURE_WORD</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-tip"><strong>設計結論：</strong>Planning 的產出預覽要以<strong>教學點</strong>為主軸交代「這堂課教到什麼」，並在測驗類的項目上標明<strong>題型 × 分類 × 題數</strong>。詳見 <a class="inline" href="#preview">產出預覽</a> 與 <a class="inline" href="#api">資料與 API 對應</a>。</div>
+
+
+      <!-- 3 -->
+      <h2 id="rationale"><span class="num">4</span> 設計理念</h2>
+      <div class="grid2">
+        <div class="card">
+          <h4>① 用老師的語言當入口</h4>
+          <p>輸入框接受自然語言。型別由系統推斷，老師不需要先知道 MIRRORING 和 QA 的差別。推斷錯了，在產出預覽那一步一眼就看得出來。</p>
+        </div>
+        <div class="card">
+          <h4>② 樣本的粒度由老師決定</h4>
+          <p>有人要的是「一個跟讀練習」，有人要的是「一整堂課」。不替老師選，用一個 segmented control 明講兩種粒度，老師自己切。</p>
+        </div>
+        <div class="card">
+          <h4>③ AI 提案，老師拍板</h4>
+          <p>AI 只負責「提出一份清單」。每一列都有開關，預設全開但可以逐項關掉。沒有任何東西是在老師沒看到的情況下被建立的。</p>
+        </div>
+        <div class="card">
+          <h4>④ 不發明新資料</h4>
+          <p>產出一律是既有的四種 practice type，來源一律是既有的 Project（課文）或 Question Bank。Planning 不引入新的內容型別。</p>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <h2 id="start"><span class="num">5</span> 起始畫面規格</h2>
+
+      <h3>5.1 位置與入口</h3>
+      <table>
+        <thead><tr><th style="width:170px">項目</th><th>規格</th></tr></thead>
+        <tbody>
+          <tr><td><strong>側邊欄</strong></td><td><strong>Practice</strong> 分組下的第一項，圖示 <code>auto_awesome</code>，排在 Practice List 之上。</td></tr>
+          <tr><td><strong>其他入口</strong></td><td>① Practice List 的 <strong>New Practice</strong>　② Projects 卡片的 <strong>Make a practice</strong> / <strong>Slides</strong> / <strong>Handout</strong>　③ Question Banks 的 <strong>Make a quiz</strong>。從這些地方進來時，漏斗的格子已經被預填（見 <a class="inline" href="#start">§5.5</a>）。</td></tr>
+          <tr><td><strong>畫布</strong></td><td>淺點陣背景，內容置中，最大寬 720px；進入展開階段後放寬到 880px。</td></tr>
+          <tr><td><strong>沒有班級選擇器</strong></td><td>八個終點裡有一半產出的是<strong>教材</strong>（Project / Handout / Slide），根本沒有指派這回事。班級只在有練習產出時、於最後一步出現。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 漏斗：先收斂，再展開</h3>
+      <p>老師的第一句話幾乎永遠是不完整的。「我要考 A 班學生會不會念食物」沒說：念<strong>單字</strong>還是<strong>句子</strong>、哪些食物、素材從哪來、幾題。一次性產出只能<strong>全部用猜的</strong>，猜錯老師得整句重打。</p>
+      <p>因此流程分成兩段：</p>
+      <div class="formula">收斂（必答，不能跳過）              展開（每一步可改、可回頭）
+┌─────────────────────────┐    ┌──────────────────────────────────────┐
+│ ① 要產出什麼（多選）      │ ─▶ │ 課文 → 教學點 → 會建立什麼 → 建立      │
+│ ② 素材從哪來             │    └──────────────────────────────────────┘
+└─────────────────────────┘</div>
+      <div class="callout callout-tip"><strong>漏斗在定位「起點 + 終點」</strong> —— 也就是老師落在產出鏈的哪一段（<a class="inline" href="#chain">§3</a>）。收斂完成的那一刻，後面要走哪幾步才確定下來；<strong>在那之前，連進度條都沒有意義</strong>。</div>
+
+      <h4>什麼該進漏斗</h4>
+      <p>准入條件只有一條：<strong>這個答案會不會改變接下來的流程形狀</strong>。因此以下都<strong>不問</strong>——</p>
+      <table>
+        <thead><tr><th style="width:170px">不問的</th><th>原因</th></tr></thead>
+        <tbody>
+          <tr><td><strong>班級</strong></td><td>不改變任何步驟，而且指派是最後一步。老師句子裡提了就記下，沒提就留到建立時再選。</td></tr>
+          <tr><td><strong>題庫新舊</strong></td><td><strong>推得出來。</strong>題庫綁死一個 Project（<a class="inline" href="#chain">§3.3</a>）—— 老師選了既有 Project，系統自己查得到它有沒有題庫：沒有就只能新建，有就預設加進去（可反悔）。</td></tr>
+          <tr><td><strong>幾題 / 幾句 / 哪些教學點</strong></td><td>屬於展開階段，全部可改，不必先問。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.3 第一題：要產出什麼（多選，必答）</h3>
+      <p>終點就是產品現有的每一個功能，共 <strong>8 + 1</strong> 個。<strong>可以複選</strong> —— 「建立 QA 跟 MIRRORING」是一次請求，不是兩次。系統可以先幫老師勾，但<strong>最後一定要老師確認</strong>。</p>
+      <table>
+        <thead><tr><th style="width:230px">終點</th><th style="width:230px">需要什麼</th><th>備註</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill p-gray">MIRRORING</span></td><td>Project 的課文句子</td><td></td></tr>
+          <tr><td><span class="pill p-amber">VOCABULARY</span></td><td>teaching points</td><td></td></tr>
+          <tr><td><span class="pill p-amber">VOCABULARY × MULTIPLE CHOICE</span></td><td>teaching points</td><td>不是獨立型別，是 Vocabulary 的模式</td></tr>
+          <tr><td><span class="pill p-new">SENTENCE_SCRAMBLE</span></td><td>teaching points</td><td></td></tr>
+          <tr><td><span class="pill p-green">QA</span></td><td><strong>question bank</strong></td><td>分類 Content Base / Extension</td></tr>
+          <tr><td><span class="pill p-purple">MULTIPLE CHOICE</span></td><td><strong>question bank</strong></td><td>分類 Comprehension / Fill in blank / Pinyin / Meaning</td></tr>
+          <tr><td><span class="pill p-blue">Handout</span></td><td>Project ＋ <strong>選配</strong> question bank</td><td>Questions / Answer Key 兩個區塊來自題庫</td></tr>
+          <tr><td><span class="pill p-blue">Slide</span></td><td>Project</td><td>使用人數最少，可排在最後一期</td></tr>
+          <tr><td><span class="pill p-gray">只要 Project</span></td><td>—</td><td>老師只想先寫一篇課文，還沒決定拿它做什麼</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><strong>八個終點全部需要 Project</strong>，其中兩個再多要一個題庫。所以第二題永遠要問，而題庫要不要建<strong>完全是推導出來的</strong>。這也是漏斗只需要兩題的原因。</div>
+      <div class="callout callout-warn"><strong>Handout 與 Slide 進入清單，等於 Planning 的定位擴大了</strong> —— 它從「建立練習的新入口」變成<strong>所有教材產出的共同入口</strong>。第一版是否一次做完，見 <a class="inline" href="#next">§12</a>。</div>
+
+      <h3>5.4 第二題：素材從哪來</h3>
+      <table>
+        <thead><tr><th style="width:200px">選項</th><th>接下來</th></tr></thead>
+        <tbody>
+          <tr><td><strong>既有 Project</strong></td><td>選一個。課文與教學點都是<strong>讀出來</strong>的，跳過 <a class="inline" href="#start">§5.8</a> 的兩個必經步驟。</td></tr>
+          <tr><td><strong>新建 · 上傳文章</strong></td><td>老師提供文章 → 萃取教學點 → 展開。</td></tr>
+          <tr><td><strong>新建 · 我們幫你寫</strong></td><td>由主題生成課文 → 萃取教學點 → 展開。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.5 已填的格子要一直看得見</h3>
+      <p>漏斗的答案以<strong>可點掉的 chip</strong> 常駐在對話上方，不論是老師答的、系統從句子推的、還是從其他頁面帶進來的：</p>
+      <div class="formula">要產出   [ MULTIPLE CHOICE ✕ ]  [ + ]
+素材     [ 食物 — What we eat ✕ ]                     [ 開始 ]</div>
+      <table>
+        <thead><tr><th style="width:170px">為什麼</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>錯誤要能提早攔截</strong></td><td>老師一眼看得到系統理解成什麼。不然要走到最後一步才發現方向錯。</td></tr>
+          <tr><td><strong>對話不能變成聊天紀錄</strong></td><td>chip 可以隨時點掉重答 —— 有 chip 才是結構化補完，沒有就是一段回不去的對話。</td></tr>
+          <tr><td><strong>句子已經填滿時也要顯示</strong></td><td>老師打「食物那課出十題選擇題」時兩格都推得出來，此時<strong>不直接跳過</strong>，而是把填好的 chip 亮出來讓他確認或修改，再按開始。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.6 對話規則</h3>
+      <table>
+        <thead><tr><th style="width:170px">規則</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>先問終點，再問素材</strong></td><td>順序反過來會問到一半發現方向錯。終點決定了素材需不需要題庫。</td></tr>
+          <tr><td><strong>只問推不出來的</strong></td><td>從句子推得到就不問。對話長度因此由老師那句話決定，而不是固定流程。</td></tr>
+          <tr><td><strong>型別要釐清時多問一句</strong></td><td>「會不會<strong>念</strong>」在系統裡有兩個落點（VOCABULARY 念單字 / MIRRORING 念句子），這種要問。</td></tr>
+          <tr><td><strong>名詞不同時先翻譯</strong></td><td>老師說的「造句」「聽寫」「默寫」「朗讀」沒有一個跟系統型別同名。問法是把他的詞映到我們的能力上：「你說的『造句』是要他們<strong>把打亂的詞排成句子</strong>（SENTENCE_SCRAMBLE），還是<strong>自己說一句</strong>（QA）？」</td></tr>
+          <tr><td><strong>做不到的直說</strong></td><td>「我要他們寫作文」在終點清單裡沒有對應。不硬塞，直接說目前沒有寫作類練習並給最接近的替代。清單怎麼維護見 <a class="inline" href="#open">Q11</a>。</td></tr>
+        </tbody>
+      </table>
+      <h4>對話長度的例子</h4>
+      <table>
+        <thead><tr><th style="width:250px">老師說的</th><th style="width:230px">句子已填</th><th>還要問</th></tr></thead>
+        <tbody>
+          <tr><td>幫我把食物這課從頭做完</td><td>終點=多個練習、素材=新建</td><td><strong>0 題</strong>，確認 chip 後直接展開</td></tr>
+          <tr><td>食物那課出十題選擇題</td><td>終點=MULTIPLE CHOICE、素材=食物</td><td><strong>0 題</strong></td></tr>
+          <tr><td>我要考 A 班會不會念食物</td><td>終點=練習（型別未定）、班級=4A</td><td><strong>2 題</strong>：念單字還是句子 → 食物從哪來</td></tr>
+          <tr><td>幫我弄一下明天的課</td><td>幾乎沒有</td><td>卡在第一格，直接問終點</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.7 預設組合（原本的三條路徑）</h3>
+      <p>多選之後，「完整功課」不再是特殊路徑 —— 它就是<strong>一次勾好幾個終點</strong>。原先的三個起點降級為<strong>預設勾選組合</strong>，讓已經知道自己要什麼的老師跳過對話：</p>
+      <table>
+        <thead><tr><th style="width:170px">捷徑</th><th>等同於</th></tr></thead>
+        <tbody>
+          <tr><td><strong>完整功課</strong></td><td>終點 = VOCABULARY + SENTENCE_SCRAMBLE + MULTIPLE CHOICE，素材 = 新建</td></tr>
+          <tr><td><strong>建立考題</strong></td><td>終點 = MULTIPLE CHOICE</td></tr>
+          <tr><td><strong>建立 Project</strong></td><td>終點 = 只要 Project，素材 = 新建</td></tr>
+        </tbody>
+      </table>
+      <p>按鈕與打字是同一個模型的兩個入口，不是兩套流程。</p>
+
+      <h3>5.8 建立 Project 的兩個必經步驟</h3>
+      <div class="callout callout-warn"><strong>凡是包含「Project」這一段的路徑，都必須走完這兩步。</strong>（完整功課、建立 Project、建立考題 · 沒有 Project）Project 已存在的兩條路徑兩步都跳過 —— 課文與教學點都是讀出來的。</div>
+      <div class="formula">起點 ──▶ ① 課文 ──▶ ② 教學點 ──▶ 會建立什麼 ──▶ 建立
+             讀 / 改       從課文萃取
+                           必填，只出現一次</div>
+
+      <h4>① 課文是第一步，不是最後一步</h4>
+      <p>課文是整條鏈的根 —— 生詞卡、跟讀句、題目全都從它長出來。它必須<strong>先於</strong>自己的衍生物被看到與確認，不能跟它們並排在「會建立什麼」清單裡當五列之一；老師改一句課文，下面三列的內容就得跟著變。</p>
+      <table>
+        <thead><tr><th style="width:150px">這一步要有</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>整篇看得到</strong></td><td>逐詞拼音 + 翻譯，一句都不省。</td></tr>
+          <tr><td><strong>可改</strong></td><td>逐句刪除；<em>Edit</em> 切換成一行一句的純文字編輯。改過的句子標示「拼音會在存檔時重新產生」。</td></tr>
+          <tr><td><strong>可重寫</strong></td><td><em>Write another</em> 重新生成整篇。</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><strong>與真實產品同序。</strong>New Project 的第三步就是 <em>Review &amp; Edit</em>（讀課文），第四步才是 <em>Teaching Points</em>。</div>
+
+      <h4>② 教學點必填，且只出現一次</h4>
+      <p>真實 New Project 裡教學點出現兩次：<em>Generate Content</em> 當種子輸入、<em>Teaching Points</em> 確認萃取結果。<strong>Planning 只保留後者</strong> —— 兩次對老師是重複勞動，而壓縮流程本來就是這個功能存在的理由。</p>
+      <table>
+        <thead><tr><th style="width:150px">規則</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>必填</strong></td><td>一個都不留時繼續鍵停用，並明說沒有教學點就什麼都建不出來 —— Vocabulary / Sentence Scramble / QA 三種練習的素材全部來自這裡（<a class="inline" href="#chain">§3</a>）。</td></tr>
+          <tr><td><strong>與課文對照</strong></td><td>不在課文裡的教學點要標出來（老師刪了句子，或手動加了一個課文沒提到的詞）。<strong>這個檢查只有在課文先於教學點時才做得到</strong>。</td></tr>
+          <tr><td><strong>可編輯</strong></td><td>逐個刪、打字新增並選型別、整組重新萃取。</td></tr>
+        </tbody>
+      </table>
+      <p>少了這兩步，老師等於<strong>沒看過就接受一整個單元的內容</strong>。這也是 <a class="inline" href="#open">Q1</a>（能不能直接建立）在完整功課上最尖銳的地方：單一練習做錯了重做就好，完整功課做錯是整課重來。</p>
+
+      <h3>5.9 空狀態</h3>
+      <table>
+        <thead><tr><th style="width:200px">情況</th><th>畫面</th></tr></thead>
+        <tbody>
+          <tr><td><strong>一個 Project 都沒有</strong></td><td><strong>完整功課</strong>與<strong>建立 Project</strong>正常可用（它們本來就從零開始）；<strong>單一練習</strong>與<strong>建立考題 · 從現有 Project</strong>停用並說明「這兩條需要先有一個 Project」。<br/>這一頁因此<strong>永遠不會是死路</strong> —— 這正是三條路切法帶來的好處。</td></tr>
+          <tr><td><strong>有 Project、沒題庫</strong></td><td>「考課文」樣本標示「這個 Project 還沒有題庫」，行為見 <a class="inline" href="#open">Q9</a> / <a class="inline" href="#open">Q10</a>。</td></tr>
+          <tr><td><strong>解析不出路徑</strong></td><td>見 <a class="inline" href="#open">Q2</a>。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.10 RWD</h3>
+      <ul>
+        <li>≤1024px：側邊欄改抽屜（沿用 v8 的 <code>data-navtoggle</code> + scrim 機制）。</li>
+        <li>≤820px：樣本改單欄；Make 按鈕滿版；產出預覽的操作列滿版分半。</li>
+        <li><code>prefers-reduced-motion</code>：關閉 spinner 以外的所有轉場。</li>
+      </ul>
+
+      <!-- 5 -->
+      <h2 id="preview"><span class="num">6</span> 產出預覽與建立</h2>
+
+      <h3>6.1 流程</h3>
+      <div class="formula">輸入 or 點樣本
+   ↓  (Make ⌘↵)
+[思考中]  spinner + 「Reading your texts and question banks…」   ← 約 0.8s，實作時等 API
+   ↓
+[What this creates]  N 列，每列一個將被建立的練習，各有開關
+   ↓  (Create &amp; assign)
+建立 + 指派 → toast → 導向 Practice List</div>
+
+      <h3>6.2 提案要交代的事</h3>
+      <h4>整份提案的最上方：這堂課教到什麼</h4>
+      <p>一條 <strong>Teaching points covered</strong> 的橫列，每個教學點一個 chip，並帶出它的型別 —— 語法與量詞要看得出來不是生詞（見 <a class="inline" href="#chain">§3.1</a>）：</p>
+      <p><span class="pill p-gray">米饭 词</span> <span class="pill p-gray">面条 词</span> <span class="pill p-gray">好吃 形</span>
+         <span class="pill p-purple">了 语法</span> <span class="pill p-blue">碗 量词</span></p>
+      <div class="callout callout-info">沒被任何一項練習蓋到的教學點要<strong>標出來</strong>。老師才看得見「這課要教『了』，但這份提案沒有任何一項練到它」。</div>
+      <h4>覆蓋率怎麼算 —— 兩條規則</h4>
+      <table>
+        <thead><tr><th style="width:230px">規則</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td><strong>只算「練習」，不算教材</strong></td><td>Project 與題庫是<strong>素材</strong>，不是練習。把它們算進覆蓋，會讓「純建教材」的提案看起來每個點都教到了，那是假的。</td></tr>
+          <tr><td><strong>Multiple Choice 依<em>分類</em>計算</strong></td><td>同樣是 MC，<em>Comprehension</em> 考的是整篇讀懂沒，<strong>不會特別練到任何單一教學點，覆蓋算 0</strong>；<em>Fill in blank</em> 練的是句型（<code>GRAMMAR</code> / <code>PHRASE</code> / <code>MEASURE_WORD</code>）；<em>Meaning</em> / <em>Pinyin</em> 練的是詞。<strong>QA 同理</strong> —— <em>Content Base</em> 是就課文回答、<em>Extension</em> 是延伸發揮，兩者都不針對單一教學點，覆蓋同樣算 0。用型別一概算成「全覆蓋」等於誇大。</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-tip"><strong>這條規則是做原型時發現的。</strong>把 MC 當成全覆蓋時，關掉句子重組仍顯示「全部教到」—— 但語法點其實沒人練。改成依分類計算後，關掉句子重組會立刻標出「了、碗 沒有任何一項練到」，這才是這個指標存在的意義。</div>
+
+      <h4>每一列都要能<strong>展開看到真正的內容</strong></h4>
+      <div class="callout callout-warn"><strong>光描述不算「先看見再建立」。</strong>「12 個教學點 · 約 6 句」只是規格，老師沒看到那 6 句；「MC × Comprehension × 10」也一題都沒露。<strong>Project 尤其不能省</strong> —— 它是整條鏈的根，練習與題目都從它長出來。</div>
+      <table>
+        <thead><tr><th style="width:180px">列</th><th>展開後要看到</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Project</strong><br/><span class="pill p-new">預設展開</span></td><td>會被寫出來的<strong>整篇句子</strong>，逐詞拼音 + 翻譯；下面接一格「它必須涵蓋的教學點」。真實 New Project 的第三步就叫 <em>Review &amp; Edit</em>，這裡等於把那一步提前給老師看。</td></tr>
+          <tr><td><strong>題庫</strong></td><td>10 題裡的 <strong>2 題實例</strong>，選項列出、正解標綠，並註明其餘 8 題同一形狀。</td></tr>
+          <tr><td><strong>Mirroring</strong></td><td>學生要錄的前 3 句（逐詞拼音 + 翻譯）。</td></tr>
+          <tr><td><strong>Vocabulary / Vocabulary × MC</strong></td><td>實際的生詞卡（漢字 + 拼音 + 釋義）。MC 模式註明「每張卡變成一題，其餘選項取自同一組」。</td></tr>
+          <tr><td><strong>Sentence Scramble</strong></td><td>一句打亂的詞塊 → 正解，說明學生先聽再排序。</td></tr>
+          <tr><td><strong>QA</strong></td><td>實際的口說題目。</td></tr>
+        </tbody>
+      </table>
+      <p>課文以外的列預設收合 —— 展開全部會把「這份提案有幾項」這個第一層資訊淹掉。</p>
+
+      <h4>每一列要交代的五件事</h4>
+      <table>
+        <thead><tr><th style="width:150px">欄位</th><th>內容</th><th style="width:250px">例</th></tr></thead>
+        <tbody>
+          <tr><td><strong>是什麼</strong></td><td>練習名稱（含主題）</td><td>食物 · Exit quiz</td></tr>
+          <tr><td><strong>多大</strong></td><td>非測驗類：句數／字數 + 關鍵設定<br/>測驗類：<strong>題型 × 分類 × 題數</strong></td><td>Multiple choice × Comprehension × 10</td></tr>
+          <tr><td><strong>從哪來</strong></td><td>來源 Project 或 Question Bank；沒有既有來源時標示 <em>Written fresh</em></td><td><span class="pill p-gray">Bank: 食物 — Exit questions</span></td></tr>
+          <tr><td><strong>教到什麼</strong></td><td>這一項蓋到的教學點</td><td><span class="pill p-gray">米饭</span> <span class="pill p-gray">面条</span> <span class="pill p-gray">好吃</span></td></tr>
+          <tr><td><strong>給誰</strong></td><td>指派班級</td><td><span class="pill p-green">4A</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-warn"><strong>「10 questions」是不夠的敘述。</strong>同樣 10 題選擇題，Comprehension 考的是讀懂沒、Fill in blank 考的是會不會用、Meaning 考的是知不知道意思 —— 對老師是三件不同的事。測驗類項目一律要把分類寫出來。</div>
+
+      <h3>6.3 控制項</h3>
+      <table>
+        <thead><tr><th style="width:170px">元件</th><th>行為</th></tr></thead>
+        <tbody>
+          <tr><td><strong>每列開關</strong></td><td>預設全開。關掉後該列變半透明，不會被建立；標題 badge 與底部摘要即時重算。</td></tr>
+          <tr><td><strong>Try again</strong></td><td>重新產生一份提案（換一種組法）。保留原輸入。</td></tr>
+          <tr><td><strong>返回</strong></td><td>左上箭頭回起始畫面，輸入內容保留。<code>Esc</code> 同。</td></tr>
+          <tr><td><strong>班級下拉</strong></td><td>在預覽狀態改班級，所有列的班級 chip 即時更新。</td></tr>
+          <tr><td><strong>Open in editor</strong></td><td>不建立全部，只把<strong>第一個</strong>練習帶進既有 stepper 精修。（見 <a class="inline" href="#open">Q1</a>）</td></tr>
+          <tr><td><strong>Create &amp; assign</strong></td><td>主要動作。全部關掉時 disabled，摘要改顯示「Nothing selected — switch at least one on.」</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.4 底部摘要文案</h3>
+      <div class="formula">n &gt; 0   Creates &lt;b&gt;{n}&lt;/b&gt; practice(s) in Practice List and assigns them to &lt;b&gt;{class}&lt;/b&gt;.
+n = 0   Nothing selected — switch at least one on.</div>
+
+      <h3>6.5 建立之後</h3>
+      <ul>
+        <li>Toast：<code>{n} practices created and assigned to {class}</code>。</li>
+        <li>約 0.9s 後導向 <strong>Practice List</strong>，新建立的項目應帶 <code>?new={sk}</code> 讓它顯示 <span class="pill p-new">NEW</span> 標記（Practice List 已支援此參數）。</li>
+        <li><strong>due date 目前未在 Planning 內設定</strong> —— 建立後為「已指派、無截止日」，老師到 Practice List 或 stepper 第三步補。見 <a class="inline" href="#open">Q4</a>。</li>
+      </ul>
+
+      <!-- 6 -->
+      <h2 id="samples"><span class="num">7</span> 樣本清單</h2>
+
+      <h3>7.1 One practice —— 六個，一個目的對一個型別</h3>
+      <p>樣本的軸線是<strong>「你想讓學生做到什麼」</strong>，不是「產出哪一種物件」。五種練習型別加上 Vocabulary 的考單字模式，剛好各出現一次、不重不漏：</p>
+      <table>
+        <thead><tr><th style="width:170px">樣本（老師的目的）</th><th style="width:230px">產出</th><th>素材</th></tr></thead>
+        <tbody>
+          <tr><td><strong>唸出來</strong></td><td><span class="pill p-gray">MIRRORING</span></td><td>Project 的課文句子</td></tr>
+          <tr><td><strong>記住新詞</strong></td><td><span class="pill p-amber">VOCABULARY</span>（Mirroring / Mixed 模式）</td><td><strong>teaching points</strong> 的詞類</td></tr>
+          <tr><td><strong>練會這個句型</strong></td><td><span class="pill p-new">SENTENCE_SCRAMBLE</span></td><td><strong>teaching points</strong></td></tr>
+          <tr><td><strong>用它問答</strong></td><td><span class="pill p-blue">QA</span></td><td>Question Bank（Content Base / Extension）</td></tr>
+          <tr><td><strong>考單字</strong></td><td><span class="pill p-amber">VOCABULARY</span> × MC 模式</td><td><strong>teaching points</strong></td></tr>
+          <tr><td><strong>考課文</strong></td><td><span class="pill p-purple">MULTIPLE_CHOICE</span></td><td>Question Bank（題型 × 分類為樣本內參數）</td></tr>
+        </tbody>
+      </table>
+
+      <h4>這份清單解掉的三個問題</h4>
+      <table>
+        <thead><tr><th style="width:230px">先前的毛病</th><th>怎麼解掉的</th></tr></thead>
+        <tbody>
+          <tr><td><strong>命名軸線混亂</strong></td><td>先前混用動作（Read a passage aloud）與目的（Check they understood）兩種命名混用。現在一律採系統的型別名稱。</td></tr>
+          <tr><td><strong>選擇題佔掉三格</strong></td><td>先前把題庫的 Comprehension / Fill in blank / Meaning 拆成三個樣本，長得一模一樣。真正該分的是<strong>考單字 vs 考課文</strong> —— 而系統本來就用兩種 MC 分開了，這也正是老師腦中的分法。四個分類降級為「考課文」裡的參數。</td></tr>
+          <tr><td><strong>語法點沒有入口</strong></td><td><code>GRAMMAR</code> / <code>PHRASE</code> / <code>MEASURE_WORD</code> 型別的教學點，Vocabulary 蓋不到。<strong>Sentence Scramble 就是為這件事存在的</strong>（素材直接來自 teaching points）。</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info"><strong>移出清單：</strong><em>Tone drill</em> —— 唯一不從 Project 衍生的樣本（素材是另外寫的最小對立對）。v1 的樣本一律從 Project 衍生。</div>
+      <div class="callout callout-warn"><strong>Sentence Scramble 的細節尚未確認：</strong>吃哪些型別的教學點（全部，或只有 <code>GRAMMAR</code> / <code>PHRASE</code> / <code>MEASURE_WORD</code>）、一次幾句、「Listen」是否每句都有 TTS。只影響描述文字，不影響清單結構。</div>
+
+      <h3>7.2 A whole lesson（4 個）</h3>
+      <table>
+        <thead><tr><th style="width:170px">樣本</th><th style="width:60px">產出</th><th>組成</th></tr></thead>
+        <tbody>
+          <tr><td><strong>New topic pack</strong></td><td>3</td><td>生詞卡 → 跟讀 → 出場測驗</td></tr>
+          <tr><td><strong>Review pack</strong></td><td>3</td><td>生詞快閃 → 口說問答 → 再跟讀一次（可與前次比較）</td></tr>
+          <tr><td><strong>End-of-unit check</strong></td><td>2</td><td>20 題筆試（跨兩個題庫）+ 5 題口試</td></tr>
+          <tr><td><strong>Speaking-only</strong></td><td>2</td><td>跟讀（每句兩次）+ 自由發表</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 7 -->
+      <h2 id="api"><span class="num">8</span> 資料與 API 對應</h2>
+      <p>Planning mode <strong>不需要新的資料型別</strong>。它是一層編排（orchestration），底下呼叫的都是既有的 API。</p>
+
+      <h3>8.1 已存在、可直接用</h3>
+      <table>
+        <thead><tr><th style="width:250px">用途</th><th>既有 API</th></tr></thead>
+        <tbody>
+          <tr><td>列出可用 Project（來源候選）</td><td><code>getProjectConfigs</code> / <code>useGetAllProjectConfigs</code></td></tr>
+          <tr><td>列出可用題庫</td><td>Question Bank 既有查詢</td></tr>
+          <tr><td><strong>非同步 AI 產生 + 輪詢</strong></td><td><code>generateRequest(generateType, params: AWSJSON)</code> → 回 <code>generateRequestId</code>；以 <code>getRequests(generateRequestId)</code> 輪詢 <code>status</code> / <code>result</code>。前端已有 <code>usePullingByRequestId</code> hook，Question Bank 的生成流程就是這個模式。</td></tr>
+          <tr><td>由課文切句（跟讀素材）</td><td><code>splitArticle(article, useOpenAI)</code></td></tr>
+          <tr><td>由課文出選擇題</td><td><code>generateQuestions</code> / <code>bulkGenerateQuestions</code></td></tr>
+          <tr><td>建立練習</td><td><code>upsertPractice(practice: PracticeInput!)</code></td></tr>
+          <tr><td>指派班級</td><td><code>assignPractice(practiceId, programId, classes: [AssignClassInput!]!)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>8.2 需要新增的一件事</h3>
+      <div class="card">
+        <h4>意圖解析：自然語言 → 練習提案</h4>
+        <p>唯一的新後端能力，是把老師那句話（＋班級、可用 Project／題庫清單）轉成一份結構化提案。<strong>建議做成 <code>generateRequest</code> 的一個新 <code>GenerateType</code></strong>（例如 <code>PRACTICE_PLAN</code>），沿用現有的 request/polling 基礎設施，不另開一條路。</p>
+        <div class="formula">// 送出
+generateRequest(
+  generateType: PRACTICE_PLAN,
+  params: {
+    prompt: "用食物課文做一個跟讀練習，六句，顯示拼音",
+    programId, classSk,
+    // 候選課文 —— 必須帶 teachingPoints，那才是「這課教什麼」的正規表達
+    availableProjects: [{
+      sk, name, level, contentType, sentenceCount, wordCount,
+      teachingPoints: [{ text: "米饭", type: "WORD" },
+                       { text: "了",   type: "GRAMMAR" },
+                       { text: "碗",   type: "MEASURE_WORD" }]
+    }],
+    // 候選題庫 —— 必須帶「題型 × 分類」的組成，只給總題數無法判斷合不合用
+    availableBanks: [{
+      sk, name, level,
+      projectConfigSk,               // 題庫綁定的 Project —— 現況一庫一個，見 §3.3
+      composition: [
+        { questionType: "MULTIPLE_CHOICE", category: "comprehension", count: 10 },
+        { questionType: "MULTIPLE_CHOICE", category: "meaning",       count: 8  },
+        { questionType: "TRUE_FALSE",      category: "pinyin",        count: 6  }
+      ]
+    }]
+  }
+)
+
+// 輪詢 getRequests 回來的 result
+{
+  // 這份提案總共覆蓋到的教學點（給預覽最上方那條用）
+  "coversTeachingPoints": [
+    { "text": "米饭", "type": "WORD" },
+    { "text": "了",   "type": "GRAMMAR" },
+    { "text": "碗",   "type": "MEASURE_WORD" }
+  ],
+  "items": [
+    {
+      "practiceType": "MIRRORING",          // 五種既有型別之一
+      "name": "食物 · Read the six sentences",
+      "sourceKind": "PROJECT",              // PROJECT | QUESTION_BANK | NONE
+      "sourceSk": "proj_xxx",
+      "summary": "6 sentences · pinyin shown · pronunciation scored",
+      "coversTeachingPoints": ["米饭", "碗"],   // 這一項蓋到哪幾個點
+      "config": { "sentenceCount": 6, "pinyinPreference": "PINYIN" }
+    },
+    {
+      "practiceType": "MULTIPLE_CHOICE",
+      "name": "食物 · Exit quiz",
+      "sourceKind": "QUESTION_BANK",
+      "sourceSk": "bank_xxx",
+      "summary": "Multiple choice × Comprehension × 10",
+      "coversTeachingPoints": ["米饭", "面条", "好吃"],
+      "config": {
+        "questionType": "MULTIPLE_CHOICE",  // MULTIPLE_CHOICE | TRUE_FALSE | QA
+        "category": "comprehension",        // 見 §3.2 的分類表
+        "numOfQuestion": 10                 // 1–10
+      }
+    }
+  ],
+  "confidence": "HIGH"                       // 見 Q2
+}</div>
+        <p style="margin-top:10px"><strong>前端只信任既有的列舉值</strong> —— <code>practiceType</code> 五種（含 <code>SENTENCE_SCRAMBLE</code>）、<code>questionType</code> 三種、<code>category</code> 必須屬於該題型（見 <a class="inline" href="#chain">§3.3</a>，例如 True&nbsp;&amp;&nbsp;False 沒有 <code>usage</code>）、<code>numOfQuestion</code> 落在 1–10。<code>sourceSk</code> 必須在送出去的候選清單內，<code>coversTeachingPoints</code> 的每個字串必須出現在該 project 的 teachingPoints 裡。任何一項不符即視為解析失敗（避免模型捏造一個不存在的 Project、一個不存在的分類，或宣稱教了沒教的點）。</p>
+      </div>
+
+      <h3>8.3 建立時的呼叫順序</h3>
+      <div class="formula">for each 已開啟的 item:
+    1. 需要素材時先產生（splitArticle / generateQuestions，走 generateRequest 輪詢）
+    2. upsertPractice(PracticeInput)                 → practiceId
+    3. assignPractice(practiceId, programId, [{classSk, ...}])
+全部成功 → toast + 導向 Practice List?new={第一個 sk}
+部分失敗 → 見 Q3</div>
+
+      <!-- 8 -->
+      <h2 id="status"><span class="num">9</span> 現況：真 vs placeholder</h2>
+      <p>原型 <a class="inline" href="redesign-v9-planning.html">redesign-v9-planning.html</a> 裡哪些是真行為、哪些是示意：</p>
+      <table>
+        <thead><tr><th style="width:230px">項目</th><th style="width:110px">狀態</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>粒度切換、樣本清單</td><td><span class="pill p-green">真</span></td><td>切換會換掉樣本與說明文字。</td></tr>
+          <tr><td>點樣本 → 填字 → 送出</td><td><span class="pill p-green">真</span></td><td>完整走到產出預覽。</td></tr>
+          <tr><td>產出預覽、逐列開關、即時重算</td><td><span class="pill p-green">真</span></td><td>badge、摘要、按鈕 disabled 都連動。</td></tr>
+          <tr><td>改班級 → chip 更新</td><td><span class="pill p-green">真</span></td><td></td></tr>
+          <tr><td><strong>意圖解析</strong></td><td><span class="pill p-amber">示意</span></td><td>原型用<strong>關鍵字比對</strong>（<code>guessPlan()</code>）決定給哪份提案，不是真的模型。實作時換成 §8.2。</td></tr>
+          <tr><td>思考中的 0.8 秒</td><td><span class="pill p-amber">示意</span></td><td>固定 <code>setTimeout</code>，實作時改為輪詢。</td></tr>
+          <tr><td>Start with a template</td><td><span class="pill p-gray">未做</span></td><td>目前只有 toast。</td></tr>
+          <tr><td>More samples</td><td><span class="pill p-gray">未做</span></td><td>版面已留，行為未實作。</td></tr>
+          <tr><td>Create &amp; assign</td><td><span class="pill p-amber">示意</span></td><td>只有 toast + 導頁，未真的建立。</td></tr>
+        </tbody>
+      </table>
+      <h3>9.1 本文領先原型的部分</h3>
+      <div class="callout callout-tip"><strong>2026-08-12：原型已改為漏斗模型</strong> —— 兩題收斂（終點多選 8+1 ／ 素材來源）、可點掉的 chip、對話只問推不出來的、名詞不同先翻譯、做不到直說、Handout 與 Slide 兩個終點、預設組合取代原本的三條路徑。本節僅列出<strong>仍未跟上</strong>的部分。</div>
+      <table>
+        <thead><tr><th style="width:230px">項目</th><th>原型現況</th><th>本文要求</th></tr></thead>
+        <tbody>
+          <tr><td><strong>意圖解析</strong></td><td><strong>關鍵字比對</strong>（<code>parse()</code>），不是真的模型</td><td>走 <code>generateRequest</code> 的新 <code>PRACTICE_PLAN</code> 型別（<a class="inline" href="#api">§8.2</a>）</td></tr>
+          <tr><td><strong>「做不到」清單</strong></td><td>前端寫死兩條（作文、翻譯）</td><td>維護方式未定，見 <a class="inline" href="#open">Q11</a></td></tr>
+          <tr><td><strong>同義詞對照</strong></td><td>三組（念／造句／聽寫）</td><td>完整對照表，同 <a class="inline" href="#open">Q11</a></td></tr>
+          <tr><td><strong>上傳文章</strong></td><td>選項存在，但沿用示範課文</td><td>真的接收老師貼上的文章</td></tr>
+          <tr><td><strong>Create &amp; assign</strong></td><td>只有 toast + 導頁</td><td>實際建立並指派</td></tr>
+          <tr><td><strong>More samples</strong></td><td>未做</td><td>版面已留</td></tr>
+        </tbody>
+      </table>
+
+      <h3>9.2 本文尚未親自驗證的部分</h3>
+      <div class="callout callout-warn"><strong>本文 §1–§8 的程式碼引述，來自 2026-08-10 當下的本機快照 <code>~/Downloads/dahua-dash-develop</code>，而該快照落後線上版本。</strong>已知落差如下，實作前需以最新 code 覆核。</div>
+      <table>
+        <thead><tr><th style="width:200px">項目</th><th>狀況</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentence Scramble</strong></td><td>快照中<strong>不存在</strong> —— <code>PRACTICE_TYPES</code> 只有 <code>MIRRORING / QA / VOCABULARY / MULTIPLE_CHOICE / ESL_MIRRORING / ESL_SPELLING</code>。本文關於它的敘述（素材取自 teaching points）來自產品口述，未經 code 覆核。<strong>待確認：</strong>列舉值名稱、吃哪些型別的教學點、一次幾句、是否每句附 TTS、stepper 步驟。</td></tr>
+          <tr><td><strong>兩種 Multiple Choice</strong></td><td>頂層 <code>MULTIPLE_CHOICE</code> = 考課文（題庫來源）、Vocabulary 的 MC 模式 = 考單字（teaching points 來源），已由產品確認。但快照裡該卡副標是「For True/False and Multi-Choice from Question Bank」，線上已改為「Image, pinyin &amp; meaning」—— <strong>“Image” 是不是新增的題目分類待確認</strong>（若是，<a class="inline" href="#chain">§3.3</a> 的分類表要補）。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 9 -->
+      <h2 id="open"><span class="num">10</span> 待討論</h2>
+
+      <div class="q prio">
+        <h4><span class="qid">Q1</span> AI 產出可以直接建立，還是一律要先進編輯器？</h4>
+        <p>目前設計是<strong>可以直接建立</strong>（Create &amp; assign），另外提供 Open in editor 當備選。反面意見是：AI 寫的題目沒人看過就發給學生，風險高。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 維持現狀：可直接建立，Open in editor 為選項。</li>
+          <li><strong>B.</strong> 一律先進編輯器，Planning 只負責「填好參數」。</li>
+          <li><strong>C.</strong> 折衷：<strong>有 AI 生成內容</strong>的（QA 題目、MC 題目）強制進編輯器；<strong>只是重組既有素材</strong>的（跟讀取課文句、生詞取課文詞）可直接建立。</li>
+        </ul>
+      </div>
+
+      <div class="q prio">
+        <h4><span class="qid">Q2</span> 解析失敗或信心不足時怎麼辦？</h4>
+        <p>老師可能打「幫我弄一下明天的課」這種資訊不足的句子，或打完全無關的內容。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 照樣給一份最可能的提案，讓老師自己改。</li>
+          <li><strong>B.</strong> 回一個追問（「要哪一課？哪一班？」），像對話一樣多問一輪。</li>
+          <li><strong>C.</strong> 低信心時不出提案，改成「你是不是想要這幾個？」列出最接近的樣本。</li>
+        </ul>
+        <p style="margin-top:6px">牽涉 §8.2 的 <code>confidence</code> 欄位要不要做。</p>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q3</span> 建立多個練習時中途失敗怎麼處理？</h4>
+        <p>「整堂課」會連續建立 3–4 個。第 2 個失敗時：全部 rollback？保留成功的並標示哪個失敗？還是逐項顯示狀態讓老師重試單一項？</p>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q4</span> 指派的範圍與截止日要不要放進 Planning？</h4>
+        <p>目前 Planning 只能選<strong>一個班</strong>、<strong>不設截止日</strong>。但既有的 <code>assignPractice</code> 支援多班，Practice List 也大量以截止日組織資訊（無截止日／7 天內／逾期）。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 維持最簡：單班、無截止日，之後補。</li>
+          <li><strong>B.</strong> 加上截止日一個欄位（多班仍不做）。</li>
+          <li><strong>C.</strong> 班級改多選 + 截止日，Planning 直接把指派做完。</li>
+        </ul>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q5</span> AI 生成的練習要不要留標記？</h4>
+        <p>Question Bank 已經區分「AI generated / 手寫」。練習要不要也存一個來源標記（<code>createdVia: PLANNING</code>），供日後統計採用率與品質追蹤？</p>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q6</span> 輸入語言支援到什麼程度？</h4>
+        <p>老師可能用英文、繁中、簡中，或混用（「用食物課文做一個 mirroring」）。三種都要支援嗎？產出的<strong>練習名稱</strong>要跟隨輸入語言，還是固定格式（主題 + 動作）？</p>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q7</span> 舊的型別選擇對話框留不留？</h4>
+        <p>本案讓 New Practice 直接開 Planning。<code>AddNewPracticeDialog</code> 要：</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 完全移除，只留 Planning。</li>
+          <li><strong>B.</strong> 保留為 Planning 畫面上的一個次要入口（「我知道我要哪一種」）。</li>
+          <li><strong>C.</strong> 兩者並存一段時間，用 feature flag 分流觀察採用率。</li>
+        </ul>
+      </div>
+
+      <div class="q prio">
+        <h4><span class="qid">Q8</span> 教學點沒被蓋到時，Planning 該做到什麼程度？</h4>
+        <p>一份提案可能漏掉某些教學點 —— 尤其 <code>GRAMMAR</code> / <code>MEASURE_WORD</code> 這種現有練習型別不好處理的。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 只標示出來，讓老師自己決定要不要補。</li>
+          <li><strong>B.</strong> 主動多提一項練習去蓋它（例如語法點 → MC × Fill in blank）。</li>
+          <li><strong>C.</strong> 不處理 —— 教學點覆蓋率不是 Planning 的責任。</li>
+        </ul>
+        <p style="margin-top:6px"><strong>子問題已解：</strong>先前記為「語法點該用哪一種練習教？現有型別沒有一個是為句型設計的」—— <strong>Sentence Scramble 就是</strong>，素材直接取自 teaching points。本題只剩「漏掉時要不要主動補」這一層。</p>
+      </div>
+
+      <div class="q prio">
+        <h4><span class="qid">Q9</span> 沒有合用的題庫時，Planning 可以現生嗎？</h4>
+        <p>老師要「MC × Fill in blank × 10」但既有題庫只有 Comprehension 的題目。<code>generateQuestions(projectConfigSk, questionsBankSk, questionOptions)</code> 本來就能生，問題是 Planning 要不要自己觸發。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 可以：Planning 直接生進既有題庫，提案上標明「will generate 10 new questions」。</li>
+          <li><strong>B.</strong> 不行：只能從既有題目挑，湊不出來就據實說明並少給一項。</li>
+          <li><strong>C.</strong> 可以，但一律要老師先看過題目（接 <a class="inline" href="#open">Q1</a> 的 C 案）。</li>
+        </ul>
+        <p style="margin-top:6px">若選 A 或 C，還要決定生進<strong>哪個</strong>題庫：既有的、還是新開一個。</p>
+      </div>
+
+      <div class="q">
+        <h4><span class="qid">Q10</span> 1 題庫 ↔ 1 Project 的限制，Planning 要怎麼配合？</h4>
+        <p>既然題庫綁死一個 Project（<a class="inline" href="#chain">§3.2</a>），一堂課要出測驗，就必須存在<strong>那個 Project 自己的題庫</strong>。這讓 <a class="inline" href="#open">Q9</a>（沒有合用題庫時能不能現生）從選配變成必要 —— 老師新建一個 Project 後，若沒人替它建題庫，Planning 就永遠出不了測驗。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> Planning 在需要時自動替該 Project 建題庫並生題（等於把 Q9 選 A）。</li>
+          <li><strong>B.</strong> Planning 只提示「這個 Project 還沒有題庫」，附一個一鍵前往建立的連結。</li>
+          <li><strong>C.</strong> 改成允許一庫多 Project —— 但那要先解掉 <code>hasMultipleProjects</code> 的停用邏輯，屬於題庫模組的變更，不在本案範圍。</li>
+        </ul>
+        <p style="margin-top:6px">另外：若題庫因遺留資料連到多個 project，Planning 應<strong>比照 App 一律不碰</strong>（不生成、不宣稱可用）。</p>
+      </div>
+
+      <div class="q prio">
+        <h4><span class="qid">Q11</span> 「做不到」的清單誰維護？</h4>
+        <p>漏斗第一題只認終點清單上的 8+1 個。老師打「我要他們寫作文」「聽寫」時，系統必須<strong>直說做不到並給最近的替代</strong>，不能硬塞一個相近的型別出來 —— 那正是一次性產出最糟的失敗方式。</p>
+        <ul class="opts">
+          <li><strong>A.</strong> 寫死在前端，跟終點清單一起維護。</li>
+          <li><strong>B.</strong> 後台可編，方便隨功能上線調整。</li>
+          <li><strong>C.</strong> 交給模型臨場判斷 —— <strong>不建議</strong>，它會硬掰。</li>
+        </ul>
+        <p style="margin-top:6px">連帶要決定<strong>同義詞對照表</strong>（聽寫／默寫／造句／朗讀／背單字…）要做到多細，以及是不是同一份資料。</p>
+      </div>
+
+      <!-- 10 -->
+      <h2 id="scope"><span class="num">11</span> Out of scope / 假設</h2>
+      <ul>
+        <li><strong>不含</strong>對四種 practice type 本身的任何修改，也不含 stepper 的改版。</li>
+        <li><strong>不含</strong>新的內容型別。Planning 的產出一律落在既有的 practice + project + question bank 上。</li>
+        <li><strong>不含</strong>學生端任何變動。</li>
+        <li><strong>不含</strong> Word Game 的指派 —— 那條線走 <a class="inline" href="../teacher-wordgame-spec.html">Word Game spec</a>。</li>
+        <li><strong>已不再假設</strong> Project 與題庫存在 —— 「建立 Project」與「建立考題 · 沒有 Project」兩條路徑就是為此而設（<a class="inline" href="#start">§5.4</a>）。但 Planning <strong>不重做</strong> New Project 的四步流程，只在前面包一層收集意圖。</li>
+        <li><strong>假設</strong>模型可在數秒內回應；超過 15 秒需要有取消與重試。</li>
+      </ul>
+
+      <!-- 11 -->
+      <h2 id="next"><span class="num">12</span> 下一步</h2>
+      <ol>
+        <li><strong>拍板 Q1 / Q2 / Q7</strong> —— 這三題決定發包範圍與成本，其餘可在實作期間收斂。</li>
+        <li><strong>後端確認</strong> <code>generateRequest</code> 能否新增 <code>PRACTICE_PLAN</code> 型別（§8.2），以及 Q4 的作答彙總能力。</li>
+        <li><strong>原型補完</strong>：More samples gallery 目前是版面佔位。</li>
+        <li><strong>分期</strong>：
+          <span class="pill p-green">Phase 1</span> 漏斗（兩題）＋ 六個練習終點，單班、無截止日 →
+          <span class="pill p-amber">Phase 2</span> Handout＋只要 Project 兩個終點、多筆建立的失敗處理（<a class="inline" href="#open">Q3</a>）→
+          <span class="pill p-gray">Phase 3</span> Slide（使用人數最少）、More samples gallery。
+        </li>
+        <li><strong>engineer handoff</strong>：比照 <code>handoff/teacher-wordgame/</code> 拆三份 —— <code>HANDOFF.md</code>（前端）、<code>API-CONTRACT.md</code>（<code>PRACTICE_PLAN</code> 的 request/result schema）、<code>BACKEND.md</code>（解析、來源白名單驗證）。</li>
+      </ol>
+
+      <div class="callout callout-warn"><strong>已討論但不在本文範圍：</strong>後續希望這個入口<strong>凌駕在所有功能之上</strong>（隨處可喚起的指令層，未來也能回答 dashboard 類的查詢，例如「4A 上週誰沒交」）。那需要在漏斗之上再加一層<strong>意圖分類</strong>（做東西 / 問事情），而「問事情」不產出任何東西、有自己的一組格子。<strong>第一版只做「做東西」這半條</strong>；本文不設計另一半，但結果畫面不應寫死成「最後一定是建立」。命名與入口形式（頁面 / 浮層 / 兩者）待定。</div>
+
+      <div class="callout callout-info"><strong>Draft v1 · 提案中。</strong>對齊 <strong>Redesign v9</strong> 原型 <a class="inline" href="redesign-v9-planning.html">redesign-v9-planning.html</a>。現況描述取自 <code>dahua-dash</code> 程式碼（<code>AddNewPracticeDialog</code>、<code>practice-unified-view</code> 的 STEPS_BY_TYPE、<code>generateRequest</code> / <code>getRequests</code> 輪詢、<code>upsertPractice</code>、<code>assignPractice</code>），非推測。</div>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · Teacher · Planning Mode · August 2026</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const map = links.map((a) => ({ a, el: document.querySelector(a.getAttribute('href')) }));
+    const onScroll = () => { let cur = map[0]; for (const m of map) { if (m.el && m.el.getBoundingClientRect().top <= 80) cur = m; } links.forEach((a) => a.classList.remove('active')); if (cur) cur.a.classList.add('active'); };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  </script>
+</body>
+</html>

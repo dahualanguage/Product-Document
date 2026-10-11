@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="styles/wordbank.css">
   <link rel="stylesheet" href="styles/history.css">
   <link rel="stylesheet" href="styles/practice.css">
-  <link rel="stylesheet" href="styles/v3.css?v=7">
+  <link rel="stylesheet" href="styles/v3.css?v=44">
   <style>
     /* CatchUP layout override: header full-width above sidebar */
     .app-frame { flex-direction: column; flex: 1; }
@@ -178,6 +178,7 @@
     }
     .paywall-cta:hover { transform: translateY(-1px); }
     .paywall-skip {
+      display: block; width: 100%; text-align: center; margin-top: 10px;
       font-size: 13px; color: #94a3b8; cursor: pointer;
       background: none; border: none; font-family: inherit;
     }
@@ -1205,6 +1206,7 @@
           <!-- ── Desktop: Split-panel ── -->
           <div class="wb-split">
             <div class="wb-left-col">
+              <div class="wb-stats" id="wb-stats-desktop" style="margin-bottom:10px;"></div>
               <div class="wb-filters" id="wb-filters"></div>
               <div class="wb-card" id="wb-detail-card"></div>
             </div>
@@ -1247,29 +1249,11 @@
 
       <!-- ══ SCREEN 9: 練習設定 ══ -->
       <div class="screen" id="screen-9">
-        <div class="quiz-body">
+        <div class="quiz-body quiz-body-center">
           <div class="quiz-hero">
-            <div class="quiz-hero-title">單字練習</div>
-            <div class="quiz-hero-sub">選擇練習方式，開始練習</div>
-          </div>
-          <div class="quiz-card">
-            <div class="quiz-card-label">練習類型</div>
-            <div class="quiz-type-group">
-              <button class="quiz-type-check active" data-type="spelling" onclick="toggleQuizType('spelling',this)">
-                <div class="qt-box"><span class="material-icons-round">check</span></div> 拼寫
-              </button>
-              <button class="quiz-type-check" data-type="mirroring" onclick="toggleQuizType('mirroring',this)">
-                <div class="qt-box"><span class="material-icons-round">check</span></div> 跟讀
-              </button>
-            </div>
-          </div>
-          <div class="quiz-card">
-            <div class="quiz-card-label">出題範圍</div>
-            <div class="quiz-source-group">
-              <button class="quiz-sel-btn active" data-mode="random" onclick="setQuizListMode('random',this)">隨機</button>
-              <button class="quiz-sel-btn" data-mode="mistakes" onclick="setQuizListMode('mistakes',this)">常錯</button>
-              <button class="quiz-sel-btn" data-mode="newest" onclick="setQuizListMode('newest',this)">新加入</button>
-            </div>
+            <div class="quiz-hero-title">跟讀發音練習</div>
+            <div class="quiz-hero-sub">選擇題數，隨機出題開始練習</div>
+            <div class="quiz-quota-note" id="quiz-quota-note" style="display:none;"></div>
           </div>
           <div class="quiz-card">
             <div class="quiz-card-label">題數</div>
@@ -1695,9 +1679,9 @@
 <script src="js/v3/data.js"></script>
 <script src="js/v3/app.js"></script>
 <script src="js/v3/recording.js"></script>
-<script src="js/v3/wordbank.js"></script>
+<script src="js/v3/wordbank-star.js?v=16"></script>
 <script src="js/v3/history.js"></script>
-<script src="js/v3/practice-star.js?v=2"></script>
+<script src="js/v3/practice-star.js?v=26"></script>
 
 <script>
 /* ════════════════════════════════════════
@@ -1709,7 +1693,42 @@ var isPro = false;
 var todayUsedMin = 0;
 var maxFreeMin = 45;
 
+/* 免費版：每天可練習 15 題（1 題 = 1 個單字） */
+var maxFreePractice = 15;
+var todayPracticeCount = 0;
+
 var previousScreen = 'screen-1';
+
+/* 免費版練習配額：剩餘題數（Pro 無限） */
+function practiceRemainingQuota() {
+  return isPro ? Infinity : Math.max(0, maxFreePractice - todayPracticeCount);
+}
+
+/* 每練一題呼叫：可練 → 計數並回 true；達上限 → 跳付費牆並回 false */
+function practiceConsumeQuota() {
+  if (isPro) return true;
+  if (todayPracticeCount >= maxFreePractice) {
+    showPracticeLimitPaywall();
+    return false;
+  }
+  todayPracticeCount++;
+  return true;
+}
+
+/* 練習次數用完 → 升級 Pro 付費牆 */
+function showPracticeLimitPaywall() {
+  paywallContext = 'practice-limit';
+  document.getElementById('paywall-title').textContent = '今日免費練習次數已用完';
+  document.getElementById('paywall-sub').textContent = '免費版每天可練習 15 題。升級 Pro 即享無限練習。';
+  document.getElementById('paywall-price').style.display   = 'block';
+  document.getElementById('paywall-active').style.display  = 'none';
+  document.getElementById('paywall-cta').style.display     = 'block';
+  document.getElementById('paywall-billing').style.display = 'none';
+  document.getElementById('paywall-skip').style.display    = 'block';
+  previousScreen = 'screen-9';
+  showHomeBar();
+  showScreen('screen-paywall');
+}
 
 /* ── Override startRecording to gate auth + paywall ── */
 var _origStartRecording = startRecording;
@@ -1973,6 +1992,7 @@ function setDemo(mode) {
   isLoggedIn = false;
   isPro = false;
   todayUsedMin = 0;
+  todayPracticeCount = 0;
   savedWords = [];
   isPaused = false;
   hasStartedSession = false;
@@ -2025,6 +2045,35 @@ function setDemo(mode) {
 }
 /* Auto-init: 首次使用 */
 setDemo('new');
+
+/* Demo 捷徑：?demo=practicelimit → 免費版接近練習上限（14/15），進練習設定頁 */
+if (/[?&]demo=practicelimit/.test(location.search)) {
+  setTimeout(function() {
+    isLoggedIn = true; isPro = false;
+    todayPracticeCount = 15;   /* 今日已用完 → 按鈕顯示「立即訂閱」 */
+    ['login-popup', 'flow-overlay'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    switchTab('practice');
+  }, 60);
+}
+
+/* Demo 捷徑：?demo=earned → 直接跳到單字庫並顯示「獲得點數」提示 */
+if (/[?&]demo=earned/.test(location.search) || location.hash === '#earned') {
+  setTimeout(function() {
+    isLoggedIn = true;
+    ['login-popup', 'flow-overlay'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    switchTab('wordbank');
+    showWbEarnedBanner([
+      { word: 'equation',  native: '方程式', mastered: false },
+      { word: 'notebooks', native: '筆記本', mastered: false },
+      { word: 'paragraph', native: '段落',   mastered: false },
+      { word: 'questions', native: '問題',   mastered: true  }
+    ]);
+  }, 60);
+}
 
 /* ════════════════════════════════════════
    UNSUBSCRIBE — 退訂流程 + 退訂問卷 (v3)
@@ -2433,12 +2482,12 @@ function debugResults() {
                'submit','questions','plant','record','hypothesis','experiment','conclusion'];
   pracQueue = [];
   pracResults = [];
+  var starPool = [5, 4, 3, 2, 5, 4, 1, 3, 5, 2, 4, 3];   /* 跟讀發音 1~5 星 */
   words.forEach(function(w, i) {
-    var type = (i % 3 === 2) ? 'mirroring' : 'spelling';
-    var correct = (i % 3 !== 1);           /* 混合過 / 未過 */
-    var stars = correct ? Math.max(1, 3 - (i % 3)) : 0;   /* 混合 ★★★/★★/★ */
-    pracQueue.push({ word: w, type: type });
-    pracResults.push({ word: w, type: type, correct: correct, stars: stars, userAnswer: '' });
+    var stars = starPool[i % starPool.length];
+    var correct = stars >= 3;              /* ≥3 星通過 */
+    pracQueue.push({ word: w, type: 'mirroring' });
+    pracResults.push({ word: w, type: 'mirroring', correct: correct, stars: stars, userAnswer: '' });
   });
   pracCorrect = pracResults.filter(function(r) { return r.correct; }).length;
   pracIndex = pracQueue.length;

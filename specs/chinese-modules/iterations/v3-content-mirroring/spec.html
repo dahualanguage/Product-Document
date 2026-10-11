@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — v3 · 優化 Content Mirroring</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-red { background: #ffe4e6; color: #be123c; }
+    .none { color: #cbd5e1; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .q { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #8b5cf6; border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; }
+    .q .qh { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .q .qn { display:inline-block; font-size: 11px; font-weight: 800; color: #fff; background: #8b5cf6; padding: 1px 8px; border-radius: 5px; margin-right: 8px; vertical-align: 2px; }
+    .q .why { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+    .q.done { border-left-color: #10b981; }
+    .q.done .qn { background: #10b981; }
+    .decided { display:inline-block; font-size:11px; font-weight:800; color:#047857;
+      background:#ecfdf5; border:1px solid #6ee7b7; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .ans { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#065f46; line-height:1.6; }
+    .q.shut { border-left-color:#cbd5e1; background:#fbfcfd; }
+    .q.shut .qn { background:#94a3b8; }
+    .q.shut .qh { color:#475569; }
+    .closed { display:inline-block; font-size:11px; font-weight:800; color:#475569;
+      background:#f1f5f9; border:1px solid #dde5ee; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .shutbox { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#475569; line-height:1.6; }
+    details { margin-top:10px; }
+    details summary { cursor:pointer; font-size:12px; font-weight:700; color:#94a3b8; }
+    details summary:hover { color:#475569; }
+    details table { margin-top:8px; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .st-shut { background:#f1f5f9; color:#475569; border:1px solid #dde5ee; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .q table { margin: 6px 0 0; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    td .cap { display: block; margin-top: 2px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v3 · 優化 Content Mirroring</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#flow">2 · 現況：三步走完</a></li>
+        <li><a href="#settings">3 · 第二步的五塊設定</a></li>
+        <li><a href="#issues">4 · 查到的問題</a></li>
+        <li><a href="#open">5 · 待決事項</a></li>
+        <li><a href="#plan">6 · 提案</a></li>
+        <li><a href="#base">7 · 基準檔</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v3 — 優化 Practice-Content Mirroring</h1>
+        <p class="subtitle">Content Mirroring 的建立流程是三步：Content → Settings &amp; Preview → Assign Practice。§2–§4 是現況與十二個查到的問題，§6 是提案——流程從三步變四步，Settings 收成三段、主角是一張既是預覽也是設定介面的樣本句，
+        Assign 從對話框搬回頁面。</p>
+        <div class="meta">
+          <span>2026-09-09</span>
+          <span>分岔自 v2</span>
+          <span>程式碼基準 origin/develop @ c01d0ac0</span>
+          <span>狀態：提案完成（未定稿）· Settings 第四版 2026-09-14</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+
+      <p>使用者給的入口是 <code>https://dahua-dash-dev.web.app/dashboard/practice/create/?type=MIRRORING</code>，
+      也就是在 Choose Practice Type 點下 <strong>Content Mirroring</strong> 之後進的那條建立流程。範圍就是這三步，
+      不含 Choose Practice Type 那一頁（那是 v1）、不含 Edit 模式、不含其他七張卡。</p>
+
+      <div class="callout callout-tip">
+        <strong>v1 的設計已經上線了。</strong> <code>src/utils/practice-type-labels.js</code> 現在就是攤平後的八張卡、
+        四個欄位（Content / Vocabulary / Sentence / Comprehension）與四個顏色（<code>#00B95C</code> /
+        <code>#EFA00B</code> / <code>#EC4899</code> / <code>#8B5CF6</code>）——跟
+        <a class="inline" href="../v1-practice-hierarchy/spec.html">v1 spec §4</a> 定案的一模一樣。
+        所以這一頁的標題在產品裡真的叫 <strong>New Content Mirroring</strong>，不是舊的 <code>Mirroring Practice</code>。
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>設定表已經跟 8/31 那份盤點不一樣了。</strong>
+        <code>English First</code> 已被 <strong><code>Translation First</code></strong> 取代，而且從布林變成三個值
+        （On / Off / Student choice），還是這張畫面上唯一有<strong>人話標籤</strong>的下拉。
+        <a class="inline" href="../../practice-settings-inventory.md">practice-settings-inventory.md</a> 那一欄要更新。
+      </div>
+
+      <h3>不在範圍內、但會被牽動的</h3>
+      <p>§4 有兩題（<strong>問題 5</strong> Audio Mode 的定位、<strong>問題 6</strong> Preview 名不副實）一旦動，
+      改的是老師對「學生會看到什麼」的理解，設計上勢必要把學生端畫出來對照。學生端本身不改，但要畫。</p>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="flow"><span class="num">2</span> 現況：三步走完</h2>
+
+      <p>步驟名稱寫死在 <code>src/utils/practice-stepper-config.js</code>：</p>
+      <div class="formula">STEPS_BY_TYPE[MIRRORING] = ['Content', 'Settings &amp; Preview', 'Assign Practice']</div>
+
+      <h3>第一步 · Content</h3>
+      <p>CREATE 模式下這一步<strong>只有兩樣東西</strong>：一個 Project 下拉，和選完之後出現的 Content Preview
+      （綠框、<code>maxHeight 200</code> 可捲的整篇文章）。下拉的每一列帶語言與級數兩個小 chip。</p>
+      <p>選 Project 的當下，<code>practiceName</code> 就被偷偷設成專案名稱了
+      （<code>step-one-mirroring.js</code> 的 <code>setValue('practiceName', match.projectName)</code>）——
+      但那個欄位長在第二步，這裡看不到。</p>
+      <p>句子編輯器（<code>MirroringSentenceEditor</code>：勾選、合併、在字元之間切句、標記刪除、
+      sticky 的 <em>Marked for deletion: N / Kept: M</em> 條）也在這一步，但 <strong>CREATE 第一次走到這裡時它不存在</strong>——
+      它讀的是 <code>practice.updatedArticleArray</code>，而 practice 是按下 Next 才建的。</p>
+
+      <div class="preview"><iframe src="create-mirroring.html?step=0" title="第一步 Content" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第一步 · Content（CREATE 第一次進來）</span>
+        <span><a href="create-mirroring.html?step=0" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-mirroring.html?step=0&amp;sent=1" target="_blank" rel="noopener">從第二步 Back 回來的樣子 ↗</a></span>
+      </div>
+
+      <h3>第二步 · Settings &amp; Preview</h3>
+      <p>一個 Practice name 欄位，接著五塊 Paper，最後是句子清單（每句一顆播放鍵）。五塊的內容見 §3。</p>
+
+      <div class="preview"><iframe src="create-mirroring.html?step=1" title="第二步 Settings & Preview" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第二步 · Settings &amp; Preview</span>
+        <span><a href="create-mirroring.html?step=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-mirroring.html?step=1&amp;audio=1" target="_blank" rel="noopener">Audio Mode 打開 ↗</a> ·
+        <a href="create-mirroring.html?step=1&amp;dlg=1" target="_blank" rel="noopener">Generating audio… ↗</a></span>
+      </div>
+
+      <h3>第三步 · Assign Practice</h3>
+      <p>標頭一顆 <em>Assign Practice</em> 開指派對話框；已指派的班一班一張卡，卡上直接編 Start / Due
+      （<code>datetime-local</code>，<code>onBlur</code> 就送出），另有 Edit 與紅色 Cancel（Cancel 的確認文案是
+      「Student records will be permanently deleted.」）。音檔還沒好時，指派鍵是暗的，上方掛一條
+      <em>Audio is still being generated.</em>。</p>
+
+      <div class="preview" style="height:380px"><iframe src="create-mirroring.html?step=2&amp;assigned=1" title="第三步 Assign Practice" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第三步 · Assign Practice（已指派一個班）</span>
+        <span><a href="create-mirroring.html?step=2" target="_blank" rel="noopener">還沒指派 ↗</a> ·
+        <a href="create-mirroring.html?step=2&amp;assigned=1" target="_blank" rel="noopener">另開 ↗</a></span>
+      </div>
+
+      <h3>三顆主要按鈕，三個詞</h3>
+      <div class="formula">resolvePrimaryActionLabel()  //  src/utils/practice-step-gating.js
+第一步 → "Next"
+第二步 → "Save"      ← activeStep === assignStepIdx - 1
+第三步 → "Done"      ← isFinalStep，換成另一顆 Button</div>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="settings"><span class="num">3</span> 第二步的五塊設定</h2>
+
+      <table>
+        <thead><tr><th style="width:150px">區塊</th><th style="width:180px">控制項</th><th>值（照抄程式碼）</th><th style="width:110px">預設</th></tr></thead>
+        <tbody>
+          <tr><td><b>Audio Mode</b><br><span class="cap">共用卡</span></td><td>開關</td>
+            <td>On / Off。打開會<strong>強制</strong>把 <code>pinyinPreference</code> 與 <code>translationPreference</code> 設成 <code>STUDENT_CHOICE</code> 並把兩個下拉停用。學生端整個換成純聽力面板。</td><td>Off</td></tr>
+          <tr><td><b>Translation First</b></td><td>下拉</td>
+            <td><code>ON</code> / <code>OFF</code> / <code>STUDENT_CHOICE</code>，畫面顯示 <b>On / Off / Student choice</b>（有 <code>TRANSLATION_FIRST_PREFERENCE_LABELS</code>）。底下一行說明隨選項變。舊欄位 <code>playEnglishFirst</code> 仍同步寫入。</td><td>On</td></tr>
+          <tr><td rowspan="2"><b>Display Settings</b></td><td>Pinyin</td>
+            <td><code>PINYIN</code> / <code>NO_PINYIN</code> / <code>STUDENT_CHOICE</code> —— <strong>直接 map enum，老師看到的就是這幾個字</strong></td><td><code>PINYIN</code></td></tr>
+          <tr><td>Translation</td>
+            <td><code>SHOW</code> / <code>HIDE</code> / <code>STUDENT_CHOICE</code> —— 同樣是原始 enum</td><td><code>STUDENT_CHOICE</code></td></tr>
+          <tr><td><b>Auto Pass</b><br><span class="cap">共用欄位</span></td><td>Max attempts before auto pass</td>
+            <td>數字，<code>MIN_MAX_ATTEMPTS 1</code> – <code>MAX_MAX_ATTEMPTS 10</code>。清空後 blur 會自動還原成預設。</td><td>3</td></tr>
+          <tr><td rowspan="2"><b>Audio Settings</b><br><span class="cap">共用面板</span></td><td>Speed</td>
+            <td><b>Student choice</b> ＋ <code>SPEED_OPTIONS</code> 三段 Fast <code>1.0</code> / Normal <code>0.8</code> / Slow <code>0.6</code>，每一段有逐項試聽鍵。選 Student choice 時底下出現 <em>Students pick their own speed and start at Normal.</em></td><td>0.8 Normal</td></tr>
+          <tr><td>Voice</td>
+            <td><code>useVoiceCatalog({ targetLanguage, audioOption })</code> 依語言取回，不是固定清單；每個聲音有 <code>sampleUrl</code>、逐項試聽鍵。</td><td>語言的第一個</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>三塊是全產品共用的元件，不是這一頁自己長的。</strong>
+        <code>audio-mode-toggle-card.js</code>、<code>audio-settings-panel.js</code>、<code>max-attempts-field.js</code>
+        分別被 QA、Vocabulary、Sentence Scramble、Follow Pattern 用著。<strong>動它們就是動五種練習。</strong>
+        只想改這一頁的話，改動要留在 <code>mirroring-step-two-section.js</code> 這一層。
+      </div>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="issues"><span class="num">4</span> 查到的問題</h2>
+
+      <p>以下每一條都在程式碼裡看得到，不是推理出來的。編號只是編號，沒有優先順序。</p>
+
+      <div class="card">
+        <h4>1 · 練習的名字在第一步被決定，在第二步才看得到</h4>
+        <p>選 Project 的那一刻 <code>practiceName</code> 就被設成專案名稱了，但欄位長在下一步。
+        老師在第一步不知道自己已經有一個名字，到第二步看到一個「自己沒打過的名字」躺在最上面。</p>
+      </div>
+
+      <div class="card">
+        <h4>2 · 同一張畫面上，兩個下拉給老師看資料庫欄位值</h4>
+        <p><code>Object.entries(PINYIN_PREFERENCES).map(...)</code> —— 老師看到的是 <code>NO_PINYIN</code>、
+        <code>STUDENT_CHOICE</code>。而正上方的 Translation First 有一份 <code>_LABELS</code>，顯示的是
+        <b>On / Off / Student choice</b>。同一張畫面，兩套做法，其中一套是漏掉的那一套。</p>
+        <p class="cap">（＝ <a class="inline" href="../../mirroring-settings-questions.md">mirroring-settings-questions.md</a> 的 Q3，過了六百多個 commit 仍在。Follow Pattern 也一樣。）</p>
+      </div>
+
+      <div class="card">
+        <h4>3 · Audio Settings 的說明承諾了畫面上沒有的東西</h4>
+        <p>說明文字寫著 <em>“Controls audio playback speed, <b>pronunciation precision</b>, and voice.”</em>，
+        但畫面上只有 Speed 和 Voice。發音嚴格度被一行 TODO 關掉了：</p>
+        <div class="formula">// audio-settings-panel.js
+{/* TODO: Re-enable pronunciation slack selector once the new pronunciation
+    Lambda supports the slack parameter … */}
+
+// config/practices.js — 選項本身還在
+SLACK_OPTIONS = [ 🟢 Gentle (Easy) · 🟡 Teaching standard (Normal) · 🔴 Exam level (Hard) ]</div>
+        <p class="cap">（＝ Q2，仍在。設計這邊被這句文案誤導過一次，憑它做了一個不存在的設定。）</p>
+      </div>
+
+      <div class="card">
+        <h4>4 · 「學生自己決定」在同一張畫面上有三種機制</h4>
+        <div class="callout callout-warn" style="margin-top:0">
+          <strong>更正（2026-09-14）。</strong> 學生端 Mirroring 是<strong>兩欄</strong>：左欄 <code>content-window.js</code> 的整份清單裡，
+          翻譯的 Their choice 是逐句眼睛；<strong>主欄</strong> <code>practice-content-list.js → message-list.js</code> 的 PRACTICE SENTENCE 卡
+          右上角有跟 Vocabulary 共用的 <code>settings-panel.js</code>，Pinyin／Translation／Translation first／Speed 四個 Their choice
+          都是那裡的 toggle（<code>resolveToggleVisibility</code>）。這一題講的「三種機制」在主欄其實是統一的——不一致的是左欄。
+        </div>
+        <table style="margin-bottom:0">
+          <thead><tr><th style="width:170px">設定</th><th>學生要怎樣才能自己決定</th></tr></thead>
+          <tbody>
+            <tr><td>Pinyin · Translation</td><td>自己的選項裡有 <code>STUDENT_CHOICE</code>，<strong>但 Audio Mode 打開會覆寫並鎖死</strong></td></tr>
+            <tr><td>Speed</td><td>選項裡有 <code>Student choice</code>，獨立於 Audio Mode，不會被鎖</td></tr>
+            <tr><td>Translation First</td><td>選項裡有 <code>Student choice</code>，同樣不受影響</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px">四個設定、三種行為。老師沒有辦法從畫面上看出為什麼有兩個會變灰、另外兩個不會。</p>
+      </div>
+
+      <div class="card">
+        <h4>5 · Audio Mode 不是顯示偏好，卻排在顯示偏好中間</h4>
+        <p>它改的不是「這個練習長什麼樣」，是「這個練習是什麼」——學生端整片課文會換成一張純聽力卡
+        （<code>assignments/content/index.js</code> 的 <code>renderAudioModePanel</code>：耳機圖、
+        <code>Audio Mode is ON</code>、<em>Please pay attention and repeat the sentences.</em>，拼音預設關），
+        開始卡也換成 <code>Listen and repeat — text is hidden</code>。</p>
+        <p>但它在畫面上就是五塊裡的第一塊，看起來跟 Translation First、Display Settings 同一個層級。
+        名字也沒講出「純聽力」。它會強制鎖住那兩個偏好，正是因為它根本不同層——但畫面沒有表達這件事。</p>
+      </div>
+
+      <div class="card">
+        <h4>6 · 這一步叫 Settings &amp; Preview，但 Preview 不是學生看到的東西</h4>
+        <p>底下那份句子清單是<strong>老師視角的稿件</strong>：一句一列、一顆播放鍵，跟著 Pinyin / Translation
+        兩個下拉決定要不要顯示拼音與翻譯。學生端的 Mirroring 畫面不長這樣。</p>
+        <p><strong>Audio Mode 打開時最明顯</strong>：學生根本看不到這些句子（換成純聽力卡、拼音預設關），
+        但這份清單照列五句、照顯示拼音。<strong>Preview 在說謊的情況是可以直接製造出來的。</strong></p>
+      </div>
+
+      <div class="card">
+        <h4>7 · 句子編輯在第一步，但第一次走到第一步時它不存在</h4>
+        <p>要編句子（切句、合併、刪除）得先按 Next 建出 practice，再按 Back 回來。
+        第一次進第一步的人不會知道這裡之後會多一張表。</p>
+        <div class="formula">// step-one-mirroring.js
+// No auto-creation: practice is created when user clicks Next
+committedRows ← draft.updatedArticleArray ?? practice.updatedArticleArray ?? []   // CREATE 時是空的</div>
+      </div>
+
+      <div class="card">
+        <h4>8 · 在第二步動任何一個下拉，都可能被全螢幕遮罩擋住</h4>
+        <p>Speed 或 Voice 改動 → 一定重跑 SQS 產生音檔 → <code>Generating audio…</code> 全螢幕 modal
+        （不能按 Esc 關），三段進度條每 10 秒往前一格。</p>
+        <p><strong>拼音／翻譯／Audio Mode 也會。</strong> 前端刻意把它們排除在
+        <code>AUDIO_AFFECTING_FIELDS</code> 之外，但草稿路徑的後端仍然會 enqueue SQS，程式碼註解自己講了：</p>
+        <div class="formula">// use-practice-editor.js
+// Backends like upsertPracticeDraft may flip audioStatus to GENERATING for
+// fields (pinyinPreference, translationPreference, audioMode) the frontend
+// list excludes …</div>
+        <p>所以老師只是想把拼音關掉，就有機會整頁被擋住幾十秒。而遮罩的條件是
+        <code>(isProcessing || isAudioGenerating) &amp;&amp; activeStep &gt; 0</code>——第一步刻意不擋，第二步全擋。</p>
+      </div>
+
+      <div class="card">
+        <h4>9 · 三步的主要按鈕是三個不同的詞</h4>
+        <p>Next → <b>Save</b> → Done。中間那顆叫 Save 是因為 <code>activeStep === assignStepIdx - 1</code>
+        會真的送出，但在一條三步的流程裡，第二步出現 Save 讀起來像「這裡就結束了」。</p>
+      </div>
+
+      <div class="card">
+        <h4>10 · Auto pass 這一個東西，全產品有三個名字</h4>
+        <p>Mirroring 與 Vocabulary 用共用欄位 <code>Max attempts before auto pass</code>；
+        Sentence Scramble 叫 <code>Attempts per sentence</code>；Follow Pattern 叫 <code>Attempts per question</code>。
+        <strong>這一版只碰 Mirroring，所以這條是「改名字要小心」的提醒，不是這一版要解的問題</strong>——
+        真要統一就會動到另外三種練習。</p>
+      </div>
+
+      <div class="card">
+        <h4>11 · 聲音清單把簡體和繁體混在一起，而且看不出來</h4>
+        <p><strong>只有 <code>zh-TW</code> 的專案會混。</strong> <code>getVoiceList()</code> 對
+        <code>zh-CN</code> 只回 SIMPLIFIED 那組四個，對 <code>zh-TW</code> 回的卻是
+        <code>[...TRADITIONAL(3), ...SIMPLIFIED(4)]</code>——七個串成一份清單。
+        而標籤只寫 <code>HsiaoChen (Female)</code>、<code>Xiaorou (Female)</code>，
+        <strong>沒有任何地區標記</strong>，繁體專案的老師會在同一份下拉裡看到四個大陸口音的聲音，從名字分不出來。</p>
+        <p class="cap">（同一批聲音在 <code>pronunciation-sandbox/constants.js</code> 裡倒是寫了
+        <code>(TW, female)</code> / <code>(CN, female)</code>，所以標記是有的，只是沒帶進練習設定。）</p>
+      </div>
+
+      <div class="card">
+        <h4>12 · 換步驟不會回到頁面最上面</h4>
+        <p><code>practice-unified-view.js</code> 整份只有一個 <code>scrollIntoView</code>，
+        而且是處理對話框關閉後捲到某張卡的——<strong>沒有換步驟時的捲動重置</strong>。
+        第一步的句子表或第四步的班級清單一長，按 Next / Back 就會落在半空中。</p>
+        <p class="cap">（提案已修：換步驟、送出指派、結束流程三個時機都捲回最上面。基準檔維持原狀。）</p>
+      </div>
+
+      <!-- ===================== 5 ===================== -->
+      <h2 id="open"><span class="num">5</span> 待決事項</h2>
+
+      <p>分兩類：<b>要使用者決定的</b>（設計方向），和<b>只有工程答得出來的</b>。
+      「產品實際長什麼樣」不列在這裡——那種問題去 repo 裡找就有答案。</p>
+
+      <h3>要決定的</h3>
+      <table>
+        <thead><tr><th style="width:52px">#</th><th style="width:230px">題目</th><th>為什麼要先決定</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-open">D1</span></td><td>這一版要改的是<b>結構</b>還是<b>用字</b>？</td>
+            <td>問題 1／5／6／7 是結構（東西放錯步、放錯層級），問題 2／3／9 是用字。兩種的動土範圍差很多——後者幾乎不動流程。</td></tr>
+          <tr><td><span class="stat st-open">D2</span></td><td>可不可以動共用元件？</td>
+            <td>Audio Mode 卡、Audio Settings 面板、Max attempts 欄位是五種練習共用的。動了就是五種一起改；不動的話有些問題只能繞路解。</td></tr>
+          <tr><td><span class="stat st-open">D3</span></td><td>Preview 要不要真的畫成學生畫面？</td>
+            <td>問題 6 若要解，就得把 Mirroring 的學生端（含純聽力兩種狀態）畫進這一頁。這會讓這一版從「整理設定」變成「重畫一步」。</td></tr>
+          <tr><td><span class="stat st-open">D4</span></td><td>Planning 那條線的分組要不要拿來用？</td>
+            <td><a class="inline" href="../../teacher-planning.html">teacher-planning.html</a> 的右側面板已經把同一批設定重新分過組（依「它改變什麼」：看得到的貼預覽、聽得到的收一組、什麼時候算過關單獨一行），也已經把 Pinyin/Translation 改成 Shown / Hidden / Their choice。要沿用還是各走各的。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>要問工程的</h3>
+      <table>
+        <thead><tr><th style="width:52px">#</th><th style="width:230px">題目</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">E1</span></td><td>新的發音 Lambda 什麼時候支援 slack 參數？</td>
+            <td>問題 3。決定「發音嚴格度」要不要現在就設計進去。<b>不管答案是什麼，那句文案都該先改掉</b>——它現在承諾一個不存在的控制項。</td></tr>
+          <tr><td><span class="stat st-todo">E2</span></td><td>兩個下拉直接露出 enum 值，是有意的嗎？</td>
+            <td>問題 2。若不是，這是一個一行就能修的字串問題，不必等這一版定稿。</td></tr>
+          <tr><td><span class="stat st-todo">E3</span></td><td>拼音／翻譯／Audio Mode 觸發 SQS 重跑，是後端刻意的嗎？</td>
+            <td>問題 8。純 metadata 卻要重產音檔，若非必要，遮罩就不該出現。這題會直接決定第二步能不能「即時預覽」。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>D2 與 D3 已經回答（2026-09-09）。</strong> 可以動共用元件——「改好之後五種練習一起改」；
+        樣本句也可以真的畫成學生畫面。提案見 §6。D1 與 D4 還沒問，但提案先照
+        「結構與用字一起動、沿用 Planning 那套分組」的方向走。
+      </div>
+
+      <!-- ===================== 6 ===================== -->
+      <h2 id="plan"><span class="num">6</span> 提案</h2>
+
+      <div class="callout callout-tip">
+        <strong>一句話：把「設定」這一步變成一張學生會看到的句子，控制項長在它上面。</strong>
+        不是「設定面板＋旁邊一個預覽」——那兩個永遠有機會不一致（現在就是，見 §4 問題 6）。
+        是<strong>同一張卡同時是預覽也是設定介面</strong>，所以它不可能跟自己矛盾。
+      </div>
+
+      <div class="callout callout-info">
+        <strong>§6.1–§6.4 是第一版提案（2026-09-09）。</strong> Settings 那一步在 2026-09-14 改成第四版「工具列 ＋ 畫布」，
+        見 <a class="inline" href="#plan-v4">§6.9</a>；三段分法、樣本句、純聽力交出去的做法都被它取代，留在這裡當過程。
+      </div>
+
+      <h3>6.1 分成三段，依「它改變什麼」</h3>
+
+      <table>
+        <thead><tr><th style="width:140px">段</th><th style="width:250px">裡面有什麼</th><th>為什麼是一段</th></tr></thead>
+        <tbody>
+          <tr><td><b>On screen</b></td><td>樣本句 ＋ Pinyin ＋ Translation</td>
+            <td>這三個講的是同一件事：學生螢幕上有什麼。所以它們在同一張卡裡，控制項就貼在它改的東西下面。</td></tr>
+          <tr><td><b>On play</b></td><td>Play the translation first ＋ Speed ＋ Voice</td>
+            <td>按下播放之後會聽到什麼。試聽鍵也在這一段——聲音的事都在這裡。</td></tr>
+          <tr><td><b>Passing</b></td><td>Move on after N tries</td>
+            <td>什麼時候算過關。只有一項，但它跟看／聽都不同類，硬併進去只會讓另外兩段變得不精確。</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Audio Mode 不在這三段裡。</strong> 它換的是練習本身（§4 問題 5），所以提到最上面、
+      改成兩選一的模式：<code>Text on screen</code> / <code>Audio only</code>。不是開關——開關暗示
+      「有一個預設狀態、另一個是加購」，但這是兩種同等的練法。</p>
+
+      <div class="callout callout-info">
+        <strong>分組原則沿用 Planning 那條線。</strong>「依它改變什麼分組，不依欄位來源」是
+        <a class="inline" href="../../teacher-planning.html">teacher-planning.html</a> 的右側面板已經在走的做法。
+        兩條線講同一套語言，不是這裡新發明的。
+      </div>
+
+      <h3>6.2 逐個控制項的處置</h3>
+
+      <table>
+        <thead><tr><th style="width:230px">現在</th><th style="width:230px">改成</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td>Audio Mode 開關，夾在五張卡中間</td><td><b>Text on screen / Audio only</b> 兩選一，置於最上</td>
+            <td>它是練習模式，不是顯示偏好。</td></tr>
+          <tr><td>Pinyin <code>PINYIN / NO_PINYIN / STUDENT_CHOICE</code></td>
+            <td>分段控制項 <b>Shown / Hidden / Their choice</b></td>
+            <td>三個短選項全部露出比藏起來好：一次點擊、看得到有哪些、看得到現在是哪個。用字跟 Planning 一致。</td></tr>
+          <tr><td>Translation <code>SHOW / HIDE / STUDENT_CHOICE</code></td><td>同上</td><td>同上。</td></tr>
+          <tr><td>Translation First（標題是欄位名）</td>
+            <td>敘述句 <b>Play the translation first</b> ＋ <b>Yes / No / Their choice</b></td>
+            <td>是一個問句，就該用 Yes / No 回答。</td></tr>
+          <tr><td>Speed 下拉（含 Student choice）</td>
+            <td><b>跟 Voice 同一種 chip</b>：<code>▶ Slow</code> / <code>▶ Normal</code> /
+              <code>▶ Fast</code> ＋ 不帶 ▶ 的 <code>Their choice</code></td>
+            <td>速度跟聲音是同一類決定——都得<strong>先聽過才選得出來</strong>，所以用同一個元件：
+              點一下＝選它＋聽它。<code>Their choice</code> 不是一個聽得到的速度，
+              刻意不給 ▶——<strong>少一個播放鍵本身就說明了「這裡沒有東西可以聽」</strong>。
+              原本那顆獨立的 <em>Hear a sample</em> 因此多餘，收掉。
+              四個「學生自己決定」仍然全部講同一句話 <em>Their choice</em>（解 §4 問題 4）。</td></tr>
+          <tr><td>Voice 下拉，每列一顆小 ▶</td>
+            <td><b>chip，點一下＝選它＋聽它</b>；標籤用 config 裡的原字串
+              （<code>Xiaorou (Female)</code>），不縮寫</td>
+            <td>聲音不聽就選不出來。現在要「開選單→找→點小三角→選單還開著」。
+              <strong>地區標籤只在不只一組時出現</strong>——它是為 §4 問題 11 那個情況存在的：
+              <code>getVoiceList('zh-TW')</code> 會把簡體四個接在繁體三個後面。
+              <code>zh-CN</code> 只有一組，標上語言只是把已經選好的專案語言再講一次。</td></tr>
+          <tr><td><code>Max attempts before auto pass</code> 數字欄位</td>
+            <td><b>Move on after 3 tries</b> ＋ 加減鈕</td>
+            <td>原標籤講的是機制（auto pass），不是老師關心的事。</td></tr>
+          <tr><td>Practice name 在第二步</td><td>移到第一步，選 Project 的正下方</td>
+            <td>它在第一步就被填好了（§4 問題 1）。搬過去之後那個「自己沒打過的名字」就有出處了。</td></tr>
+          <tr><td>底下一長串句子清單</td><td>樣本句的 <b>‹ Sentence 1 of 5 ›</b> 翻頁 ＋ 收起來的 <b>All 5 sentences</b></td>
+            <td>清單真正的用途是「逐句確認音檔有沒有問題」，那是驗證不是預覽，收起來就好。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>不是「下拉一律不好」。</strong> 下拉的價值是「清單很長，先收起來」。這一頁四個下拉裡有三個
+        只有 3–4 個選項、每個兩個字，收起來沒省到空間，卻要兩次點擊、看不到選項、也沒辦法比較。
+        規則是<strong>選項固定又短就攤開，資料驅動又長就收起來</strong>。Voice 是唯一長的那個——
+        而它連下拉都不當，因為它的選項要「聽過」才有意義。
+      </div>
+
+      <h4>第一步的兩個欄位：<code>c-input-2</code> 與 <code>c-dropdown-menu-18</code></h4>
+
+      <p><strong><code>c-input-2</code>（Input with label）＝ <code>Field</code> + <code>FieldLabel</code> + <code>Input</code>。</strong>
+      標籤在輸入框<strong>上面</strong>，不是 MUI 那種浮在框線上的凹槽標籤，輸入框也從 56px 收到 40px。
+      Practice name 照這個做。</p>
+
+      <p><strong><code>c-dropdown-menu-18</code>（AI model selector with provider icons）</strong>
+      不是表單 <code>Select</code>，是 <strong>outline 按鈕觸發 ＋ 選單</strong>：選單有一行群組標題，
+      每一列是「圖示 ＋ 名稱」，箭頭用 <code>ml-auto</code> 推到最右。Project 照這個做——
+      c-18 那個 logo 的位置放 <code>targetLanguage</code>，右邊放 <code>levelType + level</code>，
+      都是 <code>step-one-mirroring.js</code> 的下拉本來就有的欄位，沒有新增資料。</p>
+
+      <div class="callout callout-warn">
+        <strong>更正（2026-09-10）。</strong> 這裡原本寫著「現行的語言／級數 chip 只有在下拉打開時看得到」，
+        <strong>那是錯的</strong>——MUI Select 收合時渲染的就是選中那個 <code>MenuItem</code> 的 children，
+        兩個 chip 本來就在。使用者提供的實機截圖（<code>電腦的歷史　zh-CN　ACTFL 6</code>）證實了這一點。
+        提案的觸發鈕帶著 chip 是<strong>沿用</strong>現行行為，不是修掉什麼。基準檔也一併補上了。
+        （另外：<code>levelType</code> 不只有 HSK，實機上是 <code>ACTFL 6</code>。）
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>標籤照 BCP-47 原樣印，不縮寫也不轉大小寫。</strong>
+        <code>src/enum/languageTags.js</code> 的正規格式是<em>小寫語言＋大寫地區</em>——
+        <code>zh-CN</code> / <code>zh-TW</code> / <code>zh-HK</code>，而下拉是直接印
+        <code>cfg.targetLanguage</code>。（這一版兩個檔案都修過：提案頁原本自己縮成
+        <code>TW</code>，基準檔原本寫成大寫 <code>ZH-TW</code>，兩個都不是產品的樣子。）
+        <strong>聲音清單的組標題也用同一套標籤</strong>，跟專案的語言 chip 對得上。
+      </div>
+
+      <p><strong>示範專案改成 <code>zh-CN</code>（簡體），課文與句子跟著換。</strong>
+      連帶的是聲音清單——<code>getVoiceList('zh-CN')</code> 只回四個簡體聲音，所以這一頁看到的是
+      單一個 <code>zh-CN</code> 組。§4 問題 11 的「七個混在一起」要 <code>zh-TW</code> 的專案才會出現，
+      在這份示範資料上看不到，但分組與標地區的做法本身是為了那個情況而留的。</p>
+
+      <p>兩個欄位都改成 label-above 之後，第一步就是統一的「標籤在上、控制項在下」，
+      不再是 MUI 的浮動凹槽標籤。<strong>一樣只動提案頁</strong>——基準檔維持 MUI 原樣。</p>
+
+      <h4>第一步其實有兩個互斥的狀態——提案直接多一步</h4>
+
+      <div class="formula">// step-one-mirroring.js
+const sourceLocked = Boolean(practice?.id) || isLoadingContent;
+
+disabled={loading || sourceLocked}                            // Project 下拉鎖住
+{!sourceLocked &amp;&amp; previewData &amp;&amp; &lt;ArticlePreviewSection …/&gt;}   // 文章預覽整個不渲染
+{localSentences.length &gt; 0 &amp;&amp; &lt;MirroringSentenceEditor …/&gt;}   // 換成句子表</div>
+
+      <p><strong>A · 還沒建立</strong>：Project 可選、看得到整篇文章、沒有句子表。<br>
+      <strong>B · 已建立</strong>（按過 Next 再回頭，或 EDIT）：Project <strong>鎖住</strong>、
+      文章預覽<strong>整個消失</strong>、換成句子表。</p>
+
+      <p>兩個長得完全不同的畫面擠在同一個步驟裡，而 Stepper 上只寫著一個 <code>Content</code>。
+      老師第一次走過去<strong>根本不知道有審句這件事</strong>——句子表要按 Next 再 Back 才會出現。</p>
+
+      <div class="callout callout-tip">
+        <strong>提案：把審句獨立成一步，四步。</strong>
+        <code>Content → Edit Sentences → Settings → Assign Practice</code>
+      </div>
+
+      <p><strong>這不是自創，是把 Mirroring 拉回產品既有的做法。</strong>
+      <code>practice-stepper-config.js</code> 裡已經有兩個型別是這個形狀：</p>
+      <div class="formula">[SENTENCE_SCRAMBLE]: ['Content', 'Edit Sentences', 'Settings', 'Assign Practice']
+[FOLLOW_PATTERN]:    ['Teaching Points', 'Question Review', 'Settings', 'Assign Practice']</div>
+      <p><strong>Sentence Scramble 做的是同一件事</strong>——把課文切成句子、讓老師修切點——
+      它就是獨立一步。Mirroring 一樣會生句子，卻是唯一把審句藏在第一步裡的。
+      標籤直接沿用 <code>Edit Sentences</code>，兩條流程讀起來才是同一套。</p>
+
+      <h4>多一步之後，三個問題一起消失</h4>
+      <table>
+        <thead><tr><th style="width:200px">原本的問題</th><th>為什麼不見了</th></tr></thead>
+        <tbody>
+          <tr><td>句子表第一次進來時不存在</td>
+            <td>它現在是第二步。Stepper 從一開始就宣告了這件工作，不必發現。</td></tr>
+          <tr><td>回到第一步時文章突然消失</td>
+            <td>文章一直留在第一步，句子在第二步，各自有地方。Back 回去還看得到課文。</td></tr>
+          <tr><td>Project 下拉突然點不動、沒有解釋</td>
+            <td>「按了 Next 就不能改前一步的輸入」是每個 stepper 的常識，
+              不再需要一行字去解釋一個看起來壞掉的下拉。</td></tr>
+        </tbody>
+      </table>
+
+      <p class="cap">代價是流程多一步。但那一步本來就存在，只是沒有被算進去——
+      老師還是得看過切句結果才敢往下走，差別只在他現在<strong>知道</strong>自己在做這件事。
+      不需要改的人按 Next 就過去了。</p>
+
+      <div class="preview" style="height:460px"><iframe src="proposal.html?step=2" title="提案 · Edit Sentences" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第二步 Edit Sentences</span>
+        <span><a href="proposal.html?step=2" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="proposal.html?step=2&amp;split=3" target="_blank" rel="noopener">切句模式 ↗</a> ·
+        <a href="create-mirroring.html?step=0&amp;sent=1" target="_blank" rel="noopener">對照現行（藏在第一步）↗</a></span>
+      </div>
+
+      <h4>句子表：三個控制項各自的問題</h4>
+
+      <table>
+        <thead><tr><th style="width:90px">動作</th><th style="width:250px">現行</th><th>提案</th></tr></thead>
+        <tbody>
+          <tr><td><b>切句</b></td>
+            <td>一條 Tip 寫著「點字與字之間放游標，再用 <em>New Line</em> 提示切句」。</td>
+            <td><strong>用文字解釋一個看不見的控制項，就是那個控制項沒做好。</strong>
+              改成一顆 Split 鈕，按下去字與字之間才出現可點的插入點——標點後面的斷點標明顯、
+              其餘保持很淡（是提示不是限制，任何位置都還是點得下去）。Tip 那條橫幅因此不需要了。</td></tr>
+          <tr><td><b>合併</b></td>
+            <td>藍色圓鈕長在句子左邊、屬於「這一列」，但它做的事是「跟<em>上一句</em>合併」。</td>
+            <td>移到<strong>兩句之間的分隔線上</strong>，寫明 <em>Merge with previous</em>——
+              位置本身就說明了它作用在哪個接縫。</td></tr>
+          <tr><td><b>刪除</b></td>
+            <td>三段：逐列垃圾桶標記 → sticky 列的 <em>Confirm delete (N)</em> → 再一個確認 Dialog。</td>
+            <td>收成兩段：標記 → 一條確認列（<em>Delete N</em> / <em>Keep them</em>）。
+              刪除不可逆所以保留確認，但不需要確認兩次。</td></tr>
+        </tbody>
+      </table>
+
+      <p class="cap">checkbox 欄與 <code>Actions</code> 欄標題一併拿掉——一個欄位標題管兩顆圖示鈕，
+      而多選的用途（一次標記多句）已經由「逐列標記＋一條確認列」涵蓋。</p>
+
+      <h4>課文照專案存的分段顯示，不是一整塊</h4>
+
+      <div class="formula">// practice-helpers.js · getSplitArticleText
+if (Array.isArray(splitArticleArray) &amp;&amp; splitArticleArray.length &gt; 0) {
+  return splitArticleArray.map(item =&gt; item?.content || item?.text || '').join('');
+  //                                                                  ^^ 空字串</div>
+
+      <p><code>splitArticleArray</code> 是<strong>一段一段的陣列</strong>，
+      <code>join('')</code> 把它壓成一整塊——<strong>而下一步要老師修的正是這個切分</strong>。
+      做那件事需要的結構，在這一頁被丟掉了。</p>
+
+      <p>改成一段一行、帶編號之後，老師停在這裡想知道的三件事一次答完：</p>
+      <table>
+        <thead><tr><th style="width:180px">老師想知道</th><th>怎麼答的</th></tr></thead>
+        <tbody>
+          <tr><td>是不是這一篇？</td><td>照樣讀得到，沒有損失。</td></tr>
+          <tr><td>有多少？</td><td>用數的。副標的 <em>5 lines</em> 是計數不是宣稱，而且捲軸不再把總量藏起來。</td></tr>
+          <tr><td>接下來會變成什麼？</td><td>第二步是同一份清單、變成可編輯的。
+            <strong>兩邊刻意不相等</strong>——示範資料是 <em>5 lines → 6 sentences</em>，
+            因為專案的分段不等於 AI 最終切出來的句子。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>誠實的但書：</strong><code>splitArticleArray</code> 是<strong>專案自己的</strong>分段，
+        第二步編的是 practice 的 <code>updatedArticleArray</code>。兩者是否完全相同沒有驗證過，
+        所以文案寫的是 <em>lines</em>（專案的行），不是 <em>sentences</em>——那個詞留給第二步。
+      </div>
+
+      <h4>對話類內容的限制提前到第一步講</h4>
+
+      <div class="formula">// step-one-mirroring.js:121
+const canSplitMerge = selectedProject?.contentType !== 'CONVERSATION';</div>
+
+      <p>這個值<strong>在第一步就算出來了，卻只在第二步用</strong>——到那裡才跳一塊橘色警告說
+      對話類內容不能切句／合併。老師選專案的當下就該知道，因為它直接決定下一步能不能做事。
+      提案在第一步的 Frame 裡就講，第二步也照著把合併鈕與 Split 鈕收掉（刪除仍然可以），
+      兩邊說的是同一件事。</p>
+
+      <div class="preview" style="height:480px"><iframe src="proposal.html?step=1&amp;proj=2" title="提案 · 對話類專案" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 選到對話類專案（<code>?proj=2</code>）</span>
+        <span><a href="proposal.html?step=1&amp;proj=2" target="_blank" rel="noopener">第一步 ↗</a> ·
+        <a href="proposal.html?step=2&amp;proj=2" target="_blank" rel="noopener">第二步（不能切合）↗</a></span>
+      </div>
+
+      <h4>兩個順手砍掉的</h4>
+      <ul>
+        <li><strong>重複的副標。</strong> 專案名稱就在正上方 24px 的選擇器裡，Frame 副標又印一次。
+          改成 <em>N lines</em>——同一個位置，換成有增量的資訊。</li>
+        <li><strong><code>max-height: 200px</code> 的內捲。</strong> 它把「還有多少」藏起來了。
+          這是第一步，底下沒有東西在跟它搶空間，讓它長完才看得出這篇有多長。</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>提過但沒有做：把這一塊收到跟欄位同寬（520px）。</strong>
+        理由是中文 16px 的舒適行長約 520–640px，而全寬一行約 38 字偏長，收窄剛好同時解掉
+        「兩個內容寬度」與行長兩件事。<strong>決定維持整欄寬（2026-09-10）</strong>——
+        收窄會讓這一塊在頁面上失去份量。改成一段一行之後每一行本來就斷得比較短，
+        原本的行長問題也緩解了。
+      </div>
+
+      <h4>Content preview 換成 ReUI 的 <code>c-frame-6</code>（ghost）</h4>
+
+      <p><code>Frame</code> → <code>FrameHeader</code>（Title ＋ Description）→ <code>FramePanel</code>
+      → <code>FrameFooter</code>。<code>c-frame-6</code> 用的是 <strong>ghost 變體：外框沒有邊框</strong>，
+      只剩底色與 panel。重點在<strong>同心圓角</strong>，而 ghost 因為少了那 1px 邊框，算式也跟著少減 1：</p>
+      <div class="formula">--frame-radius        = --radius-xl = calc(0.625rem + 4px) = 14px
+--frame-px            = --spacing(0.75)                     = 3px
+
+ghost:    --frame-panel-radius = calc(--frame-radius - --frame-px)       = 11px
+default:  --frame-panel-radius = calc(--frame-radius - --frame-px - 1px) = 10px</div>
+      <p>panel 的圓角是<strong>外框圓角減掉內距</strong>（default 變體再多減 1px 邊框），
+      所以內外兩道弧線平行，而不是內外一樣圓。外框灰底 3px 內距，內 panel 白底、細邊、
+      <code>shadow-xs</code>、16px 內距；header 與 footer 在框內、panel 外。</p>
+
+      <p><strong>選 ghost 的理由：這一頁的 1px 邊框已經夠多了。</strong>
+      上面兩個欄位各一道、panel 自己一道，default 變體再加一道外框就變成三層框線。
+      ghost 把最外那層拿掉，灰底當托盤、白 panel 當內容，層次靠<strong>底色差</strong>而不是線。</p>
+
+      <p><strong>順手收掉了三層重複的標題。</strong> 現行同一件事被標了四次——
+      <code>Content Preview</code> 綠色分隔線、綠色的專案名、<code>Article Content</code> 小標、
+      然後才是那個綠框。改成 Frame 之後是 Title <em>Article content</em> ＋ Description
+      直接放<strong>專案名稱</strong>＋ 白底 panel，一層一個工作。
+      （Description 原本寫 <em>From ⟨專案名⟩</em>，那個 <em>From</em> 沒有做事——
+      標題已經說了這是課文，副標放來源就夠了。第二步的
+      <em>Split from ⟨專案名⟩ · 5 sentences</em> 保留 <em>Split from</em>，
+      那句話在講「這些句子是從哪裡切出來的」，拿掉就不成句了。）</p>
+
+      <p><strong>沒有 footer</strong>——照 <code>c-frame-6</code> 的範例，只有 Header ＋ Panel。
+      （曾經在這裡放過一行「Sentences and audio are generated when you continue.」回答 §4 問題 7，
+      已拿掉；<strong>問題 7 因此仍然沒有解</strong>，見 §6.7 P3。）</p>
+
+      <p>一處換色：原版外框是 <code>bg-muted/50</code>，那在白色頁面上讀得出來；
+      這一頁底色是 <code>#f4f7fb</code>，直接用 <code>grey.200</code> 外緣會整個糊掉，
+      所以換成產品自己的淺綠色票：<strong><code>PRACTICE_TYPE_COLUMNS.CONTENT.wash</code> =
+      <code>#EFFBF4</code></strong>（<code>practice-type-labels.js</code>）。
+      <strong>Content Mirroring 就是 Content 欄那張卡</strong>，用它自己那一欄的 wash 最站得住；
+      而且現行的課文預覽本來就是綠底綠框，綠在這個位置是產品既有的說法，
+      <code>c-frame-6</code> 換掉的是框線結構不是顏色。</p>
+
+      <p>用<strong>實色</strong>而不是半透明：ghost 沒有邊框，形狀全靠這層底色撐，
+      實色才不會隨背後的東西變色。同一個色票也收掉了我先前在三個地方各自調的 alpha
+      （<code>.06</code> 模式卡選中 / <code>.07</code> 切句中的那一列 / <code>.10</code> 外框）——
+      <strong>一個淺綠，一個值</strong>。</p>
+
+      <div class="callout callout-warn">
+        <strong>取捨：<code>#EFFBF4</code> 比先前的 <code>.10</code> 疊色淡。</strong>
+        配上 ghost 的無邊框，外框的邊緣偏柔。想要更明確有兩條路——
+        改回 <code>c-frame-16</code>（default 變體，加回 1px 外框），
+        或把外框邊線設成同一欄的 <code>tint: #BBF1D0</code>。
+      </div>
+
+      <h4>Stepper 換成 ReUI 的 <code>c-stepper-2</code></h4>
+
+      <p>來源 <code>@reui/c-stepper-2</code>（<code>https://reui.io/r/c-stepper-2.json</code> ＋ <code>@reui/stepper</code>）。
+      它跟現行 MUI Stepper 的差別是三件事：指示圈 <strong>24px 圓形、四個狀態都顯示數字</strong>（不換成打勾）、
+      連接線是 <strong>2px 圓角實心條</strong>而不是髮絲線、而且<strong>走過的那一段會變綠</strong>——
+      進度因此看得出來，不只是「現在在第幾步」。</p>
+
+      <p>兩處刻意沒照抄：</p>
+      <ul>
+        <li>原版 <code>active</code> 用 <code>bg-primary</code>（shadcn 預設近黑）、<code>completed</code> 用
+          <code>green-500</code>。這裡兩個都要是綠的，所以改用<strong>實心＋光環</strong>區分「正在這一步」。</li>
+        <li>原版只有數字、沒有標籤。<code>Content / Settings / Assign Practice</code> 是必要資訊，保留。</li>
+      </ul>
+
+      <p>還有一個換色：未走到那格原版是 <code>bg-accent</code>，那是預設「白底」才看得見；
+      這一頁底色是 <code>#f4f7fb</code>（<code>hasTintedBg</code>），淺灰會整個糊掉，所以加深一階到
+      <code>grey.300</code>。</p>
+
+      <div class="callout callout-warn">
+        <strong>只改了提案頁。</strong> <code>create-mirroring.html</code> 是現行產品的複刻，
+        它的 Stepper 維持 MUI 原樣——基準檔一旦跟著提案走，就沒有對照組了。
+      </div>
+
+      <h3>6.3 樣本句 <span class="closed">已被 §6.9 取代</span></h3>
+
+      <p>照學生端實際的排版畫，不是照設定畫面的句子清單畫。對照 <code>content-window.js</code>：</p>
+      <ul>
+        <li><strong>拼音在字的上面</strong>（灰色斜體 <code>0.85rem</code>）——現行設定畫面的預覽把它放在下面。</li>
+        <li>句子 <code>1.1rem</code>；翻譯在下面 <code>caption</code>。</li>
+        <li>Translation 選 <em>Their choice</em> 時<strong>預設是收起來的</strong>——<code>translationVisibility</code>
+          初始是 <code>[]</code>，學生要點眼睛才看得到。樣本句照這樣顯示，不會讓老師以為學生一開始就看得到翻譯。</li>
+        <li>Pinyin 選 <em>Their choice</em> 時學生螢幕右上角會多一個 Pinyin 開關，而且<strong>開場是開的</strong>
+          （<code>setStudentPinyinOn(!audioMode)</code>）。樣本句把那個開關也畫出來。</li>
+        <li>正在唸的那一句：左邊 <code>4px #22C55E</code> ＋ 底色 <code>#E8FFF0</code>。</li>
+      </ul>
+
+      <div class="preview"><iframe src="proposal.html?step=3" title="提案 · Settings" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · Settings（Text on screen）</span>
+        <span><a href="proposal.html?step=3" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-mirroring.html?step=1" target="_blank" rel="noopener">對照現行 ↗</a></span>
+      </div>
+
+      <h3>6.4 純聽力：不是變灰，是交出去</h3>
+
+      <p>切到 <code>Audio only</code>，樣本句<strong>變成學生真正看到的那張卡</strong>——耳機、
+      <code>Audio Mode is ON</code>、<em>Please pay attention and repeat the sentences.</em>，
+      底下 <code>#F0FAF4</code> 的 <em>Need help? Check the settings for text options.</em>
+      （照 <code>renderAudioModePanel</code>）。</p>
+
+      <p>而兩個顯示設定不是安靜地變灰，是換成一句說明：<strong>「Pinyin and translation are up to the student
+      ／There is no text on screen to pre-set.」</strong> 老師看得到原因，不用猜為什麼下拉點不動。</p>
+
+      <div class="preview"><iframe src="proposal.html?step=3&amp;audio=1" title="提案 · 純聽力" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · Audio only</span>
+        <span><a href="proposal.html?step=3&amp;audio=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-mirroring.html?step=1&amp;audio=1" target="_blank" rel="noopener">對照現行 ↗</a></span>
+      </div>
+
+      <h3>6.5 第四步 Assign Practice</h3>
+
+      <p>現行是<strong>一個只放按鈕的頁面 ＋ 一個 1728 行的對話框</strong>
+      （<code>src/sections/assignments/view/assign-practice.js</code>）。頁面本身只有
+      「Assigned students」標題、一顆 <em>Assign Practice</em>、和已指派的班級卡；
+      真正的工作全在對話框裡。</p>
+
+      <table>
+        <thead><tr><th style="width:210px">現行</th><th>問題</th></tr></thead>
+        <tbody>
+          <tr><td>工作在 modal 裡</td>
+            <td>這已經是全頁精靈的<strong>最後一步</strong>，本來就有整頁可用。用對話框等於把一個步驟
+              變成「按這裡打開真正的 UI」。</td></tr>
+          <tr><td>對話框裡有自己的 1 / 2 / 3</td>
+            <td>頁面上方已經有四步的 Stepper，這是 <strong>stepper 裡面又一個 stepper</strong>。</td></tr>
+          <tr><td>每選一個班，整組重複一次</td>
+            <td>Schedule ＋ Optional ＋ Students 是 <strong>per class</strong> 渲染的。選四個班就四份
+              在同一個捲動的對話框裡，而且<strong>沒有「全部同一個時間」</strong>。</td></tr>
+          <tr><td><code>Optional — no emails</code></td>
+            <td>標籤在講<strong>副作用</strong>。<code>AssignmentTypeChip</code> 的註解說它其實是
+              <em>“required work or optional, self-paced practice”</em>——是一種模式，不只是不寄信。
+              而且那顆 chip 印的是 <strong>Mandatory</strong>，跟開關的用字對不起來。</td></tr>
+          <tr><td>卡片上的 <code>Cancel</code></td>
+            <td>它旁邊就是 <code>Edit</code>，讀起來像「取消編輯」；但按下去的確認寫的是
+              <em>Student records will be permanently deleted.</em> <strong>按鈕的字跟它做的事不同一件</strong>。</td></tr>
+        </tbody>
+      </table>
+
+      <h4>提案：搬回頁面，三段各回答一個問題</h4>
+
+      <p>沿用第三步已經在用的分段方式——<strong>Who does it ／ When ／ How it counts</strong>。</p>
+
+      <ul>
+        <li><strong>一份時間套用到所有選到的班。</strong> 選兩個班以上，日期正上方一行
+          <em>These dates apply to all N classes.</em> ＋ <em>Set dates per class</em>；
+          切過去變成 <em>Each class has its own dates.</em> ＋ <em>Use one schedule for all</em>，
+          底下展開成逐班的 Start / Due。<strong>用「現況陳述＋切換動作」而不是一個 checkbox</strong>——
+          它切的是兩種模式，不是加一個選項，而且兩半要放在一起才讀得懂
+          （第一版用 checkbox、把「現在是全部同一份」寫在右上角的 hint，使用者直接問「這是什麼意思」）。
+          後端本來就是逐班 <code>upsertAssignment({classSk, startDate, expiredDate, isOptional})</code>，
+          前端送同一組值 N 次即可，<strong>不需要後端配合</strong>。</li>
+        <li><strong>名冊預設收起來。</strong> 現行每個班的學生清單都是攤開的；
+          預設是「整班」，要挑人才按 <em>Choose students</em>。</li>
+        <li><strong>Due 的快捷從五顆減成三顆</strong>（<code>+1 day / +3 days / +7 days</code>）。
+          現行是 <code>+1day +2days +3days +5days +7days</code> 擠成一排，
+          三顆就涵蓋「明天／這禮拜／下禮拜」。</li>
+        <li><strong>用字跟 chip 對齊：Mandatory / Optional</strong>，而且兩個都寫清楚是什麼——
+          <em>Counts as homework. Students get reminder emails until they finish it.</em> 對
+          <em>Self-paced practice. Students are not reminded and it is not chased as homework.</em></li>
+          <li><strong><code>Cancel</code> 改成 <code>Remove</code></strong>，跟它的確認文案講同一件事。</li>
+      </ul>
+
+      <div class="preview" style="height:620px"><iframe src="proposal.html?step=4&amp;pick=3b,4a&amp;roster=3b" title="提案 · Assign" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第四步（已選兩班、展開一個名冊）</span>
+        <span><a href="proposal.html?step=4" target="_blank" rel="noopener">空白狀態 ↗</a> ·
+        <a href="proposal.html?step=4&amp;pick=3b,4a&amp;roster=3b" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="proposal.html?step=4&amp;assigned=1" target="_blank" rel="noopener">已指派過 ↗</a> ·
+        <a href="create-mirroring.html?step=2&amp;assigned=1" target="_blank" rel="noopener">對照現行 ↗</a></span>
+      </div>
+
+      <h4>關鍵前提：一份作業可以重複指派</h4>
+
+      <div class="callout callout-tip">
+        <strong>這一點決定了整步的形狀。</strong> 指派不是流程的終點、也不是一次性的動作——
+        同一份練習可以先派給一個班，之後再派給別班、或用不同的日期再派一次。
+        （這裡原本被我當成「兩顆按鈕」的問題，是我把它讀成一次性動作了。）
+      </div>
+
+      <p>版面因此是<strong>「已指派的清單」在上、「再派一次」的表單在下</strong>——
+      清單是結果，會隨著操作長大；表單是動作。第一次進來清單是空的，就只有表單。</p>
+
+      <h4>頁腳一顆按鈕，依狀態換標籤</h4>
+
+      <table>
+        <thead><tr><th style="width:190px">狀態</th><th style="width:170px">按鈕</th><th>做什麼</th></tr></thead>
+        <tbody>
+          <tr><td>有勾班</td><td><code>Assign to N classes</code></td>
+            <td>開預覽框。確認後送出，<strong>留在原地</strong>，表單清空可以再派一次。</td></tr>
+          <tr><td>沒勾、已指派過</td><td><code>Done</code></td><td>結束流程。</td></tr>
+          <tr><td>沒勾、完全沒指派</td><td><code>Skip for now</code></td>
+            <td>結束流程。用字照現行空狀態的說法——產品自己就說
+              <em>You can assign classes later from the practice list</em>；
+              寫 <code>Done</code> 反而像做完了，但其實什麼都沒派。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>合併成一顆是使用者要求試的，代價還在。</strong>
+        ①<strong>勾了班就沒有離開的出口</strong>——想反悔直接走人，得先把班取消勾選；
+        ②<strong>按鈕會換意思</strong>——送出成功後同一個位置變成「離開流程」。
+        第②點用兩道緩衝壓下來：中間隔一個預覽框（要按兩次不同位置的鈕），
+        送出後再停在 <code>Assigned ✓</code>（灰、不可按）1.6 秒才變回 <code>Done</code>。
+        <strong>第①點沒有解。</strong> 上一版是兩顆鈕、但任何時候只有一顆是綠的
+        （有待送出→Assign 綠、Done 退成文字鈕），那個版本沒有這兩個代價，退回去是幾行的事。
+      </div>
+
+      <h4>送出前先預覽</h4>
+
+      <p>這一步產品本來就有——它的送出鍵寫的是 <code>Review · …</code>，按下去是
+      <code>ConfirmDialog</code>，文案 <em>Confirm the classes, schedule, assignment type,
+      and students before assigning this practice.</em></p>
+
+      <p>提案的預覽框守一條規則：<strong>只講例外，不覆述常規。</strong></p>
+      <ul>
+        <li>標題用<strong>跟觸發鈕一模一樣的字</strong>（<code>Assign to 2 classes</code>）——
+          同一個動作從頭到尾同一個說法；底下就是 Back / Assign 兩顆鈕，
+          本來就看得出是確認關卡，不必再寫一句「Review before assigning」。</li>
+        <li>副標只留兩個要確認的數：<code>Mandatory · 10 students</code>。
+          Mandatory 的定義寫在後面那一頁的 <em>How it counts</em> 裡，老師三秒前才選過。</li>
+        <li>整班 → 一句 <em>all 5 students</em>，<strong>不列名字</strong>；
+          有人拿不到 → <em>5 of 6 students</em> ＋ 只把那個人與原因寫出來
+          （<em>郑雅文 is already in Chinese 3B</em>）。第一版把八個人全列成藥丸，
+          而那八個就是整班——名字沒有帶來新資訊，老師上一畫面才剛勾過。</li>
+        <li>Mandatory / Optional 是整批共用的設定，寫在最上面<strong>一次</strong>，
+          不用每個班掛一顆一樣的 pill。</li>
+        <li>班名用 <code>CONTENT.label</code>（<code>#00754A</code>）——那一組色票裡唯一為文字準備的綠；
+          primary <code>#00CB61</code> 當 14px 內文對比只有 2.3:1。</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>比產品多一段：被跳過的人。</strong>
+        產品的建立模式確認框不會講衝突（只有編輯模式列 added / removed）。
+        但衝突是真的會發生——老師該在按下去<strong>之前</strong>就知道有人沒拿到、以及為什麼。
+        <strong>取捨：不列全部名字。</strong> 想在送出前逐一核對名單就得按 Back 回去看名冊；
+        判斷是這個框的工作是「確認形狀」不是「逐一核對」。
+      </div>
+
+      <div class="preview" style="height:560px"><iframe src="proposal.html?step=4&amp;assigned=1&amp;pick=4a,5c&amp;review=1" title="提案 · 送出前預覽" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 送出前的預覽框</span>
+        <span><a href="proposal.html?step=4&amp;assigned=1&amp;pick=4a,5c&amp;review=1" target="_blank" rel="noopener">另開 ↗</a></span>
+      </div>
+
+      <h4>可重複帶出來的三個狀態</h4>
+
+      <p>這些狀態現行的對話框都有，只是藏在 modal 裡的 per-class 區塊中
+      （<code>assign-practice.js</code> 的 <code>Assigned</code> / <code>Partial</code> 班級 chip，
+      與 <code>Assigned</code> / <code>New</code> / <code>Will remove</code> / <code>In &lt;class&gt;</code>
+      學生 chip）。提案把同一套狀態搬到頁面上：</p>
+
+      <table>
+        <thead><tr><th style="width:150px">狀態</th><th>畫面上怎麼表現</th></tr></thead>
+        <tbody>
+          <tr><td><b>整班已派</b></td><td>不再出現在可選清單裡（掛 <em>Assigned</em>、變灰）——
+            要改就從上面的清單按 Edit。</td></tr>
+          <tr><td><b>部分已派</b></td><td><strong>仍然可選</strong>，副標寫
+            <em>6 of 8 assigned · 2 left</em>。這是「先派一部分、之後再補」那條路，
+            我第一版把已指派的班整個灰掉，等於把它切斷了。</td></tr>
+          <tr><td><b>學生層級的 diff</b></td><td>名冊是一份差異表：本班已派的維持勾選標
+            <em>Assigned</em>、新勾的標 <em>New</em>、取消勾的標 <em>Will remove</em>；
+            <strong>已被別班派走的不能選</strong>，標 <em>In ⟨班級⟩</em>
+            （示範資料裡郑雅文 同時在 3B 與 4A）。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.6 冒的險，以及它為什麼站得住</h3>
+
+      <p><strong>險：把預覽跟設定合成同一張卡。</strong> 代價是那張卡的視覺重量遠大於其他區塊；
+      好處是這一頁唯一用「內容尺寸」排版的字就是學生會看到的那句話，其餘全是 14px 的介面字——
+      層級不靠顏色也不靠框線，靠字級差。配色完全不動，沿用 <code>theme/palette.js</code>。</p>
+
+      <p><strong>站得住的地方：試聽的素材本來就是「聲音 × 速度」的組合。</strong></p>
+      <div class="formula">// use-audio-preview.js · handlePreviewSpeed
+const currentVoice = voiceList.find((v) =&gt; v.id === selectedVoice);
+const url = currentVoice?.exampleAudio?.[SPEED_KEY_MAP[speed]];</div>
+      <p>所以<strong>點一個速度 chip 就能播「當下這個聲音＋那個速度」</strong>，用現有素材就做得到，
+      不需要後端——這也是 Speed 能跟 Voice 用同一個元件的前提。
+      <strong>但播的是範例音檔，不是這一句</strong>：這一句的音檔要 SQS 重跑完才有。
+      所以說明文字寫的是 <em>Tap one to hear it</em>，沒有承諾是這一句。</p>
+
+      <h3>6.7 這一版會動到共用元件</h3>
+
+      <p><code>audio-mode-toggle-card.js</code>、<code>audio-settings-panel.js</code>、<code>max-attempts-field.js</code>
+      是 Mirroring / QA / Vocabulary / Sentence Scramble / Follow Pattern 五種練習共用的。這個提案三個都動。
+      <strong>已確認可以動，條件是「改好之後五種一起改」</strong>（2026-09-09）——所以這一版定稿時，
+      交接文件要列出另外四種練習跟著變的樣子。</p>
+
+      <h3>6.8 還沒解的</h3>
+
+      <table>
+        <thead><tr><th style="width:52px">#</th><th style="width:230px">項目</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">P1</span></td><td>改設定仍會觸發全螢幕遮罩</td>
+            <td>§4 問題 8 這個提案沒有解——它是後端行為（E3）。如果拼音／翻譯真的不必重產音檔，
+            「改一下就看到樣本句跟著變」才會順；否則每動一次就卡幾十秒，樣本句的即時性會被抵銷掉。<b>這題最影響提案成不成立。</b></td></tr>
+          <tr><td><span class="stat st-open">P2</span></td><td>Step 2 的按鈕還是叫 Save</td>
+            <td>§4 問題 9。提案沒動它——三顆按鈕的用字要連著 Step 3 一起看，單獨改中間那顆沒有意義。</td></tr>
+          <tr><td><span class="stat st-done">P3</span></td><td>句子表出現的時機 <span class="decided">已解</span></td>
+            <td>§4 問題 7。審句獨立成第二步（<code>Edit Sentences</code>），Stepper 從一開始就宣告它，
+            不再需要「按 Next 再 Back 才看得到」。連帶解掉「文章突然消失」與「Project 突然點不動」。
+            沿用 Sentence Scramble 既有的步驟形狀，不是新設計。</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="plan-v4">6.9 Settings 第四版：工具列 ＋ 畫布，同一張卡（2026-09-14）</h3>
+
+      <div class="callout callout-tip">
+        <strong>已定案為設計判準 R11，之後每一種 practice 的 Settings 都用這個面板。</strong>
+        完整規則見 <a class="inline" href="../practice-design-rules.html">Practice 設計判準</a> §2 R11；這裡記它在 Content Mirroring 上長什麼樣、為什麼。
+      </div>
+
+      <p>使用者的原話是「工作列」：上面是控制項、下面是學生的畫布，那它就該長得像貼在畫布頂上的工具列，不是一張表單卡。
+      「編輯欄位在上、學生預覽在下」，改上面哪一格，下面的卡跟著變——這是 §6 開頭那句「預覽跟設定同一張卡」的另一種寫法，
+      只是主角從一句樣本句換成學生真正的主欄。</p>
+
+      <div class="formula">┌ How students practise   Text on screen ／ Audio only（模式，會整個換掉畫布）
+├ 工具列（兩行，明說的）
+│   第一行 ＝ 畫面上看得到的     PINYIN ｜ TRANSLATION                                      ┆ chevron 收合畫布
+│   第二行 ＝ 喇叭播什麼          TRANSLATION FIRST ｜ SPEED ｜ VOICE ▾   ‖  AUTO PASS ⓘ
+└ 畫布 ＝ 學生的主欄（practice-content-list.js → message-list.js）
+      標題列 ＋ 齒輪（Their choice 幾個就幾顆 toggle）
+      PRACTICE SENTENCE 卡：拼音斜體在上、句子 40px、翻譯在下
+      Play · English first · Normal · Xiaorou (Female)  → 按下去走產品的兩段：藍卡 Meaning → 綠卡 Listen &amp; Repeat
+      Sentence 1 of 6 ▾  → 在容器裡原地展開全部句子，點一句換預覽
+      What a student sees · 5 sentences · 1 hidden</div>
+
+      <table>
+        <thead><tr><th style="width:190px">決定</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td>六個控制項全部上去</td><td>使用者定的。上面是「改什麼」，下面是「改了會怎樣」，不再把 Pinyin／Translation 留在樣本底下當例外。</td></tr>
+          <tr><td>兩行，不是一行也不是六列</td><td>六個控制項總寬約 1390px，這個欄寬放不進一行；讓它自己換行會在奇怪的地方斷。照它們影響的東西分兩行：看得到的、聽得到的。</td></tr>
+          <tr><td>沒有眉標、沒有副標</td><td>使用者逐一拿掉的：<em>Sits above the characters</em>、<em>Tap one to hear it</em>……全部。樣本卡本身在講「它改的是什麼」，chip 上的 ▶ 在講「可以試聽」。結構靠分組線講。</td></tr>
+          <tr><td>Voice 是唯一的下拉</td><td>它是面板裡唯一長的清單（zh-TW 專案七個）。R3：長的才收起來；打開每列一顆 ▶，點一列＝選它＋聽它沒變。</td></tr>
+          <tr><td>Auto pass，不是 Move on after N tries</td><td>使用者要求照產品原字：標籤 <code>AUTO PASS</code>、數字、ⓘ 用 <code>MaxAttemptsField</code> 的 tooltip 原文
+            <em>How many times a student may retry one item before it is let through (default 3).</em>。§6.2 那一列與 R7 那個例子作廢。</td></tr>
+          <tr><td>畫布是主欄，不是左欄清單</td><td>第一版把 <code>content-window.js</code> 的清單當學生畫面畫，使用者拿實機截圖指正。主欄才是學生在唸的那張卡，Their choice 的四個 toggle 也在主欄的齒輪裡。</td></tr>
+          <tr><td>翻頁在容器裡展開</td><td>使用者兩次修正：不要左右切、不要浮出來的選單。清單原地展開、點一句換預覽、清單留著。</td></tr>
+          <tr><td>不 sticky</td><td>工具列只有 120px 高，貼著頂欄沒有必要。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="preview" style="height:720px"><iframe src="proposal.html?step=3&amp;hide=1&amp;settings=1" title="提案 · Settings 第四版" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>Settings 第四版（學生的 Settings 面板打開）</span>
+        <span><a href="proposal.html?step=3&amp;hide=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="proposal.html?step=3&amp;phase=meaning" target="_blank" rel="noopener">播放中（先英）↗</a> ·
+        <a href="proposal.html?step=3&amp;audio=1" target="_blank" rel="noopener">純聽力 ↗</a> ·
+        <a href="proposal.html?step=3&amp;list=1" target="_blank" rel="noopener">句子清單展開 ↗</a></span>
+      </div>
+
+      <p class="cap">走過的岔路：三段眉標的 rows 卡（第一版）→ 六列一張卡 → 兩欄三列 → 工具列。前三種都是「表單」，只有最後一種是「工具」。
+      每一步都在 <a class="inline" href="ITERATION.md">ITERATION.md</a>。</p>
+
+      <!-- ===================== 7 ===================== -->
+      <h2 id="base"><span class="num">7</span> 基準檔</h2>
+
+      <p><strong>外殼也是複刻的</strong>：左邊 240px 的側邊欄照 <code>menu-by-role.js</code> 的
+      <code>MENU_BY_ROLE[CLASS_TEACHER]</code> 排（非 ESL、非 annotator），連第一組那個
+      <em>空白字元 subheader</em> 都照著渲染；<code>Practice List</code> 是 <code>deep:true</code>，
+      所以在建立頁它就是 active 的那一項。頂欄高 80、只有右邊一顆頭像——因為
+      <code>/dashboard/practice</code> 吃 <code>hasTintedBg</code>，它沒有陰影也沒有底線，
+      而且<strong>整頁底色是 <code>#f4f7fb</code>，不是白的</strong>。</p>
+
+      <p><code>create-mirroring.html</code> 是 <strong>現行建立流程的複刻</strong>——顏色取自
+      <code>theme/palette.js</code>（primary <code>#00CB61</code>、divider <code>rgba(145,158,171,.2)</code>）、
+      字級取自 <code>theme/typography.js</code>、圓角與間距照抄各元件的 <code>sx</code>。行為也照著實作：
+      Audio Mode 打開會把兩個下拉鎖成 <code>STUDENT_CHOICE</code> 並變灰、Speed 選 Student choice 會冒出那行說明、
+      主要按鈕依步驟換成 Next / Save / Done。<strong>沒有加任何改良</strong>——之後的提案就是長在這之上，兩頁並排看就是這一版改了什麼。</p>
+
+      <table>
+        <thead><tr><th style="width:280px">網址</th><th>看到什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>?step=0</code></td><td>第一步 Content —— 只有 Project 下拉 + Content Preview</td></tr>
+          <tr><td><code>?step=0&amp;sent=1</code></td><td>第一步，但從第二步 Back 回來（句子編輯器這時才存在）</td></tr>
+          <tr><td><code>?step=1</code></td><td>第二步 Settings &amp; Preview</td></tr>
+          <tr><td><code>?step=1&amp;audio=1</code></td><td>第二步，Audio Mode 打開</td></tr>
+          <tr><td><code>?step=2</code> / <code>?step=2&amp;assigned=1</code></td><td>第三步 Assign Practice，未指派 / 已指派</td></tr>
+          <tr><td><code>?step=1&amp;dlg=1</code></td><td>Generating audio… 全螢幕遮罩</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>下一步。</strong> 現況在 §2–§3，問題在 §4，要決定的在 §5。基準檔保留不動，方便並排比對。
+        改動逐項記在 <a class="inline" href="ITERATION.md">ITERATION.md</a>，流程見
+        <a class="inline" href="../../VERSIONING-WORKFLOW.md">VERSIONING-WORKFLOW.md</a>。
+      </div>
+
+      <footer>v3 · 優化 Practice-Content Mirroring — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = document.querySelectorAll('.sidebar a');
+    const sections = [...links].map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let i = 0;
+      sections.forEach((s, n) => { if (s && s.getBoundingClientRect().top <= 80) i = n; });
+      links.forEach((a, n) => a.classList.toggle('active', n === i));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>

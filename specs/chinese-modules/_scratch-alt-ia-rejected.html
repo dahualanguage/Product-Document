@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ==========================================================================
+   Redesign v9 — teacher app
+   Palette   paper / ink / indigo (structure) / cinnabar (about to be created)
+   Type      Newsreader = titles · Plex Sans = interface · Plex Mono = measures
+             Noto Serif SC = Chinese teaching content (it should look printed)
+   ========================================================================== */
+:root{
+  --paper:#FBFBF9; --surface:#FFFFFF; --sunk:#F5F5F2;
+  --ink:#161B22; --ink-2:#39424E; --muted:#6B7684; --faint:#9AA3AE;
+  --rule:#E3E5E0; --rule-2:#EFF0EC;
+  --indigo:#2B4066; --indigo-mid:#3D588C; --indigo-l:#ECF0F7; --indigo-ring:#B9C6DE;
+  --seal:#B93B2C; --seal-d:#95301F; --seal-l:#FBEDEA; --seal-ring:#E6B3A9;
+  --ppm:10px;                       /* pixels per lesson minute */
+  --rail:210px;
+  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --serif:'Newsreader',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --han:'Noto Serif SC','Songti SC',serif;
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  font-family:var(--sans); font-size:14px; line-height:1.55;
+  color:var(--ink-2); background:var(--paper);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+button,input,select{ font:inherit; color:inherit; }
+button{ background:none; border:0; cursor:pointer; }
+a{ color:inherit; text-decoration:none; }
+::selection{ background:var(--indigo-l); }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-thumb{ background:#D8DAD4; border-radius:20px; border:3px solid var(--paper); background-clip:content-box; }
+:focus-visible{ outline:2px solid var(--indigo-mid); outline-offset:2px; border-radius:4px; }
+
+.han{ font-family:var(--han); }
+.tnum{ font-variant-numeric:tabular-nums; }
+
+/* ---------- eyebrow: the annotation layer, like pinyin over a glyph ------- */
+.eyebrow{
+  font-family:var(--mono); font-size:10px; font-weight:500;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--faint);
+}
+
+/* ---------- the seal: one Chinese character in a hairline square ---------- */
+.seal{
+  width:26px; height:26px; flex:none; display:grid; place-items:center;
+  font-family:var(--han); font-size:13px; font-weight:500; line-height:1;
+  color:var(--ink); border:1px solid var(--ink); border-radius:3px;
+  background:var(--surface);
+}
+.seal.sm{ width:21px; height:21px; font-size:11px; border-radius:2px; }
+.seal.lg{ width:32px; height:32px; font-size:16px; }
+/* not stamped yet — the thing this plan is about to create */
+.seal.pending{ color:var(--seal); border-color:var(--seal-ring); border-style:dashed; background:var(--seal-l); }
+
+/* ========================= shell ========================= */
+.app{ display:grid; grid-template-columns:var(--rail) minmax(0,1fr); min-height:100vh; }
+
+.rail{
+  position:sticky; top:0; height:100vh; padding:30px 0 22px;
+  border-right:1px solid var(--rule); display:flex; flex-direction:column;
+}
+.brand{ padding:0 26px 30px; }
+.brand b{ display:block; font-family:var(--serif); font-size:19px; font-weight:500; color:var(--ink); letter-spacing:-.01em; }
+.brand span{ display:block; margin-top:1px; font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); }
+
+.nav{ display:flex; flex-direction:column; }
+.nav-item{
+  position:relative; display:flex; align-items:baseline; gap:9px;
+  padding:8px 26px; font-size:14px; font-weight:400; color:var(--muted);
+  transition:color .15s;
+}
+.nav-item:hover{ color:var(--ink); }
+.nav-item .n{ font-family:var(--mono); font-size:10px; color:var(--faint); letter-spacing:.06em; }
+.nav-item .cnt{ margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--faint); }
+.nav-item.on{ color:var(--ink); font-weight:500; }
+.nav-item.on::before{
+  content:""; position:absolute; left:0; top:9px; bottom:9px; width:2px; background:var(--seal);
+}
+.nav-item.on .n{ color:var(--seal); }
+.nav-sep{ height:1px; margin:16px 26px; background:var(--rule-2); }
+.rail-grow{ flex:1; }
+.rail-foot{ padding:0 26px; }
+.rail-foot .who{ display:flex; align-items:center; gap:9px; }
+.rail-foot .av{
+  width:28px; height:28px; border-radius:50%; flex:none; display:grid; place-items:center;
+  background:var(--indigo); color:#fff; font-size:11px; font-weight:600; letter-spacing:.02em;
+}
+.rail-foot .wt b{ display:block; font-size:12.5px; font-weight:500; color:var(--ink); }
+.rail-foot .wt span{ font-size:11px; color:var(--faint); }
+.rail-foot .issue{ display:inline-block; margin-top:16px; font-size:11.5px; color:var(--faint); border-bottom:1px solid var(--rule); }
+.rail-foot .issue:hover{ color:var(--seal); border-color:var(--seal-ring); }
+
+.main{ min-width:0; display:flex; flex-direction:column; }
+
+/* ---------- top context bar: who and when this work is for ---------- */
+.top{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:10px;
+  padding:14px 46px; background:rgba(251,251,249,.9); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--rule-2);
+}
+.ctx{
+  position:relative; display:flex; align-items:center; gap:8px;
+  padding:5px 11px 5px 12px; border:1px solid var(--rule); border-radius:6px;
+  background:var(--surface); font-size:13px; color:var(--ink);
+}
+.ctx:hover{ border-color:var(--indigo-ring); }
+.ctx .lb{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); }
+.ctx .cv{ font-weight:500; }
+.ctx .car{ width:7px; height:7px; border-right:1.4px solid var(--faint); border-bottom:1.4px solid var(--faint); transform:rotate(45deg) translate(-2px,-2px); }
+.top .spacer{ flex:1; }
+.top .tip{ font-size:12px; color:var(--faint); }
+
+.menu{
+  position:absolute; top:calc(100% + 6px); left:0; z-index:40; min-width:190px;
+  background:var(--surface); border:1px solid var(--rule); border-radius:8px;
+  box-shadow:0 14px 34px -18px rgba(22,27,34,.35); padding:5px; display:none;
+}
+.menu.open{ display:block; }
+.menu button{
+  display:flex; width:100%; align-items:baseline; gap:8px; padding:7px 9px;
+  border-radius:5px; font-size:13px; color:var(--ink-2); text-align:left;
+}
+.menu button:hover{ background:var(--sunk); color:var(--ink); }
+.menu button .sub{ margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--faint); }
+.menu button.on{ color:var(--ink); font-weight:500; }
+
+/* ---------- page frame ---------- */
+.view{ display:none; padding:38px 46px 90px; max-width:1180px; }
+.view.on{ display:block; }
+.page-head{ display:flex; align-items:flex-end; gap:24px; margin-bottom:34px; }
+.page-head .ht{ min-width:0; }
+.page-title{ font-family:var(--serif); font-size:33px; font-weight:400; line-height:1.15; color:var(--ink); letter-spacing:-.015em; margin-top:5px; }
+.page-sub{ margin-top:7px; font-size:13.5px; color:var(--muted); max-width:62ch; }
+.page-head .ha{ margin-left:auto; flex:none; }
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 15px;
+  border:1px solid var(--rule); border-radius:6px; background:var(--surface);
+  font-size:13px; font-weight:500; color:var(--ink-2); transition:.14s;
+}
+.btn:hover{ border-color:var(--indigo-ring); color:var(--ink); }
+.btn.primary{ background:var(--indigo); border-color:var(--indigo); color:#fff; }
+.btn.primary:hover{ background:#233757; border-color:#233757; }
+.btn.primary:disabled{ background:#C3C8CE; border-color:#C3C8CE; cursor:not-allowed; }
+.btn.seal-btn{ background:var(--seal); border-color:var(--seal); color:#fff; }
+.btn.seal-btn:hover{ background:var(--seal-d); border-color:var(--seal-d); }
+.btn.quiet{ border-color:transparent; background:none; color:var(--muted); padding-left:9px; padding-right:9px; }
+.btn.quiet:hover{ background:var(--sunk); color:var(--ink); }
+.btn.sm{ padding:5px 11px; font-size:12.5px; }
+
+/* ---------- section rule ---------- */
+.sec{ margin-top:44px; }
+.sec-head{ display:flex; align-items:baseline; gap:12px; padding-bottom:11px; border-bottom:1px solid var(--rule); margin-bottom:22px; }
+.sec-head h2{ font-family:var(--serif); font-size:19px; font-weight:500; color:var(--ink); letter-spacing:-.01em; }
+.sec-head .note{ margin-left:auto; font-size:12.5px; color:var(--faint); }
+
+/* ========================= PLAN — the lesson templates ========================= */
+.tpl-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(196px,1fr)); gap:12px; }
+.tpl{
+  position:relative; text-align:left; padding:16px 16px 14px;
+  border:1px solid var(--rule); border-radius:9px; background:var(--surface);
+  transition:.15s;
+}
+.tpl:hover{ border-color:var(--indigo-ring); transform:translateY(-1px); }
+.tpl.on{ border-color:var(--indigo); box-shadow:inset 0 0 0 1px var(--indigo); }
+.tpl .len{ font-family:var(--mono); font-size:10px; letter-spacing:.13em; color:var(--faint); }
+.tpl.on .len{ color:var(--indigo-mid); }
+.tpl h3{ font-family:var(--serif); font-size:17px; font-weight:500; color:var(--ink); margin:6px 0 5px; line-height:1.25; }
+.tpl p{ font-size:12.5px; color:var(--muted); line-height:1.45; min-height:36px; }
+.tpl .made-of{ display:flex; align-items:center; gap:4px; margin-top:12px; padding-top:11px; border-top:1px solid var(--rule-2); }
+.tpl .made-of .lbl{ margin-left:auto; font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; color:var(--faint); }
+.tpl.blank{ background:none; border-style:dashed; }
+.tpl.blank h3{ color:var(--muted); }
+
+/* ---------- the clock: ruler · in class · will be created ---------- */
+.lesson{ display:grid; grid-template-columns:46px minmax(0,1fr) 46px 268px; margin-top:6px; }
+.lcol-head{ padding-bottom:10px; border-bottom:1px solid var(--rule); margin-bottom:16px; }
+.lcol-head.r2{ grid-column:2; }
+.lcol-head.r4{ grid-column:4; }
+.lcol-head .eyebrow{ display:block; }
+
+.track{ position:relative; }
+.track.ruler{ grid-column:1; }
+.track.blocks{ grid-column:2; }
+.track.made{ grid-column:4; }
+
+.tick{ position:absolute; left:0; right:12px; top:calc(var(--t) * var(--ppm)); text-align:right; }
+.tick .m{ font-family:var(--mono); font-size:10.5px; color:var(--faint); line-height:1; }
+.tick.major .m{ color:var(--muted); }
+
+.block{
+  position:absolute; left:0; right:0; top:calc(var(--t) * var(--ppm));
+  height:calc(var(--h) * var(--ppm) - 7px);
+  border:1px solid var(--rule); border-left:2px solid var(--indigo-ring);
+  border-radius:7px; background:var(--surface);
+  padding:9px 13px; overflow:hidden; text-align:left; width:100%;
+  transition:border-color .15s, background .15s;
+}
+.block:hover{ border-color:var(--indigo-ring); border-left-color:var(--indigo); background:#FDFDFC; }
+.block.lit{ border-color:var(--seal-ring); border-left-color:var(--seal); }
+.block .bh{ display:flex; align-items:baseline; gap:9px; }
+.block .bn{ font-size:13.5px; font-weight:500; color:var(--ink); }
+.block .bl{ margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--faint); }
+.block .bd{ margin-top:3px; font-size:12.5px; color:var(--muted); line-height:1.4; }
+.block.tiny .bd{ display:none; }
+.block .bmark{ position:absolute; right:11px; bottom:9px; }
+
+.made-item{
+  position:absolute; left:0; right:0; top:calc(var(--t) * var(--ppm));
+  display:flex; gap:10px; padding:10px 12px;
+  border:1px solid var(--rule); border-radius:7px; background:var(--surface);
+  text-align:left; width:100%; transition:.15s;
+}
+.made-item::before{
+  content:""; position:absolute; left:-46px; top:21px; width:46px; height:1px; background:var(--rule);
+}
+.made-item:hover, .made-item.lit{ border-color:var(--seal-ring); background:var(--seal-l); }
+.made-item.lit::before{ background:var(--seal-ring); }
+.made-item .mi{ min-width:0; }
+.made-item .mi b{ display:block; font-size:13px; font-weight:500; color:var(--ink); }
+.made-item .mi span{ display:block; margin-top:1px; font-size:12px; color:var(--muted); }
+.made-item .off{ margin-left:auto; font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; color:var(--faint); align-self:center; }
+.made-item .from{ display:none; margin-top:3px; font-size:11.5px; color:var(--faint); }
+.made-item.skip{ opacity:.42; }
+.made-item.skip .seal{ border-style:dotted; }
+
+.lesson-empty{
+  grid-column:1 / -1; padding:56px 30px; text-align:center;
+  border:1px dashed var(--rule); border-radius:10px; background:var(--surface);
+}
+.lesson-empty p{ font-family:var(--serif); font-style:italic; font-size:16px; color:var(--muted); }
+
+/* homework + commit bar */
+.hw{ margin-top:26px; padding-top:20px; border-top:1px solid var(--rule); }
+.hw-list{ display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
+.hw-chip{ display:flex; align-items:center; gap:8px; padding:7px 12px 7px 9px; border:1px solid var(--rule); border-radius:999px; background:var(--surface); font-size:12.5px; }
+.hw-chip .due{ font-family:var(--mono); font-size:10.5px; color:var(--muted); }
+
+.commit{
+  position:sticky; bottom:0; margin-top:30px; padding:16px 0 20px;
+  background:linear-gradient(to top,var(--paper) 62%,rgba(251,251,249,0));
+  display:flex; align-items:center; gap:16px;
+}
+.commit .summary{ font-size:13px; color:var(--muted); }
+.commit .summary b{ color:var(--ink); font-weight:500; }
+.commit .over{ color:var(--seal); }
+.commit .acts{ margin-left:auto; display:flex; gap:9px; }
+
+/* ---------- block editor popover ---------- */
+.pop{
+  position:absolute; z-index:50; width:280px; padding:14px;
+  background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+  box-shadow:0 18px 44px -20px rgba(22,27,34,.45); display:none;
+}
+.pop.open{ display:block; }
+.pop h4{ font-family:var(--serif); font-size:16px; font-weight:500; color:var(--ink); }
+.pop .row{ display:flex; align-items:center; gap:10px; margin-top:13px; }
+.pop .row .k{ font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); width:64px; flex:none; }
+.stepper{ display:flex; align-items:center; border:1px solid var(--rule); border-radius:6px; overflow:hidden; }
+.stepper button{ width:26px; height:26px; color:var(--muted); font-size:15px; line-height:1; }
+.stepper button:hover{ background:var(--sunk); color:var(--ink); }
+.stepper .val{ font-family:var(--mono); font-size:12.5px; min-width:44px; text-align:center; color:var(--ink); }
+.toggle{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-2); cursor:pointer; }
+.toggle input{ appearance:none; width:32px; height:18px; border-radius:999px; background:#D6D9D3; position:relative; transition:.15s; flex:none; cursor:pointer; }
+.toggle input::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:.15s; }
+.toggle input:checked{ background:var(--seal); }
+.toggle input:checked::after{ transform:translateX(14px); }
+.pop .foot{ margin-top:15px; padding-top:12px; border-top:1px solid var(--rule-2); display:flex; gap:8px; }
+
+/* ========================= generic lists ========================= */
+.filters{ display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.chip{ padding:5px 12px; border:1px solid var(--rule); border-radius:999px; background:var(--surface); font-size:12.5px; color:var(--muted); transition:.14s; }
+.chip:hover{ border-color:var(--indigo-ring); color:var(--ink); }
+.chip.on{ border-color:var(--ink); color:var(--ink); font-weight:500; }
+.chip .c{ font-family:var(--mono); font-size:10.5px; color:var(--faint); margin-left:5px; }
+.chip.on .c{ color:var(--muted); }
+.search{ margin-left:auto; position:relative; }
+.search input{
+  width:200px; padding:6px 11px; border:1px solid var(--rule); border-radius:6px;
+  background:var(--surface); font-size:13px;
+}
+.search input::placeholder{ color:var(--faint); }
+.search input:focus{ outline:none; border-color:var(--indigo-ring); }
+
+.list{ border-top:1px solid var(--rule); }
+.row{
+  display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+  padding:14px 10px 14px 2px; border-bottom:1px solid var(--rule-2); transition:background .13s;
+}
+.row:hover{ background:var(--surface); }
+.row .rt{ min-width:0; flex:1; }
+.row .rt b{ display:block; font-size:14px; font-weight:500; color:var(--ink); }
+.row .rt .meta{ margin-top:2px; font-size:12.5px; color:var(--muted); }
+.row .rt .meta .sep{ color:var(--rule); margin:0 6px; }
+.row .num{ font-family:var(--mono); font-size:12px; color:var(--muted); flex:none; }
+.row .acts{ display:flex; gap:7px; flex:none; opacity:0; transition:opacity .13s; }
+.row:hover .acts{ opacity:1; }
+.tag{ font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; padding:3px 7px; border-radius:3px; background:var(--sunk); color:var(--muted); flex:none; }
+.tag.late{ background:var(--seal-l); color:var(--seal-d); }
+.tag.soon{ background:var(--indigo-l); color:var(--indigo); }
+.group-label{ display:flex; align-items:baseline; gap:10px; margin:30px 0 6px; }
+.group-label .n{ font-family:var(--mono); font-size:10.5px; color:var(--faint); }
+.group-label:first-child{ margin-top:0; }
+
+/* ---------- master / detail ---------- */
+.md{ display:grid; grid-template-columns:246px minmax(0,1fr); gap:0; border-top:1px solid var(--rule); }
+.md-list{ border-right:1px solid var(--rule); padding-right:0; }
+.md-item{ display:block; width:100%; text-align:left; padding:13px 16px 13px 2px; border-bottom:1px solid var(--rule-2); transition:.13s; position:relative; }
+.md-item:hover{ background:var(--surface); }
+.md-item.on::before{ content:""; position:absolute; left:-2px; top:12px; bottom:12px; width:2px; background:var(--seal); }
+.md-item b{ display:block; font-size:14px; font-weight:500; color:var(--ink); }
+.md-item span{ font-size:12px; color:var(--muted); }
+.md-body{ padding:22px 0 22px 30px; min-width:0; }
+.tabs{ display:flex; gap:20px; border-bottom:1px solid var(--rule); margin-bottom:20px; }
+.tab{ padding:0 0 10px; font-size:13.5px; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab:hover{ color:var(--ink); }
+.tab.on{ color:var(--ink); font-weight:500; border-bottom-color:var(--seal); }
+
+.facts{ display:flex; gap:34px; margin-bottom:24px; }
+.fact .eyebrow{ display:block; margin-bottom:3px; }
+.fact .v{ font-family:var(--serif); font-size:25px; font-weight:400; color:var(--ink); line-height:1.1; }
+.fact .v small{ font-family:var(--mono); font-size:11px; color:var(--faint); font-weight:400; margin-left:3px; }
+
+/* bar used for progress — hairline, no colour fills beyond the two hues */
+.bar{ height:3px; border-radius:2px; background:var(--rule-2); overflow:hidden; min-width:80px; }
+.bar i{ display:block; height:100%; background:var(--indigo-mid); }
+.bar.warn i{ background:var(--seal); }
+
+/* word game worlds */
+.worlds{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.world{ padding:13px 14px; border:1px solid var(--rule); border-radius:8px; background:var(--surface); text-align:left; }
+.world .wn{ font-family:var(--han); font-size:16px; font-weight:500; color:var(--ink); }
+.world .we{ font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--faint); }
+.world .ws{ margin-top:9px; font-size:12px; color:var(--muted); }
+.world.locked{ background:none; border-style:dashed; }
+.world.locked .wn,.world.locked .ws{ color:var(--faint); }
+
+/* ---------- sheet (confirm what will be created) ---------- */
+.scrim{ position:fixed; inset:0; z-index:60; background:rgba(22,27,34,.34); display:none; }
+.scrim.open{ display:block; }
+.sheet{
+  position:fixed; z-index:61; top:0; right:0; bottom:0; width:min(468px,100%);
+  background:var(--paper); border-left:1px solid var(--rule); padding:32px 34px;
+  overflow-y:auto; display:none; flex-direction:column;
+}
+.sheet.open{ display:flex; }
+.sheet h3{ font-family:var(--serif); font-size:25px; font-weight:400; color:var(--ink); margin-top:6px; letter-spacing:-.01em; }
+.sheet .lead{ margin-top:8px; font-size:13.5px; color:var(--muted); }
+.sheet .mlist{ margin-top:24px; border-top:1px solid var(--rule); }
+.sheet .mrow{ display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--rule-2); }
+.sheet .mrow .mt{ min-width:0; flex:1; }
+.sheet .mrow .mt b{ display:block; font-size:13.5px; font-weight:500; color:var(--ink); }
+.sheet .mrow .mt span{ font-size:12.5px; color:var(--muted); }
+.sheet .mrow .where{ font-family:var(--mono); font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); align-self:center; text-align:right; }
+.sheet .sfoot{ margin-top:auto; padding-top:26px; display:flex; gap:9px; }
+.sheet .close{ position:absolute; top:26px; right:30px; font-size:12.5px; color:var(--faint); }
+.sheet .close:hover{ color:var(--ink); }
+
+.done{ text-align:center; padding:70px 20px; }
+.done .stamp{
+  width:64px; height:64px; margin:0 auto 22px; display:grid; place-items:center;
+  border:1.5px solid var(--seal); border-radius:6px; color:var(--seal);
+  font-family:var(--han); font-size:30px; font-weight:500;
+  transform:rotate(-6deg);
+}
+.done h3{ font-family:var(--serif); font-size:24px; font-weight:400; color:var(--ink); }
+.done p{ margin-top:8px; font-size:13.5px; color:var(--muted); }
+.done .acts{ margin-top:22px; display:flex; gap:9px; justify-content:center; }
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed; z-index:70; left:50%; bottom:34px; transform:translate(-50%,14px);
+  padding:10px 18px; border-radius:7px; background:var(--ink); color:#fff; font-size:13px;
+  opacity:0; pointer-events:none; transition:.22s;
+}
+.toast.on{ opacity:1; transform:translate(-50%,0); }
+
+/* ---------- entrance ---------- */
+@keyframes rise{ from{ opacity:0; transform:translateY(7px);} to{ opacity:1; transform:none; } }
+.anim{ animation:rise .34s cubic-bezier(.22,.7,.3,1) both; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+
+/* ========================= responsive ========================= */
+.rail-toggle{ display:none; }
+@media (max-width:1080px){
+  .lesson{ grid-template-columns:minmax(0,1fr); }
+  .lcol-head.r2,.lcol-head.r4{ grid-column:1; }
+  .lcol-head.r4{ margin-top:30px; }
+  .track.ruler{ display:none; }
+  .track.blocks,.track.made{ grid-column:1; height:auto !important; }
+  .block,.made-item{ position:static; height:auto; margin-bottom:8px; }
+  .block .bd{ display:block; }
+  .made-item::before{ display:none; }
+  .made-item .from{ display:block; }
+  .md{ grid-template-columns:minmax(0,1fr); }
+  .md-list{ border-right:0; }
+  .md-body{ padding-left:0; border-top:1px solid var(--rule); }
+}
+@media (max-width:860px){
+  .app{ grid-template-columns:minmax(0,1fr); }
+  .rail{
+    position:fixed; z-index:80; left:0; top:0; width:250px; background:var(--paper);
+    transform:translateX(-100%); transition:transform .22s; box-shadow:0 0 40px -12px rgba(22,27,34,.3);
+  }
+  .rail.open{ transform:none; }
+  .rail-toggle{ display:inline-flex; }
+  .view{ padding:28px 20px 80px; }
+  .top{ padding:12px 20px; flex-wrap:wrap; }
+  .page-head{ flex-direction:column; align-items:flex-start; gap:16px; }
+  .page-head .ha{ margin-left:0; }
+  .facts{ gap:24px; flex-wrap:wrap; }
+  .sheet{ width:100%; padding:26px 22px; }
+  .commit{ flex-direction:column; align-items:flex-start; gap:12px; }
+  .commit .acts{ margin-left:0; width:100%; }
+  .commit .acts .btn{ flex:1; justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================ rail ============================ -->
+  <aside class="rail" id="rail">
+    <div class="brand">
+      <b>DAHUA</b>
+      <span>Teacher · v9</span>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item on" data-view="plan"><span class="n">01</span>Plan</button>
+      <button class="nav-item" data-view="assign"><span class="n">02</span>Assignments<span class="cnt" id="navAssign">14</span></button>
+      <button class="nav-item" data-view="library"><span class="n">03</span>Library<span class="cnt" id="navLib">21</span></button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" data-view="classes"><span class="n">04</span>Classes</button>
+      <button class="nav-item" data-view="game"><span class="n">05</span>Word Game</button>
+    </nav>
+
+    <div class="rail-grow"></div>
+    <div class="rail-foot">
+      <div class="who">
+        <div class="av">LW</div>
+        <div class="wt"><b>Lin Wei</b><span>Class teacher</span></div>
+      </div>
+      <a class="issue" href="#">Report an issue</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- ============================ top ============================ -->
+    <div class="top">
+      <button class="btn quiet sm rail-toggle" id="railToggle">Menu</button>
+
+      <div class="ctx" id="ctxClass" role="button" tabindex="0" aria-haspopup="true">
+        <span class="lb">Class</span><span class="cv" id="ctxClassV">4A</span><span class="car"></span>
+        <div class="menu" id="menuClass"></div>
+      </div>
+
+      <div class="ctx" id="ctxDate" role="button" tabindex="0" aria-haspopup="true">
+        <span class="lb">Lesson</span><span class="cv" id="ctxDateV">Thu 14 Aug</span><span class="car"></span>
+        <div class="menu" id="menuDate"></div>
+      </div>
+
+      <div class="spacer"></div>
+      <span class="tip" id="topTip">Autumn term · week 3</span>
+    </div>
+
+    <!-- ============================ PLAN ============================ -->
+    <section class="view on" id="v-plan">
+      <div class="page-head">
+        <div class="ht">
+          <span class="eyebrow">Lesson plan</span>
+          <h1 class="page-title" id="planTitle">Thursday with 4A</h1>
+          <p class="page-sub">Lay the lesson out on the clock. Everything the plan will create in Dahua is listed beside it before you commit.</p>
+        </div>
+      </div>
+
+      <!-- topic -->
+      <div class="filters">
+        <span class="eyebrow" style="margin-right:4px">Topic</span>
+        <button class="chip on" data-topic="food">食物 <span class="c">Food</span></button>
+        <button class="chip" data-topic="family">家人 <span class="c">Family</span></button>
+        <button class="chip" data-topic="greet">打招呼 <span class="c">Greetings</span></button>
+        <button class="chip" data-topic="numbers">数字 <span class="c">Numbers</span></button>
+      </div>
+
+      <div class="sec" style="margin-top:26px">
+        <div class="sec-head">
+          <h2>Start from a template</h2>
+          <span class="note">Templates set the shape of the lesson. You can change any block afterwards.</span>
+        </div>
+        <div class="tpl-row" id="tplRow"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h2 id="lessonHeading">The lesson</h2>
+          <span class="note" id="lessonNote">No template picked yet</span>
+        </div>
+        <div class="lesson" id="lesson"></div>
+        <div class="hw" id="hwWrap" style="display:none">
+          <span class="eyebrow">Homework</span>
+          <div class="hw-list" id="hwList"></div>
+        </div>
+      </div>
+
+      <div class="commit" id="commit" style="display:none">
+        <div class="summary" id="commitSummary"></div>
+        <div class="acts">
+          <button class="btn" id="btnClear">Clear the plan</button>
+          <button class="btn seal-btn" id="btnCreate">Review what will be created</button>
+        </div>
+      </div>
+
+      <div class="pop" id="pop"></div>
+    </section>
+
+    <!-- ============================ ASSIGNMENTS ============================ -->
+    <section class="view" id="v-assign">
+      <div class="page-head">
+        <div class="ht">
+          <span class="eyebrow">Assignments</span>
+          <h1 class="page-title">What the students owe you</h1>
+          <p class="page-sub">Every practice you have created, grouped by when it is due. Open one to try it yourself or to read what came back.</p>
+        </div>
+        <div class="ha"><button class="btn" data-goto="plan">Plan a lesson</button></div>
+      </div>
+
+      <div class="filters">
+        <button class="chip on" data-af="all">All <span class="c" id="afAll"></span></button>
+        <button class="chip" data-af="mirror">读 Mirroring <span class="c" id="afmirror"></span></button>
+        <button class="chip" data-af="vocab">词 Vocabulary <span class="c" id="afvocab"></span></button>
+        <button class="chip" data-af="qa">问 Q&amp;A <span class="c" id="afqa"></span></button>
+        <button class="chip" data-af="mc">测 Quiz <span class="c" id="afmc"></span></button>
+        <div class="search"><input id="assignSearch" placeholder="Search practices" aria-label="Search practices" /></div>
+      </div>
+
+      <div id="assignList"></div>
+    </section>
+
+    <!-- ============================ LIBRARY ============================ -->
+    <section class="view" id="v-library">
+      <div class="page-head">
+        <div class="ht">
+          <span class="eyebrow">Library</span>
+          <h1 class="page-title">Texts and question banks</h1>
+          <p class="page-sub">The raw material a lesson is built from. A text feeds mirroring and vocabulary; a question bank feeds quizzes.</p>
+        </div>
+        <div class="ha"><button class="btn" id="btnNewText">Add a text</button></div>
+      </div>
+
+      <div class="filters">
+        <button class="chip on" data-lf="all">Everything <span class="c" id="lfAll"></span></button>
+        <button class="chip" data-lf="text">课 Texts <span class="c" id="lftext"></span></button>
+        <button class="chip" data-lf="bank">题 Question banks <span class="c" id="lfbank"></span></button>
+        <div class="search"><input id="libSearch" placeholder="Search the library" aria-label="Search the library" /></div>
+      </div>
+
+      <div class="list" id="libList"></div>
+    </section>
+
+    <!-- ============================ CLASSES ============================ -->
+    <section class="view" id="v-classes">
+      <div class="page-head">
+        <div class="ht">
+          <span class="eyebrow">Classes</span>
+          <h1 class="page-title">Who you teach</h1>
+          <p class="page-sub">Rosters, standings and each student's record in one place.</p>
+        </div>
+        <div class="ha"><button class="btn" id="btnNewClass">Create a class</button></div>
+      </div>
+
+      <div class="md">
+        <div class="md-list" id="classList"></div>
+        <div class="md-body" id="classBody"></div>
+      </div>
+    </section>
+
+    <!-- ============================ WORD GAME ============================ -->
+    <section class="view" id="v-game">
+      <div class="page-head">
+        <div class="ht">
+          <span class="eyebrow">Word game</span>
+          <h1 class="page-title">Practice that runs itself</h1>
+          <p class="page-sub">Set a goal, pick the days, and the game keeps score. Students who fall behind surface here.</p>
+        </div>
+        <div class="ha"><button class="btn" id="btnAssignGame">Set a goal</button></div>
+      </div>
+
+      <div class="sec" style="margin-top:0">
+        <div class="sec-head"><h2>Running goals</h2><span class="note" id="gameNote"></span></div>
+        <div class="list" id="gameList"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head"><h2>Worlds</h2><span class="note">Levels follow HSK. Students are placed by the level test.</span></div>
+        <div class="worlds" id="worldGrid"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================ sheet ============================ -->
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ======================================================================
+   Data. Shapes follow the real app: a text (project) feeds practices;
+   a practice is one of four types and is assigned to classes with a due
+   date. Nothing here invents a field the product does not have.
+   ====================================================================== */
+
+const KIND = {
+  text:   { mark:'课', name:'Text',                where:'Library' },
+  vocab:  { mark:'词', name:'Vocabulary practice', where:'Assignments' },
+  mirror: { mark:'读', name:'Mirroring practice',  where:'Assignments' },
+  qa:     { mark:'问', name:'Q&A practice',        where:'Assignments' },
+  mc:     { mark:'测', name:'Quiz',                where:'Assignments' },
+  bank:   { mark:'题', name:'Question bank',       where:'Library' },
+};
+
+const TOPICS = {
+  food:    { han:'食物',   py:'shíwù',      en:'Food',      words:12, sents:6, qs:10 },
+  family:  { han:'家人',   py:'jiārén',     en:'Family',    words:10, sents:6, qs:10 },
+  greet:   { han:'打招呼', py:'dǎ zhāohu',  en:'Greetings', words:8,  sents:5, qs:8  },
+  numbers: { han:'数字',   py:'shùzì',      en:'Numbers',   words:14, sents:6, qs:12 },
+};
+
+/* A template is a run sheet for one lesson: blocks on a clock, some of
+   which leave something behind in the system. */
+const TEMPLATES = [
+  {
+    id:'new-topic', mins:45, name:'Introduce a new topic',
+    blurb:'The usual shape for the first lesson on a theme — read it, pull the words out, say them, check them.',
+    blocks:[
+      { t:0,  h:5,  name:'Warm-up',      detail:'Quick recall of last lesson’s words' },
+      { t:5,  h:12, name:'Read the text',detail:'Work through the passage sentence by sentence', makes:'text' },
+      { t:17, h:13, name:'New words',    detail:'Pull the new vocabulary out of the text', makes:'vocab' },
+      { t:30, h:10, name:'Say it back',  detail:'Each student records the sentences', makes:'mirror' },
+      { t:40, h:5,  name:'Exit quiz',    detail:'A short check before they leave', makes:'mc' },
+    ],
+    homework:['mirror','mc'],
+  },
+  {
+    id:'consolidate', mins:45, name:'Review and consolidate',
+    blurb:'For the second or third lesson on a theme. Nothing new is introduced; the words get used.',
+    blocks:[
+      { t:0,  h:8,  name:'Word sprint',   detail:'Flash the words from last lesson' },
+      { t:8,  h:17, name:'Pair speaking', detail:'Students interview each other with the prompts', makes:'qa' },
+      { t:25, h:12, name:'Read aloud',    detail:'Record the sentences again for comparison', makes:'mirror' },
+      { t:37, h:8,  name:'Wrap-up',       detail:'Correct the three mistakes you heard most' },
+    ],
+    homework:['qa'],
+  },
+  {
+    id:'speaking', mins:30, name:'Speaking drill',
+    blurb:'A short lesson built entirely around production. Good for a split period.',
+    blocks:[
+      { t:0,  h:5,  name:'Tone warm-up',  detail:'Four tones on today’s words' },
+      { t:5,  h:15, name:'Mirroring',     detail:'Record, listen back, record again', makes:'mirror' },
+      { t:20, h:10, name:'Free talk',     detail:'Answer without the script' },
+    ],
+    homework:['mirror'],
+  },
+  {
+    id:'assess', mins:50, name:'End-of-unit check',
+    blurb:'Closes a unit. Produces one quiz and one spoken task you can grade side by side.',
+    blocks:[
+      { t:0,  h:5,  name:'Settle',        detail:'Explain how the check works' },
+      { t:5,  h:25, name:'Written quiz',  detail:'Multiple choice on the whole unit', makes:'mc' },
+      { t:30, h:20, name:'Spoken check',  detail:'Answer five questions out loud', makes:'qa' },
+    ],
+    homework:[],
+  },
+];
+
+const CLASSES = [
+  { id:'4A', level:'HSK 1', n:12, next:'Thu 14 Aug' },
+  { id:'3B', level:'HSK 1', n:10, next:'Fri 15 Aug' },
+  { id:'5C', level:'HSK 2', n:14, next:'Thu 14 Aug' },
+  { id:'6A', level:'HSK 2', n:11, next:'Mon 18 Aug' },
+];
+
+const DATES = ['Thu 14 Aug','Fri 15 Aug','Mon 18 Aug','Tue 19 Aug'];
+
+const ROSTER = {
+  '4A':[
+    ['Emma Chen','陈恩美',3,86],['Liam Wu','吴立安',2,71],['Sofia Ríos','苏菲亚',3,92],
+    ['Noah Park','朴诺亚',1,54],['Aria Singh','阿丽雅',2,68],['Ben Cohen','班恩',3,88],
+    ['Mia Tanaka','田中美亚',2,74],['Leo Alvarez','李欧',1,49],['Zoe Kim','金柔怡',3,95],
+    ['Ivan Petrov','伊凡',2,63],['Hana Sato','佐藤花',3,81],['Omar Haddad','欧玛',1,58],
+  ],
+  '3B':[
+    ['Ada Lin','林爱达',2,77],['Theo Brandt','布兰特',1,52],['Nina Rossi','妮娜',3,90],
+    ['Sam Okafor','山姆',2,66],['Yuki Mori','森由纪',3,84],['Pablo Díaz','巴布罗',1,47],
+    ['Grace Hall','葛蕾丝',2,72],['Ravi Menon','拉维',2,69],['Elsa Berg','艾莎',3,89],['Tom Fischer','汤姆',1,55],
+  ],
+  '5C':[
+    ['Ruby Ng','吴如碧',4,93],['Jonas Weber','约拿斯',3,79],['Lea Dubois','蕾雅',4,96],
+    ['Kai Nakamura','中村凯',3,82],['Ines Costa','伊内丝',2,64],['Mark Ellis','马克',3,76],
+    ['Anya Volkov','安雅',4,91],['Diego Cruz','迪亚哥',2,61],['Sara Ahmed','莎拉',3,80],
+    ['Finn O’Brien','芬恩',2,58],['Lucy Tan','陈露西',4,94],['Otto Klein','奥托',3,73],
+    ['Maya Levi','玛雅',3,85],['Ken Ito','伊藤健',2,67],
+  ],
+  '6A':[
+    ['Iris Zhao','赵爱丽',4,88],['Hugo Marchand','雨果',3,75],['Nadia Rahman','娜迪亚',4,92],
+    ['Peter Novak','彼得',3,70],['Amara Obi','阿玛拉',4,90],['Jin Watanabe','渡边仁',3,78],
+    ['Clara Voss','克拉拉',2,62],['Ali Karim','阿里',3,74],['Tess Moreau','泰丝',4,87],
+    ['Rui Almeida','瑞',2,59],['Vera Ilić','薇拉',3,81],
+  ],
+};
+
+/* Practices that already exist. `due` is days from today; null = no due date. */
+const PRACTICES = [
+  { id:'p1',  kind:'mirror', name:'食物 · Read the six sentences', topic:'食物',   classes:['4A','3B'], due:-2, done:14, of:22 },
+  { id:'p2',  kind:'mc',     name:'食物 · Exit quiz',              topic:'食物',   classes:['4A'],      due:-1, done:9,  of:12 },
+  { id:'p3',  kind:'vocab',  name:'食物 · Twelve new words',       topic:'食物',   classes:['4A','3B'], due:1,  done:6,  of:22 },
+  { id:'p4',  kind:'qa',     name:'家人 · Talk about your family', topic:'家人',   classes:['5C'],      due:2,  done:3,  of:14 },
+  { id:'p5',  kind:'mirror', name:'家人 · Say it back',            topic:'家人',   classes:['5C','6A'], due:4,  done:0,  of:25 },
+  { id:'p6',  kind:'mc',     name:'数字 · Numbers to one hundred', topic:'数字',   classes:['3B'],      due:6,  done:2,  of:10 },
+  { id:'p7',  kind:'vocab',  name:'打招呼 · Greeting words',       topic:'打招呼', classes:['4A'],      due:9,  done:0,  of:12 },
+  { id:'p8',  kind:'qa',     name:'天气 · What is it like today?', topic:'天气',   classes:['6A'],      due:11, done:0,  of:11 },
+  { id:'p9',  kind:'mirror', name:'数字 · Count out loud',         topic:'数字',   classes:['5C'],      due:null, done:0, of:14 },
+  { id:'p10', kind:'mc',     name:'家人 · Unit check',             topic:'家人',   classes:[],          due:null, done:0, of:0 },
+  { id:'p11', kind:'vocab',  name:'天气 · Weather words',          topic:'天气',   classes:[],          due:null, done:0, of:0 },
+  { id:'p12', kind:'mirror', name:'打招呼 · Four greetings',       topic:'打招呼', classes:['3B'],      due:3,  done:5,  of:10 },
+  { id:'p13', kind:'qa',     name:'食物 · What did you eat?',      topic:'食物',   classes:['4A','5C'], due:5,  done:1,  of:26 },
+  { id:'p14', kind:'mc',     name:'打招呼 · Quick check',          topic:'打招呼', classes:['6A'],      due:-4, done:11, of:11 },
+];
+
+const LIBRARY = [
+  { kind:'text', name:'食物 — What we eat',        level:'HSK 1', used:4, updated:'2 days ago',   detail:'6 sentences · 12 words' },
+  { kind:'text', name:'家人 — My family',           level:'HSK 1', used:3, updated:'5 days ago',   detail:'6 sentences · 10 words' },
+  { kind:'text', name:'打招呼 — Saying hello',       level:'HSK 1', used:2, updated:'1 week ago',   detail:'5 sentences · 8 words' },
+  { kind:'text', name:'数字 — Counting',            level:'HSK 1', used:3, updated:'1 week ago',   detail:'6 sentences · 14 words' },
+  { kind:'text', name:'天气 — Weather today',        level:'HSK 2', used:2, updated:'2 weeks ago',  detail:'7 sentences · 11 words' },
+  { kind:'text', name:'学校 — At school',           level:'HSK 2', used:1, updated:'3 weeks ago',  detail:'8 sentences · 15 words' },
+  { kind:'text', name:'我的一天 — My day',           level:'HSK 2', used:0, updated:'3 weeks ago',  detail:'9 sentences · 16 words' },
+  { kind:'bank', name:'食物 — Exit questions',       level:'HSK 1', used:2, updated:'2 days ago',   detail:'10 questions' },
+  { kind:'bank', name:'家人 — Unit check',           level:'HSK 1', used:1, updated:'6 days ago',   detail:'12 questions' },
+  { kind:'bank', name:'数字 — Number drill',         level:'HSK 1', used:2, updated:'1 week ago',   detail:'10 questions' },
+  { kind:'bank', name:'打招呼 — Quick check',        level:'HSK 1', used:1, updated:'2 weeks ago',  detail:'8 questions' },
+  { kind:'bank', name:'天气 — Mixed review',         level:'HSK 2', used:0, updated:'2 weeks ago',  detail:'15 questions' },
+  { kind:'bank', name:'HSK 1 — End of term',        level:'HSK 1', used:0, updated:'1 month ago',  detail:'40 questions' },
+];
+
+const WORLDS = [
+  { n:'渡口', e:'Level 0 · HSK 0', stages:60, open:true },
+  { n:'石桥', e:'Level 1 · HSK 1', stages:48, open:true },
+  { n:'龙亭', e:'Level 2 · HSK 2', stages:52, open:false },
+  { n:'翠阁', e:'Level 3 · HSK 3', stages:56, open:false },
+  { n:'宝塔', e:'Level 4 · HSK 4', stages:60, open:false },
+  { n:'仙阁', e:'Level 5 · HSK 5', stages:64, open:false },
+  { n:'天宫', e:'Level 6 · HSK 6', stages:70, open:false },
+];
+
+const GAME_GOALS = [
+  { cls:'4A', goal:'Clear 8 stages', from:'4 Aug', to:'17 Aug', met:9,  of:12, behind:['Noah Park','Leo Alvarez','Omar Haddad'] },
+  { cls:'5C', goal:'Play 15 minutes a day', from:'11 Aug', to:'24 Aug', met:11, of:14, behind:['Diego Cruz','Finn O’Brien','Ines Costa'] },
+  { cls:'3B', goal:'Reach level 1', from:'28 Jul', to:'10 Aug', met:10, of:10, behind:[] },
+];
+
+/* ======================================================================
+   State
+   ====================================================================== */
+const S = {
+  view:'plan',
+  cls:'4A',
+  date:'Thu 14 Aug',
+  topic:'food',
+  tpl:null,          // chosen template id
+  blocks:[],         // working copy of the template's blocks
+  created:false,
+  assignFilter:'all',
+  assignQuery:'',
+  libFilter:'all',
+  libQuery:'',
+  classSel:'4A',
+  classTab:'roster',
+};
+
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.prototype.slice.call((r||document).querySelectorAll(s));
+const esc = (s)=> String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sealHtml = (kind,cls)=> '<span class="seal '+(cls||'')+'">'+KIND[kind].mark+'</span>';
+
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on'),2400);
+}
+
+/* ======================================================================
+   Routing
+   ====================================================================== */
+function go(view){
+  S.view=view;
+  $$('.nav-item').forEach(b=> b.classList.toggle('on', b.dataset.view===view));
+  $$('.view').forEach(v=> v.classList.toggle('on', v.id==='v-'+view));
+  $('#rail').classList.remove('open');
+  window.scrollTo(0,0);
+  if(view==='assign')  renderAssign();
+  if(view==='library') renderLibrary();
+  if(view==='classes') renderClasses();
+  if(view==='game')    renderGame();
+}
+$('#nav').addEventListener('click', e=>{
+  const b=e.target.closest('.nav-item'); if(b) go(b.dataset.view);
+});
+document.addEventListener('click', e=>{
+  const g=e.target.closest('[data-goto]'); if(g) go(g.dataset.goto);
+});
+$('#railToggle').addEventListener('click', ()=> $('#rail').classList.toggle('open'));
+
+/* ======================================================================
+   Context pickers
+   ====================================================================== */
+function buildMenu(el, items, current, onPick){
+  el.innerHTML = items.map(it=>
+    '<button data-v="'+esc(it.v)+'" class="'+(it.v===current?'on':'')+'">'+esc(it.label)+
+    (it.sub?'<span class="sub">'+esc(it.sub)+'</span>':'')+'</button>'
+  ).join('');
+  el.onclick = e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    e.stopPropagation(); el.classList.remove('open'); onPick(b.dataset.v);
+  };
+}
+function wireCtx(hostId, menuId, build){
+  const host=$('#'+hostId), menu=$('#'+menuId);
+  const open=(e)=>{
+    e.stopPropagation();
+    const wasOpen=menu.classList.contains('open');
+    $$('.menu').forEach(m=>m.classList.remove('open'));
+    if(!wasOpen){ build(); menu.classList.add('open'); }
+  };
+  host.addEventListener('click', open);
+  host.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(e); } });
+}
+document.addEventListener('click', ()=> $$('.menu').forEach(m=>m.classList.remove('open')));
+
+wireCtx('ctxClass','menuClass', ()=>{
+  buildMenu($('#menuClass'), CLASSES.map(c=>({v:c.id,label:c.id,sub:c.level+' · '+c.n})), S.cls, v=>{
+    S.cls=v; S.classSel=v; $('#ctxClassV').textContent=v; syncPlanTitle();
+    if(S.view==='classes') renderClasses();
+    if(S.view==='assign') renderAssign();
+  });
+});
+wireCtx('ctxDate','menuDate', ()=>{
+  buildMenu($('#menuDate'), DATES.map(d=>({v:d,label:d})), S.date, v=>{
+    S.date=v; $('#ctxDateV').textContent=v; syncPlanTitle();
+  });
+});
+
+function syncPlanTitle(){
+  const day = S.date.split(' ')[0];
+  const full = {Thu:'Thursday',Fri:'Friday',Mon:'Monday',Tue:'Tuesday'}[day]||day;
+  $('#planTitle').textContent = full+' with '+S.cls;
+}
+
+/* ======================================================================
+   PLAN
+   ====================================================================== */
+function topic(){ return TOPICS[S.topic]; }
+
+function unitFor(kind){
+  const t=topic();
+  if(kind==='text')   return t.sents+' sentences · '+t.words+' words';
+  if(kind==='vocab')  return t.words+' words, pinyin shown';
+  if(kind==='mirror') return t.sents+' sentences to record';
+  if(kind==='qa')     return '5 spoken prompts';
+  if(kind==='mc')     return t.qs+' questions';
+  return '';
+}
+function titleFor(kind){
+  const t=topic();
+  const suffix = {
+    text:'— the text', vocab:'· New words', mirror:'· Say it back',
+    qa:'· Talk about it', mc:'· Quiz',
+  }[kind];
+  return t.han+' '+suffix;
+}
+
+function renderTemplates(){
+  $('#tplRow').innerHTML = TEMPLATES.map(t=>{
+    const marks = t.blocks.filter(b=>b.makes).map(b=> sealHtml(b.makes,'sm pending')).join('');
+    const n = t.blocks.filter(b=>b.makes).length;
+    return '<button class="tpl'+(S.tpl===t.id?' on':'')+'" data-tpl="'+t.id+'">'+
+      '<span class="len">'+t.mins+' MIN · '+t.blocks.length+' BLOCKS</span>'+
+      '<h3>'+esc(t.name)+'</h3>'+
+      '<p>'+esc(t.blurb)+'</p>'+
+      '<span class="made-of">'+marks+'<span class="lbl">CREATES '+n+'</span></span>'+
+    '</button>';
+  }).join('') +
+  '<button class="tpl blank" data-tpl="__blank"><span class="len">EMPTY</span>'+
+  '<h3>Start from blank</h3><p>Build the lesson block by block. Nothing is created until you add it.</p>'+
+  '<span class="made-of"><span class="lbl">CREATES 0</span></span></button>';
+}
+
+function pickTemplate(id){
+  if(id==='__blank'){
+    S.tpl='__blank'; S.blocks=[]; S.created=false;
+  } else {
+    const t = TEMPLATES.find(x=>x.id===id); if(!t) return;
+    S.tpl=id; S.created=false;
+    S.blocks = t.blocks.map((b,i)=> Object.assign({}, b, { key:id+'-'+i, on:!!b.makes }));
+  }
+  renderTemplates(); renderLesson();
+}
+
+function relayout(){
+  let t=0;
+  S.blocks.forEach(b=>{ b.t=t; t+=b.h; });
+  return t;
+}
+
+function renderLesson(){
+  const wrap=$('#lesson');
+  if(!S.tpl){
+    wrap.innerHTML = '<div class="lesson-empty"><p>Pick a template and the lesson lays itself out on the clock.</p></div>';
+    $('#lessonNote').textContent='No template picked yet';
+    $('#hwWrap').style.display='none';
+    $('#commit').style.display='none';
+    return;
+  }
+  if(S.created){ renderCreated(); return; }
+
+  const total = relayout();
+  const tplMins = S.tpl==='__blank' ? 45 : TEMPLATES.find(t=>t.id===S.tpl).mins;
+
+  // ruler ticks every 5 minutes
+  let ticks='';
+  for(let m=0;m<=Math.max(total,tplMins);m+=5){
+    ticks += '<div class="tick'+(m%15===0?' major':'')+'" style="--t:'+m+'"><span class="m">'+m+'</span></div>';
+  }
+
+  const blocksHtml = S.blocks.map((b,i)=>{
+    const tiny = b.h<=6;
+    return '<button class="block'+(tiny?' tiny':'')+'" data-i="'+i+'" style="--t:'+b.t+';--h:'+b.h+'">'+
+      '<span class="bh"><span class="bn">'+esc(b.name)+'</span><span class="bl">'+b.h+' min</span></span>'+
+      '<span class="bd">'+esc(b.detail)+'</span>'+
+      (b.makes?'<span class="bmark">'+sealHtml(b.makes,'sm '+(b.on?'pending':''))+'</span>':'')+
+    '</button>';
+  }).join('');
+
+  // The right rail mirrors the clock, but an item is taller than a very short
+  // block — nudge each one down so two of them can never overlap.
+  const MIN_GAP = 5.4;                       // in lesson-minutes, ≈54px
+  let lastTop = -Infinity;
+  const madeHtml = S.blocks.filter(b=>b.makes).map(b=>{
+    const idx = S.blocks.indexOf(b);
+    const top = Math.max(b.t, lastTop + MIN_GAP);
+    lastTop = top;
+    return '<div class="made-item'+(b.on?'':' skip')+'" data-mi="'+idx+'" style="--t:'+top+'">'+
+      sealHtml(b.makes, b.on?'pending':'') +
+      '<span class="mi"><b>'+esc(titleFor(b.makes))+'</b><span>'+esc(unitFor(b.makes))+'</span>'+
+      '<span class="from">from “'+esc(b.name)+'”</span></span>'+
+      (b.on?'':'<span class="off">OFF</span>')+
+    '</div>';
+  }).join('');
+
+  const h = Math.max(total,tplMins)*10 + 20;
+
+  wrap.innerHTML =
+    '<div class="lcol-head r2"><span class="eyebrow">In class</span></div>'+
+    '<div class="lcol-head r4"><span class="eyebrow">Will be created</span></div>'+
+    '<div class="track ruler" style="height:'+h+'px">'+ticks+'</div>'+
+    '<div class="track blocks" style="height:'+h+'px">'+(blocksHtml||emptyBlocks())+'</div>'+
+    '<div class="track made" style="height:'+h+'px">'+(madeHtml||'')+'</div>';
+
+  const over = total-tplMins;
+  $('#lessonNote').innerHTML = '<span class="tnum">'+total+'</span> of '+tplMins+' minutes used'+
+    (over>0?' · <span style="color:var(--seal)">'+over+' over</span>':'');
+
+  renderHomework();
+  renderCommit(total,tplMins);
+}
+
+function emptyBlocks(){
+  return '<div class="lesson-empty" style="position:static"><p>An empty lesson. Add a block to begin.</p>'+
+    '<button class="btn sm" id="addFirst" style="margin-top:14px">Add a block</button></div>';
+}
+
+function renderHomework(){
+  const t = S.tpl==='__blank' ? null : TEMPLATES.find(x=>x.id===S.tpl);
+  const hw = (t?t.homework:[]).filter(k=> S.blocks.some(b=>b.makes===k && b.on));
+  if(!hw.length){ $('#hwWrap').style.display='none'; return; }
+  $('#hwWrap').style.display='';
+  $('#hwList').innerHTML = hw.map(k=>
+    '<span class="hw-chip">'+sealHtml(k,'sm pending')+esc(titleFor(k))+
+    '<span class="due">due Sun 17 Aug</span></span>'
+  ).join('');
+}
+
+function renderCommit(total,tplMins){
+  const n = S.blocks.filter(b=>b.makes && b.on).length;
+  const bar=$('#commit');
+  bar.style.display='';
+  const over = total-tplMins;
+  $('#commitSummary').innerHTML =
+    (n ? 'This plan creates <b>'+n+' item'+(n===1?'':'s')+'</b> and assigns them to <b>'+S.cls+'</b>.'
+       : 'This plan creates nothing yet — switch an item on to have it made.') +
+    (over>0 ? ' <span class="over">The lesson runs '+over+' minutes long.</span>' : '');
+  $('#btnCreate').disabled = n===0;
+}
+
+function renderCreated(){
+  const n = S.blocks.filter(b=>b.makes && b.on).length;
+  $('#lesson').innerHTML =
+    '<div class="done anim" style="grid-column:1 / -1">'+
+      '<div class="stamp">成</div>'+
+      '<h3>'+n+' item'+(n===1?'':'s')+' created and assigned to '+S.cls+'</h3>'+
+      '<p>The lesson is on the calendar for '+esc(S.date)+'. Homework is due Sunday 17 August.</p>'+
+      '<div class="acts">'+
+        '<button class="btn" data-goto="assign">Open assignments</button>'+
+        '<button class="btn" id="planAnother">Plan another lesson</button>'+
+      '</div>'+
+    '</div>';
+  $('#lessonNote').textContent='Created '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  $('#hwWrap').style.display='none';
+  $('#commit').style.display='none';
+}
+
+/* --- plan interactions --- */
+$('#tplRow').addEventListener('click', e=>{
+  const b=e.target.closest('[data-tpl]'); if(b) pickTemplate(b.dataset.tpl);
+});
+$$('[data-topic]').forEach(c=> c.addEventListener('click', ()=>{
+  S.topic=c.dataset.topic;
+  $$('[data-topic]').forEach(x=>x.classList.toggle('on', x===c));
+  if(S.tpl) renderLesson();
+}));
+$('#btnClear').addEventListener('click', ()=>{ S.tpl=null; S.blocks=[]; S.created=false; renderTemplates(); renderLesson(); });
+
+/* hover pairing between a block and the thing it will create */
+$('#lesson').addEventListener('mouseover', e=>{
+  const b=e.target.closest('.block'); const m=e.target.closest('.made-item');
+  const i = b?b.dataset.i : (m?m.dataset.mi:null);
+  if(i===null||i===undefined) return;
+  const blk=$('.block[data-i="'+i+'"]'), mi=$('.made-item[data-mi="'+i+'"]');
+  if(blk) blk.classList.add('lit'); if(mi) mi.classList.add('lit');
+});
+$('#lesson').addEventListener('mouseout', ()=>{
+  $$('.lit').forEach(x=>x.classList.remove('lit'));
+});
+
+/* block editor */
+$('#lesson').addEventListener('click', e=>{
+  if(e.target.closest('#planAnother')){
+    S.tpl=null; S.blocks=[]; S.created=false; renderTemplates(); renderLesson(); return;
+  }
+  if(e.target.closest('#addFirst')){
+    S.blocks.push({ key:'b'+Date.now(), name:'New block', detail:'Describe what happens here', h:10, makes:'vocab', on:true });
+    renderLesson(); return;
+  }
+  const b=e.target.closest('.block'); if(!b) return;
+  openPop(parseInt(b.dataset.i,10), b);
+});
+
+function openPop(i, anchor){
+  const blk=S.blocks[i], pop=$('#pop');
+  const r=anchor.getBoundingClientRect(), pr=$('#v-plan').getBoundingClientRect();
+  pop.innerHTML =
+    '<h4>'+esc(blk.name)+'</h4>'+
+    '<div class="row"><span class="k">Minutes</span>'+
+      '<div class="stepper"><button data-d="-1" aria-label="Shorter">−</button>'+
+      '<span class="val tnum" id="popMin">'+blk.h+'</span>'+
+      '<button data-d="1" aria-label="Longer">+</button></div></div>'+
+    (blk.makes
+      ? '<div class="row"><span class="k">Creates</span>'+
+        '<label class="toggle"><input type="checkbox" id="popOn"'+(blk.on?' checked':'')+' />'+
+        esc(KIND[blk.makes].name)+'</label></div>'+
+        '<div class="row"><span class="k"></span><span style="font-size:12px;color:var(--muted)">'+esc(unitFor(blk.makes))+'</span></div>'
+      : '<div class="row"><span class="k">Creates</span><span style="font-size:12.5px;color:var(--faint)">Nothing — this block is class time only</span></div>')+
+    '<div class="foot"><button class="btn sm" id="popRemove">Remove block</button>'+
+    '<button class="btn sm primary" id="popDone" style="margin-left:auto">Done</button></div>';
+  pop.style.top  = (r.bottom - pr.top + 8)+'px';
+  pop.style.left = Math.min(r.left - pr.left, pr.width-296)+'px';
+  pop.classList.add('open');
+
+  pop.querySelectorAll('.stepper button').forEach(btn=> btn.onclick=()=>{
+    blk.h = Math.max(2, Math.min(40, blk.h + parseInt(btn.dataset.d,10)));
+    $('#popMin').textContent = blk.h;
+    renderLesson(); pop.classList.add('open');
+  });
+  const on=$('#popOn'); if(on) on.onchange=()=>{ blk.on=on.checked; renderLesson(); pop.classList.add('open'); };
+  $('#popRemove').onclick=()=>{ S.blocks.splice(i,1); pop.classList.remove('open'); renderLesson(); };
+  $('#popDone').onclick=()=> pop.classList.remove('open');
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#pop') && !e.target.closest('.block')) $('#pop').classList.remove('open');
+});
+
+/* ======================================================================
+   Sheet — the confirmation that answers "what exactly will exist?"
+   ====================================================================== */
+function openSheet(html){
+  $('#sheet').innerHTML = html;
+  $('#sheet').classList.add('open');
+  $('#scrim').classList.add('open');
+}
+function closeSheet(){ $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); }
+$('#scrim').addEventListener('click', closeSheet);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSheet(); $('#pop').classList.remove('open'); } });
+
+$('#btnCreate').addEventListener('click', ()=>{
+  const made = S.blocks.filter(b=>b.makes && b.on);
+  const t = S.tpl==='__blank' ? null : TEMPLATES.find(x=>x.id===S.tpl);
+  const hw = (t?t.homework:[]).filter(k=> made.some(b=>b.makes===k));
+  openSheet(
+    '<button class="close" id="sheetClose">Close</button>'+
+    '<span class="eyebrow">Before you commit</span>'+
+    '<h3 id="sheetTitle">'+made.length+' new item'+(made.length===1?'':'s')+'</h3>'+
+    '<p class="lead">These are created in Dahua and assigned to <b>'+S.cls+'</b> for '+esc(S.date)+'. '+
+    (hw.length? 'Two of them go home as homework, due Sunday 17 August.' : 'Nothing goes home as homework.')+'</p>'+
+    '<div class="mlist">'+ made.map(b=>
+      '<div class="mrow">'+sealHtml(b.makes,'lg pending')+
+        '<span class="mt"><b>'+esc(titleFor(b.makes))+'</b><span>'+esc(unitFor(b.makes))+
+        (hw.indexOf(b.makes)>-1?' · homework':'')+'</span></span>'+
+        '<span class="where">'+esc(KIND[b.makes].where)+'</span>'+
+      '</div>').join('') +'</div>'+
+    '<div class="sfoot"><button class="btn" id="sheetCancel">Go back</button>'+
+    '<button class="btn seal-btn" id="sheetGo" style="margin-left:auto">Create and assign to '+S.cls+'</button></div>'
+  );
+  $('#sheetClose').onclick=closeSheet;
+  $('#sheetCancel').onclick=closeSheet;
+  $('#sheetGo').onclick=()=>{
+    // push the new practices into the real list so Assignments reflects it
+    made.forEach((b,i)=>{
+      if(b.makes==='text') return;
+      PRACTICES.unshift({
+        id:'new'+Date.now()+i, kind:b.makes, name:titleFor(b.makes), topic:topic().han,
+        classes:[S.cls], due:3, done:0, of:CLASSES.find(c=>c.id===S.cls).n,
+      });
+    });
+    if(made.some(b=>b.makes==='text')){
+      LIBRARY.unshift({ kind:'text', name:topic().han+' — '+topic().en, level:'HSK 1', used:made.length-1, updated:'just now', detail:unitFor('text') });
+    }
+    S.created=true; closeSheet(); renderLesson(); refreshCounts();
+    toast(made.length+' items created and assigned to '+S.cls);
+  };
+});
+
+/* ======================================================================
+   ASSIGNMENTS
+   ====================================================================== */
+function dueLabel(d){
+  if(d===null) return { text:'No due date', tag:'', cls:'' };
+  if(d<0)  return { text:Math.abs(d)+' day'+(Math.abs(d)===1?'':'s')+' overdue', tag:'Overdue', cls:'late' };
+  if(d===0) return { text:'Due today', tag:'Today', cls:'late' };
+  if(d<=7) return { text:'Due in '+d+' day'+(d===1?'':'s'), tag:'This week', cls:'soon' };
+  return { text:'Due in '+d+' days', tag:'', cls:'' };
+}
+
+function renderAssign(){
+  const q=S.assignQuery.toLowerCase();
+  let rows = PRACTICES.filter(p=>{
+    if(S.assignFilter!=='all' && p.kind!==S.assignFilter) return false;
+    if(q && p.name.toLowerCase().indexOf(q)<0 && p.topic.indexOf(q)<0) return false;
+    return true;
+  });
+
+  const buckets = [
+    { key:'late',   label:'Overdue',        note:'Chase these first', test:p=> p.due!==null && p.due<0 },
+    { key:'week',   label:'Due this week',  note:'', test:p=> p.due!==null && p.due>=0 && p.due<=7 },
+    { key:'later',  label:'Later',          note:'', test:p=> p.due!==null && p.due>7 },
+    { key:'none',   label:'Not assigned',   note:'These exist but no class has them yet', test:p=> p.due===null },
+  ];
+
+  $('#assignList').innerHTML = buckets.map(b=>{
+    const items = rows.filter(b.test);
+    if(!items.length) return '';
+    return '<div class="group-label"><span class="eyebrow">'+b.label+'</span><span class="n">'+items.length+'</span>'+
+      (b.note?'<span class="n" style="color:var(--faint)">'+b.note+'</span>':'')+'</div>'+
+      '<div class="list">'+ items.map(p=>{
+        const d=dueLabel(p.due);
+        const pct = p.of? Math.round(p.done/p.of*100) : 0;
+        return '<div class="row">'+ sealHtml(p.kind) +
+          '<span class="rt"><b>'+esc(p.name)+'</b><span class="meta">'+
+            (p.classes.length? esc(p.classes.join(', ')) : 'No class') +
+            '<span class="sep">·</span>'+ esc(d.text) +
+            (p.of? '<span class="sep">·</span>'+p.done+' of '+p.of+' handed in' : '') +
+          '</span></span>'+
+          (d.tag? '<span class="tag '+d.cls+'">'+d.tag+'</span>' : '')+
+          (p.of? '<span class="bar'+(p.due!==null&&p.due<0&&pct<100?' warn':'')+'"><i style="width:'+pct+'%"></i></span>' : '')+
+          '<span class="acts"><button class="btn sm" data-try="'+p.id+'">Try it</button>'+
+          '<button class="btn sm" data-res="'+p.id+'">Results</button></span>'+
+        '</div>';
+      }).join('') +'</div>';
+  }).join('') || '<div class="lesson-empty"><p>Nothing matches that.</p></div>';
+}
+
+$$('[data-af]').forEach(c=> c.addEventListener('click', ()=>{
+  S.assignFilter=c.dataset.af;
+  $$('[data-af]').forEach(x=>x.classList.toggle('on',x===c));
+  renderAssign();
+}));
+$('#assignSearch').addEventListener('input', e=>{ S.assignQuery=e.target.value; renderAssign(); });
+$('#assignList').addEventListener('click', e=>{
+  const t=e.target.closest('[data-try]'), r=e.target.closest('[data-res]');
+  if(t) toast('Opening the practice as a student would see it');
+  if(r) toast('Opening submissions');
+});
+
+/* ======================================================================
+   LIBRARY
+   ====================================================================== */
+function renderLibrary(){
+  const q=S.libQuery.toLowerCase();
+  const rows = LIBRARY.filter(x=>{
+    if(S.libFilter!=='all' && x.kind!==S.libFilter) return false;
+    if(q && x.name.toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+  $('#libList').innerHTML = rows.map(x=>
+    '<div class="row">'+ sealHtml(x.kind) +
+      '<span class="rt"><b>'+esc(x.name)+'</b><span class="meta">'+esc(x.level)+
+      '<span class="sep">·</span>'+esc(x.detail)+
+      '<span class="sep">·</span>'+(x.used? 'feeds '+x.used+' practice'+(x.used===1?'':'s') : 'not used yet')+
+      '</span></span>'+
+      '<span class="num">'+esc(x.updated)+'</span>'+
+      '<span class="acts"><button class="btn sm" data-plan="'+esc(x.name)+'">Plan a lesson with this</button></span>'+
+    '</div>'
+  ).join('') || '<div class="lesson-empty"><p>Nothing matches that.</p></div>';
+}
+$$('[data-lf]').forEach(c=> c.addEventListener('click', ()=>{
+  S.libFilter=c.dataset.lf;
+  $$('[data-lf]').forEach(x=>x.classList.toggle('on',x===c));
+  renderLibrary();
+}));
+$('#libSearch').addEventListener('input', e=>{ S.libQuery=e.target.value; renderLibrary(); });
+$('#libList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-plan]'); if(!b) return;
+  go('plan'); toast('Pick a template to build the lesson');
+});
+$('#btnNewText').addEventListener('click', ()=> toast('Paste or upload a text to add it to the library'));
+
+/* ======================================================================
+   CLASSES
+   ====================================================================== */
+function renderClasses(){
+  $('#classList').innerHTML = CLASSES.map(c=>
+    '<button class="md-item'+(S.classSel===c.id?' on':'')+'" data-cls="'+c.id+'">'+
+      '<b>'+c.id+'</b><span>'+c.level+' · '+c.n+' students · next '+c.next+'</span>'+
+    '</button>'
+  ).join('');
+
+  const c = CLASSES.find(x=>x.id===S.classSel);
+  const roster = ROSTER[S.classSel]||[];
+  const open = PRACTICES.filter(p=> p.classes.indexOf(S.classSel)>-1);
+  const late = open.filter(p=> p.due!==null && p.due<0).length;
+
+  let body =
+    '<div class="tabs">'+
+      ['roster','standings','work'].map(t=>
+        '<button class="tab'+(S.classTab===t?' on':'')+'" data-ct="'+t+'">'+
+        ({roster:'Students',standings:'Standings',work:'Open work'}[t])+'</button>').join('')+
+    '</div>'+
+    '<div class="facts">'+
+      '<div class="fact"><span class="eyebrow">Students</span><div class="v tnum">'+c.n+'</div></div>'+
+      '<div class="fact"><span class="eyebrow">Level</span><div class="v">'+c.level+'</div></div>'+
+      '<div class="fact"><span class="eyebrow">Open work</span><div class="v tnum">'+open.length+'</div></div>'+
+      '<div class="fact"><span class="eyebrow">Overdue</span><div class="v tnum" style="'+(late?'color:var(--seal)':'')+'">'+late+'</div></div>'+
+    '</div>';
+
+  if(S.classTab==='roster'){
+    body += '<div class="list">'+ roster.map(s=>
+      '<div class="row"><span class="seal">'+s[1].slice(-1)+'</span>'+
+        '<span class="rt"><b>'+esc(s[0])+' <span class="han" style="color:var(--muted);font-weight:400">'+esc(s[1])+'</span></b>'+
+        '<span class="meta">Word game level '+s[2]+'<span class="sep">·</span>'+s[3]+' points</span></span>'+
+        '<span class="bar"><i style="width:'+s[3]+'%"></i></span>'+
+        '<span class="acts"><button class="btn sm">Record</button></span>'+
+      '</div>').join('') +'</div>';
+  } else if(S.classTab==='standings'){
+    const ranked = roster.slice().sort((a,b)=> b[3]-a[3]);
+    body += '<div class="list">'+ ranked.map((s,i)=>
+      '<div class="row"><span class="num" style="width:26px;text-align:right">'+(i+1)+'</span>'+
+        '<span class="rt"><b>'+esc(s[0])+'</b><span class="meta han">'+esc(s[1])+'</span></span>'+
+        '<span class="num tnum" style="font-size:14px;color:var(--ink)">'+s[3]+'</span>'+
+        '<span class="acts"><button class="btn sm">Adjust</button></span>'+
+      '</div>').join('') +'</div>'+
+      '<p style="margin-top:14px;font-size:12.5px;color:var(--faint)">Points are awarded by practice and by the word game. You can adjust them by hand.</p>';
+  } else {
+    body += open.length
+      ? '<div class="list">'+ open.map(p=>{
+          const d=dueLabel(p.due);
+          return '<div class="row">'+sealHtml(p.kind)+
+            '<span class="rt"><b>'+esc(p.name)+'</b><span class="meta">'+esc(d.text)+
+            '<span class="sep">·</span>'+p.done+' of '+p.of+' handed in</span></span>'+
+            (d.tag?'<span class="tag '+d.cls+'">'+d.tag+'</span>':'')+
+          '</div>';
+        }).join('') +'</div>'
+      : '<div class="lesson-empty"><p>Nothing outstanding for this class.</p></div>';
+  }
+
+  $('#classBody').innerHTML = body;
+}
+$('#classList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-cls]'); if(!b) return;
+  S.classSel=b.dataset.cls; renderClasses();
+});
+$('#classBody').addEventListener('click', e=>{
+  const t=e.target.closest('[data-ct]'); if(!t) return;
+  S.classTab=t.dataset.ct; renderClasses();
+});
+$('#btnNewClass').addEventListener('click', ()=> toast('Name the class, pick a grade system and a level'));
+
+/* ======================================================================
+   WORD GAME
+   ====================================================================== */
+function renderGame(){
+  $('#gameNote').textContent = GAME_GOALS.length+' goals running across '+
+    new Set(GAME_GOALS.map(g=>g.cls)).size+' classes';
+
+  $('#gameList').innerHTML = GAME_GOALS.map(g=>{
+    const pct=Math.round(g.met/g.of*100);
+    const all = g.met===g.of;
+    return '<div class="row">'+
+      '<span class="seal">游</span>'+
+      '<span class="rt"><b>'+esc(g.cls)+' · '+esc(g.goal)+'</b><span class="meta">'+
+        esc(g.from)+' to '+esc(g.to)+'<span class="sep">·</span>'+
+        (all? 'everyone met it' : g.behind.length+' behind: '+esc(g.behind.join(', ')))+
+      '</span></span>'+
+      '<span class="num tnum">'+g.met+' / '+g.of+'</span>'+
+      '<span class="bar'+(all?'':' warn')+'"><i style="width:'+pct+'%"></i></span>'+
+      '<span class="acts">'+(all?'':'<button class="btn sm" data-remind="'+esc(g.cls)+'">Remind them</button>')+
+      '<button class="btn sm">Edit</button></span>'+
+    '</div>';
+  }).join('');
+
+  $('#worldGrid').innerHTML = WORLDS.map(w=>
+    '<div class="world'+(w.open?'':' locked')+'">'+
+      '<div class="wn">'+w.n+'</div><div class="we">'+w.e+'</div>'+
+      '<div class="ws">'+(w.open? w.stages+' stages' : 'Coming soon')+'</div>'+
+    '</div>'
+  ).join('');
+}
+$('#gameList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-remind]'); if(!b) return;
+  toast('Reminder sent to the students behind in '+b.dataset.remind);
+});
+$('#btnAssignGame').addEventListener('click', ()=> toast('Pick classes, a goal and a date range'));
+
+/* ======================================================================
+   Counts + boot
+   ====================================================================== */
+function refreshCounts(){
+  $('#navAssign').textContent = PRACTICES.filter(p=>p.classes.length).length;
+  $('#navLib').textContent = LIBRARY.length;
+  $('#afAll').textContent = PRACTICES.length;
+  ['mirror','vocab','qa','mc'].forEach(k=>{
+    const el=$('#af'+k); if(el) el.textContent = PRACTICES.filter(p=>p.kind===k).length;
+  });
+  $('#lfAll').textContent = LIBRARY.length;
+  $('#lftext').textContent = LIBRARY.filter(x=>x.kind==='text').length;
+  $('#lfbank').textContent = LIBRARY.filter(x=>x.kind==='bank').length;
+}
+
+buildMenu($('#menuClass'), CLASSES.map(c=>({v:c.id,label:c.id,sub:c.level})), S.cls, ()=>{});
+renderTemplates();
+renderLesson();
+refreshCounts();
+syncPlanTitle();
+
+})();
+</script>
+</body>
+</html>

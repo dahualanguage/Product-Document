@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create New Project — v11 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 「現行產品」Create New Project 的複刻，不是提案。
+   出處：dahua-dash origin/develop @ 0fa7cca9（2026-10-08 fetch）
+     src/sections/projects/view/create/project-create-view.js              （四步：Course Settings → Generate Content → Review & Edit → Teaching Points；CardWrap）
+     src/components/wizard-step-header/wizard-step-header.js                （標題 ＋ 右邊的膠囊步驟）
+     steps/setup/project-create-step-setup.js                               （四個下拉：Test Type／Level／Target Language／Student's Native Language；Next Step 說明框）
+     steps/generateContent/project-create-step-generate-content.js          （左 4 欄三張功能卡、右 8 欄表單）
+     steps/generateContent/create/{function-selector,function-detail-create,function-detail-revise,function-detail-summary}.js
+     steps/generateContent/create/shared/{content-type-chips,word-limit-slider,teaching-points-input}.js
+     steps/generateContent/create/generation-progress-dialog.js            （Analyzing → Generating → Organizing → Done!）
+     steps/edit/project-create-step-edit.js                                 （Project Name ＋ Article Content 10 列）
+     steps/confirm/project-create-step-confirm.js                           （字盒選教學點、Mode、How it works、圖例、Add more teaching points、Analyze、生詞卡、未存提示列）
+     src/components/hook-form/{rhf-wordbox,rhf-new-vocab-pane}.js
+     src/enum/projects.js（PROJECT_LEVEL_TYPE_MAPPER：TOCFL／HSK 1–7、ACTFL）
+     外殼同 v3 create-mirroring.html（側欄 240、頂欄 80）。
+   顏色、字級、圓角、間距逐項照 theme ＋ sx 抄，不做自由發揮。
+   假資料跟練習的 mock 對齊：課文＝v3「我的一天」五句，教學點＝v4 WORDS 七個（含 一……就）。
+
+   網址參數：?step=1|2|3|4 · &fn=create|revise|summary（第二步哪一張功能卡）· &gen=1 生成中的對話框 · &gen=done 生好了
+             &analyzed=1 第四步已分析（生詞卡出現）· &saved=1 已存（成功對話框）· &mode=segment 第四步改分詞
+             &topic=天气&std=HSK&lvl=2（第一、二步預填，給 Planning 嵌入用）· &proj=0 指「我的一天」那一份假資料
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0; --primary-light:#5BE49B;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8; --grey400:#C4CDD5;
+  --info:#508AFC; --error:#FF5630; --warning-dark:#B76E00;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; padding-bottom:48px; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none;
+  white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button, input, select, textarea{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80 ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* ---------- WizardStepHeader ---------- */
+.wiz{ display:flex; align-items:center; margin-bottom:40px; }
+.wiz .ic{ width:48px; height:48px; border-radius:50%; background:var(--grey200); display:flex; align-items:center; justify-content:center; flex:none; margin-right:16px; }
+.wiz .ic .mi{ font-size:26px; color:var(--text2); }
+.wiz .h4{ font-size:24px; font-weight:700; line-height:1.5; }
+.wiz .sub{ font-size:14px; color:var(--text2); }
+.wiz .grow{ flex:1; }
+.pills{ display:flex; align-items:center; }
+.pills .ln{ width:32px; height:2px; background:var(--grey300); margin:0 4px; border-radius:4px; }
+.pills .ln.on{ background:var(--primary); }
+.pills .pill{ display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:9999px; cursor:pointer; transition:all .2s; }
+.pills .pill.active{ background:var(--primary); }
+.pills .pill i{ width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-style:normal; font-weight:700; font-size:11px; background:var(--grey300); color:#fff; }
+.pills .pill.active i{ background:#fff; color:var(--primary); }
+.pills .pill.done i{ background:var(--primary); color:#fff; }
+.pills .pill i .mi{ font-size:14px; }
+.pills .pill span{ font-size:12px; font-weight:600; color:var(--text2); }
+.pills .pill.active span{ color:#fff; }
+.pills .pill.done span{ color:var(--primary); }
+
+/* ---------- CardWrap ---------- */
+.wrap{ margin:24px auto 0; padding:24px 32px; border:1px solid var(--divider); border-radius:24px; background:#fff; }
+.stephd{ display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+.stephd .n{ width:32px; height:32px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:none; }
+.stephd h2{ font-size:18px; font-weight:700; }
+.stephd p{ font-size:14px; color:var(--text2); }
+.lbl{ font-size:14px; font-weight:700; margin-bottom:6px; display:block; }
+.lbl .req{ color:var(--error); }
+.lbl .opt{ color:var(--text2); font-weight:400; margin-left:4px; }
+.grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:24px; }
+@media (max-width:900px){ .grid4{ grid-template-columns:1fr 1fr; } }
+.sel{ position:relative; }
+.sel .mi.lead{ position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:20px; color:var(--primary); pointer-events:none; }
+.sel .mi.caret{ position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--text2); pointer-events:none; }
+.sel select{ width:100%; height:56px; border:1px solid rgba(145,158,171,.32); border-radius:8px; padding:0 36px 0 42px; font-size:15px; color:var(--text); background:#fff; appearance:none; outline:none; }
+.sel select:hover{ border-color:var(--text); }
+.sel select:focus{ border:2px solid var(--primary); }
+.inp{ width:100%; height:56px; border:1px solid rgba(145,158,171,.32); border-radius:8px; padding:0 14px; font-size:15px; color:var(--text); background:#fff; outline:none; }
+.inp:hover{ border-color:var(--text); } .inp:focus{ border:2px solid var(--primary); }
+.inp:disabled{ background:rgba(145,158,171,.08); color:var(--text2); }
+textarea.inp{ height:auto; padding:14px; line-height:1.6; resize:vertical; }
+.help{ font-size:12px; color:var(--text2); margin:4px 14px 0; }
+.note{ background:rgba(0,203,97,.04); border:1px solid rgba(0,203,97,.12); border-radius:16px; padding:16px 24px; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+.note .mi{ font-size:22px; color:var(--primary); }
+.note b{ display:block; font-size:14px; font-weight:700; }
+.note span{ font-size:12px; color:var(--text2); }
+.acts{ display:flex; align-items:center; justify-content:space-between; }
+.acts.end{ justify-content:flex-end; gap:12px; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; line-height:1.7; }
+.btn .mi{ font-size:18px; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); padding:8px 24px; font-weight:600; }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:rgba(145,158,171,.24); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.outlined{ background:transparent; border:1px solid rgba(145,158,171,.32); color:var(--text); }
+.btn.outlined:hover{ background:rgba(145,158,171,.08); border-color:var(--text); }
+.btn.outlined.pri{ border-color:rgba(0,203,97,.48); color:var(--primary); }
+.btn.outlined.pri:hover{ background:rgba(0,203,97,.08); border-color:var(--primary); }
+.btn.outlined.dis{ color:var(--text3); border-color:rgba(145,158,171,.24); cursor:default; }
+.btn.outlined.dis:hover{ background:transparent; }
+.btn.big{ padding:10px 32px; }
+
+/* ---------- 第二步：功能卡 ＋ 表單 ---------- */
+.gen{ display:grid; grid-template-columns:1fr 2fr; gap:16px; }
+@media (max-width:900px){ .gen{ grid-template-columns:1fr; } }
+.fn{ position:relative; overflow:hidden; border:1px solid var(--divider); border-radius:24px; background:#fff; padding:20px; margin-bottom:16px; cursor:pointer; display:flex; align-items:center; gap:16px; transition:all .2s; }
+.fn:hover{ border-color:var(--fb); background:var(--fbg); }
+.fn.on{ border:2px solid var(--fc); background:var(--fbg); }
+.fn .fi{ width:44px; height:44px; border-radius:16px; background:var(--grey100); display:flex; align-items:center; justify-content:center; flex:none; }
+.fn.on .fi{ background:var(--fib); }
+.fn .fi .mi{ font-size:24px; color:var(--text2); }
+.fn.on .fi .mi{ color:var(--fc); }
+.fn b{ display:block; font-size:16px; font-weight:700; }
+.fn.on b{ color:var(--fc); }
+.fn span{ font-size:12px; color:var(--text2); line-height:1.4; display:block; }
+.fn .warn{ color:var(--warning-dark); margin-top:4px; }
+.fn .rec{ position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:4px; padding:2px 8px; background:#10B981; color:#fff; font-size:10.4px; font-weight:700; border-radius:9999px; }
+.fn .rec .mi{ font-size:12px; }
+.fcard{ border:1px solid var(--divider); border-radius:24px; background:#fff; padding:24px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+.sec{ margin-bottom:20px; }
+.hr{ border:0; border-top:1px solid rgba(0,0,0,.06); margin-bottom:20px; }
+.ctchips{ display:flex; flex-wrap:wrap; gap:6px; }
+.ctchip{ height:44px; min-width:140px; flex:1 1 calc(25% - 6px); max-width:calc(25% - 6px); display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--divider); border-radius:22px; background:transparent; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; }
+.ctchip .mi{ font-size:18px; color:var(--text3); }
+.ctchip:hover{ background:#F0FDF4; }
+.ctchip.on{ border:2px solid var(--primary); background:#F0FDF4; color:var(--primary); }
+.ctchip.on .mi{ color:var(--primary); }
+.slider{ display:flex; align-items:center; gap:16px; }
+.slider small{ font-size:12px; color:var(--text2); flex:none; }
+.slider input[type=range]{ flex:1; accent-color:var(--primary); height:4px; }
+.slider .val{ position:relative; }
+.tpbox{ min-height:48px; padding:12px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; border:1px solid var(--divider); border-radius:12px; }
+.tpbox:focus-within{ border:2px solid var(--primary); }
+.tpbox .tag{ display:inline-flex; align-items:center; gap:4px; height:24px; padding:0 4px 0 10px; border-radius:12px; background:var(--primary-lighter); color:var(--primary-dark); font-size:13px; font-weight:600; }
+.tpbox .tag .mi{ font-size:16px; cursor:pointer; opacity:.7; }
+.tpbox input{ flex:1; min-width:160px; border:0; outline:0; font-size:14px; padding:0; }
+.tabs{ display:flex; gap:32px; border-bottom:1px solid var(--divider); margin-bottom:16px; min-height:36px; }
+.tab{ display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--text2); padding:6px 0; border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:0; border-left:0; border-right:0; }
+.tab .mi{ font-size:18px; }
+.tab.on{ color:var(--primary); border-bottom-color:var(--primary); }
+.drop{ border:1px dashed rgba(145,158,171,.32); border-radius:12px; background:var(--grey100); padding:40px 24px; text-align:center; color:var(--text2); font-size:14px; }
+.drop .mi{ font-size:40px; color:var(--text3); display:block; margin-bottom:8px; }
+.drop b{ color:var(--text); display:block; margin-bottom:4px; }
+.lin{ height:4px; border-radius:4px; background:rgba(0,203,97,.24); overflow:hidden; margin-bottom:16px; }
+.lin i{ display:block; height:100%; width:40%; background:var(--primary); animation:lin 1.2s ease-in-out infinite; }
+@keyframes lin{ from{ transform:translateX(-100%); } to{ transform:translateX(260%); } }
+
+/* ---------- 第四步 ---------- */
+.okbar{ display:flex; align-items:center; justify-content:space-between; background:#F0FDF4; border:1px solid rgba(0,203,97,.2); border-radius:12px; padding:8px 16px; margin:16px 0; }
+.okbar .l{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; }
+.okbar .l .mi{ font-size:20px; color:var(--primary); }
+.okbar .l em{ font-style:normal; font-size:20px; font-weight:800; color:var(--primary); margin-right:4px; }
+.okbar .r{ display:flex; align-items:center; gap:4px; color:var(--primary); font-size:12px; font-weight:700; }
+.okbar .r .mi{ font-size:18px; }
+.tp{ display:grid; grid-template-columns:3fr 1fr; gap:16px; }
+.wordbox{ background:#fff; border:1px solid var(--divider); border-radius:8px; padding:16px; min-height:400px; }
+.wordbox .w{ display:inline-flex; flex-direction:column; align-items:center; margin:0 4px 8px 0; cursor:pointer; vertical-align:bottom; }
+.wordbox .w small{ font-size:11px; line-height:1.2; color:var(--text2); white-space:nowrap; margin-bottom:2px; min-height:13px; }
+.wordbox .w span{ font-size:16px; padding:2px 6px; border:1px solid #e8f9e8; background:#e8f9e8; border-radius:5px; }
+.wordbox .w.pu span{ background:transparent; border-color:transparent; }
+.wordbox .w.sel span{ background:#fce4ec; border-color:#f48fb1; }
+.wordbox .w.an span{ background:#e3f2fd; border-color:#64b5f6; }
+.wordbox .w:hover span{ filter:brightness(.96); }
+.segbox{ background:#fff; border:1px solid var(--divider); border-radius:8px; padding:16px; min-height:400px; }
+.segbox textarea{ width:100%; min-height:200px; border:1px solid rgba(145,158,171,.32); border-radius:8px; padding:12px; font-size:16px; line-height:2; letter-spacing:.5px; outline:none; }
+.segbox .help{ margin:8px 0 0; }
+.aside{ display:flex; flex-direction:column; gap:12px; }
+.mode{ padding:16px; background:#fff; border:1px solid var(--divider); border-radius:16px; }
+.mode b{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; }
+.mode label{ display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:4px; cursor:pointer; }
+.mode input{ accent-color:var(--primary); width:16px; height:16px; }
+.how{ padding:16px; background:#fff; border:1px solid var(--divider); border-radius:16px; }
+.how b{ display:block; font-size:14px; font-weight:700; margin-bottom:12px; }
+.how .row{ display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size:13px; }
+.how .row i{ width:20px; height:20px; border-radius:50%; background:#F0FDF4; border:1px solid var(--primary); color:var(--primary); font-size:10px; font-weight:600; font-style:normal; display:flex; align-items:center; justify-content:center; flex:none; }
+.how.seg{ background:rgba(0,203,97,.04); border-color:rgba(0,203,97,.12); }
+.how.seg b{ font-size:12px; color:var(--primary-dark); }
+.how.seg .k{ font-size:13px; font-weight:600; margin-bottom:2px; }
+.how.seg .k.g{ color:#2e7d32; } .how.seg .k.r{ color:#d32f2f; }
+.how.seg .d{ font-size:13px; color:#666; }
+.how.seg .ex{ display:flex; align-items:center; gap:4px; margin:4px 0 12px; flex-wrap:wrap; font-size:10px; font-weight:600; color:#333; }
+.how.seg .ex span{ padding:2px 4px; border:1px solid lightgray; border-radius:2px; background:#fff; font-weight:400; }
+.how.seg .ex .bs{ padding:1px 3px; background:#ffcdd2; border:0; font-size:9px; font-weight:600; }
+.legend{ padding:16px; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px; }
+.legend .row{ display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:12px; }
+.legend .row:last-child{ margin-bottom:0; }
+.legend .sw{ width:16px; height:16px; border-radius:4px; flex:none; }
+.pane{ margin-top:16px; padding:24px; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24); }
+.pane h3{ font-size:19px; font-weight:700; margin-bottom:16px; }
+.pane p{ font-size:14px; color:var(--text2); margin-bottom:16px; }
+.pane .frm{ display:grid; grid-template-columns:4fr 3fr 3fr 2fr; gap:16px; align-items:start; margin-bottom:24px; }
+@media (max-width:900px){ .pane .frm{ grid-template-columns:1fr 1fr; } }
+.pane .in{ width:100%; height:40px; border:1px solid rgba(145,158,171,.32); border-radius:4px; padding:0 10px; background:#fff; font-size:14px; outline:none; }
+.pane .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.pane .chips .c{ display:inline-flex; align-items:center; gap:6px; padding:4px 6px 4px 12px; border-radius:16px; background:#fff; border:1px solid var(--divider); font-size:14px; }
+.pane .chips .c .t{ height:20px; padding:0 8px; border-radius:10px; background:var(--grey200); font-size:10px; display:inline-flex; align-items:center; }
+.pane .chips .c .mi{ font-size:16px; color:var(--text2); cursor:pointer; }
+.center{ display:flex; flex-direction:column; align-items:center; margin:24px 0 8px; }
+.vcard{ position:relative; margin-bottom:24px; border:1px solid var(--divider); border-radius:24px; background:#fff; padding:24px; }
+.vcard.del{ opacity:.6; background:rgba(145,158,171,.24); border-color:var(--error); }
+.vcard .ib{ position:absolute; top:20px; width:32px; height:32px; border-radius:50%; border:1px solid var(--divider); background:transparent; color:var(--text2); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.vcard .ib .mi{ font-size:18px; }
+.vcard .ib.edit{ right:64px; } .vcard .ib.edit:hover{ background:var(--grey100); }
+.vcard .ib.edit.on{ color:var(--primary); border-color:var(--primary); background:var(--primary-lighter); }
+.vcard .ib.rm{ right:24px; color:var(--error); border-color:var(--error); }
+.vcard .ib.rm:hover{ background:rgba(255,86,48,.08); }
+.vcard .ib.rm.undo{ color:#22C55E; border-color:#22C55E; }
+.vcard .hd{ display:flex; min-height:80px; margin:0 8px 24px; }
+.vcard .hd .l{ padding-right:40px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid rgba(0,0,0,.08); }
+.vcard .hd .l .zh{ font-size:32px; font-weight:700; color:var(--primary); line-height:1.2; }
+.vcard .hd .l .py{ font-size:16px; font-weight:700; margin-top:8px; }
+.vcard .hd .r{ padding-left:40px; display:flex; flex-direction:column; justify-content:center; }
+.vcard .hd .r .tr{ font-size:18px; font-weight:600; margin-bottom:8px; }
+.vcard .pills2{ display:flex; gap:8px; }
+.vcard .pills2 span{ padding:2px 12px; border:1px solid var(--primary); border-radius:9999px; font-size:12px; font-weight:600; color:var(--primary); }
+.vcard .expl{ margin:0 8px 24px; }
+.vcard .expl .tag{ display:inline-block; padding:2px 8px; background:#EEF2FF; border:1px solid rgba(99,102,241,.3); border-radius:4px; font-size:12px; font-weight:700; color:var(--primary); margin-bottom:8px; margin-right:8px; }
+.vcard .expl .tag.type{ background:transparent; border-color:var(--primary); border-radius:9999px; padding:2px 12px; }
+.vcard .expl p{ font-size:16px; color:var(--text2); }
+.vcard .exs{ display:flex; gap:16px; }
+@media (max-width:900px){ .vcard .exs{ flex-direction:column; } }
+.vcard .ex{ flex:1; background:#f8f9fa; border-radius:16px; padding:20px; }
+.vcard .ex .tag{ display:inline-block; padding:2px 8px; background:#F0FDF4; border:1px solid rgba(0,203,97,.3); border-radius:4px; font-size:12px; font-weight:700; color:var(--primary); margin-bottom:16px; }
+.vcard .ex .zh{ font-size:20px; font-weight:400; margin-bottom:6px; }
+.vcard .ex .zh b{ color:var(--primary); font-weight:700; }
+.vcard .ex .py{ font-size:14px; font-weight:700; margin-bottom:16px; }
+.vcard .ex .py b{ color:var(--primary); font-weight:700; }
+.vcard .ex .tr{ border-top:1px dashed rgba(0,0,0,.12); padding-top:16px; font-size:14px; color:var(--text2); display:flex; gap:8px; }
+.unsaved{ position:fixed; left:241px; right:0; bottom:0; height:64px; background:#919EAB; opacity:.8; display:flex; align-items:center; justify-content:center; gap:16px; z-index:45; }
+.unsaved span{ color:#fff; font-size:18px; font-weight:700; }
+
+/* ---------- 對話框 ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(22,28,36,.8); z-index:100; display:flex; align-items:center; justify-content:center; }
+.dlg{ width:600px; max-width:calc(100% - 64px); background:#fff; border-radius:24px; overflow:hidden; box-shadow:0 24px 48px rgba(0,0,0,.2); }
+.dlg .top{ height:4px; background:rgba(0,203,97,.24); position:relative; overflow:hidden; }
+.dlg .top i{ position:absolute; inset:0; width:40%; background:var(--primary); animation:lin 1.2s ease-in-out infinite; }
+.dlg .top.full i{ width:100%; animation:none; }
+.dlg .bd{ padding:32px 24px; text-align:center; }
+.dlg h2{ font-size:24px; font-weight:700; margin-bottom:4px; }
+.dlg p{ font-size:14px; color:var(--text2); margin-bottom:32px; }
+.prog{ display:flex; justify-content:center; align-items:flex-start; margin:0 16px 32px; }
+.prog .pl{ flex:1; height:3px; background:var(--grey200); margin-top:20px; border-radius:4px; }
+.prog .pl.on{ background:var(--primary); }
+.prog .ps{ width:120px; display:flex; flex-direction:column; align-items:center; }
+.prog .ps i{ width:40px; height:40px; border-radius:50%; background:var(--grey200); display:flex; align-items:center; justify-content:center; margin-bottom:8px; transition:all .3s; }
+.prog .ps i .mi{ font-size:22px; color:var(--grey400); }
+.prog .ps.on i{ background:var(--primary); } .prog .ps.on i .mi{ color:#fff; }
+.prog .ps span{ font-size:12px; font-weight:700; color:var(--text3); line-height:1.2; }
+.prog .ps.on span{ color:var(--primary); }
+.cheer{ background:#F0FDF4; border-radius:16px; padding:20px; margin-bottom:24px; display:flex; align-items:center; gap:16px; text-align:left; }
+.cheer .ci{ width:48px; height:48px; border-radius:50%; background:#DCFCE7; display:flex; align-items:center; justify-content:center; flex:none; }
+.cheer .ci .mi{ font-size:28px; color:#10B981; }
+.cheer b{ display:block; font-size:14px; font-weight:700; }
+.cheer span{ font-size:12px; color:var(--text2); }
+.cheer.amber{ background:#FFFBEB; }
+.cheer.amber .mi{ font-size:28px; color:#F59E0B; }
+.cheer.amber b{ font-weight:600; } .cheer.amber b i{ font-style:normal; color:var(--primary); }
+.wait{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; color:var(--text3); }
+.spin{ width:16px; height:16px; border:2px solid var(--text3); border-top-color:transparent; border-radius:50%; animation:rot 1s linear infinite; display:inline-block; }
+@keyframes rot{ to{ transform:rotate(360deg); } }
+.dlg .big{ font-size:80px; color:#22C55E; margin-bottom:32px; display:block; }
+.dlg .ft{ display:flex; justify-content:flex-end; gap:12px; padding:0 24px 24px; }
+
+/* ---------- 基準列 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#212B36; color:#fff; font-size:12px; padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+@media (max-width:1199.95px){ .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; } .main{ padding:88px 16px; } .unsaved{ left:0; } }
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div><a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div><a href="#" class="on"><span class="mi">folder</span>Projects</a><a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div><a href="#"><span class="mi">assignment</span>Practice List</a><a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div><a href="#"><span class="mi">people</span>Students</a><a href="#"><span class="mi">school</span>Classes</a><a href="#"><span class="mi">emoji_events</span>Leaderboard</a><a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="container">
+    <div class="wiz">
+      <div class="ic"><span class="mi">create_new_folder</span></div>
+      <div><div class="h4">Create New Project</div><div class="sub">Set up course content in 4 simple steps.</div></div>
+      <div class="grow"></div>
+      <div class="pills" id="stepper"></div>
+    </div>
+    <div class="wrap" id="content"></div>
+    <div class="footer" style="display:none"><button id="back"></button><button id="next"></button></div>
+  </div></div>
+</div>
+<div id="dlgs"></div>
+<div class="baseline">
+  <b>基準</b> v11 · Create New Project · 現行產品 @ 0fa7cca9
+  <a href="?step=1">1 Course Settings</a> · <a href="?step=2">2 Create</a> · <a href="?step=2&fn=revise">2 Revise</a> · <a href="?step=2&fn=summary">2 Summary</a> · <a href="?step=2&gen=1">生成中</a> · <a href="?step=2&gen=done">生好了</a> ·
+  <a href="?step=3">3 Review &amp; Edit</a> · <a href="?step=4">4 Teaching Points</a> · <a href="?step=4&mode=segment">4 改分詞</a> · <a href="?step=4&analyzed=1">4 已分析</a> · <a href="?step=4&analyzed=1&saved=1">4 已存</a>
+</div>
+
+<script>
+/* ---------- 假資料：跟練習的 mock 同一個世界 ---------- */
+const PROJECT = {
+  name:'我的一天', std:'HSK', lvl:2, tgt:'zh-CN', nat:'en',
+  topic:'我的一天', ctype:'ARTICLE', wlimit:150,
+  article:'我每天早上七点起床。起床以后，我先刷牙洗脸，然后吃早饭。八点半我骑自行车去学校。下午四点放学，我常常和同学一起打篮球。晚上我做完作业就早点睡觉。',
+};
+/* splitArticleArray：課文分詞（照 v4 POOL 的切法） */
+const SEG = ['我','每天','早上','七点','起床','。','起床','以后','，','我','先','刷牙','洗脸','，','然后','吃','早饭','。','八点半','我','骑','自行车','去','学校','。',
+  '下午','四点','放学','，','我','常常','和','同学','一起','打','篮球','。','晚上','我','做完','作业','就','早点','睡觉','。'];
+const PY = { 我:'wǒ', 每天:'měi tiān', 早上:'zǎo shang', 七点:'qī diǎn', 起床:'qǐ chuáng', 以后:'yǐ hòu', 先:'xiān', 刷牙:'shuā yá', 洗脸:'xǐ liǎn', 然后:'rán hòu', 吃:'chī', 早饭:'zǎo fàn',
+  八点半:'bā diǎn bàn', 骑:'qí', 自行车:'zì xíng chē', 去:'qù', 学校:'xué xiào', 下午:'xià wǔ', 四点:'sì diǎn', 放学:'fàng xué', 常常:'cháng cháng', 和:'hé', 同学:'tóng xué', 一起:'yì qǐ', 打:'dǎ', 篮球:'lán qiú',
+  晚上:'wǎn shang', 做完:'zuò wán', 作业:'zuò yè', 就:'jiù', 早点:'zǎo diǎn', 睡觉:'shuì jiào' };
+/* 教學點＝v4 WORDS 七個；「一……就」是文法，課文裡選不到、從 Add more teaching points 加 */
+const WORDS = [
+  { w:'起床', py:'qǐ chuáng', tr:'get up', pos:'verb', lvl:'HSK 2', ex:[['我每天七点起床。','wǒ měi tiān qī diǎn qǐ chuáng.','I get up at seven every day.'],['周末我起床很晚。','zhōu mò wǒ qǐ chuáng hěn wǎn.','On weekends I get up late.']] },
+  { w:'早饭', py:'zǎo fàn', tr:'breakfast', pos:'noun', lvl:'HSK 2', ex:[['我早饭吃面包。','wǒ zǎo fàn chī miàn bāo.','I eat bread for breakfast.'],['你吃早饭了吗？','nǐ chī zǎo fàn le ma?','Have you had breakfast?']] },
+  { w:'上课', py:'shàng kè', tr:'attend class', pos:'verb', lvl:'HSK 2', ex:[['我八点上课。','wǒ bā diǎn shàng kè.','I have class at eight.'],['今天我们不上课。','jīn tiān wǒ men bù shàng kè.','We do not have class today.']] },
+  { w:'图书馆', py:'tú shū guǎn', tr:'library', pos:'noun', lvl:'HSK 2', ex:[['下午我去图书馆看书。','xià wǔ wǒ qù tú shū guǎn kàn shū.','In the afternoon I go to the library to read.'],['图书馆里很安静。','tú shū guǎn lǐ hěn ān jìng.','It is very quiet in the library.']] },
+  { w:'运动', py:'yùn dòng', tr:'exercise', pos:'verb', lvl:'HSK 2', ex:[['我喜欢晚上运动。','wǒ xǐ huan wǎn shang yùn dòng.','I like to exercise in the evening.'],['运动对身体很好。','yùn dòng duì shēn tǐ hěn hǎo.','Exercise is good for the body.']] },
+  { w:'睡觉', py:'shuì jiào', tr:'sleep', pos:'verb', lvl:'HSK 2', ex:[['我十一点睡觉。','wǒ shí yī diǎn shuì jiào.','I go to sleep at eleven.'],['睡觉前我看一会儿书。','shuì jiào qián wǒ kàn yí huì er shū.','I read for a while before sleeping.']] },
+  { w:'一……就', py:'yī … jiù', tr:'as soon as', pos:'', lvl:'', type:'GRAMMAR', expl:'“一 A 就 B”：A 一發生，B 馬上跟著發生。', ex:[['我一起床就喝水。','wǒ yì qǐ chuáng jiù hē shuǐ.','I drink water as soon as I get up.'],['他一下课就回家。','tā yí xià kè jiù huí jiā.','He goes home as soon as class ends.']] },
+];
+const TP_TYPES = [['WORD','Word'],['GRAMMAR','Grammar'],['PHRASE','Phrase'],['SENTENCE_PATTERN','Sentence pattern'],['OTHER','Other']];
+const STEPS = ['Course Settings','Generate Content','Review & Edit','Teaching Points'];
+const CT = [['CONVERSATION','Conversation','chat'],['ARTICLE','Article','article'],['STORY','Story','menu_book'],['ANNOUNCEMENT','Announcement','campaign'],['SCRIPT','Script','videocam'],['SPEECH','Speech','mic'],['DEBATE_SCRIPT','Debate Script','groups']];
+const FNS = [
+  { id:'create', name:'Create', desc:'Enter a topic — we\'ll generate a graded article for your students.', icon:'auto_awesome', c:'#10B981', bg:'#F0FDF4', b:'#D1FAE5', ib:'#DCFCE7' },
+  { id:'revise', name:'Revise', desc:'Paste your own article — we\'ll adapt it to your students\' level.', icon:'edit_note', c:'#D97706', bg:'#FFFBEB', b:'#FDE68A', ib:'#FEF3C7' },
+  { id:'summary', name:'Summary', desc:'Upload or paste your own content to use directly for materials and speaking practices.', icon:'upload_file', c:'#3B82F6', bg:'#EFF6FF', b:'#BFDBFE', ib:'#DBEAFE' },
+];
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+/* ---------- 狀態（照網址） ---------- */
+const qs = new URLSearchParams(location.search);
+const S = {
+  step: Math.min(3, Math.max(0, (parseInt(qs.get('step') ?? '1', 10) || 1) - 1)),
+  std: qs.get('std') || PROJECT.std, lvl: parseInt(qs.get('lvl') || PROJECT.lvl, 10), tgt: PROJECT.tgt, nat: PROJECT.nat,
+  fn: ['create','revise','summary'].includes(qs.get('fn')) ? qs.get('fn') : 'create',
+  topic: qs.get('topic') || PROJECT.topic, ctype: PROJECT.ctype, wlimit: PROJECT.wlimit, tps: [], tpInput:'',
+  reviseTab: 1, reviseText:'', gen: qs.get('gen'),          // '1' 生成中、'done' 生好了
+  hasResult: (parseInt(qs.get('step') ?? '1', 10) || 1) >= 3 || qs.get('gen') === 'done',
+  name: PROJECT.name, article: PROJECT.article,
+  mode: qs.get('mode') === 'segment' ? 'segment' : 'select',
+  /* 課文裡選得到的三個（起床、早饭、睡觉）＋ 課文裡沒有、從 Add more teaching points 加的四個（上课、图书馆、运动、一……就）＝ v4 的七個教學點 */
+  sel: new Set(['起床','早饭','睡觉']), an: new Set(), addon: [{ w:'上课', type:'WORD' },{ w:'图书馆', type:'WORD' },{ w:'运动', type:'WORD' },{ w:'一……就', type:'GRAMMAR' }], addInput:'', addType:'WORD', addExpl:'',
+  analyzed: qs.get('analyzed') === '1', analyzing:false, editing:null, deleted:new Set(), saved: qs.get('saved') === '1', unsaved:false,
+};
+if (S.analyzed){ S.an = new Set(['起床','早饭','睡觉']); S.sel = new Set(); S.unsaved = !S.saved; }
+if (S.step >= 1 && !S.tps.length) S.tps = [];
+
+/* ---------- 第一步 ---------- */
+function renderStep0(){
+  const lv = (S.std === 'ACTFL') ? ['Novice Low','Novice Mid/Novice High','Intermediate Low','Intermediate Mid','Intermediate High/Advanced Low','Advanced Mid','Advanced High','Superior'] : [1,2,3,4,5,6,7];
+  const sel = (id, icon, opts, val, ph) => `<div class="sel"><span class="mi lead">${icon}</span><select data-set="${id}"><option value="" ${val===''?'selected':''} disabled>${ph}</option>${opts.map(o => `<option value="${esc(o[0])}" ${String(o[0])===String(val)?'selected':''}>${esc(o[1])}</option>`).join('')}</select><span class="mi caret">expand_more</span></div>`;
+  return `
+    <div class="stephd"><span class="n">1</span><h2>Course Settings</h2><p>Choose the proficiency standard and language for this project.</p></div>
+    <div class="grid4">
+      <div><span class="lbl">Test Type</span>${sel('std','description',[['TOCFL','TOCFL'],['HSK','HSK'],['ACTFL','ACTFL']],S.std,'Choose Standard')}</div>
+      <div><span class="lbl">Level</span>${sel('lvl','bar_chart',lv.map((n,i) => [i+1, n]),S.lvl,'Choose Level')}</div>
+      <div><span class="lbl">Target Language</span>${sel('tgt','language',[['zh-CN','Chinese (Simplified)'],['zh-TW','Chinese (Traditional)'],['en','English']],S.tgt,'Choose Language')}</div>
+      <div><span class="lbl">Student's Native Language</span>${sel('nat','translate',[['en','English'],['zh-TW','Chinese (Traditional)'],['ja','Japanese'],['ko','Korean'],['vi','Vietnamese'],['th','Thai']],S.nat,'Choose Language')}</div>
+    </div>
+    <div class="note"><span class="mi">auto_awesome</span><div><b>Next Step</b><span>We'll generate course content based on your settings in the next step.</span></div></div>
+    <div class="acts"><button class="btn outlined dis" disabled><span class="mi">arrow_back</span>Back</button><button class="btn contained" data-act="next">Save &amp; Continue<span class="mi">arrow_forward</span></button></div>`;
+}
+
+/* ---------- 第二步 ---------- */
+function ctChips(n){ return `<div class="sec"><span class="lbl">${n}. Content Type <span class="req">*</span></span><div class="ctchips">${CT.map(c => `<button class="ctchip ${S.ctype===c[0]?'on':''}" data-ct="${c[0]}"><span class="mi">${c[2]}</span>${c[1]}</button>`).join('')}</div></div><hr class="hr">`; }
+function slider(n){ return `<div class="sec"><span class="lbl">${n}. Word Limit</span><div class="slider"><small>100</small><div style="flex:1;position:relative;padding-top:14px"><span style="position:absolute;top:-4px;left:calc(${(S.wlimit-100)/14}% - 12px);font-size:12px;font-weight:700;color:var(--primary)">${S.wlimit}</span><input type="range" min="100" max="1500" step="50" value="${S.wlimit}" data-range="1" style="width:100%"></div><small>1500</small></div></div><hr class="hr">`; }
+function tpInput(n){ return `<div class="sec"><span class="lbl">${n}. Teaching Points <span class="opt">(Optional)</span></span><div class="tpbox">${S.tps.map((t,i) => `<span class="tag">${esc(t)}<span class="mi" data-tprm="${i}">cancel</span></span>`).join('')}<input id="tpIn" placeholder="${S.tps.length?'':'Type or paste teaching points, separate by spaces, commas, enter or 、'}" value="${esc(S.tpInput)}"></div></div>`; }
+function renderStep1(){
+  const cards = FNS.map(f => `<div class="fn ${S.fn===f.id?'on':''}" data-fn="${f.id}" style="--fc:${f.c};--fbg:${f.bg};--fb:${f.b};--fib:${f.ib}">
+      ${f.id==='create'?'<span class="rec"><span class="mi">star</span>Recommended</span>':''}
+      <span class="fi"><span class="mi">${f.icon}</span></span>
+      <div><b>${f.name}</b><span>${esc(f.desc)}</span>${f.id==='revise'?'<span class="warn">≈ 90 sec. For precision</span>':''}</div>
+    </div>`).join('');
+  let form = '';
+  if (S.fn === 'create'){
+    form = `<div class="fcard">${ctChips(1)}${slider(2)}
+      <div class="sec"><span class="lbl">3. Topic <span class="req">*</span></span><input class="inp" id="topic" placeholder="e.g. 全球暖化" maxlength="100" value="${esc(S.topic)}"><div class="help">${S.topic.length} / 100</div></div><hr class="hr">
+      ${tpInput(4)}
+      <div class="acts end" style="margin-top:24px">${S.hasResult?'<button class="btn outlined pri" data-act="next">Skip to Review</button>':''}<button class="btn contained ${S.topic?'':'dis'}" data-act="gen"><span class="mi">auto_awesome</span>Generate Content</button></div></div>`;
+  } else if (S.fn === 'revise'){
+    form = `<div class="fcard">${S.gen==='1'?'<div class="lin"><i></i></div>':''}
+      <div class="sec"><span class="lbl">1. Provide your article <span class="req">*</span></span>
+        <div class="tabs"><button class="tab ${S.reviseTab===0?'on':''}" data-tab="0"><span class="mi">image</span>Upload Image</button><button class="tab ${S.reviseTab===1?'on':''}" data-tab="1"><span class="mi">edit_note</span>Paste Text</button></div>
+        ${S.reviseTab===0 ? `<div class="drop"><span class="mi">cloud_upload</span><b>Drop an image here, or click to browse</b>We'll extract the text so you can edit it.</div>`
+          : `<textarea class="inp" id="reviseText" rows="8" maxlength="3000" placeholder="Paste the text you wish to adjust the difficulty of...">${esc(S.reviseText)}</textarea><div class="help">${S.reviseText.length} / 3000</div>`}
+      </div><hr class="hr">
+      ${ctChips(2)}${slider(3)}${tpInput(4)}
+      <div class="acts end" style="margin-top:24px"><button class="btn outlined" data-act="reset"><span class="mi">refresh</span>Reset</button>${S.hasResult?'<button class="btn outlined pri" data-act="next">Skip to Review</button>':''}<button class="btn contained ${S.reviseText?'':'dis'}" data-act="gen"><span class="mi">auto_awesome</span>Generate Content</button></div></div>`;
+  } else {
+    form = `<div class="fcard" style="display:flex;flex-direction:column;min-height:420px">
+      <span class="lbl" style="margin-bottom:12px">Upload or paste your content</span>
+      <div class="drop" style="flex:1;display:flex;flex-direction:column;justify-content:center"><span class="mi">cloud_upload</span><b>Drop an image here, or click to browse</b>Your content is used as is —— no rewriting.</div>
+      <div class="acts end" style="margin-top:16px"><button class="btn outlined" data-act="reset">Reset</button><button class="btn outlined pri" data-act="next">Skip to Enter Text Manually</button></div></div>`;
+  }
+  return `
+    <div class="stephd"><span class="n">2</span><h2>Generate Content</h2><p>Choose how you want to create your course content.</p></div>
+    <div class="gen"><div>${cards}</div><div>${form}</div></div>
+    <div style="margin-top:16px"><button class="btn outlined" data-act="back"><span class="mi">arrow_back</span>Back</button></div>`;
+}
+
+/* ---------- 第三步 ---------- */
+function renderStep2(){
+  return `
+    <div class="stephd"><span class="n">3</span><h2>Review &amp; Edit</h2><p>Review the generated content and make any adjustments.</p></div>
+    <div class="sec"><span class="lbl">Project Name</span><input class="inp" id="pname" placeholder="Enter project name" value="${esc(S.name)}"></div>
+    <div class="sec"><span class="lbl">Article Content</span><textarea class="inp" id="article" rows="10" maxlength="3000" placeholder="Generated content will appear here...">${esc(S.article)}</textarea><div class="help">${S.article.length} / 3000</div></div>
+    <div class="acts" style="padding-top:8px"><button class="btn outlined" data-act="back"><span class="mi">arrow_back</span>Back</button><button class="btn contained" data-act="next">Save &amp; Continue<span class="mi">arrow_forward</span></button></div>`;
+}
+
+/* ---------- 第四步 ---------- */
+function wordBox(){
+  return `<div class="wordbox">${SEG.map((w,i) => { const pu = /[。，、？！]/.test(w); const cls = pu?'pu':(S.an.has(w)?'an':(S.sel.has(w)?'sel':''));
+    return `<span class="w ${cls}" data-w="${esc(w)}"><small>${pu?'':esc(PY[w]||'')}</small><span>${esc(w)}</span></span>`; }).join('')}</div>`;
+}
+function vocabCards(){
+  const list = WORDS.filter(v => S.an.has(v.w) || S.addon.some(a => a.w === v.w));
+  if (!list.length) return '';
+  return `<div style="margin-top:24px"><span class="lbl" style="margin-bottom:16px">Teaching Points Card</span>${list.map((v,i) => { const del = S.deleted.has(v.w), ed = S.editing === v.w;
+    return `<div class="vcard ${del?'del':''}">
+      <button class="ib edit ${ed?'on':''}" data-edit="${esc(v.w)}" title="${ed?'Done editing':'Edit vocabulary'}"><span class="mi">${ed?'check':'edit'}</span></button>
+      <button class="ib rm ${del?'undo':''}" data-del="${esc(v.w)}" title="${del?'Undo delete':'Delete vocabulary'}"><span class="mi">${del?'refresh':'delete'}</span></button>
+      <div style="opacity:${del?.5:1}">
+        <div class="hd"><div class="l">${ed?`<input class="inp" value="${esc(v.w)}" style="height:44px;font-size:28px;font-weight:700;color:var(--primary);width:200px"><input class="inp" value="${esc(v.py)}" style="height:36px;font-weight:700;width:200px;margin-top:8px">`:`<div class="zh">${esc(v.w)}</div><div class="py">${esc(v.py)}</div>`}</div>
+          <div class="r">${ed?`<input class="inp" value="${esc(v.tr)}" style="height:40px;font-weight:600;width:240px;margin-bottom:8px">`:`<div class="tr">${esc(v.tr)}</div>`}<div class="pills2">${v.pos?`<span>${esc(v.pos)}</span>`:''}${v.lvl?`<span>${esc(v.lvl)}</span>`:''}</div></div></div>
+        ${(v.type||v.expl)?`<div class="expl">${v.type?`<span class="tag type">${esc(TP_TYPES.find(t=>t[0]===v.type)?.[1]||v.type)}</span>`:''}<span class="tag">Explanation</span>${ed?`<textarea class="inp" rows="2">${esc(v.expl||'')}</textarea>`:`<p>${esc(v.expl||'')}</p>`}</div>`:''}
+        <div class="exs">${v.ex.map((e,k) => `<div class="ex"><span class="tag">Example ${k+1}</span>
+          ${ed?`<textarea class="inp" rows="2" style="font-size:20px;margin-bottom:8px">${esc(e[0])}</textarea><input class="inp" value="${esc(e[1])}" style="height:40px;font-weight:700;margin-bottom:12px"><div class="tr"><span>→</span><input class="inp" value="${esc(e[2])}" style="height:40px;flex:1"></div>`
+          :`<div class="zh">${esc(e[0]).split(esc(v.w)).join('<b>'+esc(v.w)+'</b>')}</div><div class="py">${esc(e[1]).split(esc(v.py)).join('<b>'+esc(v.py)+'</b>')}</div><div class="tr"><span>→</span><span>${esc(e[2])}</span></div>`}
+        </div>`).join('')}</div>
+      </div></div>`; }).join('')}</div>`;
+}
+function renderStep3(){
+  const n = S.sel.size + S.an.size + S.addon.length;
+  return `
+    <div class="stephd"><span class="n">4</span><h2>Teaching Points</h2></div>
+    <div class="sec"><span class="lbl">Project Name</span><input class="inp" value="${esc(S.name)}" disabled></div>
+    <hr class="hr">
+    <div class="okbar"><div class="l"><span class="mi">check_circle</span><span><em>${n}</em>Teaching Points Selected</span></div><div class="r"><span class="mi">auto_awesome</span>Ready to Generate Cards</div></div>
+    <div class="tp">
+      ${S.mode==='segment' ? `<div class="segbox"><textarea>${esc(SEG.join(' ').replace(/ ([。，、？！])/g,'$1'))}</textarea><div class="help">Hint: Please use 1 space to split between the word segment. Remove a space will merge the word segment.</div></div>` : wordBox()}
+      <div class="aside">
+        <div class="mode"><b>Mode</b><label><input type="radio" name="mode" value="select" ${S.mode==='select'?'checked':''}>Select Words</label><label><input type="radio" name="mode" value="segment" ${S.mode==='segment'?'checked':''}>Modify Segments</label></div>
+        ${S.mode==='select' ? `<div class="how"><b>How it works</b>${['Click words to select teaching points','Click pinyin above words to edit tones','Add extra teaching points below','Click "Generate Cards" to create pinyin, translation & examples'].map((t,i)=>`<div class="row"><i>${i+1}</i>${t}</div>`).join('')}</div>`
+          : `<div class="how seg"><b>How to modify segments</b><div class="k g">✅ Split words:</div><div class="d">Add space between words</div><div class="ex"><span>word1word2</span>→ space →<span>word1</span><span>word2</span></div><div class="k r">🔙 Merge words:</div><div class="d">Use Backspace to remove space</div><div class="ex"><span>word1</span><span>word2</span>→<span class="bs">Backspace</span>→<span>word1word2</span></div></div>`}
+        <div class="legend"><div class="row"><span class="sw" style="background:#e8f9e8;border:1px solid #81c784"></span>General word segmentation</div><div class="row"><span class="sw" style="background:#fce4ec;border:1px solid #f48fb1"></span>Selected for analysis</div><div class="row"><span class="sw" style="background:#e3f2fd;border:1px solid #64b5f6"></span>Analyzed - view cards below</div></div>
+      </div>
+    </div>
+    <div class="pane">
+      <h3>Add more teaching points here</h3>
+      <p>You can add teaching points here that cannot be selected in the text, including grammar and sentence structure. Pick a type so we can generate the right examples, and add an optional explanation.</p>
+      <div class="frm"><input class="in" id="addIn" placeholder="Add teaching points here" value="${esc(S.addInput)}"><select class="in" id="addType">${TP_TYPES.map(t=>`<option value="${t[0]}" ${S.addType===t[0]?'selected':''}>${t[1]}</option>`).join('')}</select><input class="in" id="addExpl" placeholder="Explanation (optional)" value="${esc(S.addExpl)}"><button class="btn contained" data-act="addtp" style="height:40px;padding:0 16px">Add</button></div>
+      <div class="chips">${S.addon.map(a=>`<span class="c">${esc(a.w)}<span class="t">${esc(TP_TYPES.find(t=>t[0]===a.type)?.[1]||a.type)}</span><span class="mi" data-rmadd="${esc(a.w)}">close</span></span>`).join('')}</div>
+    </div>
+    <div class="center"><button class="btn contained big ${(S.sel.size||S.addon.length)?'':'dis'}" data-act="analyze"><span class="mi">auto_awesome</span>Analyze Teaching Points</button></div>
+    ${vocabCards()}
+    ${S.unsaved ? `<div class="unsaved"><span>You have unsaved changes. Please save before exporting.</span><button class="btn contained" data-act="save">Save</button></div>` : ''}`;
+}
+
+/* ---------- 對話框 ---------- */
+function renderDlgs(){
+  if (S.gen === '1'){
+    const k = S.genStep || 0;
+    return `<div class="scrim"><div class="dlg"><div class="top"><i></i></div><div class="bd"><h2>Creating your content...</h2><p>This may take a few moments.</p>
+      <div class="prog">${['Analyzing','Generating','Organizing','Done!'].map((l,i)=>`${i?`<div class="pl ${i<=k?'on':''}"></div>`:''}<div class="ps ${i<=k?'on':''}"><i><span class="mi">${['auto_awesome','smart_toy','account_tree','check_circle'][i]}</span></i><span>${l}</span></div>`).join('')}</div>
+      <div class="cheer"><span class="ci"><span class="mi">smart_toy</span></span><div><b>You've got a great topic!</b><span>Engaging lessons start with curious teachers like you. We're building something amazing for your students!</span></div></div>
+      <div class="wait"><span class="spin"></span>Please don't close this page</div></div></div></div>`;
+  }
+  if (S.gen === 'done'){
+    return `<div class="scrim"><div class="dlg"><div class="top full"><i></i></div><div class="bd" style="padding:40px 24px"><h2>All set! 🎉</h2><p>Your content is ready.</p><span class="mi big">check_circle</span>
+      <div class="cheer amber" style="margin-bottom:0"><span class="mi">star</span><div><b>Great job! You've just created a <i>valuable learning resource</i>.</b><span>Your students are going to love it!</span></div></div></div>
+      <div class="ft"><button class="btn contained" data-act="next">Continue to Review<span class="mi">arrow_forward</span></button></div></div></div>`;
+  }
+  if (S.analyzing){
+    return `<div class="scrim"><div class="dlg"><div class="top"><i></i></div><div class="bd"><h2>Analyzing teaching points...</h2><p>Creating pinyin, translations and examples for each word.</p><div class="wait"><span class="spin"></span>Please don't close this page</div></div></div></div>`;
+  }
+  if (S.saved){
+    return `<div class="scrim"><div class="dlg"><div class="top full"><i></i></div><div class="bd" style="padding:40px 24px 16px"><h2>Project saved</h2><p>${esc(S.name)} is ready to use in practices and materials.</p><span class="mi big">check_circle</span></div>
+      <div class="ft"><button class="btn outlined" data-act="closesaved">Stay here</button><button class="btn contained" data-act="closesaved">Go to Project List<span class="mi">arrow_forward</span></button></div></div></div>`;
+  }
+  return '';
+}
+
+/* ---------- render ---------- */
+function render(){
+  el('stepper').innerHTML = STEPS.map((t,i) => { const a = i===S.step, d = i<S.step;
+    return `${i?`<span class="ln ${d||a?'on':''}"></span>`:''}<span class="pill ${a?'active':''} ${d?'done':''}" data-go="${i}"><i>${d?'<span class="mi">check</span>':i+1}</i><span>${t}</span></span>`; }).join('');
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2, renderStep3][S.step]();
+  el('dlgs').innerHTML = renderDlgs();
+  /* 給嵌入它的頁面讀：#next 的字、disabled */
+  const nx = el('next'), bk = el('back');
+  nx.textContent = S.step===0 ? 'Save & Continue' : S.step===1 ? (S.hasResult ? 'Skip to Review' : 'Generate Content') : S.step===2 ? 'Save & Continue' : (S.analyzed ? (S.unsaved ? 'Save' : 'Saved ✓') : 'Analyze Teaching Points');
+  nx.className = (S.step===3 && !S.analyzed && !(S.sel.size||S.addon.length)) ? 'dis' : '';
+  bk.disabled = S.step===0;
+  document.querySelectorAll('.baseline a').forEach(a => { a.classList.toggle('cur', a.getAttribute('href') === '?' + qs.toString()); });
+}
+function goStep(n){ S.step = n; S.gen = null; render(); window.scrollTo(0,0); }
+function startGen(){
+  /* 重生內容＝新課文，教學點從頭選（2026-10-12，Planning 從練習退回來重生時暴露的：原本分析過的卡片會留著、頁腳一直是 Saved ✓） */
+  S.analyzed = false; S.an = new Set(); S.sel = new Set(['起床','早饭','睡觉']); S.deleted = new Set(); S.editing = null; S.unsaved = false; S.saved = false;
+  S.gen = '1'; S.genStep = 0; render();
+  const t = setInterval(() => { S.genStep++; render(); if (S.genStep >= 3){ clearInterval(t); setTimeout(() => { S.gen = 'done'; S.hasResult = true; S.name = S.fn==='create' ? S.topic : S.name; render(); setTimeout(() => { if (S.gen==='done'){ goStep(2); } }, 2000); }, 500); } }, 700);
+}
+function next(){
+  if (S.step === 0){ goStep(1); return; }
+  if (S.step === 1){ if (S.hasResult) goStep(2); else if (S.fn !== 'summary') startGen(); else goStep(2); return; }
+  if (S.step === 2){ goStep(3); return; }
+  if (!S.analyzed){ analyze(); return; }
+  if (S.unsaved){ S.unsaved = false; S.saved = true; render(); }
+}
+function analyze(){
+  if (!(S.sel.size || S.addon.length)) return;
+  S.analyzing = true; render();
+  setTimeout(() => { S.sel.forEach(w => S.an.add(w)); S.sel = new Set(); S.analyzed = true; S.analyzing = false; S.unsaved = true; render(); }, 1800);
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act],[data-fn],[data-ct],[data-tab],[data-w],[data-go],[data-tprm],[data-rmadd],[data-edit],[data-del]');
+  if (!t) return;
+  if (t.dataset.go != null){ goStep(+t.dataset.go); return; }
+  if (t.dataset.fn){ S.fn = t.dataset.fn; render(); return; }
+  if (t.dataset.ct){ S.ctype = t.dataset.ct; render(); return; }
+  if (t.dataset.tab != null){ S.reviseTab = +t.dataset.tab; render(); return; }
+  if (t.dataset.tprm != null){ S.tps.splice(+t.dataset.tprm, 1); render(); return; }
+  if (t.dataset.rmadd){ S.addon = S.addon.filter(a => a.w !== t.dataset.rmadd); render(); return; }
+  if (t.dataset.edit){ S.editing = S.editing === t.dataset.edit ? null : t.dataset.edit; S.unsaved = true; render(); return; }
+  if (t.dataset.del){ const w = t.dataset.del; if (S.deleted.has(w)) S.deleted.delete(w); else S.deleted.add(w); S.unsaved = true; render(); return; }
+  if (t.dataset.w){ const w = t.dataset.w; if (/[。，、？！]/.test(w) || S.an.has(w)) return; if (S.sel.has(w)) S.sel.delete(w); else S.sel.add(w); render(); return; }
+  const a = t.dataset.act;
+  if (a === 'next'){ if (S.gen === 'done'){ goStep(2); return; } next(); }
+  if (a === 'back'){ goStep(Math.max(0, S.step - 1)); }
+  if (a === 'gen'){ if (t.classList.contains('dis')) return; startGen(); }
+  if (a === 'reset'){ S.reviseText = ''; S.tps = []; S.topic = ''; render(); }
+  if (a === 'addtp'){ const v = (el('addIn').value||'').trim(); if (!v) return; S.addon.push({ w:v, type:el('addType').value, expl:el('addExpl').value }); S.addInput=''; S.addExpl=''; render(); }
+  if (a === 'analyze'){ analyze(); }
+  if (a === 'save'){ S.unsaved = false; S.saved = true; render(); }
+  if (a === 'closesaved'){ S.saved = false; render(); }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.id === 'topic'){ S.topic = t.value; t.nextElementSibling.textContent = `${S.topic.length} / 100`; document.querySelector('[data-act="gen"]')?.classList.toggle('dis', !S.topic); el('next').textContent = S.hasResult ? 'Skip to Review' : 'Generate Content'; }
+  if (t.id === 'reviseText'){ S.reviseText = t.value; t.nextElementSibling.textContent = `${S.reviseText.length} / 3000`; document.querySelector('[data-act="gen"]')?.classList.toggle('dis', !S.reviseText); }
+  if (t.id === 'pname'){ S.name = t.value; }
+  if (t.id === 'article'){ S.article = t.value; t.nextElementSibling.textContent = `${S.article.length} / 3000`; }
+  if (t.id === 'addIn'){ S.addInput = t.value; } if (t.id === 'addExpl'){ S.addExpl = t.value; }
+  if (t.dataset.range){ S.wlimit = +t.value; t.previousElementSibling.textContent = S.wlimit; t.previousElementSibling.style.left = `calc(${(S.wlimit-100)/14}% - 12px)`; }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.dataset.set){ S[t.dataset.set] = t.dataset.set==='lvl' ? +t.value : t.value; if (t.dataset.set==='std'){ S.lvl = 1; render(); } }
+  if (t.name === 'mode'){ S.mode = t.value; render(); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.id === 'tpIn' && (e.key === 'Enter' || e.key === ',' || e.key === '、' || e.key === ' ')){ e.preventDefault(); const v = e.target.value.trim(); if (v){ S.tps.push(v); S.tpInput=''; render(); el('tpIn')?.focus(); } }
+  if (e.target.id === 'addIn' && e.key === 'Enter'){ document.querySelector('[data-act="addtp"]').click(); }
+});
+el('next').addEventListener('click', () => next());
+el('back').addEventListener('click', () => goStep(Math.max(0, S.step - 1)));
+if (S.gen === '1'){ S.genStep = 1; }
+render();
+</script>
+</body>
+</html>

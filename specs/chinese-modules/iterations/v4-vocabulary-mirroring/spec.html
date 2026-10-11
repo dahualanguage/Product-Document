@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — v4 · 優化 Vocabulary Mirroring</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    td .cap { display: block; margin-top: 2px; }
+    /* 學生端排版示意（照 card-stack.js 的 sx 縮小畫） */
+    .stu { background:#E8EEF4; border-radius:12px; padding:28px 24px; margin:12px 0 8px; display:flex; justify-content:center; }
+    .stack { position:relative; width:420px; height:250px; }
+    .stack .c { position:absolute; left:0; top:0; width:420px; height:210px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .stack .c.b2 { transform:translate(12px,12px); z-index:1; }
+    .stack .c.b1 { transform:translate(6px,6px); z-index:2; }
+    .stack .c.f { z-index:3; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; overflow:hidden; }
+    .stack .img { width:50%; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center; color:#8AA69A; font-size:12px; }
+    .stack .txt { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; position:relative; }
+    .stack .txt .spk { position:absolute; top:8px; right:8px; color:#637381; font-size:12px; }
+    .stack .py { font-size:15px; color:#637381; }
+    .stack .w { font-size:30px; font-weight:600; color:#212B36; line-height:1.3; }
+    .stack .tr { font-size:12px; color:#637381; margin-top:12px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v4 · 優化 Vocabulary Mirroring</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#scope" class="active">1 · 這一版的範圍</a></li>
+        <li><a href="#flow">2 · 現況：三步走完</a></li>
+        <li><a href="#settings">3 · 第二步的設定</a></li>
+        <li><a href="#student">4 · 學生端：一個字＝三張卡</a></li>
+        <li><a href="#issues">5 · 查到的問題</a></li>
+        <li><a href="#open">6 · 待決事項</a></li>
+        <li><a href="#plan">7 · 提案：第一輪</a></li>
+        <li><a href="#base">8 · 基準檔</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v4 — 優化 Practice-Vocabulary Mirroring</h1>
+        <p class="subtitle">Vocabulary Mirroring 的建立流程是三步：Vocabulary → Settings → Assign Practice。§2–§5 是現況與查到的問題，§6 是待決事項。
+        §7 是提案——第一輪只換 v3 動過的共用元件，Vocabulary 自己的部分刻意沒動。</p>
+        <div class="meta">
+          <span>2026-09-10</span>
+          <span>分岔自 v3</span>
+          <span>程式碼基準 origin/develop @ 77ea5d6f</span>
+          <span>狀態：提案第五輪（Vocabulary 重畫）</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="scope"><span class="num">1</span> 這一版的範圍</h2>
+
+      <p>入口是 <code>https://dahua-dash-dev.web.app/dashboard/practice/create/?type=VOCABULARY&amp;subType=MIRRORING</code>，
+      也就是在 Choose Practice Type 點下 <strong>Vocabulary Mirroring</strong> 之後進的那條建立流程。
+      範圍是這三步；不含 Choose Practice Type（v1）、不含 Edit 模式、不含 Vocabulary Quiz
+      （同一份設定但多一步 Question Types，另開一版）。</p>
+
+      <div class="callout callout-tip">
+        <strong>Practice Type 那一步已經不在了。</strong>
+        <a class="inline" href="../practice-design-rules.html">設計判準</a> §4 與 8/31 的
+        <a class="inline" href="../../practice-settings-inventory.md">inventory</a> 都還寫著「攤平後 Practice Type 那一步是多餘的，可以順手拿掉」——
+        現行 <code>STEPS_BY_TYPE[VOCABULARY]</code> 已經是三步，<code>practice-stepper-config.js</code> 的註解直接說
+        <em>the sub type … arrives in the URL, so no flow asks for it again</em>。
+        留下的痕跡只剩第二步的檔名 <code>vocabulary-step-three-section.js</code>（docblock 還寫著 <em>Step 3</em>）。
+        那兩份文件要更新。
+      </div>
+
+      <h3>v3 已經涵蓋的</h3>
+      <p>第三步 Assign 是 <code>step-three.js</code>，八種共用——v3 那一整組（搬出對話框、三段、可重複指派、送出前預覽）
+      直接適用，這一版不重畫。Stepper、頁腳、捲動重置也是共用外殼。
+      第二步的 <code>AudioSettingsPanel</code> 與 <code>MaxAttemptsField</code> 是五種共用的元件，v3 已經動過；
+      Vocabulary 跟 Mirroring 不同的地方在 §3 與 §4。</p>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="flow"><span class="num">2</span> 現況：三步走完</h2>
+
+      <div class="formula">STEPS_BY_TYPE[VOCABULARY] = ['Vocabulary', 'Settings', 'Assign Practice']   // practice-stepper-config.js
+assignStepIdx = 2 · settingsStepIdx = 1 · 主要按鈕 Next → Save → Done</div>
+
+      <h3>第一步 · Vocabulary</h3>
+      <p>一個<strong>多選</strong>的 Autocomplete（<em>Pick projects to source vocabulary from</em>），候選只留
+      <code>hasVocabularyData()</code> 過的專案（<code>splitArticleArray</code> 裡有中文字），每列帶語言／級數 chip，
+      右邊印 <code>N words</code> 或紅字 <code>No teaching points</code>。選了之後出現
+      <strong>Teaching Points Preview</strong>——每個專案一張卡、詞用 chip 列出來——底下一條綠色的
+      <em>Content will be loaded from the selected project.</em> ＋ <strong>Load Content</strong>。</p>
+
+      <p>跟 Mirroring 不一樣：<strong>practice 是在第一步裡按 Load Content 建的，不是按 Next 建的。</strong>
+      Next 在 practice 存在前是灰的（<code>activeStep === 0 &amp;&amp; isVocab &amp;&amp; mode === 'CREATE' &amp;&amp; !effectiveId</code>），
+      硬按會跳 <em>Please load vocabulary content before continuing.</em></p>
+
+      <p>Load Content 之後 status 先是 <code>GENERATING</code>——<strong>第一步不開 ProcessingDialog</strong>
+      （<code>open = (isProcessing || isAudioGenerating) &amp;&amp; activeStep &gt; 0</code>），改用
+      <code>VocabularyLoadingState</code> 在原地放一張 loading 卡。完成後 Autocomplete 鎖住、Teaching Points Preview 消失，換成
+      <strong>Vocabulary Content</strong>：每個專案一個手風琴（folder 圖示、專案名、<code>N vocabs</code>、右邊一顆綠色 <em>Add Vocab ▾</em>
+      → From Project / Custom Word），裡面一張一張 280–320px 的生詞卡：右上角 編輯（例句）／隱藏 兩顆鈕、
+      圖片（可在縮圖裡挑一張）、字、拼音、翻譯、詞性／型別／級數 chip、例句 1／例句 2；
+      文法類（GRAMMAR / PHRASE / OTHER）或含非中文字元的詞多一個 <em>Read Sentences Only</em> 開關。</p>
+
+      <p>選 Project 的當下 <code>practiceName</code> 就被設成<strong>第一個</strong>選到的專案名稱了
+      （<code>setValue('practiceName', value[0].projectName)</code>），欄位在第二步——跟 v3 問題 1 一樣。</p>
+
+      <div class="preview"><iframe src="create-vocabulary.html?step=0" title="第一步 Vocabulary" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第一步 · Vocabulary（已選一個專案，還沒 Load Content）</span>
+        <span><a href="create-vocabulary.html?step=0" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-vocabulary.html?step=0&amp;empty=1" target="_blank" rel="noopener">還沒選 ↗</a> ·
+        <a href="create-vocabulary.html?step=0&amp;gen=1" target="_blank" rel="noopener">Generating ↗</a> ·
+        <a href="create-vocabulary.html?step=0&amp;loaded=1" target="_blank" rel="noopener">生詞載好 ↗</a></span>
+      </div>
+
+      <h3>第二步 · Settings</h3>
+      <p>一個 Practice Name 欄位（maxWidth 600）→ 一條 <em>Practice Config</em> 分隔線 →
+      Display Settings 手風琴（Pinyin / Translation / Image 三個 small 下拉）→ Audio Settings（Speed / Voice）→
+      Max attempts 欄位 → <em>Vocabulary Preview</em> 分隔線 → 兩欄的生詞卡（每張：專案 chip、圖、綠框裡的字＋拼音＋翻譯＋詞性，
+      底下 Example 1 / Example 2 各一顆播放鍵）。內容見 §3。</p>
+
+      <div class="preview"><iframe src="create-vocabulary.html?step=1" title="第二步 Settings" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第二步 · Settings</span>
+        <span><a href="create-vocabulary.html?step=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-vocabulary.html?step=1&amp;img=0" target="_blank" rel="noopener">Image HIDE ↗</a> ·
+        <a href="create-vocabulary.html?step=1&amp;banner=1" target="_blank" rel="noopener">重產音檔中 ↗</a> ·
+        <a href="create-vocabulary.html?step=1&amp;dlg=1" target="_blank" rel="noopener">Generating audio… ↗</a></span>
+      </div>
+
+      <h3>第三步 · Assign Practice</h3>
+      <p>八種共用的 <code>step-three.js</code>，跟 v3 基準檔一模一樣，不重述。</p>
+      <div class="preview" style="height:380px"><iframe src="create-vocabulary.html?step=2&amp;assigned=1" title="第三步 Assign Practice" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>第三步 · Assign Practice（已指派一個班）</span>
+        <span><a href="create-vocabulary.html?step=2" target="_blank" rel="noopener">還沒指派 ↗</a> ·
+        <a href="create-vocabulary.html?step=2&amp;assigned=1" target="_blank" rel="noopener">另開 ↗</a></span>
+      </div>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="settings"><span class="num">3</span> 第二步的設定</h2>
+
+      <table>
+        <thead><tr><th style="width:150px">區塊</th><th style="width:170px">控制項</th><th>值（照抄程式碼）</th><th style="width:110px">預設</th><th style="width:120px">學生端讀不讀</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><b>Display Settings</b><br><span class="cap">display-settings-accordion.js</span></td><td>Pinyin</td>
+            <td><code>PINYIN</code> / <code>NO_PINYIN</code> / <code>STUDENT_CHOICE</code>——<code>Object.entries(PINYIN_PREFERENCES)</code>，老師看到的就是這幾個字</td><td><code>PINYIN</code></td><td><b style="color:#b91c1c">不讀</b></td></tr>
+          <tr><td>Translation</td><td><code>SHOW</code> / <code>HIDE</code> / <code>STUDENT_CHOICE</code>，同樣是原始 enum</td><td><code>STUDENT_CHOICE</code></td><td><b style="color:#b91c1c">不讀</b></td></tr>
+          <tr><td>Image</td><td><code>SHOW</code> / <code>HIDE</code>——<strong>只有 Vocabulary 有這一項</strong></td><td><code>SHOW</code></td><td><b style="color:#b91c1c">不讀</b></td></tr>
+          <tr><td rowspan="2"><b>Audio Settings</b><br><span class="cap">共用面板</span></td><td>Speed</td>
+            <td><b>Student choice</b> ＋ Fast <code>1.0</code> / Normal <code>0.8</code> / Slow <code>0.6</code>，逐項試聽</td><td>0.8 Normal</td><td>讀（<code>changeSpeed</code> ＋ <code>speedPreference</code>）</td></tr>
+          <tr><td>Voice</td><td><code>getVoiceList(targetLanguage)</code>；targetLanguage 是「選到的專案裡<strong>任何一個</strong>是 zh-TW 就 zh-TW，否則 zh-CN」</td><td>語言的第一個</td><td>讀（音檔已烤進去）</td></tr>
+          <tr><td><b>Auto Pass</b><br><span class="cap">共用欄位</span></td><td>Max attempts before auto pass</td>
+            <td>1–10。說明文字寫 <em>Students who use up their attempts on a <b>card</b> move on automatically</em>——Mirroring 那份寫的是 <em>sentence</em></td><td>3</td><td>讀（<code>attemptLimit</code>，<strong>逐卡</strong>）</td></tr>
+          <tr><td><b>Practice Name</b></td><td>文字</td><td>從第一步第一個選到的專案帶過來</td><td>專案名</td><td>讀</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>沒有 Audio Mode，也沒有 Translation First。</strong> <code>vocabulary-step-three-section.js</code> 的 docblock 自己寫了
+        <em>Vocabulary has no Audio Mode toggle and no slack / pronunciation control</em>。
+        v3 把 Audio Mode 升成模式那一段對 Vocabulary 不適用；R2（模式不是設定）在這張卡上沒有對象。
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>預覽用的條件跟學生端不一樣。</strong>
+        <code>showPinyin = pinyinPreference === PINYIN</code>、<code>showTranslation = translationPreference === SHOW</code>——
+        所以預設值（Translation 是 <code>STUDENT_CHOICE</code>）底下，預覽<strong>不印翻譯</strong>；
+        而學生端（§4）一進去翻譯是<strong>開著的</strong>。同一個 <code>STUDENT_CHOICE</code>，兩邊畫出相反的東西。
+      </div>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="student"><span class="num">4</span> 學生端：一個字＝三張卡</h2>
+
+      <p>出處 <code>src/sections/assignments/content/vocabulary/</code>。這一段是 R6 要求的「照抄，不憑印象」。</p>
+
+      <h3>4.1 資料形狀</h3>
+      <div class="formula">// helpers.js · parsePracticeCards()
+// Sequence: vocab1 -&gt; example1 -&gt; [example2] -&gt; vocab2 -&gt; example1 -&gt; [example2] ...
+CARD_TYPE = { VOCABULARY, EXAMPLE1, EXAMPLE2 }        // groupSize 3（ESL 是 2）
+每張卡：content · pinyin · translation · s3Path · audioVariants · splitContent · selectedImageIndex（只有 VOCABULARY 卡）
+
+// use-vocabulary-practice.js
+PASSING_RATING = 3                                     // 每張卡要錄音、評分，≥ 3 星才算過
+attemptLimit   = resolveMaxAttempts(maxAttempts)       // 逐卡計，用完就 auto pass
+canAdvanceCurrentCard = isCurrentCardPassed || isCurrentCardOutOfAttempts</div>
+
+      <p><strong>所以老師設的「Move on after 3 tries」是每張卡 3 次，一個字最多 9 次。</strong>
+      例句不是顯示偏好，是考點——每一句都要念、都要評分。第一步生詞卡上那顆「編輯例句」改的是學生要念的句子，
+      不是說明文字。</p>
+
+      <h3>4.2 畫面</h3>
+      <table>
+        <thead><tr><th style="width:150px">畫面</th><th>長什麼樣（照 sx）</th></tr></thead>
+        <tbody>
+          <tr><td><b>開始頁</b><br><span class="cap">start-page.js</span></td>
+            <td>底色 <code>#E8EEF4</code> ＋ 背景圖。一張 440px 的卡：練習名稱（綠 <code>#22C55E</code>、28px）、<em>Vocabulary Practice</em>、
+            <em>Learn words by speaking</em>；三格統計 <b>WORDS / SENTENCES / MIN</b>（SENTENCES 是 <code>wordCount × 2</code> 算的，不是數的）；
+            兩個開關 <b>Show Pinyin</b>（<em>Show Chinese pronunciation (Pinyin)</em>）／<b>Show Translation</b>（<em>Show English meaning</em>），
+            <strong>兩個預設都開</strong>；綠色漸層 <em>Start Practice</em>。</td></tr>
+          <tr><td><b>練習頁</b><br><span class="cap">index.js · card-stack.js</span></td>
+            <td>頂欄：<code>PracticeTypeChip</code>（Vocabulary Mirroring，琥珀 <code>#FEF3C7 / #D97706</code>）＋ 練習名稱 ＋ 頭像，底下一條進度 <code>current / total</code>（total 是<strong>卡</strong>數，不是字數）。
+            左上 <em>Vocabulary List</em>（收合 180 / 展開 320，每個字一列：拼音在上、字在下、Current / Up Next / Pass 章 ＋ 星星）。
+            右上齒輪 → Settings 卡：Pinyin / Translation 開關，Speed 下拉<strong>只在老師選 Student choice 時出現</strong>。
+            中央一疊三張卡（560 × 280，後兩張各往右下偏 8px）：<strong>VOCABULARY 卡左半是圖</strong>（<code>getVocabularyImageUrls</code>，永遠載——沒有任何條件讀 <code>imagePreference</code>），
+            右半：<strong>拼音在字的上面</strong>（h6 secondary）、字 h4 600（32–44px）、翻譯 body2 在下（關掉時 <code>visibility:hidden</code> 但<strong>保留 24px 高度</strong>）；
+            EXAMPLE 卡沒有圖，句子逐詞排、每個詞上面一行拼音。點卡片左半／右半＝上一張／下一張（同一個字之內）；換字要按 Continue。
+            卡下面是星星 ＋ 錄音鈕 ＋ Redo / Continue。</td></tr>
+          <tr><td><b>完成頁</b><br><span class="cap">completion-dialog.js</span></td>
+            <td>每個字的平均星數 ＋ 總平均，Practice Again / Submit。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="stu">
+        <div class="stack">
+          <div class="c b2"></div><div class="c b1"></div>
+          <div class="c f">
+            <div class="img">圖（S3）</div>
+            <div class="txt"><span class="spk">🔈</span><div class="py">qǐ chuáng</div><div class="w">起床</div><div class="tr">get up</div></div>
+          </div>
+        </div>
+      </div>
+      <p class="cap" style="margin-bottom:20px">學生端 VOCABULARY 卡的排版示意（照 <code>card-stack.js</code>：左半圖、拼音在字上面、翻譯在字下面、後面疊著 example1 / example2）。</p>
+
+      <h3>4.3 老師端設了什麼，學生端拿到什麼</h3>
+      <div class="formula">// assignments/content/index.js — 渲染 VocabularyPractice 時傳下去的
+&lt;VocabularyPractice
+  updatedArticleArray · vocabularyData · practiceName · assignmentSk · practiceSk · practiceType
+  generateVocaUpdatedArticleArrayType · selectedDuration · isAlreadySubmitted · targetLanguage
+  maxAttempts · speedPreference · changeSpeed /&gt;
+// —— 沒有 pinyinPreference、translationPreference、imagePreference
+
+// use-vocabulary-practice.js
+const [showPinyin, setShowPinyin] = useState(!isESL);       // 永遠從「開」開始
+const [showTranslation, setShowTranslation] = useState(true); // 永遠從「開」開始
+// imagePreference：整個 src/sections/assignments/ 底下零引用</div>
+
+      <p>對照同一個檔案裡的另外兩條路徑：Mirroring 有 <code>setShowPinyin(pinyinPreference !== 'NO_PINYIN')</code>，
+      Sentence Scramble 有把 <code>pinyinPreference</code> 傳進 <code>&lt;SentenceScramblePractice&gt;</code>。
+      <strong>只有 Vocabulary 沒有。</strong></p>
+
+      <!-- ===================== 5 ===================== -->
+      <h2 id="issues"><span class="num">5</span> 查到的問題</h2>
+
+      <p>每一條都在程式碼裡看得到。編號只是編號，沒有優先順序。跟 v3 重複的只註明，不重講。</p>
+
+      <div class="card">
+        <h4>1 · 三個顯示設定，學生端一個都沒讀</h4>
+        <p>§4.3。老師把 Pinyin 設成 <code>NO_PINYIN</code>、Translation 設成 <code>HIDE</code>、Image 設成 <code>HIDE</code>，
+        學生打開來仍然是拼音開、翻譯開、圖片在。第二步的 Display Settings 手風琴<strong>目前只改老師自己的預覽</strong>。
+        這是「是不是有意的」那一類——要問工程（E1）。<strong>答案決定這張卡的第二步要不要重畫</strong>：
+        如果三個設定本來就打算讓學生端吃，那是 bug、畫面照設計走；如果 Vocabulary 本來就是「學生自己決定」，那三個下拉根本不該出現，
+        Image 那一項更是連學生端的畫面都沒有（8/31 inventory 的第 6 題，仍然沒有答案）。</p>
+      </div>
+
+      <div class="card">
+        <h4>2 · 預覽跟學生端對同一個值畫出相反的東西</h4>
+        <p>§3 的警告。<code>STUDENT_CHOICE</code> 在預覽裡是「不印」，在學生端是「先開著、學生自己關」。
+        預設值就踩在這個差上：老師第一次進第二步，看到的預覽<strong>沒有翻譯</strong>，學生看到的<strong>有</strong>。
+        另外預覽是「字、拼音、翻譯三欄並排在一個綠框裡」，學生看到的是「拼音在字上面、翻譯在字下面、左邊一張圖」——排版也不是同一個東西（R5 / R6）。</p>
+      </div>
+
+      <div class="card">
+        <h4>3 · 「一個字＝三張卡」在老師端看不出來</h4>
+        <p>第一步的生詞卡把例句畫成兩個灰底小框、字級 12px，看起來像附註；第二步的預覽把它們叫 <em>Example 1 / Example 2</em>、字級 14px，也還是配角。
+        但學生要念的是三句、評分三次、attempts 逐卡算。<code>Max attempts before auto pass</code> 的說明寫 <em>on a card</em>——
+        用了「card」這個字，可是畫面上沒有任何地方告訴老師一個字是三張 card。</p>
+        <p class="cap">§4.1 有算式：3 tries × 3 cards ＝ 一個字最多 9 次。老師設 3 的時候大概不是這樣想的。</p>
+      </div>
+
+      <div class="card">
+        <h4>4 · 三個下拉印資料庫欄位值</h4>
+        <p><code>display-settings-accordion.js</code> 三個 Select 都是 <code>Object.entries(ENUM).map(...)</code>：<code>NO_PINYIN</code>、<code>STUDENT_CHOICE</code>、<code>SHOW</code>、<code>HIDE</code>。
+        ＝ v3 問題 2，多一個 Image。（R7）</p>
+      </div>
+
+      <div class="card">
+        <h4>5 · 第一步的按鈕與狀態</h4>
+        <p><strong>Load Content</strong> 這個名字講的是「載入」，做的是「建 practice ＋ 叫 AI 生拼音／例句／圖／音檔」——按下去要等幾十秒、之後 Project 就鎖死了。
+        頁腳的 <strong>Next</strong> 在它按下之前是灰的，但沒有說為什麼灰（R9）；硬按才跳 snackbar。
+        Teaching Points Preview 說 <em>Review the teaching points that will be used to generate vocabulary</em>——用了 <em>generate</em>，
+        按鈕卻叫 Load。同一件事兩個動詞（R10）。</p>
+        <p>另外：Sentence Scramble 與 Follow Pattern 在同樣位置的按鈕叫 <strong>Generate</strong>（<code>resolvePrimaryActionLabel</code>），
+        而且是頁腳那顆——Vocabulary 是唯一把它塞在內容區裡、頁腳另放一顆灰 Next 的型別。</p>
+      </div>
+
+      <div class="card">
+        <h4>6 · 第一步跟第二步各畫一份生詞卡，長得不一樣</h4>
+        <table style="margin-bottom:0">
+          <thead><tr><th style="width:140px"></th><th>第一步 <code>vocabulary-display-section.js</code></th><th>第二步 <code>vocabulary-cards-preview.js</code></th></tr></thead>
+          <tbody>
+            <tr><td>排版</td><td>直排：圖 → 字 → 拼音 → 翻譯 → chip → 例句</td><td>綠框橫排：字｜拼音｜翻譯｜chip，例句兩欄</td></tr>
+            <tr><td>例句標籤</td><td><code>例句 1</code>（中文）</td><td><code>EXAMPLE 1</code>（英文大寫）</td></tr>
+            <tr><td>圖片</td><td>可以在縮圖裡挑</td><td>只顯示選中那張</td></tr>
+            <tr><td>播放鍵</td><td>沒有（音檔還沒生）</td><td>字一顆、例句各一顆</td></tr>
+            <tr><td>隱藏的字</td><td>畫出來，半透明加刪除線</td><td>不列</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px">同一批資料、相鄰兩步、兩套卡片。第二步那份的用途其實是「逐句確認音檔」（跟 v3 的句子清單同一個角色）。</p>
+      </div>
+
+      <div class="card">
+        <h4>7 · 練習的名字在第一步被決定，在第二步才看得到</h4>
+        <p>＝ v3 問題 1。多選的情況下取的是 <code>value[0]</code>——第一個選到的專案。</p>
+      </div>
+
+      <div class="card">
+        <h4>8 · Audio Settings 的說明承諾了畫面上沒有的東西</h4>
+        <p>＝ v3 問題 3（<em>pronunciation precision</em>），共用元件，v3 已處理。</p>
+      </div>
+
+      <div class="card">
+        <h4>9 · 改 Speed／Voice 會重產全部音檔，並且全螢幕遮罩</h4>
+        <p>一個字三段音檔，N 個字就是 3N 段；改一次 Voice 全部重跑，第二步整頁被 <em>Generating audio…</em> 擋住。
+        ＝ v3 問題 8 的 Vocabulary 版，量更大。</p>
+      </div>
+
+      <div class="card">
+        <h4>10 · 兩個小的</h4>
+        <ul style="margin-bottom:0">
+          <li><strong>targetLanguage 的預設值兩步不一樣。</strong> 第一步顯示用 <code>TAGS.ZH_CN</code> 兜底，第二步取聲音清單用 <code>practice?.targetLanguage ?? TAGS.ZH_TW</code>——
+          專案設定還沒回來的那一瞬間，Voice 下拉會先給繁體那組（7 個混在一起，v3 問題 11）。</li>
+          <li><strong>學生端的圖片網址寫死 zh-CN。</strong> <code>card-stack.js</code> 呼叫 <code>getVocabularyImageUrls(content, TAGS.ZH_CN)</code>，不看 targetLanguage；
+          老師端傳的是專案的語言。繁體專案兩邊拿的圖可能不是同一張。學生端的事，這一版不改，記下來。</li>
+        </ul>
+      </div>
+
+      <!-- ===================== 6 ===================== -->
+      <h2 id="open"><span class="num">6</span> 待決事項</h2>
+
+      <p>分兩類：<b>要使用者決定的</b>（設計方向），和<b>只有工程答得出來的</b>。</p>
+
+      <h3>要決定的</h3>
+      <table>
+        <thead><tr><th style="width:52px">#</th><th style="width:230px">題目</th><th>為什麼要先決定</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-open">D1</span></td><td>這一版要改哪裡？</td>
+            <td>照流程，登記完等使用者說。問題 1–6 是這張卡自己的，7–9 是 v3 已經處理過的共用部分。</td></tr>
+          <tr><td><span class="stat st-open">D2</span></td><td>第二步要不要照 v3 的做法「預覽跟設定合成同一張卡」？</td>
+            <td>如果要，這裡的「樣本」不是一句，是<strong>一個字的三張卡</strong>（§4.1）——卡本身就把「一個字＝三張卡」講清楚了（解問題 3），
+            而且要照學生端排（圖在左、拼音在上），不是現在的綠框橫排。但前提是問題 1 有答案：學生端不讀這三個設定的話，樣本上就沒有東西可以設。</td></tr>
+          <tr><td><span class="stat st-done">D3</span></td><td>兩份生詞卡要不要合成一套？</td>
+            <td>問題 6。<strong>已定（2026-09-11）</strong>：生成後的卡只有一份，在第二步 Vocabulary，畫成學生的三張卡；第三步 Settings 底下那份 Vocabulary Preview 還在（沒動），是下一輪要處理的。</td></tr>
+          <tr><td><span class="stat st-done">D4</span></td><td>Load Content 要留在內容區，還是併進頁腳？</td>
+            <td>問題 5。<strong>已定（2026-09-11）：併進頁腳，標籤留 Next</strong>——勾好字按 Next 就生成，生完留在第一步看卡，再按 Next 到 Settings。Scramble / Follow Pattern 同一位置叫 Generate，要不要對齊留給下一輪。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>要問工程的</h3>
+      <table>
+        <thead><tr><th style="width:52px">#</th><th style="width:230px">題目</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">E1</span></td><td>Vocabulary 學生端不讀 Pinyin / Translation / Image，是有意的嗎？</td>
+            <td>問題 1。<strong>這一題不答，第二步沒辦法定案。</strong> 三個可能：①bug，學生端該讀；②有意，Vocabulary 一律學生自決，那三個下拉該拿掉；③Image 另有計畫（8/31 第 6 題）。</td></tr>
+          <tr><td><span class="stat st-todo">E2</span></td><td>Image HIDE 的學生端長什麼樣？</td>
+            <td>8/31 inventory 第 6 題，仍無畫面。現行 <code>card-stack.js</code> 沒有「沒有圖」這個分支——圖載失敗才會整張卡變成純文字。</td></tr>
+          <tr><td><span class="stat st-todo">E3</span></td><td>三個下拉直接露出 enum 值，是有意的嗎？</td>
+            <td>＝ v3 E2。一行字串的事，不必等定稿。</td></tr>
+          <tr><td><span class="stat st-todo">E4</span></td><td>createPractice 能不能吃一份字表？</td>
+            <td>提案第二輪（§7）把「勾選 teaching point、從課文加字、自訂字」提前到 Load Content 之前。現行 <code>handleAddVocab</code> / <code>handleToggleHidden</code> 都要 <code>practice?.id</code>，也就是要先生成再增減。要問：建立時能不能直接帶「這個專案的哪些字 ＋ 額外的字」，不必生完再 hide／add。</td></tr>
+          <tr><td><span class="stat st-todo">E5</span></td><td>生詞圖片能不能讓老師自己上傳？</td>
+            <td>提案第五輪的 Upload 格。現行 <code>VocabularyImage</code> 只能在 AI 生的候選裡挑一張（<code>selectedImageIndex</code>），沒有上傳。要問：有沒有上傳到 S3 的端點、圖片要不要跟著 practice 走還是跟著專案的字走、學生端 <code>getVocabularyImageUrls()</code> 是照字算網址的，上傳的圖要怎麼進那條路徑。</td></tr>
+          <tr><td><span class="stat st-todo">E6</span></td><td>一個字的例句能不能多於兩句？</td>
+            <td>提案第二十輪（2026-09-15）：第二步每個字底下一顆 <em>Generate another example</em>，一次生一句、最多再按三次（五句）。現行是固定兩句——<code>edit-vocab-dialog.js</code> 只有 <code>example1</code> / <code>example2</code> 兩個欄位，學生端 <code>parsePracticeCards()</code> 固定 <code>groupSize 3</code>（字 ＋ 兩句）。要問：後端的字表結構能不能放可變數量的例句、AI 生成例句有沒有現成的端點可以對單一個字再叫一次、學生端的 groupSize 能不能改成照資料算。跟 E4 的「逐卡關掉」同一份結構，建議一起問。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 7 ===================== -->
+      <h2 id="plan"><span class="num">7</span> 提案：第一輪</h2>
+
+      <div class="callout callout-tip">
+        <strong>指示（2026-09-10）：先替換在 Content Mirroring 用到的共用元件。</strong>
+        「共用」照 <a class="inline" href="../practice-design-rules.html">設計判準</a> §1 那張表。做法、尺寸、文案全部照
+        <a class="inline" href="../v3-content-mirroring/proposal.html">v3 proposal</a>，出處不重抄。
+        Vocabulary 自己的部分<strong>刻意沒動</strong>——第二步現在是新舊並置，落差看得見，那就是下一輪要決定的東西。
+      </div>
+
+      <table>
+        <thead><tr><th style="width:170px">元件</th><th style="width:90px">共用範圍</th><th>換成</th><th style="width:200px">依型別改的地方</th></tr></thead>
+        <tbody>
+          <tr><td>第三步 Settings<br><span class="cap">待做</span></td><td>R11（八張卡共用）</td><td><strong>還沒改。</strong> 2026-09-14 Settings 的形狀在 v3 定案為「工具列 ＋ 畫布，同一張卡」（設計判準 R11、<a class="inline" href="../v3-content-mirroring/spec.html#plan-v4">v3 spec §6.9</a>），這一頁的第三步還是「樣本卡＋控制項在下」的舊形狀，下一輪照 R11 改</td><td>Vocabulary 的差異：第一行多一格 Image；沒有 Translation first；畫布上是一疊字卡</td></tr>
+          <tr><td>第二步 Vocabulary 重畫<br><span class="cap">第五輪 · 2026-09-11</span></td><td>Vocabulary 自己的</td><td>一個字一列：標頭（序號、字、型別、N cards、Hide）＋ 左邊圖片區 ＋ 右邊三張學生卡 Card 1 · Word／Card 2 · Example 1／Card 3 · Example 2，排版照 <code>card-stack.js</code>。拿掉 Add Vocab。圖片：AI 四張候選 ＋ Upload</td><td>解 §5 問題 3（一個字＝三張卡直接畫出來）。Upload 是新能力（E5）。生成後沒有加字的入口，第一步又鎖著——要決定</td></tr>
+          <tr><td>流程三步 → 四步<br><span class="cap">第四輪 · 2026-09-11</span></td><td>v3 同一個做法</td><td><code>Teaching Points → Vocabulary → Settings → Assign Practice</code>。第一步選專案、勾字、加字，按 Next 生成、生完自動進第二步；第二步是生成後的生詞卡（產品元件沒動）。回到第一步鎖住並說明原因</td><td>第一步的名字沿 <code>STEPS_BY_TYPE[FOLLOW_PATTERN]</code> 的 <code>Teaching Points</code>；跟 v3 的 Edit Sentences 一樣，做同一件事（生完給老師審）的型別有獨立一步</td></tr>
+          <tr><td>Load Content 那條<br><span class="cap">第三輪 · 2026-09-11</span></td><td>Vocabulary 自己的</td><td>拿掉。頁腳 Next 直接做它的事：勾好字按 Next → 生成（轉圈）→ 生詞卡出現、留在第一步 → 再按 Next 到 Settings。沒選專案或沒勾字時 Next 灰的</td><td>標籤留 Next（使用者的話）；Scramble／Follow Pattern 叫 Generate，對不對齊下一輪決定</td></tr>
+          <tr><td>teaching point 可勾選、第一步可加字<br><span class="cap">第二輪 · 2026-09-11</span></td><td>邏輯照 planning mode</td><td>每個專案一個 frame：全選框 ＋ 已選/總數，chip 是勾選鈕帶短型別標；Add words：From Project（課文裡的詞，已在的變灰、其餘 + 加入）＋ Custom word；加進來的掛 Added、預設勾、歸在該專案底下；沒勾任何字就不能 Load Content</td><td>把「決定要練哪些字」提前到生成之前——要問工程（E4）。加進來的字的拼音／例句由 AI 生，mock 不編</td></tr>
+          <tr><td>第一步的三個欄位</td><td>v3 step-one</td><td>Project 選單 → <code>c-dropdown-menu-18</code>；Practice name → <code>c-input-2</code>，從第二步搬到第一步；Teaching Points Preview → <code>c-frame-6</code> ghost frame</td><td>選單是<b>多選</b>：點一下切換勾選、不關；practice 建好後鎖住。frame 底色用 Vocabulary 欄的 wash <code>#FFF8E7</code>。Load Content 那條沒動</td></tr>
+          <tr><td>Stepper</td><td>八張卡</td><td>ReUI <code>c-stepper-2</code>，走過的段變綠</td><td>—</td></tr>
+          <tr><td>標題前的型別圖示</td><td>八張卡</td><td><code>PRACTICE_TYPE_ENTRIES.tag</code></td><td>VOCABULARY_MIRRORING 的琥珀 <code>#FEF3C7 / #D97706</code>，不是 v3 的綠</td></tr>
+          <tr><td>AudioSettingsPanel</td><td>五種</td><td>Speed／Voice 兩列 chip，點一下＝選它＋聽它；<em>pronunciation precision</em> 那句隨面板消失</td><td>zh-CN 單組，沒有地區標籤</td></tr>
+          <tr><td>MaxAttemptsField</td><td>五種</td><td><b>Move on after N tries</b> ＋ 加減鈕</td><td>說明照產品的字寫 <em>on one card</em>（Mirroring 是 sentence）。§5 問題 3 沒解</td></tr>
+          <tr><td>Assign（step-three）</td><td>八張卡</td><td>搬回頁面、三段、一份時間套用全部、名冊是 diff、送出前預覽只講例外、頁腳一顆鈕依狀態換字</td><td>預覽框裡的班名用 Vocabulary 欄的 label 色 <code>#8F6209</code></td></tr>
+          <tr><td>頁腳、捲動重置</td><td>八張卡</td><td>換步驟捲回最上面</td><td>第一步 Next 在 Load Content 前仍是灰的（Vocabulary 自己的閘，沒動）</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>沒動的</strong>：載入後的 Vocabulary Content 手風琴與生詞卡、Practice Config 分隔線、Display Settings 手風琴（三個下拉還是印 enum）、Vocabulary Preview 兩欄卡。</p>
+
+      <div class="preview" style="height:620px"><iframe src="proposal.html?step=1&amp;sel=1&amp;pool=1" title="提案 · 第一步 Vocabulary" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第一步 Teaching Points（可勾選；From Project 展開；Practice name 已在這一步；按 Next 生成、生完自動進第二步）</span>
+        <span><a href="proposal.html?step=1" target="_blank" rel="noopener">從頭走（還沒選專案）↗</a> ·
+        <a href="proposal.html?step=1&amp;sel=1&amp;dd=1" target="_blank" rel="noopener">選單打開 ↗</a> ·
+        <a href="proposal.html?step=1&amp;sel=1" target="_blank" rel="noopener">已選專案 ↗</a> ·
+        <a href="proposal.html?step=2" target="_blank" rel="noopener">第二步 Vocabulary（生詞卡）↗</a> ·
+        <a href="create-vocabulary.html?step=0" target="_blank" rel="noopener">對照基準 ↗</a></span>
+      </div>
+
+      <div class="preview" style="height:700px"><iframe src="proposal.html?step=2&amp;upload=1" title="提案 · 第二步 Vocabulary" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第二步 Vocabulary（一個字一列、右邊三張學生卡；第一個字是老師上傳的圖）</span>
+        <span><a href="proposal.html?step=2&amp;upload=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-vocabulary.html?step=0&amp;loaded=1" target="_blank" rel="noopener">對照基準 ↗</a></span>
+      </div>
+
+      <div class="preview"><iframe src="proposal.html?step=3" title="提案 · 第三步 Settings" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第三步 Settings（新舊並置：上半 MUI 手風琴沒動，中段 chip 與 Move on 是換過的）</span>
+        <span><a href="proposal.html?step=3" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="create-vocabulary.html?step=1" target="_blank" rel="noopener">對照基準 ↗</a></span>
+      </div>
+
+      <div class="preview"><iframe src="proposal.html?step=4&amp;pick=3b,4a&amp;roster=4a&amp;assigned=1" title="提案 · 第四步 Assign" loading="lazy"></iframe></div>
+      <div class="preview-cap">
+        <span>提案 · 第四步 Assign（v3 整組照搬）</span>
+        <span><a href="proposal.html?step=4&amp;pick=3b,4a&amp;roster=4a&amp;assigned=1" target="_blank" rel="noopener">另開 ↗</a> ·
+        <a href="proposal.html?step=4&amp;pick=4a&amp;review=1&amp;assigned=1" target="_blank" rel="noopener">預覽框 ↗</a></span>
+      </div>
+
+      <!-- ===================== 8 ===================== -->
+      <h2 id="base"><span class="num">8</span> 基準檔</h2>
+
+      <p><code>create-vocabulary.html</code> 是<strong>現行建立流程的複刻</strong>——外殼、顏色、字級、圓角、間距照 v3 那套（theme + sx），
+      三步的內容逐塊照 §2 列的檔案抄。行為也照著：第一步 Next 在 Load Content 之前是灰的、按 Load Content 進 loading 狀態、
+      Image 設 HIDE 預覽就不印圖、Speed 選 Student choice 冒出那行說明、改 Speed／Voice 期間兩個下拉 disabled。
+      <strong>沒有加任何改良。</strong></p>
+
+      <div class="callout callout-warn">
+        <strong>兩個拿不到的東西。</strong> ①生詞圖片：產品從 S3 載 AI 生成的圖（<code>getVocabularyImageUrls</code>），這裡用灰底佔位，尺寸照 <code>maxWidth 280</code>。
+        ②實機截圖：使用者還沒給，基準檔是照程式碼複刻的，拿到截圖要對一次（v3 就靠截圖抓到過 chip 顯示條件寫錯）。
+      </div>
+
+      <table>
+        <thead><tr><th style="width:280px">網址</th><th>看到什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>?step=0&amp;empty=1</code></td><td>第一步，還沒選專案</td></tr>
+          <tr><td><code>?step=0</code></td><td>第一步，已選一個專案：Teaching Points Preview ＋ Load Content，Next 灰的</td></tr>
+          <tr><td><code>?step=0&amp;gen=1</code></td><td>按下 Load Content 之後的 Generating（inline，不是全螢幕）</td></tr>
+          <tr><td><code>?step=0&amp;loaded=1</code></td><td>生詞載好：Autocomplete 鎖住、Vocabulary Content 手風琴 ＋ 生詞卡</td></tr>
+          <tr><td><code>?step=1</code> / <code>&amp;img=0</code> / <code>&amp;banner=1</code></td><td>第二步 Settings／Image HIDE／音檔重產中</td></tr>
+          <tr><td><code>?step=2</code> / <code>?step=2&amp;assigned=1</code></td><td>第三步 Assign Practice，未指派／已指派</td></tr>
+          <tr><td><code>?step=1&amp;dlg=1</code></td><td>Generating audio… 全螢幕遮罩</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <strong>下一步。</strong> 現況在 §2–§4，問題在 §5，要決定的在 §6。基準檔保留不動，之後的提案跟它並排看。
+        改動逐項記在 <a class="inline" href="ITERATION.md">ITERATION.md</a>，流程見
+        <a class="inline" href="../../VERSIONING-WORKFLOW.md">VERSIONING-WORKFLOW.md</a>，判準見
+        <a class="inline" href="../practice-design-rules.html">Practice 設計判準</a>。
+      </div>
+
+      <footer>v4 · 優化 Practice-Vocabulary Mirroring — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = document.querySelectorAll('.sidebar a');
+    const sections = [...links].map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let i = 0;
+      sections.forEach((s, n) => { if (s && s.getBoundingClientRect().top <= 80) i = n; });
+      links.forEach((a, n) => a.classList.toggle('active', n === i));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>

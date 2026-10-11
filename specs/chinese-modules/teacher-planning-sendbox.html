@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send box — Planning mode（提案）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --emerald:#059669; --emerald-d:#047857; --emerald-dd:#065f46;
+  --emerald-l:#ecfdf5; --emerald-l2:#d1fae5; --emerald-ring:#6ee7b7;
+  --ink:#0f172a; --slate:#334155; --slate-2:#475569; --muted:#64748b; --faint:#94a3b8;
+  --line:#e6ebf1; --line-2:#eef2f7; --bg:#f4f7fb;
+  --mir:#EA7A21; --mir-bg:#fdeede;
+  --sh-sm:0 1px 2px rgba(15,23,42,.05);
+}
+body{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg); color:var(--slate-2); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-style:normal; line-height:1; -webkit-font-feature-settings:'liga'; }
+
+.wrap{ max-width:880px; margin:0 auto; padding:44px 24px 90px; }
+.kick{ font-size:11.5px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:var(--emerald); }
+h1{ font-size:27px; font-weight:800; color:var(--ink); letter-spacing:-.5px; margin:7px 0 8px; }
+.lede{ font-size:14.5px; color:var(--muted); max-width:62ch; }
+.lede b{ color:var(--ink); font-weight:700; }
+
+h2{ font-size:12px; font-weight:800; letter-spacing:.9px; text-transform:uppercase; color:var(--faint);
+  margin:44px 0 4px; }
+.cap{ font-size:13.5px; color:var(--muted); margin-bottom:14px; max-width:64ch; }
+.cap b{ color:var(--ink); font-weight:700; }
+
+/* ---------- 舞台：模擬對話欄底部 ---------- */
+.stage{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px;
+  box-shadow:var(--sh-sm); background-image:radial-gradient(var(--line-2) 1px, transparent 1px);
+  background-size:15px 15px; background-position:-2px -2px; }
+
+/* ---------- send box ---------- */
+.box{ background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--sh-sm);
+  transition:border-color .14s, box-shadow .14s; }
+.box.focus{ border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+
+/* 附著列 —— 這一版唯一新增的東西 */
+.att{ display:flex; align-items:center; gap:8px; padding:9px 12px 0; }
+.att .tag{ display:inline-flex; align-items:center; gap:7px; height:24px; padding:0 9px 0 8px;
+  border-radius:7px; background:var(--mir-bg); color:#9a4a05; font-size:11.5px; font-weight:800; }
+.att .tag .dot{ width:6px; height:6px; border-radius:50%; background:var(--mir); flex:none; }
+.att .on{ font-size:12px; font-weight:600; color:var(--faint); }
+.att .on b{ color:var(--slate); font-weight:700; }
+.att .drop{ margin-left:auto; border:0; background:none; cursor:pointer; font:inherit; font-size:11.5px;
+  font-weight:700; color:var(--faint); padding:2px 4px; border-radius:6px; }
+.att .drop:hover{ color:var(--emerald-d); background:var(--emerald-l); }
+
+.row{ display:flex; align-items:flex-end; gap:10px; padding:6px 12px 10px; }
+.row textarea{ flex:1; border:none; background:none; resize:none; font:inherit; font-size:14.5px;
+  font-weight:600; color:var(--ink); line-height:1.5; outline:none; padding:7px 4px; }
+.row textarea::placeholder{ color:#9fb0c2; font-weight:500; }
+.send{ width:34px; height:34px; border-radius:50%; border:none; flex:none; display:grid; place-items:center;
+  color:#fff; background:linear-gradient(145deg,#10b981,#059669); cursor:pointer; }
+.send.off{ background:#e2e8f0; color:#94a3b8; cursor:not-allowed; }
+.send .mi{ font-size:19px; }
+
+/* 建議 —— 只放按鈕做不到的事 */
+.sug{ display:flex; flex-wrap:wrap; gap:7px; padding:0 12px 11px; }
+.sug button{ border:1px solid var(--line); background:#fff; border-radius:9px; padding:6px 11px;
+  font:inherit; font-size:12.5px; font-weight:700; color:var(--slate-2); cursor:pointer; transition:.13s; }
+.sug button:hover{ border-color:var(--emerald-ring); color:var(--emerald-dd); background:var(--emerald-l); }
+.sug .lbl{ align-self:center; font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+  color:var(--faint); margin-right:2px; }
+
+/* 說明 */
+.note{ margin-top:12px; font-size:12.5px; color:var(--muted); display:flex; gap:9px; align-items:flex-start; }
+.note .mi{ font-size:16px; color:var(--faint); flex:none; margin-top:1px; }
+.note b{ color:var(--ink); font-weight:700; }
+
+.why{ margin-top:52px; background:#fff; border:1px solid var(--line); border-left:3px solid var(--emerald);
+  border-radius:12px; padding:20px 22px; }
+.why h3{ font-size:15px; font-weight:800; color:var(--ink); margin-bottom:10px; }
+.why p{ font-size:13.5px; color:var(--slate-2); margin-bottom:9px; }
+.why p:last-child{ margin-bottom:0; }
+.why b{ color:var(--ink); }
+.why em{ color:var(--emerald-dd); font-style:normal; font-weight:700; }
+
+footer{ margin-top:46px; font-size:12px; color:var(--faint); }
+@media (max-width:640px){ .att .on{ display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kick">Planning mode · 提案</div>
+  <h1>Send box</h1>
+  <p class="lede">現在這個框，<b>不管你在流程的哪裡都長一樣</b>。剛開始要寫一課，跟已經做到「食物 × Content Mirroring」的第三步，看到的是同一個空白框、同一句提示。
+  老師在這裡唯一想知道的事是：<b>我打字下去，是改這個，還是開一個新的？</b>這一版就是去回答那句話。</p>
+
+  <!-- 1 -->
+  <h2>1 · 進行中 —— 有東西可以改</h2>
+  <p class="cap">框裡多一列<b>附著標籤</b>，講明這些字會落到哪一個 run 上。下面三顆是<b>按鈕做不到的事</b> —— 不是「你可以試試看」的填充物，是這個階段真的只能用講的動作。</p>
+  <div class="stage">
+    <div class="box">
+      <div class="att">
+        <span class="tag"><span class="dot"></span>Content Mirroring</span>
+        <span class="on">改的是 <b>食物 — What we eat</b></span>
+        <button class="drop">改開新的 ✕</button>
+      </div>
+      <div class="row">
+        <textarea rows="1" placeholder="想調的、右邊面板上沒有的，都可以直接說…"></textarea>
+        <button class="send off"><span class="mi">arrow_upward</span></button>
+      </div>
+      <div class="sug">
+        <span class="lbl">試試</span>
+        <button>第三句改成問句</button>
+        <button>再加兩句</button>
+        <button>把「面条」換成「饺子」</button>
+      </div>
+    </div>
+    <div class="note"><span class="mi">lightbulb</span>
+      <div>建議是<b>跟著階段換的</b>。在句子那一步講句子，在設定那一步講設定 —— 永遠只出現三個，而且都是右邊面板點不到的事。</div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <h2>2 · 打字中</h2>
+  <p class="cap">開始打字，<b>建議收起來</b>，送出鍵亮起。附著標籤留著 —— 那是這一刻最需要確認的資訊，不該在按下送出前消失。</p>
+  <div class="stage">
+    <div class="box focus">
+      <div class="att">
+        <span class="tag"><span class="dot"></span>Content Mirroring</span>
+        <span class="on">改的是 <b>食物 — What we eat</b></span>
+        <button class="drop">改開新的 ✕</button>
+      </div>
+      <div class="row">
+        <textarea rows="1">把第三句改成問句，然後再加兩句關於早餐的</textarea>
+        <button class="send"><span class="mi">arrow_upward</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <h2>3 · 還沒開始 —— 沒有東西可以附著</h2>
+  <p class="cap">沒有 run 的時候<b>沒有附著列</b>，框回到現在的樣子：一個空白框加一句範例。差別只在於——現在你一眼就分得出這兩種狀態，以前分不出來。</p>
+  <div class="stage">
+    <div class="box">
+      <div class="row">
+        <textarea rows="1" placeholder="Create a new project on 天气 that teaches 刮风 and 下雨…"></textarea>
+        <button class="send off"><span class="mi">arrow_upward</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="why">
+    <h3>為什麼是「附著」，不是換一句 placeholder 就好</h3>
+    <p>換 placeholder 也能講「你可以改這個」，但 placeholder <b>一打字就消失</b>。而老師最需要那個資訊的時刻，正好就是打字的那一刻 —— 打到一半停下來想「這樣會不會把剛才那些設定沖掉」。所以它必須是<em>一個留在框裡的元素</em>，不是提示文字。</p>
+    <p>附著標籤也順手解決另一件事：<b>對話越長，越看不出自己在做什麼。</b>捲到下面之後，上面那句「Using 食物 · creating Content Mirroring」早就滾出畫面了。框在最底下、永遠看得見，正好是放這個資訊的地方。</p>
+    <p>而且一旦框說了「我附著在這個 run 上」，就<b>必須</b>給一個脫離的出口 —— 那顆安靜的「改開新的 ✕」。沒有它，這個設計只講了一半。</p>
+  </div>
+
+  <footer>DAHUA AI · Planning mode · send box 提案 · 2026-08-24</footer>
+</div>
+</body>
+</html>

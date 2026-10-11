@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Planning 設計 flow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    td.c, th.c { text-align: center; }
+    del { color: #cbd5e1; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; }
+    .p-blue { background: #dbeafe; color: #1d4ed8; } .p-gray { background: #f1f5f9; color: #475569; }
+    .yes { color: #059669; font-weight: 800; }
+    .no { color: #cbd5e1; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 665px; position: relative; }
+    .preview iframe { width: 1400px; height: 950px; border: 0; transform: scale(.70); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 18px 0 0; border-bottom: 2px solid #e2e8f0; }
+    .tab { appearance: none; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700;
+           color: #64748b; padding: 9px 14px; cursor: pointer; border-radius: 8px 8px 0 0;
+           border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .13s; white-space: nowrap; }
+    .tab:hover { color: #0f172a; background: #f1f5f9; }
+    .tab.active { color: #047857; border-bottom-color: #059669; background: #f0fdf4; }
+    .tab:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
+    .tabpane { display: none; padding-top: 6px; }
+    .tabpane.active { display: block; }
+    .tabpane h3 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 20px 0 8px; }
+    .tabpane h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 22px 0 8px;
+                  padding-bottom: 4px; border-bottom: 1px solid #eef2f7; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="teacher-planning.html">Planning</a>
+    <span class="sep">/</span>
+    <span class="current">設計 flow</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#flow" class="active">1 · 設計 flow 五步</a></li>
+        <li><a href="#steps">2 · 八張卡走哪幾步</a></li>
+        <li><a href="#settings">3 · 設定總表</a></li>
+        <li><a href="#values">4 · 共用元件與選項值</a></li>
+        <li><a href="#panel">5 · 設定面板的設計</a></li>
+        <li><a href="#flows">6 · 四張卡的細節</a></li>
+        <li><a href="#gaps">7 · 原型的落差</a></li>
+        <li><a href="#open">8 · 待問工程</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Planning — 設計 flow</h1>
+        <p class="subtitle">Planning 要在同一條對話裡容納八張卡、兩條路徑與各自的設定。這份文件把設計工作切成五步，備齊其中三步的素材，並用四個分頁記錄已完成的四張卡各自長成什麼樣、以及它們是從產品原本的哪幾步改過來的。</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>老師端</span>
+          <span>Source: dahua-dash <code>origin/develop</code> @ 219ac37d</span>
+          <span>Updated: 2026-09-09</span>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>相關文件。</strong>
+        原型 <a class="inline" href="teacher-planning.html">teacher-planning.html</a>；
+        Planning 的完整規格 <a class="inline" href="teacher-planning-spec.html">teacher-planning-spec.html</a>；
+        八張卡的命名與顏色定案 <a class="inline" href="iterations/v1-practice-hierarchy/spec.html">v1 · Practice 練習層級優化</a>；
+        設定的問題清單 <code>mirroring-settings-questions.md</code>。
+      </div>
+
+      <h2 id="flow"><span class="num">1</span> 設計 flow 五步</h2>
+
+      <table>
+        <thead><tr><th style="width:36px">#</th><th style="width:180px">步驟</th><th style="width:96px">狀態</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td><td><strong>確定對話</strong></td>
+            <td><span class="pill p-green">完成</span></td>
+            <td>對話只問五件事：端點 → 從哪來 → 哪一個 → 課文對嗎 → 設定好了嗎。
+                分工是<strong>面板放東西本身，對話放決定</strong>。</td>
+          </tr>
+          <tr>
+            <td>2</td><td><strong>Todo list</strong></td>
+            <td><span class="pill p-amber">未開始</span></td>
+            <td>一次勾選兩項以上的練習時，列出每一項還沒完成的設定。
+                <strong>它的內容就是 §2 步驟表的投影</strong>——一個練習未完成的事，就是它在步驟表上還沒走完的步驟。</td>
+          </tr>
+          <tr>
+            <td>3</td><td><strong>各練習的設定面板</strong></td>
+            <td><span class="pill p-blue">4 / 5</span></td>
+            <td><strong>Mirroring · Sentence Scramble · Vocabulary（Cards 與 Quiz 共用前兩步）</strong>已完成，
+                長成什麼樣寫在 <a class="inline" href="#flows">§6</a>。
+                <strong>剩下一張</strong>：Open-ended Questions 與 Sentence Response/Building——
+                後兩張卡共用同一份設定，所以是一張不是兩張，理由見 §3。</td>
+          </tr>
+          <tr>
+            <td>4</td><td><strong>Assign 面板</strong></td>
+            <td><span class="pill p-amber">未開始</span></td>
+            <td>目前仍是「班級 / 開始 / 到期 / 必修 / 學生」五則對話訊息，
+                也就是第 1 步在設定那段已經廢掉的形狀。<strong>不依賴任何一張練習面板，可以先做。</strong>
+                <br>2026-09-03 修好的是<strong>接不接得到</strong>：原本 <code>tail()</code> 不管有沒有練習一律走 <code>confirm</code>，
+                從來沒接上這五則，<code>doneBody()</code> 寫好的「assigned to N in 班級」永遠是空的。
+                現在 <code>confirm</code> 兩種 run 都會經過，按鈕依 <code>hasPractice()</code> 顯示 Continue 或 Create。
+                <strong>五則訊息的形狀本身還是沒改</strong>。</td>
+          </tr>
+          <tr>
+            <td>5</td><td><strong>走過 20 種情境</strong></td>
+            <td><span class="pill p-blue">部分</span></td>
+            <td>10 個端點 × 兩條路（既有 Project / 新建 Project）。
+                <strong>這是驗證不是設計</strong>，而且該拆成兩半：漏斗路徑機械式跑過，設定的部分每畫完一張面板就驗那幾格。
+                <br><strong>已經機械式跑過的</strong>（headless 驅動真實 DOM，不是讀程式碼）：
+                Mirroring、Sentence Scramble、Vocabulary Cards、Vocabulary Quiz 的三條分支，
+                各自從端點一路走到 Assign 完成，含學生走查覆蓋層。
+                <strong>沒跑過的</strong>：新建 Project 那條路、QA、Comprehension Quiz。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>Assign 是八張卡唯一都要走的一步。</strong>
+        §2 的步驟表裡，其他每一步都只屬於某幾張卡，只有 <code>Assign Practice</code> 八張都有——
+        而它正是還沒設計的那一段。這是第 4 步值得插隊的理由。
+      </div>
+
+      <h2 id="steps"><span class="num">2</span> 八張卡走哪幾步</h2>
+
+      <p>八張卡對到六個型別，其中兩個型別各有兩個子型別。
+         v1 定案把第二層攤平之後，<code>Practice Type</code> 那一步變成多餘——選卡的當下就決定了——
+         所以下表的刪除線是<strong>攤平後要拿掉的</strong>。</p>
+
+      <p>出處：<code>src/utils/practice-stepper-config.js</code> 的 <code>STEPS_BY_TYPE</code> / <code>VOCABULARY_MC_STEPS</code>。</p>
+
+      <table>
+        <thead><tr><th style="width:170px">卡</th><th style="width:210px">型別（子型別）</th><th>步驟</th></tr></thead>
+        <tbody>
+          <tr><td>Content Mirroring</td><td><code>MIRRORING</code></td>
+              <td>Content → <strong>Settings &amp; Preview</strong> → Assign</td></tr>
+          <tr><td>Vocabulary Mirroring</td><td><code>VOCABULARY</code> (<code>MIRRORING</code>)</td>
+              <td>Vocabulary → <del>Practice Type</del> → <strong>Settings</strong> → Assign</td></tr>
+          <tr><td>Vocabulary Quiz</td><td><code>VOCABULARY</code> (<code>MULTIPLE_CHOICE</code>)</td>
+              <td>Vocabulary → <del>Practice Type</del> → Question Types → <strong>Settings</strong> → Assign</td></tr>
+          <tr><td>Sentence Scramble</td><td><code>SENTENCE_SCRAMBLE</code></td>
+              <td>Content → Edit Sentences → <strong>Settings</strong> → Assign</td></tr>
+          <tr><td>Sentence Response</td><td><code>FOLLOW_PATTERN</code> (<code>GUIDED_RESPONSE</code>)</td>
+              <td>Teaching Points → <del>Practice Type</del> → Question Review → <strong>Settings</strong> → Assign</td></tr>
+          <tr><td>Sentence Building</td><td><code>FOLLOW_PATTERN</code> (<code>SENTENCE_BUILDING</code>)</td>
+              <td>Teaching Points → <del>Practice Type</del> → Question Review → <strong>Settings</strong> → Assign</td></tr>
+          <tr><td>Comprehension Quiz</td><td><code>MULTIPLE_CHOICE</code></td>
+              <td>Question Bank → <strong>Edit &amp; Preview</strong> → Assign</td></tr>
+          <tr><td>Open-ended Questions</td><td><code>QA</code></td>
+              <td>Content → <strong>Settings &amp; Preview</strong> → Assign</td></tr>
+        </tbody>
+      </table>
+
+      <p>粗體是設定所在的那一步，也就是 §3 盤點的對象。</p>
+
+      <h2 id="settings"><span class="num">3</span> 設定總表</h2>
+
+      <p>Response 和 Building 走同一個檔案（<code>follow-pattern-settings.js</code>，裡面沒有任何子型別分支），
+         設定完全一樣。所以八張卡只有<strong>六份設定</strong>。</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:150px">設定</th>
+            <th class="c">Content<br>Mirroring</th>
+            <th class="c">Open-ended<br>Questions</th>
+            <th class="c">Vocabulary<br>（兩張）</th>
+            <th class="c">Sentence<br>Scramble</th>
+            <th class="c">Sentence<br>Resp / Build</th>
+            <th class="c">Comprehension<br>Quiz</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Practice name</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><td><strong>Audio Mode</strong>（純聽力）</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+          <tr><td>Pinyin</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+          <tr><td>Translation</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+          <tr><td>Image（圖片顯不顯示）</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><td>English first</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><td>Guide phrase language</td><td class="c no">—</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+          <tr><td>Speed</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+          <tr><td>Voice</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+          <tr><td>Auto pass 次數</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td></tr>
+        </tbody>
+      </table>
+
+      <p>檔案都在 <code>src/sections/practice/view/unified/steps/</code>：
+         <code>mirroring-step-two-section.js</code> ·
+         <code>qa-step-two-section.js</code> ·
+         <code>vocabulary-step-three-section.js</code> ·
+         <code>sentence-scramble-preview.js</code> ·
+         <code>follow-pattern-settings.js</code> ·
+         <code>mc-step-two-section.js</code></p>
+
+      <h3>① Comprehension Quiz 整欄是空的</h3>
+      <p>它<strong>沒有任何設定</strong>。<code>mc-step-two-section.js</code> 是一份題目清單——
+         型別與分類的 chip、逐題刪除、一顆 <code>Edit in Question Bank</code>。
+         它那一步在步驟表裡就叫 <strong>Edit &amp; Preview</strong>，不叫 Settings，名字本來就講了。</p>
+
+      <div class="callout callout-tip">
+        <strong>所以設計 flow 第 3 步總共是五張面板，不是八張。</strong>
+        八張卡 → 六份設定（Response 與 Building 共用一份）→ 扣掉沒有設定的 Comprehension Quiz
+        → <strong>五張</strong>：Content Mirroring · Open-ended Questions · Vocabulary ·
+        Sentence Scramble · Sentence Response/Building。
+        <br>Mirroring · Sentence Scramble · Vocabulary 已完成（<a class="inline" href="#flows">§6</a>），
+        <strong>還剩一張</strong>：Open-ended Questions 與 Sentence Response/Building 共用的那一份。
+      </div>
+
+      <h3>② 「一張面板、列隨練習出現」有程式碼支撐</h3>
+      <p>整張表是由三個共用元件撐起來的，產品自己就是這樣組的：</p>
+      <table>
+        <thead><tr><th style="width:280px">元件</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr><td><code>audio-mode-toggle-card.js</code></td><td>Audio Mode 開關 ＋ tooltip ＋ 一行說明</td></tr>
+          <tr><td><code>audio-settings-panel.js</code></td><td>Speed ＋ Voice，兩個下拉都有<strong>逐項試聽鍵</strong></td></tr>
+          <tr><td><code>max-attempts-field.js</code></td><td><code>Max attempts before auto pass</code> 數字欄位</td></tr>
+        </tbody>
+      </table>
+      <p>各自獨有的只有三個：Mirroring 的 English first、Vocabulary 的 Image、Open-ended Questions 的 Guide phrase language。</p>
+
+      <h3>③ 三個不一致是產品自己的，不是設計的</h3>
+      <ul>
+        <li><strong>Audio Mode</strong>：Mirroring 和 Open-ended Questions 用共用卡，
+            <strong>Sentence Response/Building 自己畫了一份一樣的</strong>。</li>
+        <li><strong>Auto pass 次數</strong>：同一個東西有三個名字——
+            <code>Max attempts before auto pass</code>（共用元件）、
+            <code>Attempts per sentence</code>（Scramble 自己畫）、
+            <code>Attempts per question</code>（Follow Pattern 自己畫）。</li>
+        <li><strong>Practice name</strong>：六份裡四份有，Sentence Response/Building 和 Comprehension Quiz 沒有。</li>
+      </ul>
+      <div class="callout callout-warn">
+        面板要不要統一這三個是<strong>設計決定</strong>，但要知道統一之後會跟現行畫面長得不一樣。
+      </div>
+
+      <h2 id="values"><span class="num">4</span> 共用元件與選項值</h2>
+
+      <p>照抄程式碼，不要自己編。出處 <code>src/config/practices.js</code>、<code>src/enum/practices.js</code>。</p>
+
+      <div class="formula">SPEED_OPTIONS = [ {1.0,'Fast'}, {0.8,'Normal'}, {0.6,'Slow'} ]   // 三段，預設 0.8
+DEFAULT_MAX_ATTEMPTS = 3 · MIN_MAX_ATTEMPTS = 1 · MAX_MAX_ATTEMPTS = 10
+PINYIN_PREFERENCES      = PINYIN | NO_PINYIN | STUDENT_CHOICE
+TRANSLATION_PREFERENCES = SHOW | HIDE | STUDENT_CHOICE
+IMAGE_PREFERENCES       = SHOW | HIDE                    // 只有 Vocabulary
+SPEED_PREFERENCES       = TEACHER_FIXED | STUDENT_CHOICE</div>
+
+      <p>Voice 不是固定清單——<code>useVoiceCatalog({ targetLanguage, audioOption })</code>
+         依語言取回來的，每個聲音帶一個 <code>sampleUrl</code>。</p>
+
+      <h2 id="panel"><span class="num">5</span> 面板的共同規則</h2>
+
+      <p>四張面板都畫完了（<a class="inline" href="#flows">§6</a>）。這一節留下的是<strong>四張都成立的規則</strong>——
+         哪一張長什麼樣、為什麼，寫在各自的分頁裡。</p>
+
+      <h3>5.1　分工：面板放東西本身，對話放決定</h3>
+      <p>面板寬 <code>480px</code>，標題固定是 <strong>What students will do</strong>，
+         副標寫這是哪一個練習、用哪一份素材。</p>
+      <p>把設定搬進面板之後，<strong>對話從 17 則壓到 5 則</strong>：
+         端點 → 從哪來 → 哪一個 → 課文對嗎 → 設定好了嗎。
+         砍掉的是七題設定、句子那一步、學生預覽，以及「Need any changes → Yes 再進另一個畫面」那個轉場。
+         每一則被砍的理由都一樣：<strong>東西搬進面板之後，那則訊息只剩「你看到了嗎」的功能。</strong></p>
+      <p>反過來也成立：<strong>是決定的就一定要回到對話問</strong>。
+         Vocabulary 的「要不要加字」、Scramble 的「要不要再生成句子」、Quiz 的「題數 / 怎麼出 / 必考哪幾種」，
+         面板上都有現成的空間可以直接擺，但它們是決定，所以都由對話問，
+         答了之後面板才長出對應的東西。</p>
+
+      <h3>5.2　編輯與設定是兩步，不能合併</h3>
+      <p><strong>工程端對句子提出的要求</strong>：換順序 / 斷句 / 刪除必須是自己的一步，
+         不能跟設定合在同一個畫面。後來發現這條對<strong>每一種練習</strong>都成立——
+         能改的那一步只有一個，之後一律唯讀。</p>
+      <table>
+        <thead><tr><th style="width:180px">練習</th><th style="width:200px">能改的那一步</th><th>之後（設定 / Review / 走查）</th></tr></thead>
+        <tbody>
+          <tr><td>Content Mirroring</td><td><code>material</code> 句子列</td><td>同一份句子列，唯讀</td></tr>
+          <tr><td>Vocabulary Mirroring</td><td><code>voclist</code> 字卡（挑圖 / 刪除）</td><td>同一份字卡，唯讀</td></tr>
+          <tr><td>Vocabulary Quiz</td><td><code>vocqlist</code> 題目（排序 / 刪除）</td><td>同一份題目，唯讀</td></tr>
+          <tr><td>Sentence Scramble</td><td><code>scrsent</code> 句子</td><td>同一份句子，唯讀</td></tr>
+        </tbody>
+      </table>
+      <p>四張都用同一個 render 函式畫那份東西，只有「能改的那一步」傳
+         <code>editable=true</code>——兩邊因此不可能走樣。</p>
+
+      <h3>5.3　兩條不能破壞的規則</h3>
+      <ul>
+        <li><strong>面板上的每一次修改仍然記一個復原點</strong>（<code>mark(); keep();</code>），所以 <strong>Back 退得回來</strong>；
+            但<strong>不再往對話寫 Q&amp;A</strong>——對話已經不問設定了，寫進去只是雜訊。
+            <br>例外是<strong>純粹的顯示切換</strong>（例如把某個 Project 的課文字表折起來）：那不是編輯，
+            刻意不記復原點，Back 不該把「打開／收起」當成一步退回去。</li>
+        <li><strong>每一項設定有一顆 <code>?</code></strong>。點下去把「What is auto pass?」＋白話解釋寫進對話，
+            然後 <code>tail()</code> 把還沒答的那一題重貼到底部。<strong>對話的角色是解釋，不是逐題問。</strong></li>
+      </ul>
+
+      <h3>5.4　面板什麼時候開</h3>
+      <div class="formula">prevMode = 'auto'   // 走到面板步驟自動開、離開自動關
+                    // 老師一碰 pagebar 的 toggle 就釘住，直到下一個 plan
+PANEL_STEPS = 每一種練習自己的內容步驟與設定步驟 + 'confirm'</div>
+
+      <h3>5.5　一張面板，列隨練習增減</h3>
+      <ul>
+        <li><strong>分組原則照搬</strong>：看得到的貼在學生畫面上、聽得到的收成一組、過關單獨一行。
+            哪幾列出現由 <a class="inline" href="#settings">§3 的表</a>決定。</li>
+        <li>沒有 Audio Mode 的兩張（Vocabulary、Sentence Scramble）<strong>最上面那張卡不畫</strong>。</li>
+        <li>Comprehension Quiz <strong>沒有面板</strong>（§3 ①）；Vocabulary Quiz 也沒有設定步驟。</li>
+        <li>Vocabulary 的 Image 那一列是特例——它目前<strong>對學生沒有作用</strong>（§8 已解決 ②），
+            但它<strong>對老師有作用</strong>：挑不挑圖決定 Quiz 能不能出 Image 題（§6 · Vocabulary Quiz）。</li>
+      </ul>
+
+      <h2 id="flows"><span class="num">6</span> 四張卡的細節</h2>
+
+      <p>四張已經畫完的卡，一張一個分頁。每一頁的第一件事都是
+         <strong>產品原本的步驟 → Planning 的步驟</strong>——Planning 不是把產品的步驟搬過來，
+         而是照「決定內容 → 檢查產出 → 設定 → Review」重切，所以哪一步被拆開、哪一步消失了，
+         是這四頁最該講清楚的事。</p>
+
+      <div class="callout callout-tip">
+        <strong>四張共用的東西不重抄：</strong>
+        面板的共同規則見 <a class="inline" href="#panel">§5</a>；
+        Review 兩段預覽、進度條、mock 資料規則見本節最後的
+        <a class="inline" href="#shared">6.5 四張共用</a>。
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="mir" role="tab">Content Mirroring</button>
+        <button class="tab" data-tab="vocm" role="tab">Vocabulary Mirroring</button>
+        <button class="tab" data-tab="vocq" role="tab">Vocabulary Quiz</button>
+        <button class="tab" data-tab="scr" role="tab">Sentence Scramble</button>
+      </div>
+      <section class="tabpane active" id="tab-mir" role="tabpanel">
+      <h3>Content Mirroring</h3>
+      <p><strong>學生做什麼：</strong>一句一句聽、一句一句跟著念，系統評分。整篇課文從頭念到尾。</p>
+
+      <h4>產品原本的步驟 → Planning 的步驟</h4>
+      <table>
+        <thead><tr><th style="width:230px">產品</th><th style="width:230px">Planning</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>Content</code></td><td><code>material</code></td>
+              <td>一樣。整篇句子列，可以換順序 / 斷句 / 刪除。</td></tr>
+          <tr><td rowspan="2"><strong><code>Settings &amp; Preview</code></strong><br>一步做兩件事</td>
+              <td><code>mirintro</code></td>
+              <td><strong>拆開的第一半</strong>：設定。面板上仍然看得到同一份句子，但<strong>唯讀</strong>——
+                  改句子是 <code>material</code> 的事（§5.2）。</td></tr>
+          <tr><td><code>confirm</code></td>
+              <td><strong>拆開的第二半</strong>：Review。產品的 Preview 是設定畫面裡的一小塊；
+                  Planning 讓它自成一步，因為「看過了嗎」是一個要老師回答的問題，不是設定的附屬品。</td></tr>
+          <tr><td><code>Assign Practice</code></td><td><code>assign → starts → due → optional → students</code></td>
+              <td>還是五則對話訊息，尚未面板化（§1 第 4 步）。</td></tr>
+        </tbody>
+      </table>
+
+      <h4>對話問什麼</h4>
+      <div class="formula">端點 → 從哪來 → 哪一個 → 課文對嗎（Looks right） → 設定好了嗎（Done adjusting） → Review</div>
+
+      <h4>面板：課文那一步</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=material" title="課文步驟。每一句可以 ↑ ↓ 換順序、⁄ 在逗號處斷句、✕ 刪除。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>課文步驟。每一句可以 ↑ ↓ 換順序、⁄ 在逗號處斷句、✕ 刪除。</span><a href="teacher-planning.html?at=material" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>面板：設定那一步——依「它改變什麼」分五塊</h4>
+      <p>分組原則<strong>不是依欄位來源</strong>（那會長成產品現在那五張卡），而是依它改變學生的哪一件事。</p>
+      <table>
+        <thead><tr><th style="width:200px">區塊</th><th style="width:260px">內容</th><th>為什麼放這裡</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Listening only</strong>（最上面）</td>
+              <td>耳機圖 ＋ 一句說明 ＋ 開關</td>
+              <td>它<strong>是練習模式，不是顯示偏好</strong>——學生從「看著句子跟讀」變成「純聽力」。
+                  跟拼音、翻譯並排是它一直讓人覺得重複的真正原因。</td></tr>
+          <tr><td>貼在畫面上的</td>
+              <td>Pinyin · Translation，各三段（Shown / Hidden / Their choice）</td>
+              <td>它們改的是「看得到什麼」，所以<strong>貼在學生畫面的正上方</strong>，改完立刻在下面看到結果。</td></tr>
+          <tr><td><strong>學生畫面</strong></td>
+              <td>句子列，<strong>唯讀</strong>（純聽力時換成 Audio Mode 卡）</td>
+              <td>東西本身——設定改了立刻在這裡看到。</td></tr>
+          <tr><td>What they hear on play</td>
+              <td>Voice（每個聲音一顆試聽鍵）· Speed · English meaning first</td>
+              <td>改的是「聽得到什麼」，收成一組。</td></tr>
+          <tr><td>When it counts as passed</td>
+              <td>Tries on one sentence</td>
+              <td>過關條件跟看／聽都無關，單獨一行。</td></tr>
+        </tbody>
+      </table>
+      <div class="preview"><iframe src="teacher-planning.html?at=mirintro" title="設定那一步。左邊只剩五則對話，右邊 480px 是面板本身。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>設定那一步。左邊只剩五則對話，右邊 480px 是面板本身。</span><a href="teacher-planning.html?at=mirintro" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>Audio Mode 的連動——照真實產品</h4>
+      <ul>
+        <li>打開會<strong>強制把拼音與翻譯寫成 <code>STUDENT_CHOICE</code> 並鎖住</strong>
+            （<code>mirroring-step-two-section.js · handleAudioMode</code>）。</li>
+        <li>面板上<strong>要看得出被鎖住</strong>——變灰＋一句原因，而不是安靜地被改掉。</li>
+        <li>學生畫面同時換成 <strong>Audio Mode 卡</strong>：耳機圖、<code>Audio Mode is ON</code>、
+            <code>Please pay attention and repeat the sentences.</code>，
+            底下一塊提示 <code>Need help? Check the settings for text options.</code>
+            （<code>assignments/content/index.js:488–546</code>，見 §8 已解決 ①）。
+            <strong>拼音預設是關的</strong>，學生在練習當中自己叫回來——不是事先由老師決定。</li>
+      </ul>
+
+      <h4>設定的列</h4>
+      <p>Audio Mode · Pinyin · Translation · English first · Speed · Voice · Auto pass（1–10，預設 3）。
+         值與共用元件見 <a class="inline" href="#values">§4</a>。</p>
+
+      <h4>產出與 Review</h4>
+      <ul>
+        <li>Review 顯示整篇句子列，唯讀，每句一顆播放鍵。</li>
+        <li>走查的單位是<strong>句</strong>：<code>Question N of 14</code>。</li>
+        <li><strong>走查會套用設定</strong>：拼音關掉就只剩漢字、翻譯關掉就不顯示。（以前不會，是修過的。）</li>
+      </ul>
+
+      <h4>規則與邊界</h4>
+      <ul>
+        <li>句子只能在 <code>material</code> 改；設定與 Review 都是同一份句子的唯讀版（§5.2）。</li>
+        <li>斷句只在<strong>逗號</strong>處提供，選字介面 <code>splitPicker</code> 只活在 <code>material</code>。</li>
+        <li>課文是 14 句（mock 資料，見 6.5）。</li>
+      </ul>
+
+      <h4>與真實產品的差異</h4>
+      <ul>
+        <li><span class="pill p-blue">刻意不同</span> 產品的 <code>Settings &amp; Preview</code> 是一步，Planning 拆成兩步。</li>
+        <li><span class="pill p-gray">簡化</span> 產品的 Test 會把老師帶去真實學生頁；Planning 沒有後端，用兩段式預覽代替（6.5）。</li>
+      </ul>
+      </section>
+      <section class="tabpane" id="tab-vocm" role="tabpanel">
+      <h3>Vocabulary Mirroring</h3>
+      <p><strong>學生做什麼：</strong>一個字一個字念出來，<strong>而且要念它的兩則例句</strong>。</p>
+
+      <div class="callout callout-warn">
+        <strong>一個單字 = 三張卡。</strong>
+        <code>content/vocabulary/helpers.js · parsePracticeCards()</code>：中文的 <code>groupSize = 3</code>，
+        一個單字拆成 <code>VOCABULARY</code> → <code>EXAMPLE1</code> → <code>EXAMPLE2</code>，
+        依序出現、<strong>每一張都要錄音</strong>，
+        <code>use-vocabulary-practice.js:129</code> 把三張的評分平均成這個字的分數。
+        所以 12 個單字 = <strong>36 張要念的卡</strong>，不是 12 題。
+        <strong>例句不是顯示偏好，是考題本身。</strong>
+      </div>
+
+      <h4>產品原本的步驟 → Planning 的步驟</h4>
+      <table>
+        <thead><tr><th style="width:230px">產品</th><th style="width:230px">Planning</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="2"><strong><code>Vocabulary</code></strong><br>一步做兩件事</td>
+              <td><code>vocpts</code>　決定哪些字</td>
+              <td><strong>拆開的第一半</strong>：勾教學點、加字。產品把「挑教學點」跟「看字卡清單」放在同一畫面，
+                  加字的 <code>+ Add Vocab</code> 掛在字卡清單上。</td></tr>
+          <tr><td><code>voclist</code>　檢查字卡</td>
+              <td><strong>拆開的第二半</strong>：一張一張看圖、看例句、刪掉不要的。
+                  <strong>這裡不能加字</strong>——字集在上一步就定了。</td></tr>
+          <tr><td><del><code>Practice Type</code></del></td><td class="c"><span class="no">—</span></td>
+              <td>v1 攤平第二層之後多餘：選卡的當下就決定了是 Mirroring 還是 Quiz。</td></tr>
+          <tr><td><code>Settings</code></td><td><code>vocintro</code></td>
+              <td>一樣。<strong>沒有 Audio Mode</strong>（§3）。</td></tr>
+          <tr><td class="c"><span class="no">—</span></td><td><code>confirm</code></td>
+              <td>Planning 加的一步，四張卡共用（6.5）。</td></tr>
+          <tr><td><code>Assign Practice</code></td><td><code>assign → … → students</code></td><td>同 Content Mirroring。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>沒有課文那一步。</strong>Vocabulary 的內容是<strong>教學點驅動</strong>的，
+        所以 single-endpoint 的 Vocabulary（和 Sentence Scramble）在 <code>begin()</code> 會跳過
+        <code>material</code> 直接進第一步——漏掉這一行，整個 run 會被導去錯誤的通用課文流程。
+      </div>
+
+      <h4>對話問什麼</h4>
+      <div class="formula">端點 → 從哪來 → 哪一個 → 這些字要從哪幾個 Project 撈？
+→ 挑教學點，還要加別的字嗎？（Yes, add words / No, these are all）
+→ 字卡檢查完了嗎（Done） → 設定好了嗎（Done adjusting） → Review</div>
+
+      <h4>面板：第一步——一個 Project 一塊</h4>
+      <div class="formula">Project name          ← 這一行本身就是這一塊的 select-all，右邊是 已選/總數
+  Teaching points     ← 預設全勾，老師做的是減法
+  ── ADD WORDS ──     ← 只有在對話答了 Yes 之後才出現
+  From Project        ← 這個 Project 的整篇課文，可折疊
+  Custom word         ← 打字</div>
+      <div class="preview"><iframe src="teacher-planning.html?at=vocpts-add" title="第一步，且已經回答「Yes, add words」——ADD WORDS 以下兩段才出現。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>第一步，且已經回答「Yes, add words」——ADD WORDS 以下兩段才出現。</span><a href="teacher-planning.html?at=vocpts-add" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <ul>
+        <li><strong>兩條加字路都掛在某個 Project 底下，這是有語意的。</strong>
+            在「数字」那一塊打字加的 <code>钱</code>，就拿数字的 HSK 等級、去<strong>数字的課文</strong>找例句；
+            掛在家人那塊的 <code>猫</code> 就找家人的。全域一個輸入框做不到——它只能 fallback 到主 Project。</li>
+        <li><strong>From Project 撈的是整篇課文</strong>，對應真實 <code>add-vocab-dialog.js</code> 的
+            <code>splitArticleArray</code>。已經在字集裡的字<strong>變灰但不消失</strong>，
+            照真實 dialog 的 Available / Already Added 兩態——藏起來的話，老師看不出這篇課文已經吃進去多少。</li>
+        <li><strong>同一個字出現在兩個 Project 的課文裡，兩塊都列</strong>，不去重：
+            區塊宣稱的是「這個 Project 的課文有什麼」，去重會讓那句話變成謊話。</li>
+        <li>加進來的字回到自己 Project 的教學點旁邊，掛 <code>Added</code> 標籤（它不是教學點）。
+            取消勾選不會讓它消失——<code>S.voc.added</code> 與 <code>S.voc.points</code> 分開存。</li>
+        <li>離開這一步時對話的回答是<strong>結果</strong>：<code>18 words · 16 teaching points + 2 added</code>。</li>
+      </ul>
+
+      <h4>面板：第二步——字卡</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=voclist" title="字卡清單。左欄大圖＋5 張候選＋明確的第 6 格「不要圖片」；右欄單字資訊與兩則例句各自成框。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>字卡清單。左欄大圖＋5 張候選＋明確的第 6 格「不要圖片」；右欄單字資訊與兩則例句各自成框。</span><a href="teacher-planning.html?at=voclist" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <ul>
+        <li>版面是<strong>兩欄</strong>：左欄固定 150px（大圖預覽 ＋ 3×2 候選格），
+            右欄由上到下三個對等的框——單字資訊（無邊框，主紀錄）、例句 1、例句 2（有邊框，參考資料）。</li>
+        <li><strong>例句固定兩則</strong>（真實單字卡就是兩則）。第二則查不到時那個框誠實顯示
+            <code>No example sentence on record for this word.</code>——不重複第一句、也不編一句。</li>
+        <li>圖片<strong>只有這一步能選</strong>；設定示範卡與 Review 都只讀。</li>
+      </ul>
+
+      <h4>面板：設定那一步</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=vocintro" title="設定示範卡。三張卡的序列，就是學生實際會依序拿到的三張。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>設定示範卡。三張卡的序列，就是學生實際會依序拿到的三張。</span><a href="teacher-planning.html?at=vocintro" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <ul>
+        <li><strong>示範卡畫成三張卡的序列</strong>（Card 1 · Word / Card 2 · Example 1 / Card 3 · Example 2），
+            不是一張卡上塞一個字加兩則例句。</li>
+        <li><strong>示範卡上沒有 Listen / Hold to speak</strong>：它是「這張卡長什麼樣」的樣本，不是能按的練習。</li>
+        <li>設定只有 <strong>Pinyin / Translation / Image</strong>（<code>DisplaySettingsAccordion</code>）
+            ＋ Speed / Voice ＋ Max Attempts。<strong>沒有「例句要不要顯示」這個開關</strong>——
+            曾經憑推理加過一個，是錯的。學生端自己的設定更少，只有 Pinyin / Translation
+            （<code>content/vocabulary/settings-panel.js</code>）。</li>
+        <li>拼音與翻譯<strong>對例句卡一樣有效</strong>；圖片<strong>只在單字卡上</strong>
+            （<code>card-stack.js:110</code>）。</li>
+      </ul>
+
+      <h4>產出與 Review</h4>
+      <ul>
+        <li>Review 顯示每個字一張卡（圖、字、拼音、翻譯、詞性 / HSK、兩則例句），唯讀。</li>
+        <li>走查的單位是<strong>卡</strong>：<code>Card N of 36</code>，一個字走三張。</li>
+        <li><strong>Review 的清單刻意不跟設定走</strong>——那是老師檢查「我做出了什麼」的清單，
+            所以永遠顯示完整內容（含詞性 / HSK 標籤）；只有兩個學生視角（設定示範卡、走查）受設定控制。</li>
+      </ul>
+
+      <h4>與真實產品的差異</h4>
+      <ul>
+        <li><span class="pill p-blue">刻意不同</span> <code>+ Add Vocab</code> 從字卡清單搬到第一步，並依 Project 分塊。
+            <strong>要進交接時的差異清單。</strong></li>
+        <li><span class="pill p-amber">無法確認</span> Max Attempts 這一列——見 <a class="inline" href="#gaps">§7</a>。</li>
+        <li><span class="pill p-gray">簡化</span> 圖片沒有真實資產，面板上是示意方框；但<strong>選圖的互動是真的</strong>。</li>
+      </ul>
+      </section>
+      <section class="tabpane" id="tab-vocq" role="tabpanel">
+      <h3>Vocabulary Quiz</h3>
+      <p><strong>學生做什麼：</strong>選擇題。考的是<strong>同一個字的四種表徵互相對應</strong>——
+         漢字、英文（產品叫 Translation）、圖片、語音。</p>
+
+      <h4>七種題型</h4>
+      <p>鍵與標籤來自 <code>src/enum/practices.js:87 MC_QUESTION_TYPE_LABELS</code>。
+         注意<strong>沒有</strong>「Chinese → Pinyin」，拼音永遠只當答案不當題幹。</p>
+      <table>
+        <thead><tr><th style="width:110px">題幹</th><th style="width:110px">答案</th><th>題型</th><th style="width:90px">標籤</th></tr></thead>
+        <tbody>
+          <tr><td>Chinese</td><td>Translation</td><td><code>VOCAB_MC_CN_TO_EN</code></td><td class="c"><span class="no">—</span></td></tr>
+          <tr><td>Image</td><td>Chinese</td><td><code>VOCAB_MC_IMAGE_TO_CN</code></td><td class="c"><span class="no">—</span></td></tr>
+          <tr><td>Image</td><td>Pinyin</td><td><code>VOCAB_MC_IMAGE_TO_PINYIN</code></td><td><span class="pill p-amber">Advanced</span></td></tr>
+          <tr><td>Translation</td><td>Chinese</td><td><code>VOCAB_MC_EN_TO_CN</code></td><td class="c"><span class="no">—</span></td></tr>
+          <tr><td>Translation</td><td>Pinyin</td><td><code>VOCAB_MC_EN_TO_PINYIN</code></td><td><span class="pill p-amber">Advanced</span></td></tr>
+          <tr><td>Audio</td><td>Translation</td><td><code>VOCAB_MC_AUDIO_TO_EN</code></td><td class="c"><span class="no">—</span></td></tr>
+          <tr><td>Audio</td><td>Chinese</td><td><code>VOCAB_MC_AUDIO_TO_CN</code></td><td class="c"><span class="no">—</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <strong>兩種題型的題幹就是老師挑的那張圖。</strong>
+        圖片是真的：<code>config/index.js · getVocabularyImageUrls()</code> 每個字回傳五個 S3 網址
+        <code>&lt;字&gt;_001.png … _005.png</code>。少畫這兩種題型，等於把「挑圖」跟「圖拿來考什麼」之間的線剪斷——
+        挑圖那個互動會變成懸空的。
+      </div>
+
+      <h4>產品原本的步驟 → Planning 的步驟</h4>
+      <table>
+        <thead><tr><th style="width:230px">產品</th><th style="width:250px">Planning</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>Vocabulary</code></td><td><code>vocpts</code> → <code>voclist</code></td>
+              <td>跟 Vocabulary Mirroring <strong>完全共用前兩步</strong>——先有字才有題。</td></tr>
+          <tr><td><del><code>Practice Type</code></del></td><td class="c"><span class="no">—</span></td>
+              <td>v1 攤平後多餘。</td></tr>
+          <tr><td rowspan="4"><strong><code>Question Types</code></strong><br>Random / Advanced 一個畫面</td>
+              <td><code>vocqn</code>　題數</td>
+              <td rowspan="3"><strong>攤成三個問句</strong>。產品是先選模式再看到對應的畫面；
+                  Planning 反過來：先講「全部考完是幾題」這個具體數字，老師才知道要不要縮。
+                  <strong>三個問句會分支</strong>——用全部就只答一題。</td></tr>
+          <tr><td><code>vocqmode</code>　隨機還是必考</td></tr>
+          <tr><td><code>vocqtypes</code>　哪幾種必考</td></tr>
+          <tr><td><code>vocqlist</code>　題目編輯</td>
+              <td><strong>新加的一步</strong>：排序 / 刪除。產品的 Advanced 矩陣只決定「出哪些題」，
+                  沒有「這份題目長這樣，調一下順序」這一步（§5.2 的規則）。</td></tr>
+          <tr><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td>
+              <td><strong>這張卡沒有 Settings 步驟</strong>（§3 表）。</td></tr>
+          <tr><td class="c"><span class="no">—</span></td><td><code>confirm</code></td><td>四張卡共用（6.5）。</td></tr>
+          <tr><td><code>Assign Practice</code></td><td><code>assign → … → students</code></td><td>同前。</td></tr>
+        </tbody>
+      </table>
+
+      <h4>對話問什麼——三段式，而且會分支</h4>
+      <div class="formula">① 全部題型 × 全部單字 = N 題。要用這個題數嗎？
+     ├─ Use all N ────────────────────────────► 直接進下一步
+     └─ Fewer than that → 輸入題數
+② 這 N 題怎麼出？
+     ├─ Random across all types ──────────────► 直接進下一步
+     └─ I have types that must be covered
+③ 哪幾種必考？（面板勾七張題型卡）
+④ 題目對嗎？（排序 / 刪除）</div>
+      <div class="preview"><iframe src="teacher-planning.html?at=vocqn" title="① 題數。面板是全部勾滿的矩陣，標題就是那個 84。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>① 題數。面板是全部勾滿的矩陣，標題就是那個 84。</span><a href="teacher-planning.html?at=vocqn" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <ul>
+        <li><strong>「必考」＝優先補滿，不是只出這幾種。</strong>勾選的題型逐一填滿<em>全部單字</em>再換下一個；
+            題數還有剩，才從沒勾的題型隨機補。
+            <br>例：20 題、勾 Chinese→Translation 與 Audio→Chinese、12 個單字
+            → 前 12 題 CN→TR 蓋滿每個字，後 8 題 AU→CN 補前 8 個字。
+            <br><strong>已知邊界</strong>：題數小於單字數時，第二個勾的題型輪不到。</li>
+        <li><strong>沒有「Number of questions」這個獨立欄位。</strong>矩陣本身就是題目清單，勾幾格就是幾題。</li>
+      </ul>
+
+      <h4>面板：七張題型卡 ＋ 矩陣</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=vocqtypes" title="③ 必考題型。上面七張卡是產品自己的（含兩個 Advanced 標籤），下面的矩陣立刻反映結果。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>③ 必考題型。上面七張卡是產品自己的（含兩個 Advanced 標籤），下面的矩陣立刻反映結果。</span><a href="teacher-planning.html?at=vocqtypes" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <ul>
+        <li><strong>格子的可用性是逐字算的</strong>：沒挑圖的字不能出 Image 題、沒有翻譯不能出英文題、
+            沒有拼音不能出拼音答案。<strong>這正是真實產品把它做成矩陣、而不是一排題型 chip 的原因。</strong>
+            不能出的格子顯示灰色破折號，滑上去說明缺什麼。</li>
+        <li><strong>欄位照題幹分四組</strong>（Chinese / Image / Translation / Audio）——
+            這不是設計加的分組，<strong>產品自己的題型排序本來就是照題幹排的</strong>。
+            有了組標頭寫題幹，每一欄就只需要寫答案側（TR / CN / PY），長圖例整段可以刪掉。</li>
+        <li><strong>題數畫成「大數字 ＋ 四段組成條」</strong>，四段就是那四組的顏色。
+            老師要判斷的不是「幾題」，是<strong>這份考卷由什麼組成</strong>——20 題裡幾題看圖、幾題聽力。</li>
+        <li>綠色仍然<strong>只代表勾選與 CTA</strong>；四個群組色只出現在群組標線與組成條這兩處。</li>
+        <li>欄頭與每一列各有一顆主勾選——<strong>產品的矩陣兩者都有</strong>。</li>
+      </ul>
+
+      <h4>面板：題目編輯</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=vocqlist" title="④ 題目編輯。每一題右邊 ↑ ↓ ✕，只能排序與刪除——題幹跟選項都是從單字生出來的，沒有東西可以打字。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>④ 題目編輯。每一題右邊 ↑ ↓ ✕，只能排序與刪除——題幹跟選項都是從單字生出來的，沒有東西可以打字。</span><a href="teacher-planning.html?at=vocqlist" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>產出與 Review</h4>
+      <ul>
+        <li>Review 逐題列出題幹、題型代碼與四個選項（正解標綠），唯讀。</li>
+        <li>走查的單位是<strong>題</strong>：<code>Question N of 84</code>。圖片題畫成 96px 的圖 ＋
+            <code>Which word is this?</code> ＋ 四個中文選項。</li>
+        <li>干擾項是這個字集裡其他字在<strong>同一個答案側</strong>能提供的值，最多三個——
+            跟真實 <code>buildMcQuestion()</code> 同一條規則。</li>
+      </ul>
+
+      <h4>與真實產品的差異</h4>
+      <ul>
+        <li><span class="pill p-blue">刻意不同</span> Random / Advanced 一個畫面 → 三個問句；
+            多了一個題目編輯步驟。</li>
+        <li><span class="pill p-blue">刻意不同</span> 題數不是自由輸入的獨立欄位，而是矩陣算出來的。</li>
+        <li><span class="pill p-gray">不做</span> <code>VOCABULARY_PRACTICE_TYPES</code> 的第三種
+            <code>MIXED</code>——使用者確認未來會刪掉。</li>
+      </ul>
+      </section>
+      <section class="tabpane" id="tab-scr" role="tabpanel">
+      <h3>Sentence Scramble</h3>
+      <p><strong>學生做什麼：</strong>聽一句話，把打散的詞塊拖回正確語序。</p>
+
+      <div class="callout callout-warn">
+        <strong>產品把這一步叫 <code>Content</code>，但它不是課文。</strong>
+        真實的 Content 步驟是<strong>教學點驅動</strong>的：勾教學點 → 由教學點生成句子。
+        Planning 直接叫它 <code>scrpts</code>（教學點那一步），因為名字騙人是這條流程最早的誤解來源。
+      </div>
+
+      <h4>產品原本的步驟 → Planning 的步驟</h4>
+      <table>
+        <thead><tr><th style="width:230px">產品</th><th style="width:230px">Planning</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><code>Content</code>（實際上是教學點）</td><td><code>scrpts</code></td>
+              <td>改名不改事。多選 Project（對話問）→ 面板勾教學點，可跨 Project、可刪、
+                  可自訂新增 <code>Custom Teaching Points</code>，
+                  <code>Number of questions</code> <strong>獨立於點數</strong>（句子在教學點之間輪流分配）。</td></tr>
+          <tr><td><code>Edit Sentences</code></td><td><code>scrsent</code></td>
+              <td>一樣。列出全部生成的句子，可上下移動 / 刪除 / 再生成更多。
+                  <strong>「還要不要新增」在對話問</strong>，面板的輸入框只在答 Yes 後才出現。</td></tr>
+          <tr><td><code>Settings</code></td><td><code>scrintro</code></td>
+              <td>一樣。四項：Pinyin · Auto pass · Speed · Voice。<strong>沒有 Translation、沒有 Audio Mode</strong>（§3）。</td></tr>
+          <tr><td class="c"><span class="no">—</span></td><td><code>confirm</code></td><td>四張卡共用（6.5）。</td></tr>
+          <tr><td><code>Assign Practice</code></td><td><code>assign → … → students</code></td><td>同前。</td></tr>
+        </tbody>
+      </table>
+
+      <h4>對話問什麼</h4>
+      <div class="formula">端點 → 從哪來 → 哪一個 → 教學點要從哪幾個 Project 撈？
+→ 勾教學點（Done） → 還要再生成更多句子嗎？ → 設定好了嗎 → Review</div>
+
+      <h4>面板：教學點那一步</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=scrpts" title="教學點步驟。跨 Project 勾選，可自訂新增，題數獨立於點數。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>教學點步驟。跨 Project 勾選，可自訂新增，題數獨立於點數。</span><a href="teacher-planning.html?at=scrpts" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>面板：Edit Sentences</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=scrsent" title="生成的句子列。每一句掛著它來自哪個教學點的 chip，可上下移動 / 刪除。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>生成的句子列。每一句掛著它來自哪個教學點的 chip，可上下移動 / 刪除。</span><a href="teacher-planning.html?at=scrsent" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>面板：設定</h4>
+      <div class="preview"><iframe src="teacher-planning.html?at=scrintro" title="設定。四項，沒有 Audio Mode 卡也沒有 Translation。" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>設定。四項，沒有 Audio Mode 卡也沒有 Translation。</span><a href="teacher-planning.html?at=scrintro" target="_blank">原尺寸開啟 ↗</a></p>
+
+      <h4>產出與 Review</h4>
+      <ul>
+        <li>Review 顯示每一句打散後的詞塊（照學生會看到的樣子），唯讀。</li>
+        <li>走查的單位是<strong>句</strong>，畫面上是打散的詞塊 ＋ <code>Drag them into place</code>——
+            <strong>但只是走查，不能真的拖</strong>。</li>
+      </ul>
+
+      <h4>規則與邊界</h4>
+      <ul>
+        <li><strong>句子生成是 mock</strong>：<code>scrSentenceFor(word)</code> 先找這個字有沒有出現在該主題的課文裡，
+            有就整句借用（真拼音真翻譯）；沒有就只顯示這個詞本身、拼音留白——誠實留白，不編造。</li>
+        <li><code>Custom Teaching Points</code> 與 <code>Number of questions</code>
+            <strong>在部署的 dev 站有、但 <code>origin/develop</code> 沒有</strong>——
+            靠 <code>?type=SENTENCE_SCRAMBLE</code> 的真實網址截圖確認的。<strong>讀 repo 這次不夠用。</strong></li>
+      </ul>
+
+      <h4>與真實產品的差異</h4>
+      <ul>
+        <li><span class="pill p-blue">刻意不同</span> 步驟名稱：<code>Content</code> → <code>scrpts</code>（教學點）。</li>
+        <li><span class="pill p-gray">簡化</span> 走查不能真的拖拽排序。</li>
+      </ul>
+      </section>
+      <h3 id="shared">6.5　四張共用</h3>
+
+      <h4>Review 與 Preview as a student</h4>
+      <p>真實產品沒有「Review」，它有的是 <strong>Test</strong>——直接把老師帶去學生實際做題的真實頁面
+         （<code>/dashboard/assignments/content/?sk=…&amp;type=…</code>）。Planning 沒有後端開不了那個頁面，
+         做了一個對應的兩段式簡化版：</p>
+      <ul>
+        <li><strong>Stage 1</strong>（<code>confirm</code> 自動顯示）：面板換成這次 run 真的產出的全部內容，唯讀。
+            <code>renderConfirmPreview()</code> 判斷這個 run 有沒有 Vocabulary，沒有就退回句子列樣式，
+            兩邊共用一份邏輯。</li>
+        <li><strong>Stage 2</strong>（點 <strong>Preview as a student</strong>）：<strong>蓋滿整個畫面</strong>的走查
+            （<code>#spOverlay</code>，不是 480px 面板），Prev / Next 換題，照真實學生介面畫，
+            但<strong>只是走查，不是真的能作答</strong>。</li>
+        <li>按鈕在<strong>面板最上面</strong>，四張卡共用同一個 <code>studentPreviewBtn()</code>——
+            放在內容後面的話，得先捲過 84 題才找得到入口。</li>
+        <li><strong>走查會套用老師剛設好的顯示設定</strong>（曾經不會，是修過的）。
+            學生視角共用一個 <code>vocShow()</code>；Mirroring 的走查同樣修過。
+            <strong>唯一不跟設定走的是 Review 的唯讀清單</strong>——那是老師檢查「我做出了什麼」的清單。</li>
+      </ul>
+
+      <h4>進度條</h4>
+      <ul>
+        <li><code>flowStepsFor(ep)</code> 算出這個 run 會走的完整 step-kind 陣列，
+            邏輯<strong>刻意跟 <code>tail()</code> 的 dispatch 順序完全對應</strong>——這是唯一的正確性保證。
+            <code>tail()</code> 以後改動，這裡要跟著改。</li>
+        <li><strong>只在「從既有 Project 建立」時顯示</strong>；從零開始寫內容那條路沒碰。</li>
+        <li><strong>Vocabulary Quiz 是第一個會分支的流程</strong>，總數隨答案長出來：
+            Use all = 10 步、改題數 + Random = 11 步、改題數 + 必考 = 12 步。</li>
+      </ul>
+
+      <h4>Mock 資料的規則</h4>
+      <div class="callout callout-tip">
+        <strong>誠實留白，絕不編造。</strong>查得到就用真的（真拼音、真翻譯、課文裡真的含這個字的句子），
+        查不到就留白並說明，不拿第一句重複湊數、也不編一句出來。
+        這條規則同時管 <code>vocEntryFor()</code>、<code>scrSentenceFor()</code> 與 MC 題目生成。
+      </div>
+      <ul>
+        <li><strong>三個 Project 的課文都加長了</strong>（食物 6→14 句、家人 6→12、数字 6→12），
+            因為 From Project 撈的是整篇課文——6 句的課文撈不出像樣的詞池。
+            連帶 Content Mirroring 也變成 14 句，這是同一篇課文，本來就該一致。</li>
+        <li><strong><code>GLOSS</code> 表</strong>補了課文裡有、但不在該主題 <code>cards</code> 的字（共 43 條）。
+            不然從課文加 <code>我</code> 進來會是空翻譯。</li>
+        <li>圖片沒有真實資產，面板上一律是示意方框；但<strong>選圖的互動是真的</strong>，
+            因為它會決定 Quiz 能不能出 Image 題。</li>
+      </ul>
+
+      <h2 id="gaps"><span class="num">7</span> 原型的落差</h2>
+
+      <table>
+        <thead><tr><th style="width:150px">位置</th><th style="width:200px">原型現在</th><th style="width:180px">產品</th><th>處置</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Auto pass 上限</td><td><code>min=1 max=10</code></td><td><strong>1–10</strong>，預設 3</td>
+            <td><span class="pill p-green">已改</span> 20 是舊紀錄，已經拿掉。</td>
+          </tr>
+          <tr>
+            <td>Auto pass 預設</td><td>3</td><td>3</td>
+            <td><span class="pill p-green">已改</span> 採用 3。「老師沒設定過」那個狀態沒有保留——
+                面板一打開就是有值的，跟真實產品一致。</td>
+          </tr>
+          <tr>
+            <td>Vocabulary 的 Max Attempts</td>
+            <td>面板上有這一列</td>
+            <td><strong>這份 checkout 裡找不到</strong></td>
+            <td><span class="pill p-amber">無法確認</span>
+                <code>vocabulary-step-three-section.js</code> 沒有這個欄位，
+                <code>config/practices.js</code> 也沒有 <code>MAX_ATTEMPTS</code>，
+                整個 repo 沒有 <code>max-attempts-field.js</code>——但 §3 的表給 Vocabulary 打了 ✓。
+                <strong>缺席不等於不存在</strong>（同一份 checkout 的 <code>SPEED_OPTIONS</code>
+                還是舊的五段），所以維持現狀並標記。要確認最快是開
+                <code>?type=VOCABULARY</code> 的真實設定頁截一張。</td>
+          </tr>
+          <tr>
+            <td>Add Vocab 的位置</td>
+            <td>在<strong>第一步</strong>（決定哪些字），依 Project 分塊</td>
+            <td>在<strong>字卡清單</strong>那一步（<code>VocabularyDisplaySection</code> 的 + Add Vocab），全域一個 dialog</td>
+            <td><span class="pill p-blue">刻意不同</span>
+                Planning 把「這次要考哪些字」收斂成一步；掛在 Project 底下才能決定新字的等級與例句來源。
+                <strong>要進交接時的差異清單。</strong></td>
+          </tr>
+          <tr>
+            <td>Mixed Mode</td><td>沒有</td>
+            <td><code>VOCABULARY_PRACTICE_TYPES</code> 有三種：<code>MIRRORING / MIXED / MULTIPLE_CHOICE</code></td>
+            <td><span class="pill p-gray">不做</span> 使用者確認 <strong>Mixed 未來會刪掉</strong>，不要設計它。</td>
+          </tr>
+          <tr>
+            <td>Speed</td><td>三段</td><td>Fast / Normal / Slow</td>
+            <td>對得上。</td>
+          </tr>
+          <tr>
+            <td>Pinyin / Translation</td><td>Shown / Hidden / Their choice</td><td>同三個值</td>
+            <td>對得上，而且<strong>原型的說法比產品好</strong>——見 §8 第 2 題。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="open"><span class="num">8</span> 待問工程</h2>
+
+      <p>原本七題，其中<strong>三題已從程式碼取得答案</strong>（見下方「已解決」）。
+         剩五題——其中一題是查證過程中新長出來的。
+         最前面兩題出自 <code>mirroring-settings-questions.md</code>，
+         自 2026-08-26 提出後尚未回覆。</p>
+
+      <h3>已解決 ① — 純聽力模式下學生端長什麼樣</h3>
+      <p>不需要工程回覆，行為寫在 <code>src/sections/assignments/content/index.js</code>：</p>
+      <div class="formula">// index.js:430
+// For MIRRORING, we show an AudioModePanel instead of hiding the panel.
+const hideContentPanel = audioModeOn &amp;&amp; (practiceType === 'QA' &amp;&amp; !hasContentBasedArticle);
+
+renderMirroringContent = audioModeOn ? renderAudioModePanel : &lt;ContentWindow …/&gt;
+setStudentPinyinOn(!audioMode)   // index.js:376 —— 拼音預設關</div>
+      <ul>
+        <li><strong>Mirroring 不是把左邊藏起來，是把課文換成一張 Audio Mode 卡</strong>——
+            耳機圖、<code>Audio Mode is ON</code>（ON 為 #22C55E 綠）、
+            <code>Please pay attention and repeat the sentences.</code>，
+            底下一塊 <code>#F0FAF4</code> 的提示：<code>Need help? Check the settings for text options.</code>
+            （<code>index.js:488–546</code>）。整個藏掉的只有 QA。</li>
+        <li><strong>拼音預設是關的</strong>（<code>setStudentPinyinOn(!audioMode)</code>），
+            學生在練習當中從設定把文字叫回來——不是「事先由老師決定」。</li>
+        <li>開始卡也換了標題：<code>Audio Mode</code> ·
+            <strong><code>Listen and repeat —— text is hidden</code></strong>，
+            而且拼音／翻譯那張開關卡在 audio mode 下<strong>整張不顯示</strong>
+            （<code>practice-list-mirroring-start-card.js:44–74</code>）。</li>
+      </ul>
+      <div class="callout callout-tip">
+        <strong>原型已照這個改完。</strong> Mirroring 面板打開 <code>Listening only</code> 之後
+        不再畫三行句子，改畫上面那張卡；<code>Listening only</code> 的說明也改成
+        「text is hidden，學生在練習中從設定叫回來」。
+      </div>
+
+      <h3>已解決 ② — Vocabulary 的 <code>imagePreference</code> 關掉之後學生看到什麼</h3>
+      <p><strong>看到的一模一樣。這個設定沒有傳到學生端。</strong></p>
+      <div class="formula">// getStudentAssignments.js —— 有 pinyin / translation / audioMode / speed，就是沒有 imagePreference
+pinyinPreference · translationPreference · audioMode · speedPreference
+
+// card-stack.js:106 —— 學生的生詞卡，沒有任何 imagePreference 判斷
+{cardForType.type === CARD_TYPE.VOCABULARY &amp;&amp; !isESL &amp;&amp; !failedImageIndices[…] &amp;&amp; ( …圖片… )}
+
+// 整個 src/sections/assignments/ 底下 imagePreference 出現 0 次</div>
+      <ul>
+        <li>老師端<strong>會</strong>照這個設定畫——<code>vocabulary-cards-preview.js:159</code>
+            的 <code>imagePreference === SHOW</code> 決定要不要渲染 <code>VocabularyImage</code>，
+            而那正是 Settings 那一步右側的預覽。</li>
+        <li>所以現況是：<strong>老師在自己的預覽裡看到圖片消失，學生那邊沒有變。</strong></li>
+      </ul>
+      <div class="callout callout-warn">
+        <strong>對設計的影響：Vocabulary 面板不能照抄老師端的預覽。</strong>
+        面板叫「What students will do」，而這一個設定目前對學生沒有作用。
+        在工程回覆之前（見下表第 5 題），面板上這一列要嘛不畫、要嘛註明它現在不影響學生。
+      </div>
+
+      <table>
+        <thead><tr><th style="width:36px">#</th><th style="width:280px">問題</th><th>為什麼擋設計</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>pronunciation slack 什麼時候回來</strong></td>
+              <td><code>audio-settings-panel.js:95</code> 的 TODO 還在，
+                  <code>DEFAULT_SLACK</code> / <code>SLACK_OPTIONS</code> 也還在 config 裡。
+                  而 <code>:61</code> 的說明文字<strong>還是寫著 "pronunciation precision"</strong>——
+                  在承諾一個畫面上沒有的東西。</td></tr>
+          <tr><td>2</td><td><strong>下拉直接露出 enum 值</strong></td>
+              <td>老師看到的是 <code>NO_PINYIN</code>、<code>STUDENT_CHOICE</code>。
+                  <code>follow-pattern-settings.js</code> 的兩個下拉是
+                  <code>Object.entries(PINYIN_PREFERENCES).map(...)</code>——
+                  <strong>不只 Mirroring，Sentence Response/Building 也是。</strong></td></tr>
+          <tr><td>3</td><td><strong>三個 attempts 是不是同一個欄位</strong></td>
+              <td>如果是，面板要用哪一個說法；如果不是，差在哪。</td></tr>
+          <tr><td>4</td><td><strong>Follow Pattern 的 Audio Mode 跟 Mirroring 是同一件事嗎</strong></td>
+              <td>它自己畫了一份。<strong>強制鎖住拼音／翻譯的行為有沒有跟著？</strong></td></tr>
+          <tr><td>5</td><td><strong><code>imagePreference</code> 沒有傳到學生端，是刻意還是漏掉的</strong>
+              <span class="pill p-amber">新</span></td>
+              <td>查證「已解決 ②」時長出來的。如果是漏掉的，這是一個 bug；
+                  如果是刻意的（只給老師預覽用），那它不該出現在「學生會看到什麼」的面板上。
+                  <strong>兩種答案會做出不一樣的設計。</strong></td></tr>
+          <tr><td>6</td><td><strong><code>guidePhraseLanguage</code> 有沒有變成老師可選的設定</strong>
+              <span class="pill p-green">部分解決</span></td>
+              <td><strong>它是什麼已經查到了</strong>——見下方「已解決 ③」。剩下的問題只有：
+                  新版有沒有把它從「跟著 targetLanguage」變成一個老師可選的下拉。</td></tr>
+          <tr><td>7</td><td><strong>Vocabulary 到底有沒有 Max Attempts</strong>
+              <span class="pill p-amber">新</span></td>
+              <td>§7 的落差表最後一列。<code>origin/develop</code> 這份 checkout 裡整個欄位都不存在，
+                  但 §3 的表給它打了 ✓。同一份 checkout 的 <code>SPEED_OPTIONS</code> 也還是舊的五段，
+                  所以<strong>不能拿它當唯一依據</strong>。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>已解決 ③ — Open-ended Questions 的 <code>guidePhraseLanguage</code> 是什麼</h3>
+      <p>它是學生在 QA 開始頁上會<strong>聽到</strong>的四句引導語，每一句有中文、英文和一個音檔
+         （<code>content/qa/components/StartPracticeButton.js:12</code>）：</p>
+      <div class="formula">请你跟我这样说   Please say it like this
+请你这样说说看   Try saying it like this
+请回答以下问题   Please answer the following question
+说得很好！下一题  Well said! Next question</div>
+      <p>這份 checkout 裡它<strong>跟著 <code>targetLanguage</code> 走</strong>（zh-CN / zh-TW 兩套），
+         QA 的設定步驟（<code>qa-step-two-section.js</code>：Practice name / Audio Mode / Pinyin / Speed / Voice）
+         裡沒有這個下拉。所以要問工程的只剩「新版有沒有把它變成老師可選的」。</p>
+
+      <div class="callout callout-warn">
+        <strong>先去程式碼裡找，找不到再問。</strong>
+        原本掛在這裡的第 1 題是被程式碼回答掉的，不是被工程回答掉的——
+        它掛了五天，而答案一直在 <code>assignments/content/</code> 裡。
+        三題查完的結果都不一樣：一題拿到答案（純聽力），一題發現<strong>設定根本沒接上</strong>（Image），
+        一題發現<strong>問題本身要改寫</strong>（引導語不是「是什麼」而是「有沒有變成設定」）——
+        後者反而問出了更值得問的問題。程式碼答不了的只有<strong>「未來會怎樣」和「這是不是有意的」</strong>，
+        其餘先自己查。要問就六題一次問完，不要分散到各張面板。
+      </div>
+
+      <footer>Chinese Modules · Planning · 設計 flow</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let idx = 0;
+      sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top <= 80) idx = i; });
+      links.forEach((a, i) => a.classList.toggle('active', i === idx));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    /* §6 的四張卡各一個分頁 —— 一次只顯示一張，文件才不會被四份細節撐爆。
+       ?card=vocq 可以直接開在某一張上，spec 之間互相引用時用得到。 */
+    const tabs = [...document.querySelectorAll('.tab')];
+    const panes = [...document.querySelectorAll('.tabpane')];
+    const showTab = (key) => {
+      if (!tabs.some(t => t.dataset.tab === key)) return false;
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === key));
+      panes.forEach(p => p.classList.toggle('active', p.id === 'tab-' + key));
+      return true;
+    };
+    tabs.forEach(t => t.addEventListener('click', () => {
+      showTab(t.dataset.tab);
+      history.replaceState(null, '', '?card=' + t.dataset.tab + '#flows');
+    }));
+    showTab(new URLSearchParams(location.search).get('card') || 'mir');
+  </script>
+</body>
+</html>

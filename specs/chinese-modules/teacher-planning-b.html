@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v14 — Teacher · Planning · B 提案 (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets/teacher-shell.css" />
+<style>
+  /* ===========================================================================
+     Planning · B 提案（2026-10-05，v14 的另一條路）：面板變主畫面、對話退成助手欄。
+     主欄就是 2.4 iterations 定案的建立頁面（iframe 嵌 v3 Content Mirroring 的 proposal.html，四步是真的），
+     左邊（側欄旁）一條 380px 的助手欄：問決定、預填、解釋每個設定（使用者定：對話在左邊）。老師學一套介面（產品的）就好。
+     助手欄靠網址參數驅動主欄（?step=、&proj=、&hide=、&audio=、&pick=、&roster=、&review=、&assigned=），
+     嵌進來的頁面自己的側欄、頂欄、底部狀態列用注入的 CSS 藏掉（同源）。
+     接了兩種：Content Mirroring（嵌 v3）與 Vocabulary Mirroring（嵌 v4，2026-10-06；四步 Teaching Points → Vocabulary → Settings → Assign，
+     第三步的設定多一顆 Image、少 Practice mode／Translation first）；其他六張卡在開場清單裡灰掉。每種練習嵌哪一頁、四步叫什麼、
+     第三步解釋哪些設定都在 CFG 一張表；v4 的 mock 只有「我的一天」有真的字，Vocabulary 選專案時另外兩個灰掉。
+     一次可以勾好幾個練習（2026-10-06）：開場是多選＋Start，同一個 Project 照順序一個做完接下一個（done 回合的 Next: ⟨下一個⟩），
+     助手欄頂上多一列佇列 chip；第二個練習的第四步多一顆「Same as ⟨上一個⟩ · 班級清單」勾選，勾了就把上一個指派的班級帶進頁面（&pick=）。
+     每個回合記自己的 ep，兩個練習的四步在同一條對話裡接著排。
+     2026-10-08：New content 改成嵌 v11 的 Create New Project 基準（四步：Course Settings → Generate Content → Review & Edit → Teaching Points），助手欄跟著走、
+     第二步的三種來源點 chip 出解釋；頁面 Save 之後（#next 變 Saved ✓）接第一個練習、Projects 已填。助手欄問主題那一題（topic／writing）不再用。示範 ?at=cp0..cp3。
+     2026-10-11：Create Project 的子狀態也跟著走（S.cp.sub，從嵌入頁的對話框／頁腳鈕讀）：生成中（轉圈＋主題＋級別、頁腳鈕鎖住）→ 生好了（Continue to Review）→
+     分析中（轉圈）→ 分析完（幾個字、看卡片、Save）；換頁載入中不讀舊 iframe 的 #next（原本 Save 之後會閃一下 Saved ✓）。
+     2026-10-12：v11 卡片裡的 Back／Save & Continue／Generate／未存列 Save 也藏掉（跟 v3–v8 藏 .footer 同一條規則：導航鈕只在助手欄）；注入的 .h4 間距不打 .wiz .h4。
+     練習第一步的 Back（2026-10-12，使用者「想讓 Back 一路退回 Generate Content 也可以重生」）：New content → 退回 Project 的 Teaching Points（&analyzed=1&saved=1、對話框自動關、子狀態 saved：
+     頁腳鈕變 Next: ⟨練習⟩），再 Back 就是 v11 自己的上一步，到 Generate Content 可以重生（v11 重生會清掉分析）；A Project I have → 退回 Which Project?。
+     Saved ✓ 只在「Save → Saved ✓」的轉換瞬間才接練習，退回來看到已經 Saved ✓ 的不動。
+     完成頁（2026-10-12，使用者「最後一步 Assigned 後跳出一個畫面，告訴用戶他剛剛創建了一個 project 跟他選擇的 practice」，位置選 A＝主欄）：佇列最後一個練習 Assigned 的瞬間
+     主欄換成 #stageFin（Project 一塊、練習一列一個：設定一行＋指派給誰＋Due＋Mandatory、接下來會發生什麼兩行、Plan another／Go to Practice List），助手欄多一題 fin、頁腳鈕 Plan another。
+     每個練習的 Due／Type 在第四步輪詢時從 v8 讀回來存 S.due／S.kind（送出後頁面會清掉，要先存），Assigned 時寫進 S.log。示範 ?at=fin&ep=A,B。只做在提案一；提案二的結尾在草稿卡，比較頁列成差異。
+     歷史紀錄（2026-10-12，使用者「新增歷史紀錄」）：跟提案二同一套——助手欄標題列多一顆 history 鈕，開在側欄與助手欄之間的 262px 面板（New plan ＋ Today／Yesterday／Last week 分組）；
+     每個 plan 是 S 的一份快照（PLANS），點開就把那段對話與完成頁整個還原；完成的寫 Created · assigned to 3B, 4A，沒完成的寫 n answers。restart()＝開新 plan（舊的留在 Today）。示範 ?hist=1。
+     標題列的 Start over（refresh）鈕拿掉（使用者 2026-10-12）：跟 New plan 做同一件事；重來＝面板的 New plan 或完成頁後的 Plan another。
+     Header 統一成 C 的（使用者 2026-10-12「統一 BC 版本的 header，用 C 的」）：助手欄自己的標題列拿掉，改成殼的 .pagebar 橫跨主區（圓底 auto_awesome、Planning、右邊 history 鈕＋頭像），
+     格線改成 側欄｜.main（.pagebar ＋ .body 三欄：歷史｜助手欄｜建立頁）；三欄高度 calc(100vh - 76px)、sticky top 76px，跟 C 的 .hist／.prev 一樣。
+     2026-10-07：Vocabulary Quiz（v6）、Sentence Scramble（v7）也接進來——CFG 多兩筆，v6／v7 加了 &proj=；第四步 v8 的 &as= 跟著帶。
+     第四步（2026-10-07）：嵌 v8-assign-history 的 proposal（指派歷史＋逾期扣分，八種共用；Vocabulary 帶 &as=VOCABULARY），頁面自己 Next 到第四步時助手欄把 iframe 換成 v8，Back 再換回 v3／v4 的第三步。
+     開場滿版（2026-10-07）：還沒有建立頁可嵌時 .app.wide——助手欄撐滿、內容置中 760px、練習卡一列三張；Project 定了就縮回 380px。
+     來源（2026-10-05，使用者「少了可以重新做內容、不選已有 project 的選項」）：第二題問 A Project I have｜New content；
+     新內容走產品 Create New Project 的順序（主題、程度、教學點可空）在助手欄問完、mock 寫 2.6 秒、存成 Project 再接第一步。
+     限制：規格裡沒有 Create New Project 的頁面可嵌，主欄在寫的時候是空狀態，寫完顯示的是 v3 的範例課文（我的一天），不是新寫的。
+     跟 C 版（teacher-planning.html）的差別：C 是對話收完決定再開產品頁；B 是產品頁一直在、助手在旁邊。
+     四步 stepper（2026-10-06，使用者「讓 1–4 融入對話、旁邊不用出現」）：嵌進來的頁面 #stepper 藏掉；助手欄頂上一條四個數字點＋連線（現在這步才寫名字），每一步的 AI 回合帶一個「2 · EDIT SENTENCES」小標。
+     下一步只有一組（2026-10-05，使用者「畫面中會有很多個選項」）：助手欄不再有 Looks right／Done／Review／Assign，換步、送出只用頁面的 Next／Assign；
+     助手欄每 500ms 讀 iframe 的 S（step／picked／done）跟著走。助手欄只做決定（勾班、藏句、Listening only）與解釋。
+     文案（2026-10-05，使用者「每一個副標都太多餘了」）：每一題只剩一句問句或一句結果；qhint 副標、選項的小字、助手欄標題的副標全拿掉。
+     配色（2026-10-05，使用者「太綠了」＋「用 iterations 的黃」）：助手欄退成頁邊的筆記——身份色用 2.4 的琥珀
+     （--cv-wash #FFF8E7／--cv #8F6209 Vocabulary 欄、--cv-tag #FEF3C7／--cv-tag-ink #D97706 Advanced 標），
+     綠只留「往下一步」那顆按鈕（跟產品的 Next 同一個意思）；Applied 收據那行試過又拿掉（使用者「不用多寫一次」——對話那句已經講了）。
+     =========================================================================== */
+  /* 字體（2026-10-05，使用者「字體不統一」）：整頁跟產品走 Public Sans——主欄是產品頁面，側欄本來就是，助手欄不再用 shell 的 Plus Jakarta Sans */
+  body, .rail, .rail button, .rail input, .rail textarea, .stage{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  /* 統一 UI（2026-10-06）：藍＝對話（AI 頭像、步驟小標、選中的選項、生成中），產品綠＝動作（主按鈕、Next、步驟條、完成）；老師的泡泡中性；沒有黑色按鈕 */
+  :root{
+    /* 第三版 token（planning-tokens.html，2026-10-07）：中性色照產品 palette；沒有第二色相；選中＝綠細框白底（使用者選 B） */
+    --ink:#212B36; --ink-2:#454F5B; --slate:#454F5B; --slate-2:#637381; --muted:#637381; --faint:#919EAB; --line:#E6EBF1; --line-2:#EEF2F7; --bg:#F9FAFB; --paper:#F4F6F8;
+    --cv-wash:#F4F6F8; --cv:#637381; --cv-tag:#EEF2F7; --cv-tag-ink:#00CB61; --cv-line:#00CB61;
+    --pg:#00CB61; --pg-d:#00A749; --pg-l:#EFFBF4; --pg-dd:#00754A; --pg-line:#BBF1D0;
+    --emerald:#00CB61; --emerald-d:#00A749; --emerald-dd:#00754A; --emerald-l:#EFFBF4; --emerald-l2:#BBF1D0; --emerald-ring:#7FE3AE;
+    --font:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .btnp{ background:var(--pg); box-shadow:none; border-radius:10px; transition:background .15s, transform .15s; }
+  .btnp:hover{ background:var(--pg-d); filter:none; transform:none; }
+  .app{ --side:240px; --hist:0px; --pb:76px; grid-template-columns:var(--side) 1fr; }   /* 側欄｜主區；主區＝頂欄 ＋ 三欄（歷史｜助手欄｜建立頁面），跟提案二同一個骨架 */
+  .app.hist-on{ --hist:262px; }
+  /* 四欄各自釘在自己的欄位：側欄被殼的 media query 藏掉、或歷史面板收起時，其他欄不會往前滑（使用者 2026-10-12「爆版」） */
+  .main{ min-width:0; display:flex; flex-direction:column; }
+  .pagebar{ height:var(--pb); box-sizing:border-box; }
+  .body{ display:grid; grid-template-columns:var(--hist) 380px 1fr; transition:grid-template-columns .3s ease; }
+  .body > .hist{ grid-column:1; } .body > .rail{ grid-column:2; } .body > .stage{ grid-column:3; }
+  /* 頂欄的鈕：跟 C 的 .pb-ic 同一個樣子（40px、--line 框、11px 圓角；開著＝產品綠） */
+  .pb-ic{ display:inline-grid; place-items:center; width:40px; height:40px; flex:none; padding:0; border:1px solid var(--line); border-radius:11px; background:#fff; cursor:pointer; color:var(--muted); transition:.15s; }
+  .pb-ic:hover{ border-color:#d0dae6; color:var(--ink); }
+  .pb-ic[aria-expanded="true"]{ border-color:var(--pg); background:var(--pg-l); color:var(--pg-dd); }
+  .pb-ic .material-icons-round{ font-size:20px; }
+  .app > .side{ --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0; --text2:#637381; --divider:rgba(145,158,171,.2);
+    background:#fff; border-right:1px dashed var(--divider); padding:0; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; }
+  .app > .side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+  .app > .side .logo img{ height:37px; width:auto; }
+  .app > .side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; color:#212B36; }
+  .app > .side .logo b i{ font-style:normal; color:var(--primary); }
+  .app > .side .nav{ flex:1; overflow-y:auto; display:block; }
+  .app > .side .nav .grp{ padding:0 16px; margin-top:16px; }
+  .app > .side .nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+  .app > .side .nav .grp > .sh.blank{ color:transparent; }
+  .app > .side .nav a{ display:flex; align-items:center; gap:0; min-height:44px; margin-bottom:4px; border-radius:8px;
+    padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; position:static; transition:none; }
+  .app > .side .nav a .material-icons-round{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; color:inherit; }
+  .app > .side .nav a:hover{ background:rgba(145,158,171,.08); color:var(--text2); }
+  .app > .side .nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+  .app > .side .nav a.on .material-icons-round{ color:var(--primary); }
+  .app > .side .nav a.on::before{ display:none; }
+  .app > .side .report{ padding:40px 16px; text-align:center; }
+  .app > .side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+  /* ---------- 主欄：產品的建立頁面 ---------- */
+  .stage{ position:relative; min-width:0; height:calc(100vh - var(--pb)); background:#f4f7fb; }
+  .stage iframe{ width:100%; height:100%; border:0; display:block; background:#f4f7fb; }
+  .stage .empty{ position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-weight:600; font-size:14px; text-align:center; padding:40px; }
+  .stage .empty b{ display:block; font-size:18px; color:var(--ink); margin-bottom:6px; }
+  .stage .empty .material-icons-round{ font-size:44px; color:var(--cv-tag-ink); display:block; margin:0 auto 12px; }
+
+  /* ---------- 助手欄 ---------- */
+  .rail{ border-right:1px solid var(--line); background:#fff; height:calc(100vh - var(--pb)); position:sticky; top:var(--pb); display:flex; flex-direction:column; min-width:0; }
+  .ctx:empty{ display:none; }   /* 還沒開始就不放那一列 */
+  .ctx{ display:flex; align-items:center; gap:8px; padding:10px 18px; background:#fbfdff; border-bottom:1px solid var(--line-2); font-size:12px; font-weight:700; color:var(--slate); }
+  .steps{ display:flex; align-items:center; width:100%; gap:0; }
+  .steps .st{ display:inline-flex; align-items:center; gap:7px; flex:none; }
+  .steps .st i{ width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:11px; font-weight:800; background:var(--line-2); color:var(--muted); }
+  .steps .st i .material-icons-round{ font-size:14px; }
+  /* 步驟條用產品的綠（跟頁面原本的 stepper 同一套：主綠實心、做過的實心打勾、現在這步外圈淡綠）——使用者 2026-10-06「這邊的黃色改成綠色」 */
+  .steps .st.cur i{ background:var(--pg); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+  .steps .st.done i{ background:var(--pg); color:#fff; }
+  .steps .st b{ font-size:12.5px; color:var(--ink); white-space:nowrap; }
+  .steps .ln{ flex:1; height:2px; background:var(--line); margin:0 6px; border-radius:2px; min-width:10px; }
+  .steps .ln.done{ background:var(--pg); }
+  .steps .st i{ transition:background .2s, color .2s; } .steps .st.cur i{ animation:ring .5s ease-out; }
+  .steps .ln{ transition:background .24s; }
+  .pq .dots i{ transition:background .2s; }
+  .stage iframe{ transition:opacity .15s; } .stage.loading iframe{ opacity:0; }
+  /* 歷史面板（2026-10-12）：跟提案二的 .hist 同一個形狀，顏色照 planning tokens */
+  .hist{ background:#fff; border-right:1px solid var(--line); height:calc(100vh - var(--pb)); position:sticky; top:var(--pb); display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+  .app:not(.hist-on) .hist{ visibility:hidden; border-right:0; }   /* 不能 display:none：面板是格線的第二欄，拿掉它助手欄會掉進 0px 那欄（使用者 2026-10-12「爆版」） */
+  .hist-h{ padding:14px 13px 8px; }
+  .hist-new{ width:100%; display:flex; align-items:center; justify-content:center; gap:6px; min-height:38px; border:1px dashed var(--line); border-radius:10px; background:#fff; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--pg-dd); transition:.14s; }
+  .hist-new .material-icons-round{ font-size:17px; }
+  .hist-new:hover{ border-style:solid; border-color:var(--pg); background:var(--pg-l); }
+  .hist-l{ flex:1; overflow-y:auto; padding:2px 9px 18px; }
+  .hist-g{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); padding:13px 7px 5px; }
+  .hist-i{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font:inherit; padding:8px 9px; border-radius:9px; transition:.14s; }
+  .hist-i b{ display:block; font-size:13px; font-weight:700; color:var(--ink); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hist-i span{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:1px; }
+  .hist-i:hover{ background:var(--paper); }
+  .hist-i.on{ background:var(--pg-l); } .hist-i.on b{ color:var(--pg-dd); } .hist-i.on span{ color:var(--pg-dd); }
+  /* 完成頁（2026-10-12）：主欄的最後一頁，收據式；照 planning tokens——中性撐場，綠只有打勾與主按鈕，練習類型色只在縮圖 */
+  .fin{ position:absolute; inset:0; overflow:auto; padding:40px 48px 56px; animation:turnIn .25s ease-out both; }
+  .fin .wrap{ max-width:760px; margin:0 auto; }
+  .fin .hd{ display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+  .fin .hd .ok{ width:48px; height:48px; border-radius:50%; background:var(--pg-l); color:var(--pg-dd); display:grid; place-items:center; flex:none; animation:pop .35s cubic-bezier(.2,.9,.3,1.3) both; }
+  .fin .hd .ok .material-icons-round{ font-size:28px; }
+  .fin .hd h1{ margin:0; font-size:24px; font-weight:800; color:var(--ink); line-height:1.3; }
+  .fin .hd p{ margin:2px 0 0; font-size:14px; color:var(--muted); }
+  .fin .sec{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin:22px 0 8px; }
+  .fin .card{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+  .fin .row{ display:flex; align-items:center; gap:16px; padding:16px 20px; }
+  .fin .row + .row{ border-top:1px solid var(--line); }
+  .fin .row .ic{ width:48px; height:48px; border-radius:50%; background:var(--paper); color:var(--slate); display:grid; place-items:center; flex:none; }
+  .fin .row .th{ width:84px; height:56px; flex:none; border-radius:8px; overflow:hidden; background:var(--paper); }
+  .fin .row .th svg{ width:100%; height:100%; display:block; }
+  .fin .row .tx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .fin .row .tx b{ font-size:15px; color:var(--ink); }
+  .fin .row .tx span{ font-size:13px; color:var(--muted); }
+  .fin .row .tx span em{ font-style:normal; color:var(--ink-2); }
+  .fin .row a{ font-size:13px; font-weight:700; color:var(--ink); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px; white-space:nowrap; }
+  .fin .row a:hover{ border-color:var(--ink); }
+  .fin .next{ padding:14px 20px; font-size:13px; color:var(--ink-2); line-height:1.6; background:var(--paper); border-radius:12px; }
+  @media (prefers-reduced-motion:reduce){ .fin, .fin .hd .ok{ animation:none; } }
+  .app > .side .nav a{ transition:background .15s, color .15s; }
+  .railnav #navNext.dis{ opacity:.55; cursor:default; pointer-events:none; }
+  .railnav #navBack{ border-color:var(--line); color:var(--ink); } .railnav #navBack:hover{ border-color:var(--ink); }
+  /* ---------- 動畫（2026-10-06 統一 UI）：每一個都對應「發生了什麼」，不做裝飾 ---------- */
+  @keyframes turnIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+  @keyframes optIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  @keyframes pop{ 0%{ transform:scale(.6); opacity:0; } 60%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); } }
+  @keyframes ring{ from{ box-shadow:0 0 0 0 rgba(0,203,97,.45); } to{ box-shadow:0 0 0 7px rgba(0,203,97,0); } }
+  @keyframes breathe{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
+  @keyframes riseIn{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+  @keyframes scaleIn{ from{ opacity:0; transform:scale(.985); } to{ opacity:1; transform:none; } }
+  @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+  /* 只有新進來的那一個回合才動（.in）；勾選造成的重畫不重播動畫（使用者 2026-10-07：點了會閃一下） */
+  .msg.in{ animation:turnIn .18s ease-out both; }
+  .msg.in .qopts > *, .msg.in .chips > *{ animation:optIn .16s ease-out both; }
+  .qopts > :nth-child(2), .chips > :nth-child(2){ animation-delay:30ms; } .qopts > :nth-child(3), .chips > :nth-child(3){ animation-delay:60ms; }
+  .qopts > :nth-child(4), .chips > :nth-child(4){ animation-delay:90ms; } .qopts > :nth-child(5), .chips > :nth-child(5){ animation-delay:120ms; }
+  .qopts > :nth-child(6), .chips > :nth-child(6){ animation-delay:150ms; } .qopts > :nth-child(n+7), .chips > :nth-child(n+7){ animation-delay:180ms; }
+  @media (prefers-reduced-motion:reduce){ *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+
+  .stag{ display:block; margin-bottom:5px; font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--cv); }
+  .ctx #ctxText{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ctx.multi{ flex-direction:column; align-items:stretch; gap:8px; }
+  /* 一次做兩個以上：步驟條上面一列佇列 chip（做過的打勾、現在這個實心綠、還沒輪到的灰） */
+  /* 佇列（2026-10-07，使用者：四個一起選會很擠）：一排小點 ＋ 「2 of 4 · 現在這個」；做過的綠點、現在墨點、還沒到的灰點，hover 點看名字 */
+  .pq{ display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:11.5px; font-weight:700; color:var(--ink); }
+  .pq .dots{ display:inline-flex; gap:5px; align-items:center; }
+  .pq .dots i{ width:8px; height:8px; border-radius:50%; background:#DFE3E8; display:block; }
+  .pq .dots i.done{ background:var(--pg); }
+  .pq .dots i.cur{ background:var(--ink); box-shadow:0 0 0 3px #EEF2F7; }
+  .pq .n{ color:var(--muted); font-weight:600; margin-right:2px; }
+  .chat{ flex:1; overflow-y:auto; padding:16px 18px 8px; }
+  .msg{ display:flex; gap:9px; margin-bottom:14px; align-items:flex-start; }
+  .msg .who{ width:26px; height:26px; border-radius:50%; flex:none; display:grid; place-items:center; font-size:10.5px; font-weight:800; background:var(--cv-tag); color:#1E40AF; }
+  .msg.you{ flex-direction:row-reverse; }
+  .msg.you .who{ background:#EEF2F7; color:#475569; }
+  /* 不要頭像圈圈（使用者 2026-10-06）：誰說的靠左右與底色就分得出來 */
+  .msg .who{ display:none; }
+  .msg{ gap:0; }
+  .msg .bub{ flex:1; min-width:0; background:#fff; border:1px solid var(--line); border-radius:12px; padding:11px 13px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
+  .msg.you .bub{ flex:0 1 auto; max-width:80%; background:var(--paper); border-color:transparent; color:var(--ink); font-weight:700; }
+  .qhint{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin-top:4px; }
+  .qopts{ display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
+  .qopt{ padding:8px 12px; line-height:1.3; border:1px solid var(--line); border-radius:10px; background:#fff; font:inherit; font-size:12.5px; font-weight:700; color:var(--slate); cursor:pointer; text-align:left; }
+  .qopt:hover{ border-color:#cbd5e1; background:var(--paper); }
+  /* 一個回合一顆主按鈕：實心產品綠（跟 Next／Assign 同一階） */
+  .qopt.go{ border-color:var(--emerald); color:#fff; background:var(--emerald); transition:background .15s; }
+  .qopt.go:hover{ background:var(--emerald-d); border-color:var(--emerald-d); }
+  .qopt .sub{ display:block; font-size:11px; font-weight:600; color:var(--muted); margin-top:2px; }
+  .qopt:disabled{ opacity:.45; cursor:not-allowed; }
+  .qopt.multi .material-icons-round{ font-size:15px; vertical-align:-3px; margin-right:4px; color:var(--faint); }
+  /* 選中＝1px 產品綠框、白底、墨字、綠勾（token sheet 候選 B） */
+  .qopt.multi.on{ border-color:var(--pg); background:#fff; color:var(--ink); }
+  .qopt.multi.on .material-icons-round{ color:var(--pg); }
+  /* 開場的練習卡：照 v14 C（teacher-planning.html）的那一題 —— 一列一條軌道，標題底下一條軌道色的線，卡上一張學生畫面的縮圖。
+     助手欄只有 380px，所以每列兩張卡。 */
+  .qopts.eps{ display:block; }
+  .eprow{ display:block; }
+  .eprow + .eprow{ margin-top:14px; }
+  .eprow-h{ display:block; font-size:10.5px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--tkl); padding-bottom:5px; margin-bottom:8px; border-bottom:2px solid var(--tkr); }
+  .eprow-c{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .qopt.multi.ep{ padding:10px 11px 10px; display:flex; flex-direction:column; }
+  .qopt.multi.ep .lbl{ display:flex; align-items:flex-start; gap:6px; }
+  .qopt.multi.ep .lbl .material-icons-round{ margin:0; flex:none; line-height:1.35; color:var(--faint); }
+  .qopt.multi.ep .t{ display:block; text-align:left; }
+  .qopt.multi.ep .thumb{ display:block; margin-bottom:9px; }
+  .qopt.multi.ep .thumb svg{ display:block; width:100%; height:auto; }
+  .qopt.multi.ep:hover{ border-color:var(--tk); background:#fff; }
+  .qopt.multi.ep.on{ border-color:var(--pg); color:var(--ink); background:#fff; box-shadow:none; }
+  .qopt.multi.ep.on .material-icons-round{ color:var(--pg); }
+  .qopt.multi.ep:disabled{ opacity:.45; }
+  .qopt.multi.ep:disabled .thumb{ filter:grayscale(1); }
+  .qin{ width:100%; height:36px; border:1px solid var(--line); border-radius:9px; padding:0 11px; font:inherit; font-size:13px; outline:none; }
+  .qin:focus{ border-color:var(--cv-tag-ink); }
+  .spin{ animation:bspin 1.1s linear infinite; display:inline-block; }
+  @keyframes bspin{ to{ transform:rotate(360deg); } }
+  .stage .empty .spin{ color:var(--cv-tag-ink); }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .chip{ padding:4px 9px; border-radius:999px; border:1px solid var(--line); background:#fff; font:inherit; font-size:11.5px; font-weight:700; color:var(--slate); cursor:pointer; }
+  .chip:hover{ border-color:#cbd5e1; }
+  .chip.on{ background:#fff; border-color:var(--pg); color:var(--ink); }
+  /* 回答（點設定出的解釋）：綠淡底＋綠淺線，比紙灰醒目（使用者 2026-10-07；色票是 token sheet 的 --green-wash／--green-line） */
+  .explain{ margin-top:9px; padding:10px 12px; border-radius:8px; background:var(--pg-l); border:1px solid var(--pg-line); font-size:12.5px; color:var(--ink-2); }
+  .explain b{ color:var(--ink); }
+  .explain b{ color:var(--ink); }
+  .bk{ display:flex; width:max-content; align-items:center; gap:3px; font:inherit; font-size:11.5px; font-weight:700; color:var(--muted); border:0; background:none; cursor:pointer; padding:0; margin-bottom:6px; }
+  .bk .material-icons-round{ font-size:15px; }
+  .bk:hover{ color:var(--ink); }
+  /* 頁面的 Back／Next 搬進助手欄（使用者 2026-10-06「next 跟 back 都融入在說明欄」）：composer 上面一條，按下去就是按頁面自己的鈕 */
+  .railnav{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 14px 0; border-top:1px solid var(--line-2); }
+  .railnav .qopt:disabled{ opacity:.4; cursor:default; }
+  .composer{ display:flex; align-items:flex-end; gap:8px; margin:8px 14px 14px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+  .composer textarea{ flex:1; border:none; background:none; resize:none; font:inherit; font-size:13px; line-height:1.4; max-height:90px; outline:none; }
+  .composer .send{ width:30px; height:30px; border-radius:50%; border:0; background:var(--pg); color:#fff; display:grid; place-items:center; cursor:pointer; transition:background .15s; }
+  .composer .send:disabled{ background:#EEF2F7; color:#919EAB; cursor:default; }   /* 沒打字就灰（使用者 2026-10-07） */
+  /* 一個回合裡的主按鈕靠右（Start N practices、Next: ⟨下一個⟩、Plan another、Write it） */
+  .qopts:has(> .qopt.go){ justify-content:flex-end; }
+  .composer .send .material-icons-round{ font-size:17px; }
+  .done-turn b{ display:block; font-size:14px; color:var(--ink); }
+  .done-turn .material-icons-round{ font-size:18px; color:var(--pg); vertical-align:-4px; margin-right:5px; animation:pop .35s ease-out both; }
+  /* 側欄可以收合（2026-10-06，使用者「跟上線版本一樣」）：線上是 MUI minimal 的 nav mini——240 ↔ 88、右上緣一顆 24px 虛線圓鈕、
+     收起來只剩 logo 圖 ＋ 圖示在上小字在下、群組標題不顯示；狀態記在 localStorage（dh-nav-mini），每一頁共用 */
+  .app > .side{ overflow:visible; transition:width .2s; z-index:6; }   /* 圓鈕有一半掛在邊線外，要壓在旁邊那一欄上面 */
+  .app > .side .side-tg{ position:absolute; top:32px; right:-12px; width:24px; height:24px; border-radius:50%; border:1px dashed rgba(145,158,171,.5);
+    background:#fff; color:#637381; display:grid; place-items:center; cursor:pointer; padding:0; z-index:5; transition:.15s; }
+  .app > .side .side-tg:hover{ background:#F4F6F8; color:#212B36; }
+  .app > .side .side-tg .material-icons-round{ font-size:16px; }
+  .app.mini{ --side:88px; }
+  .app.mini > .side .logo{ margin:24px 0 8px; justify-content:center; }
+  .app.mini > .side .logo b{ display:none; }
+  .app.mini > .side .nav .grp{ padding:0 8px; margin-top:4px; }
+  .app.mini > .side .nav .grp > .sh{ display:none; }
+  .app.mini > .side .nav a{ flex-direction:column; justify-content:center; min-height:56px; padding:6px 4px; font-size:10px; font-weight:600; line-height:1.3; text-align:center; gap:4px; }
+  .app.mini > .side .nav a .material-icons-round{ margin:0; font-size:22px; width:22px; height:22px; }
+  .app.mini > .side .report{ display:none; }
+  /* 滿版開場（使用者 2026-10-07）：流程還沒定（還在問做什麼、來源、Project）時助手欄撐滿主畫面、跟提案二一樣置中；
+     Project 選好、建立頁載進來之後，對話退成 380px 的助手欄，建立頁變主欄 */
+  .app{ transition:grid-template-columns .3s ease; }
+  .app.wide .body{ grid-template-columns:var(--hist) 1fr 0px; }
+  .app.wide .stage{ display:none; }
+  .app.wide .rail{ border-right:0; background:radial-gradient(circle at 1px 1px, #dde4ec 1px, transparent 0) 0 0 / 22px 22px, #F9FAFB; }   /* 跟提案二同一張點陣畫布 */
+  /* 現在這一題：左緣一條產品綠（一個畫面只有一題是現在的，算在「現在這一步」的額度裡） */
+  .msg.sys.live .bub{ border-left:3px solid var(--pg); padding-left:12px; }
+  .msg.sys.live.k-start .bub{ border-left:1px solid var(--line); padding-left:13px; }   /* 開場那一題不標（使用者 2026-10-07） */
+  /* 有圖示＋副標的選項：圖示是綠的小記號，副標灰 */
+  .qopt.rich{ display:inline-flex; align-items:center; gap:10px; padding:10px 14px 10px 11px; min-width:200px; }
+  .qopt.rich .material-icons-round{ font-size:22px; color:var(--pg); flex:none; }
+  .qopt.rich b{ display:block; font-size:13px; color:var(--ink); }
+  .qopt.rich small{ display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-top:1px; }
+  .qopt.rich:hover{ border-color:var(--pg); }
+  .qopt.rich:disabled:hover{ border-color:var(--line); }
+  .app.wide .ctx{ background:#fff; }
+  .app.wide .ctx > *{ max-width:none; }
+  .app.wide .ctx{ padding:10px 32px; }
+  .app.wide .chat{ padding:28px 32px 8px; }
+  .app.wide .chat > .msg{ max-width:760px; margin-left:auto; margin-right:auto; }
+  .app.wide .composer{ max-width:760px; width:calc(100% - 64px); margin:8px auto 18px; }
+  .app.wide .railnav{ max-width:760px; margin:0 auto; }
+  .app.wide .eprow-c{ grid-template-columns:repeat(3,1fr); }
+  .app.wide .msg .bub{ padding:14px 16px; font-size:14px; }
+  @media (max-width:1399.95px){ .body{ grid-template-columns:var(--hist) 340px 1fr; } }
+  @media (max-width:1199.95px){ .app{ grid-template-columns:340px 1fr; } .app > .side{ display:none; } }
+  .pagebar .dt .demo-tag{ display:inline-block; margin-left:10px; padding:2px 9px; border:1px solid var(--line); border-radius:999px; background:var(--paper); font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); vertical-align:middle; }   /* 標題後面的 Demo 1／Demo 2（使用者 2026-10-12）*/
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><img src="assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+    <nav class="nav">
+      <div class="grp"><div class="sh blank">&nbsp;</div>
+        <a href="teacher-redesign.html"><span class="material-icons-round">space_dashboard</span>Dashboard</a>
+        <a class="on"><span class="material-icons-round">auto_awesome</span>Planning</a></div>
+      <div class="grp"><div class="sh">content</div>
+        <a href="teacher-projects.html"><span class="material-icons-round">folder</span>Projects</a>
+        <a href="teacher-question-banks.html"><span class="material-icons-round">quiz</span>Question Banks</a></div>
+      <div class="grp"><div class="sh">practice</div>
+        <a href="teacher-practice.html"><span class="material-icons-round">assignment</span>Practice List</a>
+        <a href="teacher-wordgame-v9.html"><span class="material-icons-round">sports_esports</span>Word Game</a></div>
+      <div class="grp"><div class="sh">overview</div>
+        <a href="teacher-students.html"><span class="material-icons-round">people</span>Students</a>
+        <a href="teacher-classes.html"><span class="material-icons-round">school</span>Classes</a>
+        <a href="teacher-leaderboard.html"><span class="material-icons-round">emoji_events</span>Leaderboard</a>
+        <a href="teacher-program.html"><span class="material-icons-round">groups</span>Program</a></div>
+    </nav>
+    <div class="report"><a href="#">Report Issue</a></div>
+  </aside>
+
+  <div class="main">
+  <div class="pagebar">
+    <div class="hdr-ic"><span class="material-icons-round">auto_awesome</span></div>
+    <div class="dt"><b>Planning<span class="demo-tag">Demo 1</span></b></div>
+    <div class="pb-acts">
+      <button class="pb-ic" id="histToggle" aria-label="Show history" aria-expanded="false" title="Past plans"><span class="material-icons-round">history</span></button>
+      <div class="ava">LW</div>
+    </div>
+  </div>
+  <div class="body">
+  <aside class="hist" id="hist">
+    <div class="hist-h"><button class="hist-new" id="histNew"><span class="material-icons-round">add</span>New plan</button></div>
+    <div class="hist-l" id="histList"></div>
+  </aside>
+  <aside class="rail">
+    <div class="ctx" id="ctx"></div>
+    <div class="chat" id="chat"></div>
+    <div class="railnav" id="railnav" style="display:none"><button class="qopt" id="navBack">Back</button><button class="btnp sm-act" id="navNext">Next</button></div>
+    <div class="composer"><textarea id="q" rows="1" placeholder="Ask about any step or setting…"></textarea><button class="send" id="send" aria-label="Send"><span class="material-icons-round">arrow_upward</span></button></div>
+  </aside>
+
+  <div class="stage" id="stage">
+    <div class="empty" id="stageEmpty"><div><span class="material-icons-round">auto_awesome</span><b>Pick a practice to start</b></div></div>
+    <iframe id="page" title="Create practice" src="about:blank" style="display:none"></iframe>
+    <div class="fin" id="stageFin" style="display:none"></div>
+  </div>
+  </div><!-- /.body -->
+  </div><!-- /.main -->
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  /* ---------- 跟 iterations 同一份假資料 ---------- */
+  var EP=[
+    /* Handout／Slide（2026-10-12，使用者：提案一少了這兩張）：跟提案二一樣放在第一列、灰著 */
+    ['HANDOUT','Handout','Printable A4 worksheet', false],
+    ['SLIDE','Slide','Slides to teach the lesson with', false],
+    ['MIRRORING','Content Mirroring','Say the passage back, line by line', true],
+    ['VOCABULARY','Vocabulary Mirroring','Say the words back, one by one', true],
+    ['VOCABULARY_MC','Vocabulary Quiz','Word meaning & usage, in MC form', true],
+    ['SENTENCE_SCRAMBLE','Sentence Scramble','Listen & rearrange words', true],
+    ['SENTENCE_RESPONSE','Sentence Response','Answer questions using a pattern', false],
+    ['SENTENCE_BUILDING','Sentence Building','Build sentences from teaching points', false],
+    ['MULTIPLE_CHOICE','Comprehension Quiz','Did they understand the passage?', false],
+    ['QA','Open-ended Questions','Answer in their own words', false]
+  ];
+  /* 三個專案在 v3／v4 兩份提案裡的順序不同，各記各的 &proj= 索引；vocab＝v4 的 mock 有沒有真的字（只有「我的一天」有） */
+  var PROJECTS=[
+    {v3:1, v4:0, v6:0, v7:0, vocab:true,  name:'我的一天',            level:'HSK 2', sents:5, kind:'Passage'},
+    {v3:0, v4:1, v6:1, v7:1, vocab:false, name:'环境保护与可持续发展', level:'HSK 4', sents:6, kind:'Passage'},
+    {v3:2, v4:2, v6:2, v7:2, vocab:false, name:'餐厅点餐（对话）',     level:'HSK 3', sents:5, kind:'Conversation'}
+  ];
+  var CLASSES=[['3b','Chinese 3B',8],['4a','Chinese 4A',6],['5c','Chinese 5C',5]];
+  /* 每種練習：嵌哪一頁、四步叫什麼、第三步有哪些設定 */
+  var CFG={
+    MIRRORING:{
+      page:'iterations/v3-content-mirroring/proposal.html', key:'v3',
+      steps:['Content','Edit Sentences','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project —— step 1 is filled in.' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>.'); },
+      /* 不替老師預設「藏哪幾句」——句子的增刪在右邊頁面做（使用者 2026-10-05） */
+      step1:function(){ return '<b>Split</b> or <b>merge</b> a sentence, drag to <b>reorder</b>, or <b>hide</b> any you don’t want students to get.'; },
+      explain:{
+    mode:['Practice mode','<b>Say it back</b> plays each sentence and waits for the student to repeat it; it is scored by pronunciation. <b>Listening only</b> plays the passage without recording —— nothing is scored, and pinyin and translation become the student’s own choice.'],
+    pinyin:['Pinyin','Whether the sentence shows pinyin above the characters. <b>Choice by student</b> puts a toggle in the student’s own settings panel.'],
+    translation:['Translation','Whether the English line shows under each sentence. Same three choices as pinyin.'],
+    tfirst:['Translation first','Plays the English before the Chinese sentence, so the student hears the meaning first. <b>Choice by student</b> puts a switch in their settings panel.'],
+    speed:['Speed','How fast the sample audio plays —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
+    voice:['Voice','Which voice reads the sample audio —— Xiaorou and Xiaoyi (female), Yunxi (male). Press play beside a name to hear it before picking.'],
+    tries:['Max tries','How many times a student may retry one sentence before it is let through. After that the sentence counts as passed (auto pass). Default 3.']
+      }
+    },
+    VOCABULARY:{
+      page:'iterations/v4-vocabulary-mirroring/proposal.html', key:'v4',
+      steps:['Teaching Points','Vocabulary','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any word you don’t want, or add your own.'; },
+      step1:function(){ return 'Each word is <b>3 cards</b> for students —— untick a card, regenerate an example, or pick a picture for the word.'; },
+      explain:{
+        pinyin:['Pinyin','Whether the cards show pinyin above the word and its example sentences. <b>Choice by student</b> puts a toggle in the student’s own settings panel.'],
+        translation:['Translation','Whether the English shows under the word and under each example. Same three choices as pinyin.'],
+        image:['Image','Whether the word card shows its picture —— the one picked or uploaded in step 2. Shown or Hidden only.'],
+        speed:['Speed','How fast the sample audio plays —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the sample audio —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a name to hear it before picking.'],
+        tries:['Max tries','How many times a student may retry one card before it is let through. After that the card counts as passed (auto pass). Default 3.']
+      }
+    },
+    /* 2026-10-07：Vocabulary Quiz（v6）與 Sentence Scramble（v7）也接進來 */
+    VOCABULARY_MC:{
+      page:'iterations/v6-vocabulary-quiz/proposal.html', key:'v6',
+      steps:['Teaching Points','Question Types','Questions','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any word you don’t want, or add your own.'; },
+      step1:function(){ return 'Set <b>how many</b> questions and which types <b>must</b> be in —— the matrix shows what each word gets.'; },
+      step2:function(){ return 'The questions, in the order students get them —— drag to <b>reorder</b>, <b>edit</b> one, or <b>add</b> one.'; },
+      explain:{}
+    },
+    SENTENCE_SCRAMBLE:{
+      page:'iterations/v7-sentence-scramble/proposal.html', key:'v7',
+      steps:['Teaching Points','Edit Sentences','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any point, set <b>how many</b> sentences, and where they come from.'; },
+      step1:function(){ return 'Each point has its own card —— <b>−／+</b> per point, drag to <b>reorder</b>, <b>split</b>, <b>edit</b> or <b>delete</b> a sentence.'; },
+      explain:{
+        pinyin:['Pinyin','Whether the word tiles show pinyin. <b>Choice by student</b> puts a toggle in the student’s own settings panel.'],
+        speed:['Speed','How fast the sentence is read before the student rearranges it —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the sentence —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a name to hear it.'],
+        tries:['Max tries','How many times a student may check one sentence before the answer is shown. Default 3.']
+      }
+    }
+  };
+  var NEEDS_WORDS=['VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE'];   /* 這三種的 mock 只有「我的一天」有真的字 */
+  /* 軌道（跟 v14 C 同一套色）：卡的顏色跟著它的軌道，列標題由列裡的軌道算出來 */
+  var TRACKS={
+    material: {ink:'#64748b', tint:'#e2e8f0', wash:'#f8fafc', label:'#7C8BA1', rule:'#dfe6ee'},
+    content:  {ink:'#00B95C', tint:'#BBF1D0', wash:'#EFFBF4', label:'#00754A'},
+    vocab:    {ink:'#EFA00B', tint:'#FFE49E', wash:'#FFF8E7', label:'#8F6209'},
+    sentence: {ink:'#EC4899', tint:'#FBD5E8', wash:'#FEF2F8', label:'#BE185D'},
+    comp:     {ink:'#8B5CF6', tint:'#E9DDFD', wash:'#F7F3FE', label:'#6D28D9'}
+  };
+  var TRACK_NAME={material:'Material', content:'Content', vocab:'Vocabulary', sentence:'Sentence', comp:'Comprehension'};
+  var EP_TRACK={ HANDOUT:'material', SLIDE:'material', MIRRORING:'content', VOCABULARY:'vocab', VOCABULARY_MC:'vocab',
+    SENTENCE_SCRAMBLE:'sentence', SENTENCE_RESPONSE:'sentence', SENTENCE_BUILDING:'sentence', MULTIPLE_CHOICE:'comp', QA:'comp' };
+  var EP_GROUPS=[ ['HANDOUT','SLIDE','MIRRORING'], ['VOCABULARY','VOCABULARY_MC'], ['SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING'], ['MULTIPLE_CHOICE','QA'] ];
+  function thumb(inner){
+    return '<span class="thumb"><svg viewBox="0 0 136 56" role="img" aria-hidden="true">'+
+      '<rect x=".5" y=".5" width="135" height="55" rx="7" fill="#f8fafc" stroke="#e6ecf3"/>'+inner+'</svg></span>';
+  }
+  var PLAY='<circle cx="17" cy="CY" r="7" fill="#10b981"/><path d="M15 CY-3 l5 3 -5 3z" fill="#fff"/>';
+  /* 說一句話的綠色麥克風膠囊 —— 跟 v1 提案 C 同一個手勢 */
+  var SPEAK='<rect x="40" y="35" width="56" height="15" rx="7.5" fill="#d1fae5" stroke="#10b981"/>'+
+            '<rect x="55" y="39" width="3.5" height="6" rx="1.75" fill="#10b981"/>'+
+            '<rect x="63" y="41" width="20" height="3" rx="1.5" fill="#10b981"/>';
+  var THUMB={
+    HANDOUT: thumb(
+      '<rect x="40" y="5" width="56" height="46" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="48" y="12" width="28" height="4.5" rx="2" fill="#94a3b8"/>'+
+      '<rect x="48" y="22" width="40" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="28" width="34" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="34" width="40" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="40" width="22" height="2.5" rx="1.25" fill="#cbd5e1"/>'),
+    SLIDE: thumb(
+      '<rect x="18" y="12" width="72" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="18" y="23" width="100" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="30" width="92" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="37" width="100" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="44" width="64" height="3" rx="1.5" fill="#cbd5e1"/>'),
+    /* two sentence rows, each with its own play —— pinyin thin, hanzi solid */
+    MIRRORING: thumb(
+      PLAY.replace(/CY-3/g,'15').replace(/CY/g,'18')+
+      '<rect x="30" y="13" width="72" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="30" y="19.5" width="88" height="5" rx="2" fill="#94a3b8"/>'+
+      PLAY.replace(/CY-3/g,'37').replace(/CY/g,'40')+
+      '<rect x="30" y="35" width="56" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="30" y="41.5" width="78" height="5" rx="2" fill="#94a3b8"/>'),
+    /* one word card, and a mic to say it */
+    VOCABULARY: thumb(
+      '<rect x="44" y="9" width="48" height="21" rx="5" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="55" y="16.5" width="26" height="6" rx="2" fill="#94a3b8"/>'+
+      '<circle cx="68" cy="42" r="8.5" fill="#d1fae5" stroke="#10b981"/>'+
+      '<rect x="66" y="37.5" width="4" height="6.5" rx="2" fill="#10b981"/>'+
+      '<path d="M63.5 42a4.5 4.5 0 0 0 9 0" stroke="#10b981" fill="none" stroke-width="1.4"/>'),
+    /* the same word, but answered by picking */
+    VOCABULARY_MC: thumb(
+      '<rect x="48" y="8" width="40" height="7" rx="3" fill="#94a3b8"/>'+
+      '<rect x="26" y="21" width="84" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="26" y="32" width="84" height="8" rx="4" fill="#d1fae5" stroke="#10b981"/>'+
+      '<rect x="26" y="43" width="84" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'),
+    /* loose word blocks, and the slot they belong in */
+    /* 句型挖空，用說的補起來 */
+    SENTENCE_RESPONSE: thumb(
+      '<rect x="18" y="10" width="70" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="18" y="22" width="24" height="4" rx="2" fill="#cbd5e1"/>'+
+      '<rect x="46" y="20" width="24" height="8" rx="3" fill="none" stroke="#10b981" stroke-dasharray="3 3"/>'+
+      '<rect x="74" y="22" width="16" height="4" rx="2" fill="#cbd5e1"/>'+SPEAK),
+    /* 給一個教學點，整句自己造出來 */
+    SENTENCE_BUILDING: thumb(
+      '<rect x="36" y="7" width="64" height="14" rx="7" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="46" y="11.5" width="44" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="18" y="30" width="100" height="16" rx="8" fill="#d1fae5" stroke="#10b981"/>'+
+      '<rect x="29" y="35" width="3.5" height="6" rx="1.75" fill="#10b981"/>'+
+      '<rect x="37" y="36.5" width="66" height="3" rx="1.5" fill="#10b981"/>'),
+    SENTENCE_SCRAMBLE: thumb(
+      '<rect x="17" y="12" width="23" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="45" y="9" width="27" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="77" y="13" width="21" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="103" y="10" width="16" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="17" y="34" width="102" height="13" rx="3" fill="none" stroke="#10b981" stroke-dasharray="3 3"/>'),
+    /* a prompt, answered out loud */
+    QA: thumb(
+      '<rect x="18" y="12" width="86" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="18" y="22" width="54" height="4" rx="2" fill="#cbd5e1"/>'+
+      '<rect x="40" y="35" width="56" height="15" rx="7.5" fill="#d1fae5" stroke="#10b981"/>'+
+      '<rect x="55" y="39" width="3.5" height="6" rx="1.75" fill="#10b981"/>'+
+      '<rect x="63" y="41" width="20" height="3" rx="1.5" fill="#10b981"/>'),
+    /* a question, and one of the options chosen */
+    MULTIPLE_CHOICE: thumb(
+      '<rect x="16" y="9" width="86" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="16" y="20" width="104" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="16" y="31" width="104" height="8" rx="4" fill="#d1fae5" stroke="#10b981"/>'+
+      '<rect x="16" y="42" width="104" height="8" rx="4" fill="#fff" stroke="#cbd5e1"/>'),
+    /* not a screen at all —— a sheet of paper */
+    HANDOUT: thumb(
+      '<rect x="40" y="5" width="56" height="46" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="48" y="12" width="28" height="4.5" rx="2" fill="#94a3b8"/>'+
+      '<rect x="48" y="22" width="40" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="28" width="34" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="34" width="40" height="2.5" rx="1.25" fill="#cbd5e1"/>'+
+      '<rect x="48" y="40" width="22" height="2.5" rx="1.25" fill="#cbd5e1"/>'),
+    /* the text on its own —— nothing to do yet */
+    SLIDE: thumb(
+      '<rect x="18" y="12" width="72" height="5" rx="2.5" fill="#94a3b8"/>'+
+      '<rect x="18" y="23" width="100" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="30" width="92" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="37" width="100" height="3" rx="1.5" fill="#cbd5e1"/>'+
+      '<rect x="18" y="44" width="64" height="3" rx="1.5" fill="#cbd5e1"/>')
+  };
+  /* The thumbnails above are written once, in green, and then repainted into
+     their track. #10b981 was already "the part the student acts on", #d1fae5
+     "filled in", #f8fafc "the board" —— the three slots the colour system needs.
+     Handout and Slide are not in EP_TRACK, so they stay grey. */
+  Object.keys(THUMB).forEach(function(k){
+    var c=TRACKS[EP_TRACK[k]]; if(!c || EP_TRACK[k]==='material') return;
+    THUMB[k]=THUMB[k].replace(/#10b981/g,c.ink)
+                     .replace(/#d1fae5/g,c.tint)
+                     .replace(/#f8fafc/g,c.wash);
+  });
+
+  /* New content（2026-10-08，使用者「整理重新創建的 flow」：四步都複刻、教學點對齊）：主欄嵌 v11 的 Create New Project 基準，助手欄跟著四步走，存好就接練習 */
+  var CP={
+    page:'iterations/v11-create-project/create-project.html',
+    steps:['Course Settings','Generate Content','Review & Edit','Teaching Points'],
+    body:[
+      function(){ return 'Filled in from your last project —— change the level if this class is different.'; },
+      function(){ return 'Three ways to get content —— tap one to see what it does.'; },
+      function(){ return 'Read it through —— edit any sentence; the name is filled in from the topic.'; },
+      function(){ return 'These are the words the practices build on —— pick more in the text, add your own, then Analyze.'; }
+    ],
+    explain:{
+      create:['Create','Type a topic and we write a graded passage for this level —— pick the content type (conversation, article, story…), the length, and any teaching points it must include.'],
+      revise:['Revise','Paste your own article (or upload a photo of one) and we rewrite it to this level. Takes about 90 seconds.'],
+      summary:['Summary','Upload or paste your own content and use it as is —— nothing is rewritten.']
+    }
+  };
+  function cfg(){ return CFG[S.ep]||CFG.MIRRORING; }
+  function STEPSOF(){ return cfg().steps; }
+  function EXPL(){ return cfg().explain; }
+
+  /* ---------- 狀態 ---------- */
+  var S, HIST=[];
+  function blank(){ return { cp:null, sel:[], queue:[], qi:0, lastClasses:null, prefill:false, ep:null, assignedTo:null, src:null, topic:'', lvl:'HSK 2', tps:'', writing:false, newProj:false, proj:null, step:0, hide:null, audio:false, exp:null, picked:[], review:false, assigned:false, due:'2026-09-17T23:59', kind:'mandatory', log:[], fin:false, turns:[] }; }
+  S=blank();
+  window.__rail=function(){ return S; };   /* 測試用：headless 流程讀助手欄狀態 */
+  function snap(){ HIST.push(JSON.stringify(S)); if(HIST.length>60) HIST.shift(); }
+  function back(){ if(!HIST.length) return; S=JSON.parse(HIST.pop()); render(); }
+  function ai(kind, extra){ var t={who:'sys', kind:kind, ep:S.ep}; if(extra) for(var k in extra) t[k]=extra[k]; S.turns.push(t); }
+  function hasTurn(kind){ return S.turns.some(function(t){ return t.kind===kind && t.ep===S.ep; }); }
+  function epName(ep){ var e=EP.filter(function(x){return x[0]===ep;})[0]; return e?e[1]:''; }
+  function cfgOf(t){ return CFG[(t&&t.ep)||S.ep]||CFG.MIRRORING; }
+  function you(t){ S.turns.push({who:'you', t:t}); }
+
+  /* Create Project 的子狀態：gen（Creating your content…）→ gendone（All set!）／analyzing（Analyzing teaching points…）→ analyzed（卡片出來、頁腳鈕變 Save） */
+  function cpSub(d, step, nx){
+    var h=d.querySelector('.scrim h2'), t=h?h.textContent:'';
+    if(/Creating/.test(t)) return 'gen';
+    if(/All set/.test(t)) return 'gendone';
+    if(/Analyzing/.test(t)) return 'analyzing';
+    if(step===3 && nx && /^Save/.test(nx.textContent.trim())) return 'analyzed';
+    return null;
+  }
+  function cpCount(d){ var n=d.querySelectorAll('[data-edit]').length; if(n) return n; var em=d.querySelector('.okbar em'); return em?+em.textContent:0; }
+  var CP_SUB_BTN={ gen:'Generating…', analyzing:'Analyzing…', gendone:'Continue to Review' };
+  /* 存成 Project → 接第一個練習（Project name 從頁面的鎖住欄位讀回來） */
+  function cpDone(d){ var pn0=d&&d.querySelector('.inp[disabled]'); S.topic=(pn0&&pn0.value)||S.topic||'我的一天'; S.cp=null; S.newProj=true; S.proj=0; S.step=0; S.exp=null; lastUrl=null; go(0); render(); }
+  /* 練習第一步的 Back：退回上一個決定 */
+  function cutAfter(kind){ var i=-1; S.turns.forEach(function(t,k){ if(t.kind===kind) i=k; }); if(i>-1) S.turns=S.turns.slice(0,i+1); }
+  function cpReturn(){ snap(); cutAfter('cp3'); S.cp={step:3, sub:'saved', n:0, q:'&analyzed=1&saved=1', ret:true}; S.step=0; S.exp=null; lastUrl=null; render(); }
+  function projReturn(){ snap(); cutAfter('proj'); S.proj=null; S.step=0; S.exp=null; lastUrl=null; render(); }
+
+  /* ---------- 主欄：用網址驅動產品頁 ---------- */
+  function pageUrl(){
+    if(S.cp) return CP.page+'?step='+(S.cp.step+1)+(S.cp.q||'');
+    if(!S.ep || S.proj===null) return null;
+    /* 第四步嵌 v8（Assign 歷史＋逾期扣分，使用者 2026-10-07「planning 第四步還沒有這個機制」）：八種共用，Vocabulary 用 &as= 換標題 */
+    if(S.step===3){
+      var q4=['step=4']; if(S.ep!=='MIRRORING') q4.push('as='+S.ep);
+      if(S.picked.length){ q4.push('pick='+S.picked.join(',')); q4.push('roster='+S.picked[0]); } if(S.review) q4.push('review=1'); if(S.assigned) q4.push('assigned=1');
+      return 'iterations/v8-assign-history/proposal.html?'+q4.join('&');
+    }
+    var q=['step='+(S.step+1)];
+    if(S.proj!==null) q.push('proj='+projOf()[cfg().key]);
+    return cfg().page+'?'+q.join('&');
+  }
+  var lastUrl=null;
+  function syncPage(){
+    var u=S.fin ? null : pageUrl(), f=$('#page');
+    $('#stageFin').style.display = S.fin ? 'block' : 'none';
+    if(S.fin){ $('#stageFin').innerHTML=renderFin(); $('#stageEmpty').style.display='none'; f.style.display='none'; return; }
+    $('#stageEmpty').style.display = u ? 'none' : 'grid';
+    $('#stageEmpty').innerHTML = S.writing
+      ? '<div><span class="material-icons-round spin">autorenew</span><b>Writing a passage on '+esc(S.topic)+'</b></div>'
+      : (S.src==='new' && !S.proj && S.proj!==0 ? '<div><span class="material-icons-round">edit_note</span><b>New Project</b></div>' : '<div><span class="material-icons-round">auto_awesome</span><b>Pick a practice to start</b></div>');
+    f.style.display = u ? 'block' : 'none';
+    if(u && u!==lastUrl){ lastUrl=u; $('.stage').classList.add('loading'); f.src=u; }
+  }
+  /* 嵌進來的頁面自己的殼藏掉（同源才做得到）；老師在裡面按 Next 的話，助手欄跟著走 */
+  $('#page').addEventListener('load', function(){
+    $('.stage').classList.remove('loading');
+    try{
+      var d=this.contentDocument;
+      var st=d.createElement('style');
+      st.textContent='.side,.baseline,.hdr,#stepper,.footer,.wiz .pills{display:none!important}.mainwrap{margin-left:0!important}.main{padding:28px 32px!important}body{padding-bottom:0!important}.h4{margin-bottom:20px!important}.wiz .h4{margin-bottom:0!important}'+
+        /* 一條規則（2026-10-12 使用者「back and save 出現在一邊就好」）：嵌入頁只留內容與狀態，往前／往後／送出的鈕只在助手欄頁腳。v3–v8 的 .footer 上面已藏；v11 的鈕長在卡片裡，另外藏：Back、Save & Continue／Skip、Generate、未存列的 Save。對話框（Continue to Review）是 modal、留著 */
+        '.acts [data-act="next"],.acts [data-act="gen"],.acts button[disabled],[data-act="back"],[data-act="analyze"],.unsaved [data-act="save"]{display:none!important}.acts{min-height:0!important}'+   /* v11 的標題在 header 裡，不吃練習頁那條 .h4 間距（2026-10-12 使用者截圖：圖示掉到中間） */
+        /* 主欄比產品窄（扣掉側欄 240 ＋ 助手欄 380）——設定工具列的群組改成一群一列，不擠在同一排（使用者「爆版」） */
+        '@media (max-width:1180px){.tb-row{flex-wrap:wrap!important}.tb-row>.tb-grp{width:100%!important;align-items:flex-start!important;border-left:0!important;padding-left:0!important;padding-top:10px!important;border-top:1px dashed rgba(145,158,171,.2)!important}.tb-row>.tb-grp:first-child{border-top:0!important;padding-top:4px!important}}';
+      d.head.appendChild(st);
+      if(S.cp && S.cp.ret){ S.cp.ret=false; var cs=d.querySelector('[data-act="closesaved"]'); if(cs) cs.click(); }   /* 退回 Teaching Points：&saved=1 會開「Project saved」對話框，直接關掉 */
+    }catch(e){}
+  });
+  setInterval(function(){
+    try{
+      /* v3 的 S 是 const、不在 window 上 —— 從 DOM 讀：stepper 的 active、班級列的 .on、ASSIGNED 那段 */
+      var d=$('#page').contentDocument; if(!d || !S.ep || S.writing) return;
+      if(S.cp){
+        var pills=[].slice.call(d.querySelectorAll('.pills .pill')); if(!pills.length) return;
+        var cs=pills.findIndex(function(x){ return x.classList.contains('active'); });
+        var nxc=d.querySelector('#next');
+        if(cs>-1 && cs!==S.cp.step){
+          S.cp.step=cs; S.exp=null; S.cp.sub=null;
+          S.turns=S.turns.filter(function(t){ var mm=/^cp(\d)$/.exec(t.kind||''); return !(mm && +mm[1]>cs); });
+          if(!S.turns.some(function(t){ return t.kind==='cp'+cs; })) ai('cp'+cs);
+          lastUrl=$('#page').src; render(false); return;
+        }
+        if(nxc && /Saved/.test(nxc.textContent)){
+          if(S.cp.sub==='analyzed'){ cpDone(d); return; }   /* Save → Saved ✓ 的瞬間：存成 Project 了 → 接第一個練習 */
+          var ns=cpCount(d); if(S.cp.sub!=='saved' || ns!==S.cp.n){ S.cp.sub='saved'; S.cp.n=ns; lastUrl=$('#page').src; render(false); } else syncNav();   /* 退回來看到的 Saved ✓：停著，頁腳鈕＝Next: ⟨練習⟩ */
+          return;
+        }
+        /* 第二步已經有課文（退回來的）：回合多一顆「Keep this passage —— Skip to Review」，頁腳鈕留給 Generate Content */
+        var hr = cs===1 && !!d.querySelector('.acts [data-act="next"]');
+        if(hr!==!!S.cp.hasResult){ S.cp.hasResult=hr; lastUrl=$('#page').src; render(false); return; }
+        /* 子狀態（2026-10-11）：頁面的對話框／頁腳鈕 → 助手欄那一題換字、頁腳鈕跟著鎖 */
+        var sub=cpSub(d, cs, nxc);
+        if(sub!==S.cp.sub || (sub==='analyzed' && cpCount(d)!==S.cp.n)){ S.cp.sub=sub; S.cp.n=cpCount(d); var tp0=d.querySelector('#topic'); if(tp0 && tp0.value.trim()) S.topic=tp0.value.trim(); lastUrl=$('#page').src; render(false); }
+        else syncNav();
+        return;
+      }
+      if(S.proj===null) return;
+      var items=[].slice.call(d.querySelectorAll('#stepper .stp-item')); if(!items.length) return;
+      var step=items.findIndex(function(x){ return x.classList.contains('active'); });
+      var changed=false;
+      if(step>-1 && step!==S.step){
+        /* 一步一格：往回走就把後面幾步的回合收掉，再往前時重出；同一步不重複出現（使用者看到 2／3 出現兩次） */
+        S.step=step; S.exp=null;
+        S.turns=S.turns.filter(function(t){ if(t.ep!==S.ep) return true; var mm=/^step(\d)$/.exec(t.kind||''); return !(mm && +mm[1]>step) && !(t.kind==='done' && !S.assigned); });
+        if(!hasTurn('step'+step)) ai('step'+step);
+        changed=true;
+        if(step===3 && !/v8-assign-history/.test($('#page').src)){ lastUrl=null; render(); return; }   /* 第四步換嵌 v8 */
+      }
+      /* 佇列裡的第二個練習走到第四步：不自動帶班級，回合裡多一顆「Same as ⟨上一個⟩」（使用者 2026-10-06「多一個選項是同上步」） */
+      if(step===3 && S.prefill){ S.prefill=false; }
+      if(step===3){
+        /* 送出後頁面會把勾選清掉，所以先判「已送出」、把勾的班級留下來，再同步勾選 */
+        /* 送出了：v3／v4 把整班的列標 .done；v8 把那一輪收進 HISTORY，看頁腳鈕變成 Assigned ✓ */
+        var nx=d.querySelector('#next');
+        if((d.querySelector('.clsrow.done') || (nx && /Assigned/.test(nx.textContent))) && !S.assigned){
+          S.assigned=true; S.assignedTo=S.picked.slice(); ai('done',{to:S.assignedTo.slice()}); changed=true;
+          logPractice();
+          if(!S.queue[S.qi+1]){ S.fin=true; ai('fin'); lastUrl=null; render(); return; }   /* 佇列最後一個：主欄換成完成頁 */
+        }
+        if(!S.assigned){
+          /* Due／Type 邊勾邊存（送出後 v8 會把表單清掉） */
+          try{ var dts=d.querySelectorAll('input.dt2:not([data-ed]):not([data-tierdate])'); if(dts[1] && dts[1].value) S.due=dts[1].value; var kc=d.querySelector('[data-seg="kind"].qopt.on'); if(kc && kc.dataset.val) S.kind=kc.dataset.val; }catch(e2){}
+          var pk=[].slice.call(d.querySelectorAll('.clsrow.on[data-cls]')).map(function(r){ return r.dataset.cls; });
+          if(pk.join(',')!==S.picked.join(',')){ S.picked=pk; changed=true; }
+        }
+      }
+      if(changed){ lastUrl=$('#page').src; render(false); }   /* 不重載，只跟著改助手欄 */
+      else syncNav();
+    }catch(e){}
+  }, 500);
+
+  /* ---------- 助手欄的回合 ---------- */
+  var BODY={};
+  /* 可以一次勾好幾個練習（使用者 2026-10-06「兩個 practice 一起選」）：同一個 Project，照勾的順序一個做完接下一個 */
+  BODY.start=function(live){
+    var head='What do you want to make? Pick one or more.';
+    if(!live) return head;
+    var n=S.sel.length;
+    function card(k){ var e=EP.filter(function(x){return x[0]===k;})[0], on=S.sel.indexOf(k)>-1, c=TRACKS[EP_TRACK[k]];
+      return '<button class="qopt multi ep'+(on?' on':'')+'"'+(e[3]?' data-pick-ep="'+k+'"':' disabled title="Not wired in this prototype yet"')+' style="--tk:'+c.ink+'">'+THUMB[k]+
+        '<span class="lbl"><span class="material-icons-round">'+(on?'check_box':'check_box_outline_blank')+'</span><span class="t">'+esc(e[1])+'</span></span></button>'; }
+    var rows='<div class="qopts eps">'+EP_GROUPS.map(function(ks){ var tks=[]; ks.forEach(function(k){ if(tks.indexOf(EP_TRACK[k])<0) tks.push(EP_TRACK[k]); }); var c=TRACKS[tks[tks.length-1]];
+      return '<span class="eprow" style="--tkl:'+c.label+';--tkr:'+c.ink+'"><span class="eprow-h">'+tks.map(function(t){ return esc(TRACK_NAME[t]); }).join(' &amp; ')+'</span><span class="eprow-c">'+ks.map(card).join('')+'</span></span>'; }).join('')+'</div>';
+    return head+rows+
+      (n ? '<div class="qopts"><button class="qopt go" data-start="1">'+(n===1?'Start':'Start '+n+' practices')+'</button></div>' : '');
+  };
+  BODY.src=function(live){
+    var head='From a Project you already have, or new content?';
+    if(!live) return head;
+    return head+'<div class="qopts">'+
+      '<button class="qopt rich" data-src="existing"><span class="material-icons-round">folder</span><span><b>A Project I have</b><small>Pick one next</small></span></button>'+
+      '<button class="qopt rich" data-src="new"><span class="material-icons-round">edit_note</span><span><b>New content</b><small>We write it together</small></span></button></div>';
+  };
+  /* 新內容：照真實 Create New Project 的順序（Course Settings → Generate Content）——主題、程度、教學點（可空），寫完存成 Project */
+  BODY.topic=function(live){
+    var head='What is it about?';
+    if(!live) return head+'<div class="qopts"><span class="qopt" style="cursor:default">'+esc(S.topic)+' · '+esc(S.lvl)+(S.tps?' · '+esc(S.tps):'')+'</span></div>';
+    return head+'<div class="qopts" style="display:block"><input class="qin" id="cTopic" placeholder="e.g. 天气" value="'+esc(S.topic)+'"></div>'+
+      '<div class="chips">'+['HSK 1','HSK 2','HSK 3','HSK 4'].map(function(l){ return '<button class="chip'+(S.lvl===l?' on':'')+'" data-lvl="'+l+'">'+l+'</button>'; }).join('')+'</div>'+
+      '<div class="qopts" style="display:block"><input class="qin" id="cTps" placeholder="Teaching points, optional —— 刮风、下雨" value="'+esc(S.tps)+'"></div>'+
+      '<div class="qopts"><button class="qopt go" data-write="1">Write it</button></div>';
+  };
+  BODY.writing=function(){ return '<span class="material-icons-round spin" style="font-size:16px;vertical-align:-3px;margin-right:6px;color:var(--cv-tag-ink)">autorenew</span>Writing a passage on <b>'+esc(S.topic)+'</b> at '+esc(S.lvl)+'…'; };
+  BODY.proj=function(live){
+    var head='Which Project?';
+    if(!live) return head;
+    return head+'<div class="qopts">'+PROJECTS.map(function(p,i){
+      var ok = NEEDS_WORDS.indexOf(S.ep)<0 || p.vocab;
+      return '<button class="qopt rich"'+(ok?' data-proj="'+i+'"':' disabled title="No vocabulary in this mock yet"')+'><span class="material-icons-round">'+(p.kind==='Conversation'?'forum':'article')+'</span><span><b>'+esc(p.name)+'</b><small>'+esc(p.level)+' · '+p.sents+' sentences · '+esc(p.kind)+'</small></span></button>'; }).join('')+'</div>';
+  };
+  BODY.cp0=function(live){ return CP.body[0](); };
+  function spinIco(){ return '<span class="material-icons-round spin" style="font-size:16px;vertical-align:-3px;margin-right:6px;color:var(--pg)">autorenew</span>'; }
+  function cpSubOf(live, step){ return live && S.cp && S.cp.step===step ? S.cp.sub : null; }
+  BODY.cp1=function(live){
+    var head=CP.body[1](), EX=CP.explain, sub=cpSubOf(live,1);
+    if(sub==='gen') return spinIco()+'Writing a passage on <b>'+esc(S.topic||'your topic')+'</b> at '+esc(S.lvl)+' —— about 150 words, graded for this level.';
+    if(sub==='gendone') return 'Your passage on <b>'+esc(S.topic||'your topic')+'</b> is ready —— next, read it through and fix anything you don’t like.';
+    var ex = S.exp && EX[S.exp] ? '<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>' : '';
+    if(!live) return head+ex;
+    var skip = S.cp && S.cp.hasResult ? '<div class="qopts"><button class="qopt" data-cpskip="1">Keep this passage —— Skip to Review</button></div>' : '';
+    return head+'<div class="chips">'+Object.keys(EX).map(function(k){ return '<button class="chip'+(S.exp===k?' on':'')+'" data-exp="'+k+'">'+esc(EX[k][0])+'</button>'; }).join('')+'</div>'+ex+skip;
+  };
+  BODY.cp2=function(live){ return CP.body[2](); };
+  BODY.cp3=function(live){
+    var sub=cpSubOf(live,3), n=(S.cp&&S.cp.n)||0;
+    if(sub==='analyzing') return spinIco()+'Analyzing the teaching points —— pinyin, translation and two example sentences each.';
+    if(sub==='analyzed') return '<b>'+n+' teaching points</b> are ready —— check the cards below, edit any you want, then <b>Save</b> to finish the Project. The practices start from these words.';
+    if(sub==='saved') return 'Saved —— the practices start from '+(n?'these <b>'+n+' words</b>':'these words')+'. Edit a card and Save again, or go <b>Back</b> to change the passage.';
+    return CP.body[3]();
+  };
+  BODY.step0=function(live,t){ return cfgOf(t).step0(projOf()); };
+  BODY.step1=function(live,t){ return cfgOf(t).step1(projOf()); };
+  BODY.step2=function(live,t){
+    if(cfgOf(t).step2) return cfgOf(t).step2();
+    /* 第三步：只說明設定是什麼，點 chip 出解釋；預設值與改法都在右邊頁面（使用者 2026-10-06） */
+    var head='Tap a setting to see what it does.';
+    var EX=cfgOf(t).explain;
+    var chips='<div class="chips">'+Object.keys(EX).map(function(k){ return '<button class="chip'+(S.exp===k?' on':'')+'" data-exp="'+k+'">'+esc(EX[k][0])+'</button>'; }).join('')+'</div>'+
+      (S.exp ? '<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>' : '');
+    if(!live) return head+(S.exp?'<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>':'');
+    return head+chips;
+  };
+  BODY.done=function(live,t){
+    var to=(t&&t.to)||S.assignedTo||S.picked;
+    var n=to.reduce(function(a,id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; return a+(c?c[2]:0); },0);
+    var next=S.queue[S.qi+1];
+    return '<div class="done-turn"><span class="material-icons-round">check_circle</span><b>Assigned to '+to.length+' class'+(to.length===1?'':'es')+' · '+n+' students</b>'+
+      (live && !next && !S.fin ? '<div class="qopts"><button class="qopt" data-again="1">Plan another</button></div>' : '')+'</div>';
+  };
+  function sameAsLast(){ return !!(S.lastClasses && S.lastClasses.length) && S.lastClasses.slice().sort().join()===S.picked.slice().sort().join(); }
+  BODY.step3=function(live){
+    var head='Who is it for?';
+    if(!live) return head;
+    var prev=(S.qi>0 && S.lastClasses && S.lastClasses.length) ? S.queue[S.qi-1] : null;
+    var same=prev ? '<div class="qopts"><button class="qopt multi'+(sameAsLast()?' on':'')+'" data-same="1"><span class="material-icons-round">'+(sameAsLast()?'check_box':'check_box_outline_blank')+'</span>Same as '+esc(epName(prev))+' <span class="sub">'+esc(S.lastClasses.map(function(id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; return c?c[1]:id; }).join(', '))+'</span></button></div>' : '';
+    return head+same+'<div class="qopts">'+CLASSES.map(function(c){ var on=S.picked.indexOf(c[0])>-1;
+      return '<button class="qopt multi'+(on?' on':'')+'" data-cls="'+c[0]+'"><span class="material-icons-round">'+(on?'check_box':'check_box_outline_blank')+'</span>'+esc(c[1])+'</button>'; }).join('')+'</div>';
+  };
+  /* 新寫的內容：mock 沒有頁可嵌，用「我的一天」那一筆在每一頁的索引（v6／v7 之前漏了 → Quiz／Scramble 的 Projects 空白，2026-10-08） */
+  function projOf(){ if(S.newProj) return {v3:1, v4:0, v6:0, v7:0, vocab:true, name:S.topic, level:S.lvl, sents:5, kind:'Passage'}; return PROJECTS[S.proj]||PROJECTS[0]; }
+
+  /* ---------- 完成頁（2026-10-12） ---------- */
+  var SUMMARY={
+    MIRRORING:function(){ return (S.audio?'Audio only':'Text visible')+' · Pinyin shown · Translation shown · 3 tries'+(S.hide?' · last '+S.hide+' hidden':''); },
+    VOCABULARY:function(){ return '12 words · 36 cards · Pinyin shown · 3 tries'; },
+    VOCABULARY_MC:function(){ return '10 questions · all question types'; },
+    SENTENCE_SCRAMBLE:function(){ return '8 sentences · Pinyin shown · Normal speed · 3 tries'; }
+  };
+  function logPractice(){ S.log.push({ ep:S.ep, to:(S.assignedTo||S.picked).slice(), due:S.due, kind:S.kind, set:(SUMMARY[S.ep]||function(){return '';})() }); }
+  function fmtDue(v){ var m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(v||''); if(!m) return ''; return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2]-1]+' '+(+m[3])+', '+m[4]; }
+  function classLine(to){ var names=[], n=0; to.forEach(function(id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; if(c){ names.push(c[1]); n+=c[2]; } }); return {names:names, n:n}; }
+  function renderFin(){
+    var p=projOf(), allTo={}; S.log.forEach(function(l){ l.to.forEach(function(id){ allTo[id]=1; }); });
+    var cl=classLine(Object.keys(allTo)), np=S.log.length;
+    var sub=(S.newProj?'1 new Project':'From a Project you have')+' · '+np+' practice'+(np===1?'':'s')+' · assigned to '+cl.names.length+' class'+(cl.names.length===1?'':'es')+' · '+cl.n+' students';
+    var proj='<div class="card"><div class="row"><span class="ic"><span class="material-icons-round">'+(S.newProj?'create_new_folder':'folder')+'</span></span><div class="tx"><b>'+esc(p.name)+'</b><span>'+esc(p.level)+' · '+p.sents+' sentences'+(S.newProj?' · 7 teaching points · <em>created just now</em>':' · '+esc(p.kind))+'</span></div><a href="#">Open project</a></div></div>';
+    var rows=S.log.map(function(l){ var c=classLine(l.to), tk=TRACKS[EP_TRACK[l.ep]];
+      return '<div class="row"><span class="th" style="--tk:'+tk.ink+'">'+THUMB[l.ep]+'</span><div class="tx"><b>'+esc(epName(l.ep))+'</b><span>'+esc(l.set)+'</span><span><em>'+esc(c.names.join(', '))+'</em> · '+c.n+' students · Due '+esc(fmtDue(l.due))+' · '+(l.kind==='optional'?'Optional':'Mandatory')+'</span></div><a href="#">Open</a></div>'; }).join('');
+    var next='<div class="next">Students see '+(np===1?'it':'these')+' in their practice list from the start date. Mandatory practices send reminder emails before the due date; late work follows the stages you set.</div>';
+    return '<div class="wrap"><div class="hd"><span class="ok"><span class="material-icons-round">check</span></span><div><h1>All set</h1><p>'+sub+'</p></div></div>'+
+      '<div class="sec">Project</div>'+proj+'<div class="sec">Practices</div><div class="card">'+rows+'</div><div class="sec">What happens next</div>'+next+'</div>';   /* 頁上不放 Plan another（頁腳鈕有）——跟嵌入頁同一條規則：導航鈕只在助手欄（使用者 2026-10-12「不用出現重複按鈕」） */
+  }
+  /* 把佇列裡每個練習都走完、都指派給 to（示範入口與歷史的種子共用） */
+  function finishAll(to, due, kind){
+    if(due) S.due=due; if(kind) S.kind=kind;
+    S.queue.forEach(function(ep,i){ if(i){ S.qi=i; S.ep=ep; S.step=0; you('Next: '+epName(ep)); go(0); } you(STEPSOF()[1]); go(1); you('Settings'); go(2); you('Assign'); go(3); S.picked=to.slice(); S.assignedTo=to.slice(); ai('done',{to:to.slice()}); logPractice(); });
+    S.assigned=true; S.fin=true; ai('fin');
+  }
+  BODY.fin=function(live){ var np=S.log.length; return 'All set —— '+(S.newProj?'a new Project and ':'')+np+' practice'+(np===1?'':'s')+' assigned. The summary is on the right; open anything from there.'+
+    (live ? '<div class="qopts"><button class="qopt" data-list="1">Go to Practice List</button></div>' : ''); };
+
+  /* ---------- render ---------- */
+  function nextPractice(){ snap(); S.lastClasses=(S.assignedTo||[]).slice(); S.qi++; S.ep=S.queue[S.qi]; S.step=0; S.picked=[]; S.assigned=false; S.assignedTo=null; S.review=false; S.exp=null; S.prefill=true; lastUrl=null; you('Next: '+epName(S.ep)); go(0); render(); }
+  function syncNav(){
+    var nav=$('#railnav'), on=!!(S.ep && (S.proj!==null || S.cp) && !S.writing);
+    nav.style.display = on ? 'flex' : 'none';
+    if(!on) return;
+    if(S.fin){ $('#navNext').textContent='Plan another'; $('#navNext').classList.remove('dis'); $('#navBack').disabled=true; return; }
+    if($('.stage').classList.contains('loading')){ $('#navNext').textContent='Next'; $('#navNext').classList.add('dis'); $('#navBack').disabled=true; return; }   /* 換頁中：舊 iframe 的 #next 不算數（Save 之後閃 Saved ✓） */
+    try{
+      var d=$('#page').contentDocument, pn=d&&d.querySelector('#next'), pb=d&&d.querySelector('#back');
+      if(S.cp && S.cp.sub==='saved'){ $('#navNext').textContent='Next: '+epName(S.ep); $('#navNext').classList.remove('dis'); $('#navBack').disabled=false; return; }
+      if(S.cp && S.cp.sub && CP_SUB_BTN[S.cp.sub]){ $('#navNext').textContent=CP_SUB_BTN[S.cp.sub]; $('#navNext').classList.toggle('dis', S.cp.sub!=='gendone'); $('#navBack').disabled = S.cp.sub!=='gendone'; return; }
+      if(S.assigned){ var nx=S.queue[S.qi+1]; $('#navNext').textContent = nx ? 'Next: '+epName(nx) : 'Done'; $('#navNext').classList.remove('dis'); }
+      else if(S.cp && S.cp.step===1 && d.querySelector('.acts [data-act="gen"]')){ var g=d.querySelector('.acts [data-act="gen"]'); $('#navNext').textContent='Generate Content'; $('#navNext').classList.toggle('dis', g.classList.contains('dis')); }
+      else if(pn){ $('#navNext').textContent=pn.textContent.trim()||'Next'; $('#navNext').classList.toggle('dis', pn.classList.contains('dis')); }
+      var step0Back = !S.cp && S.step===0 && S.qi===0;   /* 第一個練習的第一步：Back 退回上一個決定（Project 的 Teaching Points／Which Project?） */
+      $('#navBack').disabled = step0Back ? false : ((S.cp ? S.cp.step===0 : S.step===0) || !!(pb && pb.disabled));
+    }catch(e){}
+  }
+  $('#navNext').addEventListener('click', function(){
+    if(this.classList.contains('dis')) return;
+    if(S.fin){ restart(); return; }
+    if(S.cp){ if(S.cp.sub==='saved'){ cpDone($('#page').contentDocument); return; } try{ var cd=$('#page').contentDocument, cb=(S.cp.step===1 && cd.querySelector('.acts [data-act="gen"]'))||cd.querySelector('#next'); if(cb && !cb.classList.contains('dis')) cb.click(); }catch(e){} return; }
+    if(S.assigned){ if(S.queue[S.qi+1]) nextPractice(); else restart(); return; }   /* 指派完：接下一個練習，或結束 */
+    /* 第三步 → 第四步：不讓 v3／v4 自己先畫它的第四步再被換掉（使用者 2026-10-07「閃一下舊版」）——直接換嵌 v8 */
+    if(S.step===2){ S.step=3; S.exp=null; if(!hasTurn('step3')) ai('step3'); lastUrl=null; render(); return; }
+    try{ var b=$('#page').contentDocument.querySelector('#next'); if(b && !b.classList.contains('dis')) b.click(); }catch(e){} });
+  $('#navBack').addEventListener('click', function(){
+    if(S.cp){ try{ var cbk=$('#page').contentDocument.querySelector('#back'); if(cbk) cbk.click(); }catch(e){} return; }
+    if(S.step===0 && S.qi===0){ if(S.newProj) cpReturn(); else projReturn(); return; }
+    if(S.step===3){ S.step=2; S.turns=S.turns.filter(function(t){ return !(t.ep===S.ep && (t.kind==='step3' || (t.kind==='done' && !S.assigned))); }); lastUrl=null; render(); return; }   /* v8 只有第四步，回上一步＝重載 v3／v4 的第三步 */
+    try{ var b=$('#page').contentDocument.querySelector('#back'); if(b) b.click(); }catch(e){} });
+  function render(sync){
+    if(curId){ syncPlan(); renderHist(); }
+    document.querySelector('.app').classList.toggle('wide', !pageUrl() && !S.fin);
+    if(sync!==false) syncPage();
+    syncNav();
+    var last=S.turns.length-1, grew=S.turns.length!==render.lastN;
+    $('#chat').innerHTML=S.turns.map(function(t,i){
+      var live=i===last;
+      var inner=t.who==='you' ? esc(t.t) : BODY[t.kind](live,t);
+      var m=/^step(\d)$/.exec(t.kind||''); if(m) inner='<span class="stag">'+(+m[1]+1)+' · '+esc(cfgOf(t).steps[+m[1]])+'</span>'+inner;
+      var mc=/^cp(\d)$/.exec(t.kind||''); if(mc) inner='<span class="stag">Project · '+(+mc[1]+1)+' · '+esc(CP.steps[+mc[1]])+'</span>'+inner;
+      if(live && t.who==='sys' && HIST.length && S.proj===null && !S.cp) inner='<button class="bk" data-back="1"><span class="material-icons-round">arrow_back</span>Back</button>'+inner;
+      return '<div class="msg '+t.who+(grew && i===last ? ' in' : '')+(live && t.who==='sys' ? ' live' : '')+(t.kind ? ' k-'+t.kind : '')+'"><span class="who">'+(t.who==='you'?'你':'AI')+'</span><div class="bub">'+inner+'</div></div>';
+    }).join('');
+    /* 只有多了新回合才捲到底；勾卡、勾班級這種只改狀態的重畫不捲（使用者 2026-10-07：點一個練習就跳到最下面） */
+    var c=$('#chat'); if(S.turns.length!==render.lastN){ c.scrollTop=c.scrollHeight; } render.lastN=S.turns.length;
+    /* 四步住在助手欄頂上（使用者 2026-10-06：步驟融入對話、頁面上不再出現）：數字點＋連線，現在這一步才寫名字 */
+    $('#ctx').classList.toggle('multi', !!(S.ep && (S.proj!==null || S.cp) && (S.queue.length>1 || S.src==='new')));
+    if(S.cp){
+      /* Create Project 階段：佇列最前面多一顆「Project」的點，步驟條是它的四步 */
+      var pqc='<div class="pq"><span class="dots"><i class="cur" title="New Project"></i>'+S.queue.map(function(ep){ return '<i title="'+esc(epName(ep))+'"></i>'; }).join('')+'</span><span><span class="n">Project ·</span>New content</span></div>';
+      $('#ctx').innerHTML=pqc+'<div class="steps">'+CP.steps.map(function(lb,i){ var cls=i<S.cp.step?'done':(i===S.cp.step?'cur':'');
+        return (i?'<span class="ln'+(i<=S.cp.step?' done':'')+'"></span>':'')+'<span class="st '+cls+'"><i>'+(i<S.cp.step?'<span class="material-icons-round">check</span>':(i+1))+'</i>'+(i===S.cp.step?'<b>'+esc(lb)+'</b>':'')+'</span>'; }).join('')+'</div>';
+    }
+    else if(!S.ep || S.proj===null){ $('#ctx').innerHTML = S.ep ? '<span id="ctxText">'+esc(S.queue.map(epName).join(' + '))+'</span>' : ''; }
+    else {
+      var pq = (S.queue.length>1 || S.src==='new') ? '<div class="pq"><span class="dots">'+(S.src==='new'?'<i class="done" title="New Project"></i>':'')+S.queue.map(function(ep,i){ var cls=i<S.qi?'done':(i===S.qi?'cur':'');
+        return '<i class="'+cls+'" title="'+esc(epName(ep))+'"></i>'; }).join('')+'</span><span><span class="n">'+(S.qi+1)+' of '+S.queue.length+' ·</span>'+esc(epName(S.ep))+'</span></div>' : '';
+      $('#ctx').innerHTML=pq+'<div class="steps">'+STEPSOF().map(function(lb,i){
+        var cls=i<S.step?'done':(i===S.step?'cur':'');
+        return (i?'<span class="ln'+(i<=S.step?' done':'')+'"></span>':'')+
+          '<span class="st '+cls+'"><i>'+(i<S.step?'<span class="material-icons-round">check</span>':(i+1))+'</i>'+(i===S.step?'<b>'+esc(lb)+'</b>':'')+'</span>';
+      }).join('')+'</div>';
+    }
+  }
+  function go(step){ S.step=step; if(!hasTurn('step'+step)) ai('step'+step); }
+
+  $('#chat').addEventListener('click', function(e){
+    var t;
+    if(e.target.closest('[data-back]')){ back(); return; }
+    if((t=e.target.closest('[data-pick-ep]'))){ var pe=t.dataset.pickEp, pi=S.sel.indexOf(pe); if(pi>-1) S.sel.splice(pi,1); else S.sel.push(pe); render(false); return; }
+    if(e.target.closest('[data-start]')){ if(!S.sel.length) return; snap(); S.queue=S.sel.slice(); S.qi=0; S.ep=S.queue[0]; you(S.queue.map(epName).join(' + ')); ai('src'); render(); return; }
+    /* 佇列的下一個練習：同一個 Project、同一個來源，從第一步再走一次；上一個指派的班級到第四步會帶過去 */
+    if(e.target.closest('[data-nextep]')){ nextPractice(); return; }
+    if((t=e.target.closest('[data-src]'))){ snap(); S.src=t.dataset.src; you(S.src==='new'?'New content':'A Project I have'); if(S.src==='new'){ S.cp={step:0}; ai('cp0'); } else ai('proj'); render(); return; }
+    if((t=e.target.closest('[data-lvl]'))){ S.lvl=t.dataset.lvl; var ti=$('#cTopic'), tp=$('#cTps'); if(ti) S.topic=ti.value; if(tp) S.tps=tp.value; render(false); return; }
+    if((t=e.target.closest('[data-write]'))){ var ti2=$('#cTopic'), tp2=$('#cTps'); S.topic=(ti2&&ti2.value||'').trim(); S.tps=(tp2&&tp2.value||'').trim(); if(!S.topic){ ti2&&ti2.focus(); return; }
+      snap(); you(S.topic+' · '+S.lvl); S.writing=true; ai('writing'); render();
+      setTimeout(function(){ if(!S.writing) return; S.writing=false; S.newProj=true; S.proj=0; go(0); render(); }, 2600); return; }
+    if((t=e.target.closest('[data-proj]'))){ snap(); S.proj=+t.dataset.proj; you(projOf().name); go(0); render(); return; }
+    /* 只改狀態、不換題的動作不寫進對話 —— 寫了會把這一題變成非 live、按鈕消失；套用的結果寫在那一題的句子裡 */
+    if(e.target.closest('[data-list]')){ restart(); return; }
+    if(e.target.closest('[data-cpskip]')){ try{ var sk=$('#page').contentDocument.querySelector('.acts [data-act="next"]'); if(sk) sk.click(); }catch(e2){} return; }
+    if((t=e.target.closest('[data-exp]'))){ S.exp = S.exp===t.dataset.exp ? null : t.dataset.exp; render(false); return; }
+    if(e.target.closest('[data-same]')){ snap(); S.picked = sameAsLast() ? [] : S.lastClasses.slice(); S.review=false; render(); return; }
+    if((t=e.target.closest('[data-cls]'))){ snap(); var id=t.dataset.cls, i=S.picked.indexOf(id); if(i>-1) S.picked.splice(i,1); else S.picked.push(id); S.review=false; render(); return; }
+    if((t=e.target.closest('[data-again]'))){ restart(); return; }
+  });
+  /* ---------- 歷史紀錄（2026-10-12）：每個 plan 是 S 的快照，點開就整段還原 ---------- */
+  var PLANS=[], curId=0, nextId=1;
+  function seedPlan(o){
+    var back=S; S=blank(); ai('start');
+    S.queue=o.ep.slice(); S.qi=0; S.ep=S.queue[0]; you(S.queue.map(epName).join(' + ')); ai('src'); S.src='existing'; you('A Project I have'); ai('proj'); S.proj=o.proj; you(projOf().name); go(0);
+    finishAll(o.to, o.due, o.kind);
+    var snap=JSON.stringify(S); S=back;
+    return {id:nextId++, at:o.at, s:snap};
+  }
+  function shortCls(ids){ return ids.map(function(id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; return c?c[1].replace('Chinese ',''):id; }).join(', '); }
+  function planTitle(st){
+    var what=(st.queue||[]).map(epName).join(' + ');
+    var proj=st.newProj ? st.topic : (st.proj!==null && st.proj!==undefined ? (PROJECTS[st.proj]||{}).name : (st.src==='new' ? 'New Project' : null));
+    if(!what && !proj) return 'New plan';
+    return [what, proj].filter(Boolean).join(' · ');
+  }
+  function planSub(st){
+    if(st.fin){ var to={}; (st.log||[]).forEach(function(l){ l.to.forEach(function(id){ to[id]=1; }); }); return 'Created · assigned to '+shortCls(Object.keys(to)); }
+    var n=(st.turns||[]).filter(function(t){ return t.who==='you'; }).length;
+    return n ? n+' answer'+(n===1?'':'s') : 'Nothing answered yet';
+  }
+  function syncPlan(){ for(var i=0;i<PLANS.length;i++) if(PLANS[i].id===curId){ PLANS[i].s=JSON.stringify(S); return; } }
+  function renderHist(){
+    var seen={}, html='';
+    PLANS.forEach(function(c){
+      if(!seen[c.at]){ seen[c.at]=1; html+='<div class="hist-g">'+esc(c.at)+'</div>'; }
+      var st=JSON.parse(c.s);
+      html+='<button class="hist-i'+(c.id===curId?' on':'')+'" data-plan="'+c.id+'"><b>'+esc(planTitle(st))+'</b><span>'+esc(planSub(st))+'</span></button>';
+    });
+    $('#histList').innerHTML=html;
+  }
+  function openPlan(id){
+    if(id===curId) return;
+    syncPlan();
+    for(var i=0;i<PLANS.length;i++) if(PLANS[i].id===id){ curId=id; S=JSON.parse(PLANS[i].s); break; }
+    HIST=[]; lastUrl=null; render.lastN=-1; render();
+  }
+  function newPlan(){ if(curId && !S.fin && !S.turns.some(function(t){ return t.who==='you'; })){ S=blank(); HIST=[]; lastUrl=null; ai('start'); render(); return; }   /* 還沒答任何題：原地重來，不多開一個空的 */
+    syncPlan(); S=blank(); HIST=[]; lastUrl=null; ai('start'); var c={id:nextId++, at:'Today', s:JSON.stringify(S)}; PLANS.unshift(c); curId=c.id; render(); }
+  $('#histToggle').addEventListener('click', function(){ var on=document.querySelector('.app').classList.toggle('hist-on'); this.setAttribute('aria-expanded', String(on)); this.setAttribute('aria-label', on?'Hide history':'Show history'); });
+  $('#histNew').addEventListener('click', newPlan);
+  $('#histList').addEventListener('click', function(e){ var i=e.target.closest('[data-plan]'); if(i) openPlan(+i.dataset.plan); });
+  function restart(){ newPlan(); }
+  /* 打字：只會把問題當成「解釋」—— 這一版的助手不做自由對話，問設定會指到對應的說明 */
+  function askTyped(){
+    var v=$('#q').value.trim(); if(!v) return;
+    $('#q').value=''; syncSend();
+    var EX=EXPL();
+    var k=Object.keys(EX).filter(function(k){ return new RegExp(EX[k][0].split(' ')[0],'i').test(v) || new RegExp(k,'i').test(v); })[0];
+    snap(); you(v);
+    if(k){ S.exp=k; if(S.step!==2 || !hasTurn('step2')){ ai('exp'); } }
+    else ai('dunno');
+    render(false);
+  }
+  BODY.exp=function(){ var EX=EXPL(); return '<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>'; };
+  BODY.dunno=function(){ return 'I can explain any setting on this page —— try <b>pinyin</b>, <b>speed</b> or <b>max tries</b>. Changes are made on the right.'; };
+  $('#send').addEventListener('click', askTyped);
+  function syncSend(){ $('#send').disabled = !$('#q').value.trim(); }
+  $('#q').addEventListener('input', syncSend); syncSend();
+  $('#q').addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); askTyped(); } });
+
+  /* 示範入口：?at=proj|step0|step1|step2|step3|done ＋ &ep=MIRRORING|VOCABULARY（預設 MIRRORING） */
+  var qs0=new URLSearchParams(location.search), at=qs0.get('at'), ep0=qs0.get('ep');
+  /* 歷史的種子（假資料，跟提案二同樣三筆的形狀）：昨天兩個、上週一個 */
+  PLANS=[ seedPlan({proj:0, ep:['VOCABULARY','SENTENCE_SCRAMBLE'], to:['5c'], at:'Last week', due:'2026-09-10T23:59', kind:'mandatory'}) ];
+  PLANS.unshift(seedPlan({proj:0, ep:['VOCABULARY_MC'], to:['3b'], at:'Yesterday', due:'2026-09-13T23:59', kind:'optional'}));
+  PLANS.unshift(seedPlan({proj:1, ep:['MIRRORING'], to:['4a'], at:'Yesterday', due:'2026-09-12T23:59', kind:'mandatory'}));
+  if(qs0.get('hist')==='1'){ document.querySelector('.app').classList.add('hist-on'); $('#histToggle').setAttribute('aria-expanded','true'); }
+  ai('start');
+  if(at){ S.queue=(ep0||'MIRRORING').split(',').filter(function(x){return CFG[x];}); if(!S.queue.length) S.queue=['MIRRORING']; S.qi=0; S.ep=S.queue[0]; you(S.queue.map(epName).join(' + ')); ai('src'); S.src='existing'; you('A Project I have'); ai('proj');
+    if(/^cp\d$/.test(at)){ /* 下面那行會把 proj 那兩個回合換成 New content */ }
+    if(/^cp\d$/.test(at)){ S.turns.pop(); S.turns.pop(); S.src='new'; you('New content'); S.cp={step:+at[2]}; for(var ci=0;ci<=+at[2];ci++) ai('cp'+ci); render(); }
+    else if(at!=='proj'){ S.proj=0; you('我的一天'); go(0); }
+    if(at==='step1'||at==='step2'||at==='step3'||at==='done'){ you(STEPSOF()[1]); go(1); }
+    if(at==='step2'||at==='step3'||at==='done'){ you('Settings'); go(2); }
+    if(at==='step3'||at==='done'){ you('Assign'); go(3); }
+    if(at==='done'){ S.picked=['3b','4a']; S.assigned=true; ai('done'); }
+    if(at==='fin'){   /* 完成頁：佇列裡每個練習都走完、都指派給 3B＋4A */
+      if(qs0.get('new')==='1'){ S.newProj=true; S.src='new'; S.topic='我的一天'; }   /* &new=1：Project 那塊寫成剛建的 */
+      finishAll(['3b','4a']);
+    }
+  }
+  var cur0={id:nextId++, at:'Today', s:JSON.stringify(S)}; PLANS.unshift(cur0); curId=cur0.id;
+  render();
+})();
+</script>
+<script>
+/* 側欄收合：狀態存 localStorage，跟其他頁共用 */
+(function(){
+  var app=document.querySelector('.app'), side=document.querySelector('.app > .side'); if(!app||!side) return;
+  var tg=document.createElement('button'); tg.className='side-tg'; tg.type='button';
+  function paint(){ var mini=app.classList.contains('mini'); tg.innerHTML='<span class="material-icons-round">'+(mini?'chevron_right':'chevron_left')+'</span>'; tg.setAttribute('aria-label', mini?'Expand navigation':'Collapse navigation'); }
+  try{ if(localStorage.getItem('dh-nav-mini')==='1') app.classList.add('mini'); }catch(e){}
+  paint(); side.appendChild(tg);
+  tg.addEventListener('click', function(){ app.classList.toggle('mini'); paint(); try{ localStorage.setItem('dh-nav-mini', app.classList.contains('mini')?'1':'0'); }catch(e){} window.dispatchEvent(new Event('resize')); });
+})();
+</script>
+</body>
+</html>

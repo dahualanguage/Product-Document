@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Practice 設計判準 — Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #faf5ff; border-left: 4px solid #8b5cf6; color: #5b21b6; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-red { background: #ffe4e6; color: #be123c; }
+    .none { color: #cbd5e1; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0 8px; background: #eef0f3; height: 620px; position: relative; }
+    .preview iframe { width: 1440px; height: 880px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #059669; font-weight: 600; text-decoration: none; }
+    .q { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid #8b5cf6; border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; }
+    .q .qh { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .q .qn { display:inline-block; font-size: 11px; font-weight: 800; color: #fff; background: #8b5cf6; padding: 1px 8px; border-radius: 5px; margin-right: 8px; vertical-align: 2px; }
+    .q .why { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+    .q.done { border-left-color: #10b981; }
+    .q.done .qn { background: #10b981; }
+    .decided { display:inline-block; font-size:11px; font-weight:800; color:#047857;
+      background:#ecfdf5; border:1px solid #6ee7b7; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .ans { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#065f46; line-height:1.6; }
+    .q.shut { border-left-color:#cbd5e1; background:#fbfcfd; }
+    .q.shut .qn { background:#94a3b8; }
+    .q.shut .qh { color:#475569; }
+    .closed { display:inline-block; font-size:11px; font-weight:800; color:#475569;
+      background:#f1f5f9; border:1px solid #dde5ee; padding:1px 9px; border-radius:999px; margin-left:8px; vertical-align:2px; }
+    .shutbox { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:11px 14px;
+      margin:10px 0 0; font-size:13px; color:#475569; line-height:1.6; }
+    details { margin-top:10px; }
+    details summary { cursor:pointer; font-size:12px; font-weight:700; color:#94a3b8; }
+    details summary:hover { color:#475569; }
+    details table { margin-top:8px; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-done { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .st-shut { background:#f1f5f9; color:#475569; border:1px solid #dde5ee; }
+    .st-open { background:#faf5ff; color:#7c3aed; border:1px solid #e9d5ff; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .q table { margin: 6px 0 0; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    td .cap { display: block; margin-top: 2px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">Practice 設計判準</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#reach" class="active">1 · v3 已經涵蓋了幾張卡</a></li>
+        <li><a href="#rules">2 · 十條判準</a></li>
+        <li><a href="#nope">3 · 不能直接套過去的</a></li>
+        <li><a href="#next">4 · 每張卡的下一步</a></li>
+        <li><a href="#how">5 · 做法（附錄）</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Practice 設計判準</h1>
+        <p class="subtitle">從 <a class="inline" href="v3-content-mirroring/spec.html">v3 Content Mirroring</a> 整理出來的判準，給其餘七張卡沿用。<strong>不是風格指南——每一條都是為了解掉一個查得到出處的問題。</strong></p>
+        <div class="meta">
+          <span>2026-09-10</span>
+          <span>程式碼基準 origin/develop @ 17990056</span>
+          <span>素材：practice-settings-inventory.md</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="reach"><span class="num">1</span> v3 已經涵蓋了幾張卡</h2>
+
+      <div class="callout callout-tip">
+        <strong>先看這張表再決定下一張卡要做什麼。</strong> v3 的改動有一大半落在<strong>共用元件</strong>上，
+        也就是說「優化其他 practice」已經做掉一部分了——剩下的是各型別自己的第二步。
+      </div>
+
+      <table>
+        <thead><tr><th style="width:230px">v3 的改動</th><th style="width:110px">涵蓋</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><b>Assign 那一步整組重畫</b><br>（搬出對話框、三段、可重複指派、送出前預覽）</td>
+            <td><span class="pill p-green">八張卡</span></td>
+            <td><code>step-three.js</code> ＋ <code>assign-practice.js</code> 是<strong>所有型別共用的最後一步</strong>，
+              <code>STEPS_BY_TYPE</code> 每一種都以 <code>Assign Practice</code> 收尾。</td></tr>
+          <tr><td><b>Stepper、頁腳按鈕、捲動重置</b></td>
+            <td><span class="pill p-green">八張卡</span></td>
+            <td><code>practice-unified-view.js</code> 是共用外殼，八種型別都跑它。</td></tr>
+          <tr><td><b>Audio Mode 升成模式</b><br><b>Audio Settings（Speed / Voice）</b><br><b>Auto pass 欄位</b></td>
+            <td><span class="pill p-amber">五種</span></td>
+            <td><code>audio-mode-toggle-card.js</code> / <code>audio-settings-panel.js</code> /
+              <code>max-attempts-field.js</code> 被 Mirroring · QA · Vocabulary · Sentence Scramble ·
+              Follow Pattern 共用。<strong>動它們就是五種一起改。</strong></td></tr>
+          <tr><td><b>三段分法、樣本句、句子表</b></td>
+            <td><span class="pill p-gray">只有 Mirroring</span></td>
+            <td>這些長在 <code>mirroring-step-two-section.js</code> 與課文型內容上，其餘要各自判斷。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <strong>共用元件有三個不一致，是產品自己的。</strong>
+        ① Audio Mode：Mirroring 與 QA 用共用卡，<strong>Follow Pattern 自己畫了一份一樣的</strong>；
+        ② Auto pass：同一個東西三個名字（<code>Max attempts before auto pass</code> /
+        <code>Attempts per sentence</code> / <code>Attempts per question</code>）；
+        ③ Practice name：六份設定裡只有四份有。
+        <strong>統一是設計決定，但要知道統一之後跟現行畫面會長得不一樣。</strong>
+      </div>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="rules"><span class="num">2</span> 十條判準</h2>
+
+      <div class="card">
+        <h4>R1 · 依「它改變什麼」分段，不依欄位來源</h4>
+        <p>問一句：<strong>改了它，學生那邊什麼會不一樣？</strong>答案相同的收成一段。
+        Mirroring 分出來是 <em>On screen</em>（看得到什麼）／<em>On play</em>（聽得到什麼）／
+        <em>Passing</em>（什麼時候算過）。</p>
+        <p class="cap">反例：現行把 Audio Mode、Translation First、Display Settings、Auto Pass、
+        Audio Settings 五塊等重平鋪，順序是元件被寫進檔案的順序。</p>
+      </div>
+
+      <div class="card">
+        <h4>R2 · 模式不是設定</h4>
+        <p>判準是<strong>學生端的畫面會不會整個換掉</strong>。會 → 提到最上面做成兩選一；不會 → 留在設定列。</p>
+        <p>Audio Mode 打開，學生端整片課文換成一張耳機卡（<code>assignments/content/index.js</code> 的
+        <code>renderAudioModePanel</code>）——那是換一種練習，不是換一個顯示偏好。
+        它會強制鎖住拼音／翻譯也就不奇怪了：<strong>純聽力底下本來就沒有「預先決定顯示什麼」這回事</strong>。</p>
+      </div>
+
+      <div class="card">
+        <h4>R3 · 控制項三選一</h4>
+        <table style="margin-bottom:8px">
+          <thead><tr><th style="width:210px">什麼樣的選項</th><th style="width:150px">用什麼</th><th>例</th></tr></thead>
+          <tbody>
+            <tr><td>固定、≤4 個、每個兩三個字</td><td><b>分段控制項</b>（全部露出）</td>
+              <td>Pinyin · Translation · Play the translation first</td></tr>
+            <tr><td><b>要聽過／看過才選得出來</b></td><td><b>chip，點一下＝選它＋試它</b></td>
+              <td>Speed · Voice</td></tr>
+            <tr><td>資料驅動、長度未知</td><td>下拉</td><td>Project（專案清單會長）</td></tr>
+          </tbody>
+        </table>
+        <p><strong>不是「下拉一律不好」。</strong> 下拉的價值是「清單很長，先收起來」；
+        三四個兩字選項收起來沒省到空間，卻要兩次點擊、看不到有哪些、也沒辦法比較。</p>
+      </div>
+
+      <div class="card">
+        <h4>R4 · 「學生自己決定」一律講 <code>Choice by student</code></h4>
+        <p>產品裡同一個概念有三套機制：<code>PINYIN_PREFERENCES.STUDENT_CHOICE</code>、
+        <code>SPEED_PREFERENCES.STUDENT_CHOICE</code>、以及<strong>被 <code>audioMode</code> 覆寫</strong>。
+        畫面上要講同一句話，並排就看得出來——否則老師不知道為什麼有兩個會變灰、另外兩個不會。</p>
+      </div>
+
+      <div class="card">
+        <h4>R5 · 預覽與設定同一張卡</h4>
+        <p>「設定面板 ＋ 旁邊一個預覽」那兩個<strong>一定</strong>會不一致。
+        現行的實例：純聽力模式下學生根本看不到句子，預覽卻照列五句、照顯示拼音。</p>
+        <p>改成同一張卡：上半是學生螢幕的真實排版，下半就是改它的控制項。<strong>它不可能跟自己矛盾。</strong></p>
+      </div>
+
+      <div class="card">
+        <h4>R6 · 學生端排版照抄，不憑印象</h4>
+        <p>出處是 <code>src/sections/assignments/content/&lt;type&gt;/</code>——<strong>最容易被忘記的一半</strong>。
+        Mirroring 抄出來才知道：拼音在字的<strong>上面</strong>；<code>Choice by student</code> 的翻譯
+        <strong>預設是收起來的</strong>（<code>translationVisibility</code> 初始 <code>[]</code>，要點眼睛）。</p>
+        <div class="callout callout-warn" style="margin-bottom:0">
+          <strong>這條是踩過兩次坑換來的。</strong>「發音嚴格度」和 Vocabulary 的「Examples 開關」
+          都是憑「這樣設計比較合理」推出來的，產品裡根本沒有。
+          <strong>看起來像設定、講得通、老師應該會想要——都不算證據。</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>R7 · 用字講老師關心的事，不講機制</h4>
+        <table style="margin-bottom:0">
+          <thead><tr><th style="width:280px">現行</th><th>改成</th></tr></thead>
+          <tbody>
+            <tr><td><code>Max attempts before auto pass</code></td><td><b>Move on after 3 tries</b>（原標籤講的是機制）</td></tr>
+            <tr><td><code>Translation First</code></td><td><b>Play the translation first</b> ＋ Yes / No（是問句就用 Yes/No 答）</td></tr>
+            <tr><td><code>NO_PINYIN</code> / <code>STUDENT_CHOICE</code></td><td>Shown / Hidden / Choice by student（<b>enum 值永遠不外露</b>）</td></tr>
+            <tr><td><code>Optional — no emails</code></td><td>Mandatory / Optional ＋ 各自寫清楚（原標籤在講副作用）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h4>R8 · 只講例外，不覆述常規</h4>
+        <p>整班就寫 <em>all 5 students</em>，<strong>不列名字</strong>；有人拿不到才把那個人與原因寫出來。
+        聲音的地區標籤只在「不只一組」時出現——只有一組時，標上語言只是把已經選好的專案語言再講一次。</p>
+      </div>
+
+      <div class="card">
+        <h4>R9 · 鎖定、衝突、空白都要給原因</h4>
+        <p>純聽力下兩個下拉<strong>不是安靜地變灰</strong>，是換成一句「這裡沒有東西可以預先決定，由學生自己叫出來」。
+        學生已被別班派走 → 標 <em>In Chinese 3B</em>，而不是單純點不動。
+        對話類內容不能切句 → <strong>在選專案的當下就講</strong>，不是等到下一步才跳警告。</p>
+      </div>
+
+      <div class="card">
+        <h4>R10 · 一個動作從頭到尾同一個字</h4>
+        <p>觸發鈕 <code>Assign to 2 classes</code> → 對話框標題 <code>Assign to 2 classes</code> →
+        送出鈕 <code>Assign</code>。<strong>同一個動作換三個說法，讀的人會以為是三件事。</strong></p>
+      </div>
+
+      <div class="card" style="border-left:4px solid #059669">
+        <h4>R11 · Settings 那一步的固定形狀：工具列 ＋ 畫布，同一張卡</h4>
+        <p><strong>2026-09-14 定案，之後每一種 practice 的 Settings 都用這個面板。</strong>
+        參考實作：<a class="inline" href="v3-content-mirroring/proposal.html?step=3" target="_blank" rel="noopener">v3 Content Mirroring · 第三步</a>。</p>
+        <div class="formula">┌ 工具列（貼在畫布頂上，兩行，明說的不是換行換出來的）
+│   第一行 ＝ 模式 ‖ 畫面上看得到的   Practice mode: Text visible｜Audio only ‖ Pinyin ｜ Translation ｜（Vocabulary 多一格 Image）
+│            （模式只有會整個換掉學生畫面的練習才有；2026-09-15 起併進第一行，不再是畫布上面獨立一塊）
+│   第二行 ＝ 喇叭播什麼          Translation first ｜ Speed ｜ Voice   ‖  Max tries ⓘ
+│   每格：10px 大寫小標在上、28px 控制項在下；組與組之間細直線；沒有眉標、沒有副標
+│
+└ 畫布 ＝ 學生的主欄，照 assignments/content/&lt;type&gt;/ 抄（不是側欄、不是清單），**包在一個視窗裡**：
+      灰色地板 #DFE5EC ＋ 有陰影的框 ＋ 34px 視窗列（左邊一個小螢幕圖示 desktop_windows、中間 Student view；不用三個點，那是 macOS 的）——「視窗裡的視窗＝預覽」，不用文字帶子宣告（2026-09-15）
+      標題列 ＋ 齒輪（Choice by student 幾個就幾顆 toggle，照 settings-panel.js）
+      學生看到的那張卡（Mirroring 是 PRACTICE SENTENCE；Vocabulary 是一疊字卡）
+      Play 鈕：字寫著會怎麼播（English first · Normal · Xiaorou），按下去走產品自己的播放階段
+      「Sentence 1 of N ▾」：在容器裡原地展開全部句子／卡片，點一句換預覽，不是浮出來的選單
+      底部一行：What a student sees · N sentences · K hidden</div>
+        <table style="margin-bottom:0">
+          <thead><tr><th style="width:170px">控制項</th><th>用什麼</th></tr></thead>
+          <tbody>
+            <tr><td>Pinyin · Translation · Image · Translation first</td><td>分段控制項 <code>Shown / Hidden / Choice by student</code>（Image 只有兩段；Translation first 是 <code>Yes / No / Choice by student</code>）</td></tr>
+            <tr><td>Speed</td><td>四顆 chip，前三顆帶 ▶（點一下＝選它＋聽它），<code>Choice by student</code> 不給 ▶</td></tr>
+            <tr><td>Voice</td><td>一顆帶 ▶ 的下拉——這是面板裡唯一長的清單（zh-TW 專案有七個）；打開每列一顆 ▶</td></tr>
+            <tr><td>Max tries</td><td>加減鈕 ＋ 數字，標籤旁 ⓘ 講後果（用完次數那一句就算過＝產品的 auto pass）。<strong>不叫 Move on after N tries</strong>——R7 那個例子作廢；2026-09-16 從 Auto pass 改成 Max tries：小標要講數字是什麼，後果放 tooltip。成績頁的 auto-pass 標不動</td></tr>
+            <tr><td>純聽力</td><td>第一行換成一句 <em>Pinyin and translation are up to the student</em>，畫布上的卡照學生端的隱藏狀態畫</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px"><strong>為什麼是這個形狀。</strong> 使用者的原話是「工作列」：上面是控制項、下面是學生的畫布，那它就該長得像貼在畫布頂上的工具列，
+        不是一張表單卡；「編輯欄位在上、學生預覽在下」，改哪個上面的格子，下面的卡跟著變（R5 的另一種寫法）。
+        兩行是因為六個控制項總寬約 1390px 本來就放不進一行，與其讓它自己換行，不如照它們影響的東西分兩行。
+        <strong>不 sticky</strong>（工具列只有 120px 高，不必貼著頂欄）。<strong>畫布不收合</strong>（2026-09-15 拿掉收合鈕）——它就是這一步的主體。</p>
+        <p class="cap">走過的岔路：三段眉標的 rows 卡（v3 第一版）→ 六列一張卡 → 兩欄三列 → 工具列。前三種都是「表單」，只有最後一種是「工具」。</p>
+      </div>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="nope"><span class="num">3</span> 不能直接套過去的</h2>
+
+      <table>
+        <thead><tr><th style="width:210px">哪一張卡</th><th>為什麼不同</th></tr></thead>
+        <tbody>
+          <tr><td><b>Comprehension Quiz</b></td>
+            <td><strong>它根本沒有設定。</strong> <code>mc-step-two-section.js</code> 是一份題目清單：
+              型別與分類的 chip、逐題刪除、一顆 <code>Edit in Question Bank</code>。
+              那一步叫 <code>Edit &amp; Preview</code> 不叫 Settings——名字本來就講了。
+              R1–R4 對它沒有作用；能用的是 R7 / R8 / R9 / R10。</td></tr>
+          <tr><td><b>Vocabulary Mirroring / Quiz</b></td>
+            <td>一個字是<strong>三張卡</strong>（word / example1 / example2），每張都要錄音評分——
+              例句是<strong>考點不是顯示偏好</strong>。另有 <code>imagePreference</code>（圖片顯不顯示），
+              而「關掉之後學生看到什麼」還沒有畫面可對。Quiz 還多一步 Question Types。</td></tr>
+          <tr><td><b>Sentence Scramble</b><br><b>Sentence Response / Building</b></td>
+            <td><strong>已經是四步了</strong>（<code>Content → Edit Sentences → Settings → Assign</code> /
+              <code>Teaching Points → Question Review → Settings → Assign</code>），
+              所以 v3「多一步」那個改動對它們不適用——它們本來就是 Mirroring 該長的樣子。
+              反過來要處理的是命名不一致（<code>Attempts per sentence</code> /
+              <code>Attempts per question</code>）與 Follow Pattern 自己畫的那份 Audio Mode。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="next"><span class="num">4</span> 每張卡的下一步</h2>
+
+      <p>八張卡對到六個型別，其中兩個各有兩個子型別；設定其實只有<strong>六份</strong>
+      （Response 與 Building 走同一個檔案）。完整盤點在
+      <a class="inline" href="../practice-settings-inventory.md">practice-settings-inventory.md</a>。</p>
+
+      <div class="card" style="border-left:4px solid #059669; margin-bottom:16px">
+        <h4>Content Mirroring／Vocabulary Mirroring 定下來、其他卡可以直接一起更新的（2026-09-16 對照 <code>origin/develop @ 599dd4cb</code> 查過）——逐項規格見 <a class="inline" href="shared-practice-changes.html">共用改動 spec</a></h4>
+        <table style="margin-bottom:8px">
+          <thead><tr><th style="width:230px">定案</th><th>套到哪些卡</th><th style="width:300px">產品現況（為什麼能套）</th></tr></thead>
+          <tbody>
+            <tr><td><b>Practice name 搬到第一步</b>，選了來源就填好，多來源用「 + 」串，改過不再覆蓋</td>
+              <td>Open-ended Questions、Sentence Scramble、Sentence Response／Building、Comprehension Quiz；Vocabulary Quiz 自動得到（跟 Mirroring 共用 <code>step-one-vocabulary.js</code>）</td>
+              <td>名字都在第一步就被 <code>setValue('practiceName', …)</code>（<code>use-question-bank-step.js</code> 從題庫名、<code>use-teaching-point-pool.js</code> 從第一個專案），欄位卻長在第二步（<code>qa-step-two-section</code>、<code>sentence-scramble-preview</code>、<code>follow-pattern-preview</code>；Comprehension Quiz 的在 <code>practice-unified-view.js</code> 的 <code>isMC</code> 分支裡，不在 section 檔）</td></tr>
+            <tr><td><b>R11 工具列 ＋ 視窗預覽</b></td>
+              <td>QA（Practice mode ‖ Pinyin ／ Speed ｜ Voice ‖ Guide phrase language；畫布＝<code>qa/practice-content-list</code>）、Scramble（Pinyin ／ Speed ｜ Voice ‖ Max tries；畫布＝拼句畫面）、Response／Building（Practice mode ‖ Pinyin ｜ Translation ／ Speed ｜ Voice ‖ Max tries；畫布＝<code>follow-pattern/question-card</code>）、Vocabulary Quiz 沒有顯示／音檔設定，它的「設定」是 v6 的 Question Types 一扇窗；Comprehension Quiz 只有題目清單，不適用。六份設定面板收在同一頁（2026-09-23 補上 Content Mirroring、Vocabulary Mirroring、Vocabulary Quiz）：<a class="inline" href="shared-settings-gallery.html">Settings 套到各 practice</a></td>
+              <td>四份設定用的都是同一批共用元件（<code>AudioModeToggleCard</code>、<code>AudioSettingsPanel</code>、<code>MaxAttemptsField</code>）＋ 各自 <code>Object.entries(ENUM).map</code> 的下拉——換成工具列的分段控制項就一起變</td></tr>
+            <tr><td><b>Shown ｜ Hidden ｜ Choice by student</b>（enum 值不動）</td>
+              <td>QA 的 Pinyin、Scramble 的 Pinyin、Response／Building 的 Pinyin／Translation</td>
+              <td>三份現在都<strong>直接印 enum 值</strong>（<code>NO_PINYIN</code>、<code>STUDENT_CHOICE</code>）</td></tr>
+            <tr><td><b>Practice mode：Text visible ｜ Audio only</b></td>
+              <td>QA（共用 <code>AudioModeToggleCard</code>）、Response／Building（自己畫的那份 Audio Mode 卡，<code>follow-pattern-settings.js</code> 165–187 行）</td>
+              <td>同一個 <code>audioMode</code> 布林；Follow Pattern 那份要先確認行為跟共用卡是同一件事</td></tr>
+            <tr><td><b>Max tries ＋ ⓘ</b>（後果只在 tooltip）</td>
+              <td>Scramble 的 <code>Attempts per sentence</code>、Response／Building 的 <code>Attempts per question</code> → 都改成 Max tries，tooltip 的單位各寫 sentence／question</td>
+              <td>同一個 <code>maxAttempts</code>；R7 講的三個名字在這裡收成一個</td></tr>
+            <tr><td><b>Speed chip 試聽、Voice 下拉分組標地區</b></td><td>QA、Scramble、Response／Building、Vocabulary Quiz</td><td>都是 <code>AudioSettingsPanel</code>，改一次五種一起變</td></tr>
+            <tr><td><b>Assign 搬回頁面</b>（三段、diff 名冊、預覽只講例外、單顆頁腳鈕）</td><td>全部八張</td><td><code>step-three.js</code> ＋ <code>assign-practice.js</code> 是八種共用的</td></tr>
+            <tr><td><b>換步驟捲回最上面</b>；<b>Next 灰著要說為什麼</b>（R9）</td><td>全部八張</td><td><code>practice-unified-view.js</code> 一處</td></tr>
+            <tr><td><b>第一步的 ReUI 元件</b>：來源選單 <code>c-dropdown-menu-18</code>、內容 <code>c-frame-6</code> ghost frame</td>
+              <td>QA／Comprehension Quiz 的題庫選單、Scramble／Response／Building 的專案與 teaching point frame</td>
+              <td>Scramble 與 Follow Pattern 已經有 <code>teaching-point-picker.js</code>，v4 的勾選 chip ＋ Add words 是它的版面版</td></tr>
+            <tr><td><b>回第一步不鎖、只生新的</b></td><td>Scramble、Response／Building（第一步 Generate 之後同樣鎖住）</td><td>跟 v4 一樣要後端配合：生成後能不能只補新勾的 teaching point。<strong>要問工程</strong></td></tr>
+            <tr><td><b>審句那一步：眼睛＝隱藏、對話類提醒只在這一步</b></td><td>Scramble 的 Edit Sentences</td><td><code>scramble-sentence-list.js</code>；對話類能不能切合併要先查 <code>canSplitMerge</code> 有沒有用在這裡</td></tr>
+          </tbody>
+        </table>
+        <p class="cap">不能直接套的：v4 第二步「一個字一列＋逐卡 chip」是 Vocabulary 自己的（Quiz 的第二步是 Question Types，不是卡）；Comprehension Quiz 只吃名稱搬家、Assign、捲動三項。</p>
+      </div>
+
+      <table>
+        <thead><tr><th style="width:170px">卡</th><th style="width:110px">狀態</th><th>起手式</th></tr></thead>
+        <tbody>
+          <tr><td><b>Content Mirroring</b></td><td><span class="stat st-done">已交接</span></td>
+            <td><a class="inline" href="v3-content-mirroring/spec.html">v3</a>。判準就是從它來的。交接包 <a class="inline" href="../../../handoff/content-mirroring/">handoff/content-mirroring</a>。</td></tr>
+          <tr><td><b>Open-ended Questions</b><br>（QA）</td><td><span class="stat st-open">建議下一張</span></td>
+            <td><strong>跟 Mirroring 最像</strong>——同樣 <code>Content → Settings &amp; Preview → Assign</code>、
+              同樣用共用的 Audio Mode 卡與 Audio Settings，所以 R1–R5 幾乎照搬。
+              獨有的只有 <code>guidePhraseLanguage</code>（八個設定裡唯一完全沒有對照畫面的）。
+              <strong>要先查：QA 是不是也從課文生東西？</strong>若是，「多一步審題」同樣適用。</td></tr>
+          <tr><td><b>Vocabulary Mirroring</b></td><td><span class="stat st-done">已交接</span></td>
+            <td><a class="inline" href="v4-vocabulary-mirroring/spec.html">v4</a>，交接包 <a class="inline" href="../../../handoff/vocabulary-mirroring/">handoff/vocabulary-mirroring</a>（含 API-CONTRACT，E1–E6 等工程）。以下是登記時的筆記：先去 <code>assignments/content/vocabulary/helpers.js</code> 的
+              <code>parsePracticeCards()</code> 把「一個字＝三張卡」看清楚（R6），再談分段。
+              <strong>更正（2026-09-10）：</strong>這裡原本寫「攤平後 <code>Practice Type</code> 那一步是多餘的，可以順手拿掉」——
+              <strong>產品已經拿掉了</strong>，現行是 <code>Vocabulary → Settings → Assign</code> 三步。
+              v4 登記時另查到：老師設的 Pinyin / Translation / Image，學生端 Vocabulary 一個都沒讀，見
+              <a href="v4-vocabulary-mirroring/spec.html#issues">v4 spec §5</a>。</td></tr>
+          <tr><td><b>Vocabulary Quiz</b></td><td><span class="stat st-open">建議下一張</span></td>
+            <td>第一步跟 Vocabulary Mirroring 是<strong>同一支檔案</strong>，v4 的第一步（多選、A + B、勾 teaching point、Add words、Next 生成、回頭不鎖）做完它就有了。<strong>更正（2026-09-16）：</strong>它的 Settings 步<strong>沒有</strong>顯示／音檔設定（<code>isMultipleChoice</code> 時只有 Practice Name ＋ 題目清單 ＋ Add Question），R11 不適用；要畫的是 Question Types 那一步與題目清單。</td></tr>
+          <tr><td><b>Sentence Scramble</b></td><td><span class="stat st-open">未開始</span></td>
+            <td>步驟形狀已經對了。重點是 R7（<code>Attempts per sentence</code> 統一）與
+              第二步的設定分段。</td></tr>
+          <tr><td><b>Sentence Response</b><br><b>Sentence Building</b></td><td><span class="stat st-open">未開始</span></td>
+            <td>兩張共用一份設定（<code>follow-pattern-settings.js</code>）。
+              它的 Pinyin / Translation 下拉<strong>也是直接 map enum</strong>（R7），
+              而且自己畫了一份 Audio Mode——要先確認行為跟共用卡是不是同一件事。</td></tr>
+          <tr><td><b>Comprehension Quiz</b></td><td><span class="stat st-shut">範圍最小</span></td>
+            <td>沒有設定，只有題目清單。能做的是 R8 / R9 / R10 與版面。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 5 ===================== -->
+      <h2 id="how"><span class="num">5</span> 做法（附錄）</h2>
+
+      <p>每一張卡都走同一套。這一段已經固化成 skill <code>practice-iteration</code>，
+      我在做下一張卡時會自動照著跑，這裡留一份給人看的版本。</p>
+
+      <ol>
+        <li><strong>先 fetch 再讀。</strong> 本地 checkout 會過期——這一版做到一半就發現落後 14 個 commit，
+          期間產品加了八種型別的 icon 對照表。<code>git fetch origin develop</code> 後用
+          <code>git show origin/develop:&lt;path&gt;</code> 讀，不動工作區。</li>
+        <li><strong>兩邊都要讀。</strong> 老師端 <code>src/sections/practice/view/unified/</code>，
+          學生端 <code>src/sections/assignments/content/</code>。<strong>後者最容易被忘記，而它才看得出
+          「這東西是內容還是偏好」。</strong></li>
+        <li><strong>先做基準檔。</strong> 現行畫面的複刻，逐項照抄 <code>sx</code> 與 theme，不做自由發揮。
+          它是對照組——提案一旦跟它並排，改了什麼一目了然。<strong>基準檔不跟著提案改</strong>，
+          否則就沒有對照組了。</li>
+        <li><strong>問題要有出處。</strong> 每一條都要指得到檔案與行為，不是「我覺得」。</li>
+        <li><strong>每個視覺改動都截圖看過。</strong> 讀 CSS 不是驗證。這一版靠截圖抓到的自己的錯包括：
+          class 名稱衝突、缺 disabled 樣式、兩行擠成一行、色票在這個底色上整個糊掉。</li>
+        <li><strong>決策與更正都寫進 log。</strong> 包括寫錯又更正的——
+          「我一度以為 X，實機截圖證明不是」比只留結論有用。</li>
+      </ol>
+
+      <div class="callout callout-tip">
+        <strong>下一步。</strong> 判準在 §2，各卡起手式在 §4。
+        流程與版本管理見 <a class="inline" href="../VERSIONING-WORKFLOW.md">VERSIONING-WORKFLOW.md</a>，
+        設定素材見 <a class="inline" href="../practice-settings-inventory.md">practice-settings-inventory.md</a>。
+      </div>
+
+      <footer>Practice 設計判準 — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = document.querySelectorAll('.sidebar a');
+    const sections = [...links].map(a => document.querySelector(a.getAttribute('href')));
+    const onScroll = () => {
+      let i = 0;
+      sections.forEach((s, n) => { if (s && s.getBoundingClientRect().top <= 80) i = n; });
+      links.forEach((a, n) => a.classList.toggle('active', n === i));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>

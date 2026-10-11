@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — Chinese Modules · Teacher · Word Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #d97706; font-weight: 700; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #d97706; border-left-color: #d97706; font-weight: 700; background: #fffbeb; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #d97706; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #d97706; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+    .p-green { background: #dcfce7; color: #047857; } .p-amber { background: #fef3c7; color: #92400e; } .p-blue { background: #dbeafe; color: #1d4ed8; } .p-purple { background: #f3e8ff; color: #7c3aed; } .p-gray { background: #f1f5f9; color: #475569; } .p-new { background: #e0e7ff; color: #4338ca; }
+    .q { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .q.prio { border-color: #fcd34d; box-shadow: 0 1px 3px rgba(217,119,6,.12); }
+    .q h4 { margin: 0 0 6px; color: #0f172a; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .q .qid { font-size: 11px; font-weight: 700; color: #fff; background: #64748b; padding: 2px 8px; border-radius: 4px; }
+    .q.prio .qid { background: #d97706; }
+    .q .opts { margin: 8px 0 0 4px; }
+    .q .opts li { margin-bottom: 3px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <span class="current">Teacher · Word Game</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#background" class="active">1 · 背景：Word Game 一分鐘</a></li>
+        <li><a href="#problem">2 · 問題</a></li>
+        <li><a href="#rationale">3 · 設計理念</a></li>
+        <li><a href="#page">4 · 提案頁面</a></li>
+        <li><a href="#status">5 · 現況：真 vs placeholder</a></li>
+        <li><a href="#decided">6 · 已決定事項</a></li>
+        <li><a href="#open">7 · 決策紀錄</a></li>
+        <li><a href="#scope">8 · Out of scope / 假設</a></li>
+        <li><a href="#next">9 · 下一步</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Teacher — Word Game</h1>
+        <p class="subtitle">教師端如何把 Word Game 當作<strong>目標式作業</strong>指派給班級、管理與監控各班進度、檢視遊戲關卡內容。</p>
+        <div class="meta">
+          <span>Chinese Modules</span>
+          <span>Role: CLASS_TEACHER</span>
+          <span>Status: 設計已定案（2026-08-05）</span>
+          <span>Scope: 教師端</span>
+          <span>Updated: Aug 5, 2026</span>
+          <span>Prototype: Redesign v7</span>
+        </div>
+      </div>
+
+      <div class="callout callout-tip"><strong>設計已定案（2026-08-05）。</strong> <a class="inline" href="#open">§7</a> 的 Q1–Q11 已全部拍板，結論整併在 <a class="inline" href="#decided">§6 已決定事項</a>；剩下的只有<strong>非設計性的待確認</strong>（telemetry 資料是否存在、內容時程、通知管道）。下一步是 engineer handoff。本文內容對齊 <strong>Redesign v7</strong>（凍結快照 <a class="inline" href="versions/redesign-v7-wordgame.html">versions/redesign-v7-wordgame.html</a>）；設計真相來源為進行中的原型 <a class="inline" href="teacher-wordgame-v10.html">teacher-wordgame-v10.html</a>（2026-09-22：Game Content 改為真實課綱；前一版保留在 <a class="inline" href="teacher-wordgame-v9.html">teacher-wordgame-v9.html</a> 供對照）。</div>
+
+      <!-- 1 -->
+      <h2 id="background"><span class="num">1</span> 背景：Word Game 一分鐘</h2>
+      <p>學生端的 Word Game 是自成一格的中文詞彙遊戲。教師功能要對齊的資料模型如下（現況，來自 <code>dahua-dash</code> WG2）：</p>
+      <table>
+        <thead><tr><th style="width:150px">概念</th><th>現況</th></tr></thead>
+        <tbody>
+          <tr><td><strong>World（世界）</strong></td><td>共 7 個，<code>Level 0–6</code> 對應 HSK 0–6，名稱：渡口 / 石桥 / 龙亭 / 翠阁 / 宝塔 / 仙阁 / 天宫（各有 emoji + 主題色）</td></tr>
+          <tr><td><strong>起始 World</strong></td><td>由 <strong>placement test</strong> 決定（<code>wordGame2Level</code>），學生從不同世界起步</td></tr>
+          <tr><td><strong>Stage（關卡）</strong></td><td>每個 world 內是一條<strong>扁平有序清單</strong>（數量不固定，<strong>不是全域 54 關</strong>）。型別：<span class="pill p-green">TEACHING</span> <span class="pill p-blue">QUIZ</span> <span class="pill" style="background:#fee2e2;color:#b91c1c">BOSS</span></td></tr>
+          <tr><td><strong>通關規則</strong></td><td><code>QUIZ</code> 需答對 3 題（<code>QUIZ_PASS_COUNT</code>）；每關有 <code>passed</code> / <code>unlocked</code> / <code>attempts</code> / <code>bestScore(0–5)</code></td></tr>
+          <tr><td><strong>進度</strong></td><td>每個 world = <code>passed / total</code>；「下一關」= 最低的 unlocked 且未 passed</td></tr>
+          <tr><td><strong>Stars（兩種，勿混淆）</strong></td><td>① 每關 <code>bestScore</code> 0–5（world 內加總＝遊戲內星星）<br>② 頭條大 badge「Stars」＝ <strong>class points（<code>totalPoints</code>）</strong>，是另一套系統</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-tip"><strong>設計決定：</strong>教師端已<strong>移除 leaderboard 與「Earn stars」目標</strong> —— 星星是帳號層級、跨所有練習賺取，不專屬 Word Game（見 <a class="inline" href="#decided">§6</a>）。上表兩種 star 的區分仍是理解遊戲的背景。</div>
+
+      <!-- 2 -->
+      <h2 id="problem"><span class="num">2</span> 問題：教師看不到、也指派不了 Word Game</h2>
+      <ul>
+        <li><strong>無法指派</strong> —— 沒有把 Word Game 當作業派給班級的入口，無法設定可衡量的目標與截止日。</li>
+        <li><strong>看不到進度</strong> —— 不知道班上誰玩到哪個世界、卡在哪、通關狀況。</li>
+        <li><strong>看不到內容</strong> —— 無法逐關檢視遊戲實際教什麼、考什麼，也不知道全班在某一關的通關率。</li>
+      </ul>
+      <p>本 spec 提出一個 <strong>Practice ▸ Word Game</strong> 頁面來解決以上三點。</p>
+
+      <!-- 3 -->
+      <h2 id="rationale"><span class="num">3</span> 設計理念</h2>
+      <p>一句話定位：把老師端的 Word Game 從「看遊戲內容」重新定位為<strong>以到期日為軸心的班級進度指揮台</strong> —— 打開頁面第一眼看到的不是關卡地圖，而是「哪個班、什麼目標、快到期了、多少人達標」。</p>
+
+      <h3>3.1 · 三個核心原則</h3>
+      <div class="grid2">
+        <div class="card">
+          <h4>① 緊迫感優先（Due-date-centric）</h4>
+          <p>左欄作業列表以<strong>作業期間 <code>Start – Due</code></strong> 領頭（v7 起顯示整段期間，非單一到期日），並用一致的顏色語言貫穿整列：<span class="pill" style="background:#fee2e2;color:#b91c1c">逾期／今天 紅</span> <span class="pill p-amber">快到期 琥珀</span> <span class="pill p-gray">之後 灰</span>。<strong>Reached（X / total）數字的顏色跟著日期跑</strong> —— 顏色本身就是緊迫程度，掃一眼就知道先追誰；全員達標則跳出綠色「All complete」作為正向終點。</p>
+        </div>
+        <div class="card">
+          <h4>② 對齊即資訊（Structure as information）</h4>
+          <p>三張表（作業列表、展開的落後名單、學生名冊）共用<strong>同一套 5 欄 grid</strong>，Level·Stage 合併成與 Goal 同寬、膠囊統一尺寸。視覺上的「對齊」不是美觀，而是讓老師用<strong>同一個心智模型</strong>橫跨不同表讀資料。</p>
+        </div>
+        <div class="card">
+          <h4>③ 克制、跟隨系統（Restraint）</h4>
+          <p>沿用 dashboard 設計系統（Plus Jakarta Sans + emerald 綠、同組卡片圓角／陰影）。全頁英文、拿掉奇幻世界名詞（渡口…）改用 <code>Level N</code> + 教學內容名；拿掉 leaderboard／星星（帳號層級、不專屬 Word Game），避免功能混淆。</p>
+        </div>
+        <div class="card">
+          <h4>一句總結</h4>
+          <p><strong>用顏色傳達緊迫、用對齊傳達關係、用克制跟隨既有系統</strong> —— 讓老師在一屏內完成「誰快遲交、誰還沒達標、要不要指派新的」判斷。</p>
+        </div>
+      </div>
+
+      <h3>3.2 · 關鍵取捨</h3>
+      <table>
+        <thead><tr><th style="width:300px">決策</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td><strong>「Behind 落後數」→「Reached 達標數」</strong></td><td>正向框架；老師更關心「還差誰達標」而非「有多少人落後」。</td></tr>
+          <tr><td><strong>學生名冊改成班級複選下拉</strong>（與 Assign 對話框同結構）</td><td>元件複用、心智一致；預設不選、按需展開，面板保持精簡不爆長。</td></tr>
+          <tr><td><strong>下拉在面板內行內展開</strong>（非浮層）</td><td>卡片 <code>overflow:hidden</code> 會裁切浮層，行內展開更穩健、不被裁切。</td></tr>
+          <tr><td><strong>作業＝跨班到期列表；學生名冊獨立</strong></td><td>把兩個問題分開：「班級層級的到期管理」vs「個別學生的位置」。<strong>v7 起拆成兩個獨立面板</strong>（Word Game Assignments / Student Levels），各有標題與自己的控制項。</td></tr>
+          <tr><td><strong>日期改用日曆區間選擇器</strong>（取代兩個日期輸入框）<span class="pill p-new">v7</span></td><td>「一班同一時間只有一個作業」這條規則要能<strong>被看見</strong>：日曆把該班已被占用的日子直接畫成不可選，老師是「挑一段空檔」，而不是填完日期才被系統退件。</td></tr>
+          <tr><td><strong>編輯／刪除收進 Manage 面板</strong><span class="pill p-new">v7</span></td><td>主面板專心呈現「現在怎麼樣」；管理動作（改目標／改期間／移除）集中在一個明確入口，避免每列都掛一排小按鈕。</td></tr>
+          <tr><td><strong>Level 2–6 標為 Coming soon</strong><span class="pill p-new">v7</span></td><td>真實內容只有 L0 / L1 齊備。與其展示程序生成的假關卡讓老師誤以為可用，不如誠實鎖住並標示狀態。</td></tr>
+          <tr><td><strong>移除關卡頁 Insights 三榜</strong><span class="pill p-new">v7</span></td><td>三個指標全部依賴尚不存在的 telemetry，留在頁面上等同承諾一個做不到的功能；待後端有資料再議。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 4 -->
+      <h2 id="page"><span class="num">4</span> 提案頁面：Practice ▸ Word Game</h2>
+      <p>導覽位置：側邊欄 <strong>Practice ▸ Word Game</strong>。頁面為<strong>兩欄</strong>（左欄自 v7 起為<strong>兩個堆疊面板</strong>：Word Game Assignments + Student Levels），頂部一顆 <code>Assign Word Game</code> 按鈕。</p>
+      <div class="formula">┌─ Topbar ───────────────────────── [ + Assign Word Game ] ─┐
+
+  LEFT ① panel — Word Game Assignments      [ N assignments ] [ ⚙ Manage ]
+    • 跨班、依到期日排序
+        Dates（Start – Due）· 班徽 · Goal · Reached X / total
+        （數字顏色跟著到期日；全員達標 = All complete）
+        ▸ 展開一列 = 未達標學生名單
+                    （min/day 目標 → 本週缺幾天）
+
+  LEFT ② panel — Student Levels
+    • 班級複選下拉（含 All students）+ 排序鈕
+    • 名冊：Student · Class · Level · Stage · Content（目前關卡名）
+
+  RIGHT panel — Game Content                          [ 7 worlds ]
+    • 7 個 world 列：Level N · 教學內容名 · HSK N · M stages（綠→紅）
+    • Level 0 / 1 → 可點進關卡頁（搜尋 / 型別 filter / 分頁 12 關）
+    • Level 2–6 → 🔒 Coming soon（不可點）
+└──────────────────────────────────────────────────────────┘</div>
+
+      <h3>4.1 · 指派流程（Assign Word Game）</h3>
+      <p>點 <code>Assign Word Game</code> 開啟對話框：</p>
+      <table>
+        <thead><tr><th style="width:140px">欄位</th><th>內容</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Assign to</strong></td><td>班級<strong>複選下拉</strong>（勾選 4A / 3B / 5C / 6A，含人數）。下方常駐一條規則說明：<em>One assignment per class per time period</em>。</td></tr>
+          <tr><td><strong>When</strong> <span class="pill p-new">v7</span></td><td><strong>可收合的日曆區間選擇器</strong>（取代原本的 Start / Due 輸入框）：觸發鈕顯示 <code>Start</code> / <code>End</code> 兩格，展開為<strong>並排兩個月</strong>的月曆（可前後翻月）。點第一下設起日、第二下設迄日。<br>· <strong>未選班級前整個日曆是 disabled</strong> —— 要先知道是哪幾班，才知道哪些日子被占用。<br>· 被選班級<strong>已有作業的日期畫成不可選</strong>；若圈選的區間中間跨過已占用的日子，直接拒絕並提示「That range overlaps a booked period」。</td></tr>
+          <tr><td><strong>Goal Type</strong></td><td>三型：<code>Complete N stages</code>（做幾關）、<code>Reach a level / stage</code>（大關 Level + 可選具體小關 Stage）、<code>Play a set time each day</code>（<strong>每天玩幾分鐘</strong>；快速預設 10 / 15 / 20 / 30 + 自訂）。<span class="pill p-gray">已移除 Earn stars</span></td></tr>
+          <tr><td><strong>Days</strong>（僅 min/day 目標）<span class="pill p-new">v7</span></td><td>分鐘目標多一組<strong>星期選擇</strong>：預設鈕 <code>Every day</code> / <code>Weekdays</code> / <code>Weekend</code>，下方 7 個星期 chip 可自由勾選（自訂組合，至少一天）。所選天數 = 該週<strong>應達成天數</strong>（<code>reqDays</code>），寫進作業並用於「本週缺幾天」的判定。</td></tr>
+        </tbody>
+      </table>
+      <p>指派<strong>一律是目標式</strong>（已移除「Just play」純遊玩模式，見 <a class="inline" href="#decided">§6</a>）。送出後 toast 確認。已指派的 Word Game（含 <code>Play min/day</code>）會同步出現在 <strong>Dashboard ▸ Active Assignments</strong>。</p>
+      <div class="callout callout-info"><strong>一班一期間（v7 新規則）。</strong> 同一個班在同一段時間只會有<strong>一個</strong> Word Game 作業；要再派下一個，就往後排一段沒被占用的期間。這條規則由日曆的「不可選日期」<strong>在輸入當下就執行</strong>，而不是送出後才報錯。<strong>規則本身待業務確認</strong>（見 <a class="inline" href="#open">§7</a> Q5）。</div>
+
+      <h4>編輯與刪除：Manage 面板 <span class="pill p-new">v7</span></h4>
+      <p>Word Game Assignments 面板標題右側有一顆 <code>Manage</code> 按鈕，開啟 <strong>Manage Assignments</strong> 對話框：每個進行中的作業一張卡片，顯示<strong>班級 · 期間 + 天數</strong>（如 <code>Jul 24 &ndash; Jul 29 &middot; 6d</code>），以及三顆膠囊 <code>目標型別</code> / <code>目標值</code> / <code>N students</code>。每張卡片兩個動作：</p>
+      <ul>
+        <li><strong>Edit</strong> —— 關閉此框、開回 Assign 對話框並<strong>預填該作業</strong>（標題變成 <em>Edit assignment</em>），送出後<strong>就地更新該筆</strong>而非新增。日曆的占用檢查會<strong>排除作業自己</strong>，所以原本的期間仍可選。</li>
+        <li><strong>Delete</strong> —— 移除該作業，主面板列表與標題計數即時更新。</li>
+      </ul>
+      <p>刻意<strong>不放</strong>「New」（新增一律走頁面上方的主按鈕，維持單一入口）與「End early」（提早結束是否要成為獨立行為未定，見 <a class="inline" href="#open">§7</a> Q8）。編輯與刪除都直接作用在<strong>目前的作業資料</strong>上，沒有另一份草稿狀態。</p>
+
+      <h3>4.2 · 左欄：兩個面板 <span class="pill p-new">v7</span></h3>
+      <p>v7 把原本擠在一個面板裡的兩件事拆開，各自成為一個有標題的面板。</p>
+
+      <h4>① Word Game Assignments <span class="pill p-gray">標題列：N assignments · Manage</span></h4>
+      <p>以<strong>到期日為軸心</strong>的<strong>跨班作業清單</strong>（非一次一班），表頭四欄 <code>Dates · Class · Goal · Reached</code>：</p>
+      <ol>
+        <li><strong>每條作業一列</strong> —— <code>Start – Due 期間</code>（依急迫上色：逾期 / 今天紅、快到期琥珀、之後灰）· 班徽 · <strong>Goal</strong>（<code>Reach Level N · 內容名</code> / <code>Complete N stages</code> / <code>Play N min / day · 天數</code>）· <strong><code>Reached X / total</code></strong>（達標人數；<strong>數字顏色跟著到期日跑</strong>，全員達標顯示綠色「All complete」）。</li>
+        <li><strong>展開一列 → 未達標學生名單</strong>：Reach / Complete 目標顯示 <code>Student · Level · Stage · To goal（還差幾關）</code>；<code>Play min/day</code> 目標改為<strong>本週缺勤追蹤</strong>（見下）。全員達標顯示「Everyone reached this goal」。</li>
+        <li><strong>Manage 按鈕</strong> → 編輯 / 刪除作業（見 <a class="inline" href="#page">§4.1</a>）。</li>
+      </ol>
+      <div class="callout callout-info"><strong>min/day 目標的展開視圖改版（v7）。</strong> v6 顯示「今天玩幾分 vs 目標」；v7 改成<strong>以週為單位</strong>：標頭 <code>This week · 週區間 · Goal N days</code>，每列 <code>Student · 缺 N days</code>（把「該做幾天」與「缺幾天」對起來，而不是只看今天）。週區間由作業到期日所在的那一週推算，並依 Days 設定（每天 / 平日 / 週末）縮到對應的起訖。<strong>「哪一週」的定義待確認</strong>（見 <a class="inline" href="#open">§7</a> Q10）。</div>
+
+      <h4>② Student Levels</h4>
+      <p>獨立面板，頂部一個<strong>班級複選下拉</strong>（與 Assign 對話框同結構，另含一個 <strong>All students</strong> 全選項與人數）＋一顆<strong>排序切換鈕</strong>（進度 <strong>低→高 / 高→低</strong>）。預設不選任何班級，顯示提示文字。</p>
+      <p>選定後列出名冊，四欄：<code>Student</code> / <code>Class</code> / <code>Level · Stage</code>（合併成一欄）/ <code>Content</code> —— 其中 <strong>Content</strong> 是該生<strong>目前所在關卡的名稱</strong>（不只給數字，直接告訴老師他卡在教什麼）。</p>
+      <div class="callout callout-tip"><strong>定位：看班級進度與到期，不是排行榜。</strong> 老師掃一眼顏色就知道<strong>哪條快遲交、誰還沒達標</strong>要追。已移除 leaderboard、星星、以及曾試做的 Class progress 分布（見 <a class="inline" href="#decided">§6</a>）。</div>
+
+      <h3>4.3 · 右欄：Game Content</h3>
+      <p>7 個 world 列，每列：<code>Level N</code> + <strong>教學內容名</strong>（如 Pinyin &amp; Tone Challenge / Vocabulary）+ <code>HSK N · M stages</code>（依等級<strong>綠→紅</strong>上色）。</p>
+      <div class="callout callout-warn"><strong>Level 2–6 目前鎖住（v7）。</strong> 只有 <strong>Level 0 / 1</strong> 可點進關卡頁；<code>Level 2</code> 以上顯示 <span class="pill p-gray">🔒 Coming soon</span> 且不可點 —— 這兩級以外的關卡內容尚未齊備（原型為程序生成）。內容備妥後逐級解鎖。指派對話框的 Level 下拉<strong>目前仍列出 0–6</strong>，是否要跟著鎖見 <a class="inline" href="#open">§7</a> Q11。</div>
+      <p>點可用的世界 → <strong>進到獨立的「關卡頁」</strong>（非彈窗）：</p>
+      <ul>
+        <li><strong>搜尋框</strong>：依標題或詞 / 拼音即時篩。</li>
+        <li><strong>型別 filter</strong>：All / Teaching / Quiz / Boss（帶即時數量）。</li>
+        <li><strong>分頁</strong>：每頁 12 關，底部 <code>1–12 of N</code> + 頁碼。</li>
+        <li><strong>關卡卡片</strong>：關號 + 型別 + 標題 + 詞 / 題數；<code>TEACHING</code> 顯示詞卡（漢字 / 拼音）、<code>QUIZ</code> / <code>BOSS</code> 顯示題目列。</li>
+      </ul>
+      <div class="callout callout-tip"><strong>教師只檢視、不編輯</strong>遊戲內容（內容於他處建立）。此欄用途是「派作業前先看懂遊戲在教什麼、考什麼」。</div>
+
+      <h4>Insights 三榜：v7 已移除 <span class="pill p-gray">v6 有 / v7 無</span></h4>
+      <p>v6 的關卡頁上方有一個可收合的 <strong>Insights</strong> 面板（Most time spent / Hardest quizzes / Most drop-offs 三個並列排行榜）。<strong>v7 整個拿掉</strong>：三個指標都需要後端 telemetry（平均停留時間、平均通關嘗試、離開 / 放棄事件），目前一律是假資料，放在頁面上等於承諾一個還做不到的功能。待 telemetry 具備後再重新提案。</p>
+
+      <h3>4.4 · 連帶調整：Students 頁 <span class="pill p-new">v7</span></h3>
+      <p>同一版一併調整了 <a class="inline" href="teacher-students.html">Teacher ▸ Students</a>（與 Word Game 共用同一組進度資料）：</p>
+      <ul>
+        <li>學生詳情的區塊更名為 <strong>「Word Game and Achievement」</strong>（Level / Stage / Stars 三格 + 成就）。</li>
+        <li>移除 <strong>Manage 按鈕</strong>、<strong>HSK 等級篩選</strong>、<strong>單一學生的編輯</strong> —— 這頁回到「查看」定位，指派與管理一律在 Word Game 頁做。保留搜尋與 All classes 篩選。</li>
+      </ul>
+      <p>舊版（含 Manage + HSK 篩選）保存在 <a class="inline" href="versions/redesign-v0-students.html">versions/redesign-v0-students.html</a>。</p>
+
+      <!-- 5 -->
+      <h2 id="status"><span class="num">5</span> 現況：真 vs placeholder</h2>
+      <p>原型為凸顯互動而用假資料，討論時請區分：</p>
+      <table>
+        <thead><tr><th>項目</th><th style="width:120px">狀態</th></tr></thead>
+        <tbody>
+          <tr><td>兩欄版面（左欄兩面板）、指派對話框 + 日曆區間、Manage 編輯 / 刪除、關卡頁（搜尋 / filter / 分頁）</td><td><span class="pill p-green">設計已定</span></td></tr>
+          <tr><td>「誰未達標」判定（reach level / complete N stages 對每生 world+進度即時計算）</td><td><span class="pill p-green">真實推算</span></td></tr>
+          <tr><td>World 0 關卡結構（母音對 + 聲調組）</td><td><span class="pill p-green">對齊真實 hsk0</span></td></tr>
+          <tr><td>World 1–6 的關卡、BOSS 關</td><td><span class="pill p-amber">程序生成假關卡</span></td></tr>
+          <tr><td>教學內容名（L0 Pinyin &amp; Tone、L1 Vocabulary 真實；L2–L6）</td><td><span class="pill p-amber">L2–L6 假資料</span></td></tr>
+          <tr><td>各班名冊、作業（目標 / 到期）</td><td><span class="pill p-amber">假資料</span></td></tr>
+          <tr><td>日曆的「已占用日期」（由現有作業的期間推得，含編輯時排除自己）</td><td><span class="pill p-green">真實推算</span></td></tr>
+          <tr><td>Level 2–6 鎖住 Coming soon（內容尚未齊備）</td><td><span class="pill p-amber">內容待補</span></td></tr>
+          <tr><td>Insights 三榜指標（time / attempts / drop-off）</td><td><span class="pill p-gray">v7 已移除</span></td></tr>
+          <tr><td><code>Play min/day</code> 的「本週達成幾天 / 缺幾天」與達標判定</td><td><span class="pill p-amber">假資料（待每日時長 API）</span></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 6 -->
+      <h2 id="decided"><span class="num">6</span> 已決定事項</h2>
+      <p>暫定基準，除非明確推翻。</p>
+      <ol>
+        <li><strong>指派一律目標式</strong>：移除「Just play」純遊玩模式。</li>
+        <li><strong>目標三型</strong>：<code>Complete N stages</code>（做幾關）/ <code>Reach a level · stage</code>（大關 Level + 可選具體小關 Stage）/ <code>Play a set time each day</code>（每天玩幾分鐘；預設 10 / 15 / 20 / 30 + 自訂）。<strong>已移除 Earn stars 目標</strong>。</li>
+        <li><strong>達標＝布林，不算百分比</strong>（2026-08-05 拍板）：<code>Reach Level N</code> 的達標定義就是該生 <code>world ≥ N</code>（選到具體 Stage K 時為 <code>world &gt; N</code>，或 <code>world = N</code> 且 <code>done ≥ K</code>）。<strong>沒有「單一進度 %」這個概念</strong>，UI 不畫個人進度條，API 只回 <code>reached: Boolean</code>；班級層級才有 <code>Reached X / total</code>。</li>
+        <li><strong>Reach 是絕對、Complete 是相對</strong>（2026-08-05 拍板）：<code>Reach a level / stage</code> 為<strong>絕對目標</strong>（到達該等級即可，已在更高等級的學生視為已達標）；<code>Complete N stages</code> 為<strong>相對目標</strong> —— 從<strong>指派當下</strong>起再清 N 關。<br>⚠️ 因此後端必須在指派成立時，對班上每位學生<strong>存一份 baseline（當時已清關數）</strong>；達標 = <code>目前已清關數 − baseline ≥ N</code>。指派後才加入班級的學生，於加入當下補記 baseline。</li>
+        <li><strong>移除 leaderboard 與星星</strong>：星星（<code>totalPoints</code>）是<strong>帳號層級、跨所有練習</strong>賺取，不專屬 Word Game，應放獨立 Leaderboard 頁。此頁左欄＝<strong>班級進度</strong>，非排行。</li>
+        <li><strong>左欄＝兩個面板</strong>（v7）：<strong>①Word Game Assignments</strong> —— 跨班、依到期日排序，每條顯示 <code>Start – Due</code> 期間與 <code>Reached X / total</code>（數字跟到期日上色、全員達標 All complete），展開列出未達標學生；<strong>②Student Levels</strong> —— 班級複選下拉（含 All students）+ 可排序名冊，欄位到 <code>Content</code>（目前關卡名）。（取代早期的班級切換條 / by-class 卡片 / leaderboard / Class progress 分布。）</li>
+        <li><strong>min/day 目標以「週」結算</strong>（v7 + 2026-08-05 補完）：指派時選 Days（每天 / 平日 / 週末 / 自訂），展開列顯示 <code>This week · 區間 · Goal N days</code> 與每生<strong>缺幾天</strong>（v6 的「今天差幾分」作廢）。<br>· <strong>逐週結算，週一為一週之始（Mon–Sun）</strong>：作業橫跨幾週，每一週都要達成所選天數。<br>· <strong>單日達成 = 當天累計滿 N 分鐘（可分次累加）</strong>，不需單次連續、不允許隔天補玩。<br>· 一天的界線以<strong>班級所在時區</strong>的自然日為準。</li>
+        <li><strong>一班同一時間只有一個作業</strong>（v7，2026-08-05 確認為硬規則）：日期改用<strong>日曆區間選擇器</strong>，被選班級已占用的日子不可選、跨越占用的區間直接拒絕；未選班級前日曆不可用。期間<strong>可以相鄰</strong>（前一個結束日的隔天即可開始）；日曆只開放今天之後，故已結束的作業不影響選日。<strong>後端必須同步驗證</strong>，不能只靠 UI 擋。</li>
+        <li><strong>作業可編輯 / 刪除，入口為 Manage 面板</strong>（v7）：卡片式清單 + Edit（預填 Assign 對話框、就地更新）/ Delete。<strong>不做</strong>「New」（走主按鈕）與<strong>「End early」</strong>（2026-08-05 拍板：要提早結束就用 Edit 把 End date 改到今天，不另立狀態）。<strong>刪除為軟刪</strong> —— 標記 deleted、畫面不再顯示、日曆不再占用，但資料保留供日後回顧與誤刪查覆。改目標值後<strong>直接以新目標重算達標</strong>，Phase 1 不保留修改紀錄。</li>
+        <li><strong>Level 2–6 暫時鎖住</strong>（v7）：右欄顯示 🔒 Coming soon 不可點，只有 L0 / L1 可進關卡頁，直到內容齊備。<strong>指派對話框的 Level 下拉一併鎖住，只能選 L0 / L1</strong>（2026-08-05 拍板）—— 不允許指派到尚未開放的等級。內容備妥後逐級解鎖。</li>
+        <li><strong>關卡內容 = 獨立關卡頁</strong>：點世界進到全頁（搜尋 / 型別 filter / 每頁 12 關），非彈窗、非釘選 viewer。關卡扁平（不做 unit 分組）。</li>
+        <li><strong>等級語言：綠→紅</strong>（Level 0 綠 … Level 6 紅），用於 <code>HSK · stages</code> 文字色與班級進度視覺。世界用 <code>Level N</code> + 教學內容名顯示（不再用渡口 / 石桥等遊戲名）。</li>
+        <li><strong>關卡頁不放 Insights</strong>（v7 移除 v6 的三個排行榜）：Most time spent / Hardest quizzes / Most drop-offs 全都依賴尚不存在的 telemetry，等後端有資料再重新提案。</li>
+        <li><strong>可提醒未達標學生</strong>（2026-08-05 拍板）：作業展開的未達標名單可直接發提醒，<strong>比照 Dashboard「提醒未繳交」</strong>的既有通知機制與文案結構（沿用同一套通知管道，不另做一套）。</li>
+        <li><strong>不做單一學生的世界別細節</strong>（2026-08-05 拍板）：教師要看個別學生，走 <a class="inline" href="teacher-students.html">Students</a> 頁的「Word Game and Achievement」。Word Game 頁維持<strong>班級層級</strong>，避免兩頁功能重疊。</li>
+        <li><strong>時間型目標進 Dashboard</strong>：Word Game 作業（含 <code>Play min/day</code>）出現在 Dashboard ▸ Active Assignments（Word Game 標籤 + done/total 達標框架）。</li>
+      </ol>
+
+      <!-- 7 -->
+      <h2 id="open"><span class="num">7</span> 決策紀錄（Q1–Q11 已全數拍板）</h2>
+      <div class="callout callout-tip"><strong>2026-08-05 決策會結論。</strong> 原本的 11 題全部有答案，細節已整併進 <a class="inline" href="#decided">§6</a>。本節保留每題的問題與結論，供日後回溯「為什麼是這樣」。真正還沒閉合的只有下方<a class="inline" href="#pending">三項非設計性確認</a>。</div>
+
+      <div class="q"><h4><span class="qid">Q1</span> <span class="pill p-green">已決定</span> 目標語意</h4>
+        <p>採 v5 定義：<code>Reach a level / stage</code>（選 Level 大關 + 可選具體 Stage 小關）與 <code>Complete N stages</code>（清關數）。早先「Reach stage 20」跨世界編號的歧義不再存在。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q2</span> <span class="pill p-green">已決定</span> 目標「完成」如何判定？</h4>
+        <p><code>Reach Level N</code> 的達標定義 = 該生 <strong><code>world ≥ N</code></strong>（若指定到 Stage K，則 <code>world &gt; N</code> 或 <code>world = N</code> 且 <code>done ≥ K</code>）。<br><strong>「Earn N stars」目標與「單一進度 %」都已不存在</strong> —— 個人層級只有<strong>達標 / 未達標</strong>兩態，班級層級才有 <code>Reached X / total</code>。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q3</span> <span class="pill p-green">已決定</span> 目標要「絕對」還是「相對於起點」？</h4>
+        <p><strong>兩種目標各走一邊：</strong></p>
+        <ul class="opts">
+          <li><code>Reach a level / stage</code> = <strong>絕對</strong>。已在更高等級的學生視為已達標（這是刻意的：此目標用來確保「全班至少到某個水準」）。</li>
+          <li><code>Complete N stages</code> = <strong>相對於指派當下</strong>。用來確保「每個人都要再往前推進」，不因起點高低而失效。</li>
+        </ul>
+        <p><strong>後端影響：</strong>指派成立時要對班上每位學生存一份 <code>baseline</code>（當時已清關數），達標 = <code>目前已清關數 − baseline ≥ N</code>；指派後才入班的學生於入班當下補記 baseline。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q4</span> <span class="pill p-gray">已解決</span> 右欄 cohort 統計</h4>
+        <p>原設計右欄關卡會顯示全校通關 cohort + 星等分布。<strong>v5 已移除</strong>：右欄回歸純「檢視遊戲內容」，班級進度改由左欄的 per-assignment 落後名單負責。若日後仍想在關卡層級看班況，再另議。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q5</span> <span class="pill p-green">已決定</span> 一個班可否有多個並存的作業？</h4>
+        <p><strong>不可以 —— 一班同一時間只有一個 Word Game 作業</strong>，這是硬規則。日曆把該班已占用的日期畫成不可選、跨越占用的區間直接拒絕，<strong>後端也必須驗證</strong>。期間<strong>可以相鄰</strong>（前一個結束日的隔天即可開始）；日曆只開放今天之後，故已結束的作業不影響選日。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q6</span> <span class="pill p-gray">已解決</span> 星星該用哪一種？</h4>
+        <p>此頁的 leaderboard 與「Earn stars」目標<strong>已整個移除</strong>（星星是帳號層級、跨所有練習賺取，不專屬 Word Game）。故不再需要在此頁選 star 定義。若之後要做<strong>全站 Leaderboard</strong> 頁，再於該頁決定 <code>bestScore 加總</code> vs <code>totalPoints</code>。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q7</span> <span class="pill p-green">已決定</span> 是否支援「催未達標學生」？</h4>
+        <p><strong>要做。</strong> 作業展開的未達標名單可直接發提醒，<strong>比照 Dashboard 的「提醒未繳交」</strong>：沿用同一套通知管道與文案結構，不另做一套。<span class="pill p-amber">原型尚未畫此按鈕</span></p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q8</span> <span class="pill p-green">已決定</span> 作業可否編輯 / 刪除 / 提早結束？</h4>
+        <ul class="opts">
+          <li><strong>編輯、刪除：可以</strong>，入口為 Manage 面板。</li>
+          <li><strong>提早結束：不做獨立行為</strong> —— 用 Edit 把 End date 改到今天即可，不另立狀態欄位（也讓日曆占用邏輯自然一致）。</li>
+          <li><strong>刪除為軟刪</strong>：標記 deleted、畫面不顯示、日曆不占用，資料保留供回顧與誤刪查覆。</li>
+          <li><strong>改目標值</strong>：直接以新目標重算達標，Phase 1 不保留修改紀錄。</li>
+        </ul>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q9</span> <span class="pill p-green">已決定</span> 教師是否需要看單一學生的世界別細節？</h4>
+        <p><strong>不做。</strong> 要看個別學生走 <a class="inline" href="teacher-students.html">Students</a> 頁的「Word Game and Achievement」；Word Game 頁維持<strong>班級層級</strong>，避免兩頁功能重疊。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q10</span> <span class="pill p-green">已決定</span> <code>Play min/day</code> 的結算定義</h4>
+        <ul class="opts">
+          <li><strong>逐週結算，週一為一週之始（Mon–Sun）</strong>：作業橫跨幾週，每一週都要達成所選天數。</li>
+          <li><strong>單日達成 = 當天累計滿 N 分鐘，可分次累加</strong>；不要求單次連續、<strong>不允許隔天補玩</strong>。</li>
+          <li>一天的界線以<strong>班級所在時區</strong>的自然日為準。</li>
+        </ul>
+        <p>資料來源仍待後端確認（見下方待確認 ①）。</p>
+      </div>
+
+      <div class="q"><h4><span class="qid">Q11</span> <span class="pill p-green">已決定</span> Level 2–6 鎖住期間的行為</h4>
+        <p><strong>指派對話框的 Level 下拉一併鎖住，只能選 L0 / L1</strong> —— 不允許指派到尚未開放的等級。右欄維持 🔒 Coming soon。內容備妥後<strong>逐級</strong>解鎖。<span class="pill p-amber">原型的下拉目前仍列出 0–6</span></p>
+      </div>
+
+      <h3 id="pending">尚待確認（非設計決策）</h3>
+      <ol>
+        <li><strong>每日遊玩時長的資料是否存在？</strong> <code>Play min/day</code> 需要「每生每日 Word Game 遊玩分鐘數」。這是目前<strong>完全沒有</strong>的 telemetry，需後端評估新增成本 —— 這一項的答案決定 Phase 2 的時程。</li>
+        <li><strong>Level 2–6 的內容時程</strong>：由誰、依什麼條件判定「某一級內容齊備」？解鎖節奏與學生端是否必須一致？</li>
+        <li><strong>提醒的通知管道</strong>：確認 Word Game 作業可直接掛在 Dashboard 現有的「提醒未繳交」通知機制上（管道、頻率限制、文案模板）。</li>
+      </ol>
+
+      <h3>原型待修正（依本次決策）</h3>
+      <div class="callout callout-warn">下列是 v7 / v8 原型<strong>與決策不一致</strong>之處，交接前要先改掉，否則工程師會照著錯的實作：
+        <ol style="margin-top:8px">
+          <li><code>Complete N stages</code> 目前用<strong>跨世界累計前綴和（絕對值）</strong>算 <code>To goal</code> → 應改為<strong>相對 baseline</strong>。</li>
+          <li>Assign 對話框的 Level 下拉仍可選 <strong>L2–L6</strong> → 應只留 L0 / L1。</li>
+          <li>未達標名單<strong>沒有提醒按鈕</strong> → 需補上（比照 Dashboard）。</li>
+          <li>min/day 展開只呈現<strong>到期日那一週</strong> → 應為<strong>逐週（Mon–Sun）</strong>結算。</li>
+        </ol>
+      </div>
+
+      <!-- 8 -->
+      <h2 id="scope"><span class="num">8</span> Out of scope / 假設</h2>
+      <ul>
+        <li><strong>不含</strong>學生遊戲玩法、關卡設計、計分演算法的變更 —— 以現況 WG2 為準。</li>
+        <li><strong>不含</strong>內容編輯（教師只檢視關卡）。</li>
+        <li>假設 world/stage/bestScore/placement 等資料可經 API（<code>getWordGame2StageMap</code> 等）取得；教師端 cohort 需能對<strong>一整班/多班</strong>批次查詢每生進度（<strong>API 能力待確認</strong>）。</li>
+      </ul>
+
+      <!-- 9 -->
+      <h2 id="next"><span class="num">9</span> 下一步</h2>
+      <ol>
+        <li><strong>修正原型</strong>（<a class="inline" href="#open">§7 原型待修正</a> 四項）—— 相對 baseline、鎖 Level 下拉、加提醒按鈕、逐週結算。</li>
+        <li><strong>後端確認每日遊玩時長 telemetry</strong> 是否存在 / 新增成本 —— 決定 <code>Play min/day</code> 落在哪一期。</li>
+        <li><strong>產出 engineer handoff</strong>（<code>handoff/teacher-wordgame/</code>），比照 <code>handoff/teacher-dashboard/</code>，但拆成三份：<code>HANDOFF.md</code>（前端設計）、<code>API-CONTRACT.md</code>（GraphQL 合約，前後端共用）、<code>BACKEND.md</code>（資料模型、baseline / 達標判定、重疊驗證、telemetry）。</li>
+        <li><strong>分期發包</strong>：<span class="pill p-green">Phase 1</span> Complete / Reach 兩種目標 + Manage + Student Levels + 提醒（資料已存在）→ <span class="pill p-amber">Phase 2</span> Play min/day（等 telemetry）→ <span class="pill p-gray">Phase 3</span> Insights 三榜（等 telemetry 再重新提案）。Level 2–6 解鎖為<strong>內容線</strong>，不擋任何一期。</li>
+      </ol>
+
+      <div class="callout callout-warn"><strong>Draft v5 · 設計定案版。</strong> 教師端 Word Game 提案，內容對齊 <strong>Redesign v7</strong> + <strong>2026-08-05 決策會</strong>（Q1–Q11 全數拍板）（2026-08-05；凍結快照 <a class="inline" href="versions/redesign-v7-wordgame.html">versions/redesign-v7-wordgame.html</a>，進行中的原型為 <a class="inline" href="teacher-wordgame-v10.html">teacher-wordgame-v10.html</a>；前一版 <a class="inline" href="teacher-wordgame-v9.html">teacher-wordgame-v9.html</a> 保留供對照）。<br><strong>v6 → v7 主要差異：</strong>左欄拆成兩個面板（Assignments / Student Levels）· 指派日期改日曆區間 + 一班一期間 · min/day 加 Days 並改為週結算 · 新增 Manage 編輯 / 刪除 · Level 2–6 鎖為 Coming soon · 關卡頁 Insights 三榜移除。</div>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · Teacher · Word Game · August 2026</footer>
+    </main>
+  </div>
+
+  <script>
+    const links = [...document.querySelectorAll('.sidebar a')];
+    const map = links.map((a) => ({ a, el: document.querySelector(a.getAttribute('href')) }));
+    const onScroll = () => { let cur = map[0]; for (const m of map) { if (m.el && m.el.getBoundingClientRect().top <= 80) cur = m; } links.forEach((a) => a.classList.remove('active')); if (cur) cur.a.classList.add('active'); };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher · Planning (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets-v9/teacher-shell.css" />
+<style>
+  .canvas{
+    min-height:calc(100vh - 76px); padding:34px 30px 70px;
+    background:
+      radial-gradient(circle at 1px 1px, #dde4ec 1px, transparent 0) 0 0 / 22px 22px,
+      var(--bg);
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .canvas-in{ width:min(720px,100%); }
+  .canvas.wide .canvas-in{ width:min(880px,100%); }
+
+  /* ---------- prompt ---------- */
+  .prompt{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--sh-lg); overflow:hidden; }
+  .prompt-h{ display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--line-2); }
+  .prompt-h h1{ font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.2px; }
+  .ai-badge{ margin-left:auto; font-size:10.5px; font-weight:800; letter-spacing:.6px; color:var(--emerald-d);
+    background:var(--emerald-l); border:1px solid var(--emerald-l2); border-radius:7px; padding:3px 8px; }
+  .prompt-b{ padding:16px 20px 6px; }
+  .prompt-field{ background:#f8fafc; border:1px solid transparent; border-radius:12px; padding:14px 16px; transition:.16s; }
+  .prompt-field:focus-within{ background:#fff; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+  .prompt-field textarea{ width:100%; min-height:92px; border:none; background:none; resize:none; font:inherit;
+    font-size:16px; font-weight:600; color:var(--ink); line-height:1.55; outline:none; }
+  .prompt-field textarea::placeholder{ color:#9fb0c2; font-weight:500; }
+  .prompt-f{ display:flex; align-items:center; gap:12px; padding:12px 20px 14px; }
+  .prompt-f .hint{ font-size:11.5px; font-weight:600; color:var(--faint); }
+  .make{ margin-left:auto; }
+  .make:disabled{ background:#e2e8f0; color:#94a3b8; box-shadow:none; cursor:not-allowed; transform:none; filter:none; }
+  .kbd{ font-size:11px; font-weight:800; opacity:.75; }
+
+  .orline{ display:flex; align-items:center; gap:14px; margin:26px 0 16px; color:var(--faint);
+    font-size:11.5px; font-weight:800; letter-spacing:.4px; }
+  .orline::before,.orline::after{ content:""; height:1px; background:var(--line); flex:1; }
+
+  /* ---------- entry blocks ---------- */
+  .block{ background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-bottom:14px; }
+  .block-h{ display:flex; align-items:center; gap:9px; padding:13px 18px; border-bottom:1px solid var(--line-2); }
+  .block-h b{ font-size:13.5px; font-weight:800; color:var(--ink); }
+  .block-h span.note{ font-size:12px; font-weight:600; color:var(--muted); }
+  .block-h .material-icons-round{ font-size:18px; color:var(--faint); }
+
+  /* flagship */
+  .flag{ display:flex; align-items:center; gap:14px; width:100%; padding:16px 18px; border:none; background:none;
+    cursor:pointer; text-align:left; transition:.14s; }
+  .flag:hover{ background:#f7fbf9; }
+  .flag .fi{ width:44px; height:44px; border-radius:13px; flex:none; display:grid; place-items:center; color:#fff;
+    background:linear-gradient(145deg,#10b981,#047857); box-shadow:0 8px 18px -9px rgba(5,150,105,.8); }
+  .flag .fi .material-icons-round{ font-size:23px; }
+  .flag .ft{ min-width:0; flex:1; }
+  .flag .ft b{ display:block; font-size:15px; font-weight:800; color:var(--ink); }
+  .flag .ft span{ display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-top:2px; }
+  .flag .chev{ color:var(--faint); flex:none; }
+  .chain{ display:flex; align-items:center; gap:5px; margin-top:8px; flex-wrap:wrap; }
+  .chain i{ font-style:normal; font-size:10.5px; font-weight:800; letter-spacing:.3px; color:var(--emerald-d);
+    background:var(--emerald-l); border-radius:5px; padding:2px 7px; }
+  .chain u{ text-decoration:none; color:var(--faint); font-size:11px; }
+
+  /* sample grid */
+  .sgrid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:14px 18px 18px; }
+  .sample{ display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--line);
+    border-radius:11px; background:#fff; cursor:pointer; font:inherit; text-align:left; transition:.14s; }
+  .sample:hover:not(:disabled){ border-color:#cbd5e1; box-shadow:var(--sh-sm); transform:translateY(-1px); }
+  .sample:disabled{ opacity:.42; cursor:not-allowed; }
+  .sample .si{ width:30px; height:30px; border-radius:8px; flex:none; display:grid; place-items:center; }
+  .sample .si .material-icons-round{ font-size:17px; }
+  .sample .st{ min-width:0; }
+  .sample .st b{ display:block; font-size:13px; font-weight:700; color:var(--ink); line-height:1.25; }
+  .sample .st span{ display:block; font-size:11.5px; color:var(--muted); font-weight:600; margin-top:1px; }
+
+  .needs{ padding:0 18px 14px; font-size:11.5px; font-weight:700; color:var(--amber); display:none; }
+  .needs.on{ display:block; }
+
+  /* two-up rows */
+  .duo{ display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:14px 18px 18px; }
+  .opt{ display:flex; align-items:flex-start; gap:11px; padding:13px 14px; border:1px solid var(--line);
+    border-radius:12px; background:#fff; cursor:pointer; font:inherit; text-align:left; transition:.14s; }
+  .opt:hover:not(:disabled){ border-color:#cbd5e1; box-shadow:var(--sh-sm); transform:translateY(-1px); }
+  .opt:disabled{ opacity:.42; cursor:not-allowed; }
+  .opt .oi{ width:32px; height:32px; border-radius:9px; flex:none; display:grid; place-items:center; }
+  .opt .oi .material-icons-round{ font-size:18px; }
+  .opt .ot b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); }
+  .opt .ot span{ display:block; font-size:11.5px; color:var(--muted); font-weight:600; margin-top:2px; line-height:1.45; }
+  .block.solo .duo{ grid-template-columns:1fr; }
+
+  /* recent */
+  .recent{ margin-top:26px; }
+  .recent .rh{ display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .recent .rh b{ font-size:13px; font-weight:800; color:var(--slate); }
+  .recent .rh span{ font-size:12px; color:var(--faint); font-weight:600; }
+  .rgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .rcard{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 13px; cursor:pointer;
+    transition:.15s; text-align:left; }
+  .rcard:hover{ box-shadow:var(--sh-md); transform:translateY(-1px); }
+  .rcard b{ display:block; font-size:13px; font-weight:700; color:var(--ink); line-height:1.3; }
+  .rcard .rm{ margin-top:7px; display:flex; align-items:center; gap:6px; }
+  .rcard .rt{ font-size:11.5px; color:var(--faint); font-weight:600; }
+
+  /* ---------- flow screens ---------- */
+  .screen{ display:none; }
+  .screen.on{ display:block; }
+  .fbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .fbar .back{ border:1px solid var(--line); background:#fff; border-radius:10px; width:36px; height:36px;
+    cursor:pointer; display:grid; place-items:center; color:var(--slate-2); flex:none; }
+  .fbar .back:hover{ border-color:#cbd5e1; }
+  .fbar .fq{ min-width:0; flex:1; }
+  .fbar .fq b{ display:block; font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.2px; }
+  .fbar .fq span{ font-size:12.5px; color:var(--muted); font-weight:600; }
+
+  /* stage strip: which segment of the chain this path covers */
+  .stages{ display:flex; align-items:center; gap:6px; padding:11px 16px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .stages .lb{ font-size:10.5px; font-weight:800; letter-spacing:.5px; color:var(--faint); margin-right:3px; }
+  .stg{ font-size:11.5px; font-weight:800; padding:3px 10px; border-radius:999px; background:#eef2f7; color:var(--faint); }
+  .stg.on{ background:var(--emerald-l); color:var(--emerald-d); }
+  .stages .arrow{ color:#cbd5e1; font-size:14px; }
+
+  /* teaching point checkpoint */
+  .panel-w{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--sh-md); overflow:hidden; }
+  .pw-h{ display:flex; align-items:center; gap:10px; padding:15px 18px; border-bottom:1px solid var(--line-2); }
+  .pw-h h3{ font-size:14.5px; font-weight:800; color:var(--ink); }
+  .pw-h .badge{ font-size:11.5px; font-weight:800; padding:2px 9px; border-radius:999px;
+    background:var(--emerald-l); color:var(--emerald-d); }
+  .pw-b{ padding:16px 18px; }
+  .pw-f{ display:flex; align-items:center; gap:12px; padding:14px 18px; border-top:1px solid var(--line-2);
+    background:#fcfdfe; flex-wrap:wrap; }
+  .pw-f .sum{ font-size:12.5px; font-weight:700; color:var(--muted); }
+  .pw-f .acts{ margin-left:auto; display:flex; gap:9px; }
+
+  .tps{ display:flex; flex-wrap:wrap; gap:7px; }
+  .tp{ display:inline-flex; align-items:center; gap:6px; padding:5px 8px 5px 11px; border-radius:9px;
+    border:1px solid var(--line); background:#fff; font-size:13.5px; font-weight:700; color:var(--ink); }
+  .tp .ty{ font-size:10px; font-weight:800; padding:1px 6px; border-radius:5px; letter-spacing:.2px; }
+  .tp .ty.gray{ background:#eef2f7; color:var(--muted); }
+  .tp .ty.purple{ background:var(--mc-bg); color:var(--mc); }
+  .tp .ty.blue{ background:var(--qa-bg); color:var(--qa); }
+  .tp .x{ border:none; background:none; cursor:pointer; color:var(--faint); display:grid; place-items:center;
+    width:18px; height:18px; border-radius:5px; padding:0; }
+  .tp .x:hover{ background:var(--rose-bg); color:var(--rose); }
+  .tp.miss{ border-style:dashed; border-color:#fbbf24; background:#fffbeb; }
+  .tp-add{ display:flex; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid var(--line-2); }
+  .tp-add input{ flex:1; height:36px; border:1px solid var(--line); border-radius:9px; padding:0 12px; font:inherit;
+    font-size:13.5px; font-weight:600; }
+  .tp-add input:focus{ outline:none; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+  .tp-add select{ height:36px; border:1px solid var(--line); border-radius:9px; padding:0 10px; font:inherit;
+    font-size:12.5px; font-weight:700; color:var(--slate); background:#fff; }
+
+  /* preview rows */
+  .stage-t{ display:flex; align-items:center; gap:9px; padding:12px 18px; background:#fbfcfe;
+    border-bottom:1px solid var(--line-2); }
+  .stage-t .n{ width:20px; height:20px; border-radius:50%; background:var(--emerald); color:#fff; font-size:11px;
+    font-weight:800; display:grid; place-items:center; flex:none; }
+  .stage-t b{ font-size:12.5px; font-weight:800; color:var(--slate); letter-spacing:.2px; }
+  .prow{ display:flex; align-items:flex-start; gap:13px; padding:15px 18px; flex-wrap:wrap; }
+  .prow + .prow{ border-top:1px solid var(--line-2); }
+  .prow.off{ opacity:.48; }
+  .prow .pt2{ min-width:0; flex:1; }
+  .prow .pt2 b{ display:block; font-size:14px; font-weight:800; color:var(--ink); }
+  .prow .pt2 .pd{ font-size:12.5px; color:var(--muted); font-weight:600; margin-top:3px; }
+  .prow .chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .prow .ped{ flex:none; }
+  .sw{ appearance:none; -webkit-appearance:none; width:36px; height:20px; border-radius:999px; background:#cbd5e1;
+    position:relative; cursor:pointer; transition:.16s; flex:none; border:none; }
+  .sw::after{ content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+    background:#fff; transition:.16s; }
+  .sw:checked{ background:var(--emerald); }
+  .sw:checked::after{ transform:translateX(16px); }
+
+  /* expandable row body —— the actual content that will be created */
+  .prow{ position:relative; }
+  .prow-x{ border:1px solid var(--line); background:#fff; border-radius:8px; width:28px; height:28px; cursor:pointer;
+    display:grid; place-items:center; color:var(--faint); flex:none; transition:.14s; margin-left:8px; }
+  .prow-x:hover{ border-color:#cbd5e1; color:var(--slate-2); }
+  .prow-x .material-icons-round{ font-size:18px; transition:transform .18s; }
+  .prow.open .prow-x .material-icons-round{ transform:rotate(180deg); }
+  .prow-body{ display:none; width:100%; padding:13px 0 0 53px; }
+  .prow.open .prow-body{ display:block; }
+  .prow.off .prow-body{ display:none; }
+  .cbox{ border:1px solid var(--line); border-radius:11px; background:#fbfdff; padding:13px 15px; }
+  .cbox + .cbox{ margin-top:9px; }
+  .cbox .clbl{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--faint);
+    display:block; margin-bottom:9px; }
+
+  /* per-word pinyin, same device as the slides page */
+  .rline{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:1px 3px; }
+  .rline + .rtr{ margin-top:2px; }
+  .rtr{ font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:10px; }
+  .rtr:last-child{ margin-bottom:0; }
+  .wd{ display:flex; flex-direction:column; align-items:center; }
+  .wd .py{ font-size:9.5px; font-weight:600; color:var(--emerald-d); line-height:1.4; height:14px; }
+  .wd .hz{ font-size:17px; font-weight:600; color:var(--ink); line-height:1.45; letter-spacing:.5px; }
+
+  .wcards{ display:flex; gap:8px; flex-wrap:wrap; }
+  .wcard{ border:1px solid var(--line); border-radius:9px; background:#fff; padding:8px 11px; text-align:center; min-width:78px; }
+  .wcard .py{ font-size:10px; font-weight:600; color:var(--emerald-d); }
+  .wcard .hz{ font-size:19px; font-weight:600; color:var(--ink); line-height:1.3; }
+  .wcard .en{ font-size:10.5px; font-weight:600; color:var(--muted); margin-top:2px; }
+
+  .qitem{ font-size:13px; font-weight:600; color:var(--slate); }
+  .qitem + .qitem{ margin-top:11px; padding-top:11px; border-top:1px solid var(--line-2); }
+  .qitem .qq{ font-weight:700; color:var(--ink); }
+  .qitem .qo{ display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .qitem .qo span{ font-size:11.5px; font-weight:700; color:var(--muted); background:#fff; border:1px solid var(--line);
+    padding:2px 9px; border-radius:6px; }
+  .qitem .qo span.right{ color:var(--emerald-d); border-color:var(--emerald-l2); background:var(--emerald-l); }
+
+  .scram{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .scram b{ font-size:16px; font-weight:600; color:var(--ink); background:#fff; border:1px solid var(--line);
+    border-radius:7px; padding:4px 10px; letter-spacing:.5px; }
+  .scram .arrow{ color:var(--faint); font-size:13px; font-weight:700; }
+  .scram .ans{ font-size:12px; font-weight:700; color:var(--emerald-d); }
+
+  /* ---------- endpoint picker + funnel ---------- */
+  .sample.on{ border-color:var(--emerald); box-shadow:inset 0 0 0 1px var(--emerald); background:#f7fdfa; }
+  .sample .tick{ margin-left:auto; color:var(--emerald); flex:none; opacity:0; }
+  .sample.on .tick{ opacity:1; }
+  .sample .tick .material-icons-round{ font-size:18px; }
+  .ep-foot{ display:flex; align-items:center; gap:12px; padding:13px 18px; border-top:1px solid var(--line-2); background:#fcfdfe; }
+  .ep-sum{ font-size:12.5px; font-weight:700; color:var(--muted); }
+  .ep-foot .btnp{ margin-left:auto; }
+  .ep-foot .btnp:disabled{ background:#e2e8f0; color:#94a3b8; box-shadow:none; cursor:not-allowed; transform:none; filter:none; }
+
+  .slots{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 16px; background:#fff;
+    border:1px solid var(--line); border-radius:12px; margin-bottom:14px; }
+  .slots .sl{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .slots .sk{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--faint); }
+  .slots .sep{ width:1px; align-self:stretch; background:var(--line-2); margin:0 4px; }
+  .chip-f{ display:inline-flex; align-items:center; gap:6px; padding:4px 6px 4px 11px; border-radius:999px;
+    border:1px solid var(--emerald-l2); background:var(--emerald-l); font-size:12.5px; font-weight:700; color:var(--emerald-dd); }
+  .chip-f button{ border:none; background:none; cursor:pointer; color:var(--emerald-d); display:grid; place-items:center;
+    width:16px; height:16px; border-radius:50%; padding:0; }
+  .chip-f button:hover{ background:rgba(6,95,70,.12); }
+  .chip-f .material-icons-round{ font-size:13px; }
+  .chip-empty{ font-size:12.5px; font-weight:700; color:var(--faint); font-style:italic; }
+
+  .convo-toggle{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff;
+    border-radius:999px; padding:5px 12px; cursor:pointer; font:inherit; font-size:12px; font-weight:700;
+    color:var(--muted); margin-bottom:14px; }
+  .convo-toggle:hover{ border-color:#cbd5e1; color:var(--slate); }
+  .convo-toggle .material-icons-round{ font-size:15px; transition:transform .16s; }
+  .convo-toggle.open .material-icons-round{ transform:rotate(90deg); }
+  .ready-line{ font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.6; }
+  .ready-line b{ font-weight:800; }
+  .ready-next{ margin-top:7px; font-size:12.5px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:6px; }
+  .ready-next .material-icons-round{ font-size:16px; color:var(--faint); }
+  #fnStages{ margin:0 0 14px; }
+
+  .msg{ display:flex; gap:10px; margin-bottom:14px; }
+  .msg .who{ width:26px; height:26px; border-radius:50%; flex:none; display:grid; place-items:center;
+    font-size:10.5px; font-weight:800; }
+  .msg.you .who{ background:var(--line-2); color:var(--slate-2); }
+  .msg.sys .who{ background:var(--emerald-l); color:var(--emerald-d); }
+  .msg .bub{ font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.55; padding-top:3px; }
+  .msg.you .bub{ color:var(--slate-2); }
+  .qopts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .qopt{ padding:8px 14px; border:1px solid var(--line); border-radius:9px; background:#fff; cursor:pointer;
+    font:inherit; font-size:13px; font-weight:700; color:var(--ink); transition:.14s; }
+  .qopt:hover{ border-color:var(--emerald-ring); background:#f7fdfa; }
+  .qopt .sub{ display:block; font-size:11px; font-weight:600; color:var(--muted); margin-top:1px; }
+  .cant{ padding:12px 14px; border-radius:10px; background:#fffbeb; border:1px solid #fde68a;
+    font-size:12.5px; font-weight:700; color:#92400e; margin-bottom:14px; }
+
+  .more-note{ margin-top:9px; font-size:11.5px; font-weight:600; color:var(--faint); }
+
+  /* passage step */
+  .srow{ position:relative; padding-right:34px; }
+  .srow + .srow{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line-2); }
+  .srow-x{ position:absolute; right:0; top:2px; border:none; background:none; cursor:pointer; color:#cbd5e1;
+    width:26px; height:26px; border-radius:7px; display:grid; place-items:center; }
+  .srow-x:hover{ background:var(--rose-bg); color:var(--rose); }
+  .srow-x .material-icons-round{ font-size:16px; }
+  .txarea{ width:100%; min-height:170px; border:1px solid var(--line); border-radius:9px; padding:11px 13px;
+    font:inherit; font-size:17px; font-weight:600; color:var(--ink); line-height:2; resize:vertical; letter-spacing:.5px; }
+  .txarea:focus{ outline:none; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+  .tp-warn{ margin-top:12px; font-size:11.5px; font-weight:700; color:#92400e; background:#fffbeb;
+    border:1px solid #fde68a; border-radius:8px; padding:8px 11px; }
+
+  .covers{ padding:14px 18px; border-bottom:1px solid var(--line-2); background:#fcfdfe; }
+  .covers .ch{ display:flex; align-items:baseline; gap:9px; margin-bottom:9px; }
+  .covers .ch b{ font-size:12px; font-weight:800; color:var(--slate); letter-spacing:.2px; }
+  .covers .ch span{ font-size:11.5px; font-weight:700; color:var(--faint); }
+  .covers .warn{ margin-top:9px; font-size:11.5px; font-weight:700; color:#92400e; background:#fffbeb;
+    border:1px solid #fde68a; border-radius:8px; padding:7px 10px; }
+
+  .assign{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--slate-2); }
+  .mini-sel{ -webkit-appearance:none; appearance:none; border:1px solid var(--line); border-radius:9px; background:#fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 9px center; padding:7px 28px 7px 11px; font:inherit; font-size:12.5px; font-weight:700;
+    color:var(--slate); cursor:pointer; }
+  .mini-sel:focus{ outline:none; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+
+  .thinking{ display:flex; align-items:center; gap:11px; padding:26px 18px; color:var(--muted); font-size:13.5px; font-weight:700; }
+  .spinner{ width:18px; height:18px; border-radius:50%; border:2.5px solid var(--emerald-l2);
+    border-top-color:var(--emerald); animation:spin .7s linear infinite; flex:none; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .done2{ text-align:center; padding:52px 20px; }
+  .done2 .ic{ width:62px; height:62px; margin:0 auto 18px; border-radius:50%; display:grid; place-items:center;
+    background:var(--emerald-l); color:var(--emerald-d); }
+  .done2 .ic .material-icons-round{ font-size:32px; }
+  .done2 h3{ font-size:19px; font-weight:800; color:var(--ink); }
+  .done2 p{ margin-top:7px; font-size:13.5px; color:var(--muted); font-weight:600; }
+  .done2 .acts{ margin-top:20px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap; }
+
+  .demo{ display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; color:var(--muted); }
+  .demo input{ appearance:none; -webkit-appearance:none; width:30px; height:17px; border-radius:999px;
+    background:#cbd5e1; position:relative; cursor:pointer; transition:.15s; border:none; }
+  .demo input::after{ content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
+    background:#fff; transition:.15s; }
+  .demo input:checked{ background:var(--amber); }
+  .demo input:checked::after{ transform:translateX(13px); }
+
+  @media (max-width:820px){
+    .canvas{ padding:22px 14px 60px; }
+    .sgrid,.duo{ grid-template-columns:1fr; padding:12px 14px 16px; }
+    .prompt-b,.prompt-f{ padding-left:14px; padding-right:14px; }
+    .rgrid{ grid-template-columns:1fr; }
+    .make{ width:100%; justify-content:center; margin-left:0; }
+    .prompt-f{ flex-wrap:wrap; }
+    .pw-f .acts{ width:100%; margin-left:0; }
+    .pw-f .acts .btnp,.pw-f .acts .btn-sm{ flex:1; justify-content:center; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" id="side" data-current="planning"></aside>
+
+  <div class="main">
+    <div class="pagebar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
+      <div class="hdr-ic"><span class="material-icons-round">auto_awesome</span></div>
+      <div class="dt"><b>Planning</b><span>What have you got, and how far do you want to go?</span></div>
+      <div class="pb-acts">
+        <label class="demo" title="Preview the page with no projects at all">
+          <input type="checkbox" id="demoEmpty" /> Demo empty state
+        </label>
+        <a class="btn-ghost" href="redesign-v9-planning-spec.html"><span class="material-icons-round" style="font-size:17px">description</span> Spec</a>
+        <div class="ava">LW</div>
+      </div>
+    </div>
+
+    <div class="canvas" id="canvas">
+      <div class="canvas-in">
+
+        <!-- ==================== START ==================== -->
+        <div class="screen on" id="scStart">
+          <div class="prompt">
+            <div class="prompt-h">
+              <span class="material-icons-round" style="color:var(--emerald);font-size:20px">auto_awesome</span>
+              <h1>What do you want to make?</h1>
+              <span class="ai-badge">AI</span>
+            </div>
+            <div class="prompt-b">
+              <div class="prompt-field"><textarea id="q" rows="3" aria-label="Describe what you want to make"></textarea></div>
+            </div>
+            <div class="prompt-f">
+              <span class="hint">One sentence — anything it can’t work out, it will ask</span>
+              <button class="btnp make" id="makeBtn" disabled>Make <span class="kbd">⌘↵</span></button>
+            </div>
+          </div>
+
+          <div class="orline">OR PICK WHAT YOU WANT TO MAKE</div>
+
+          <div class="block">
+            <div class="block-h"><span class="material-icons-round">check_box</span><b>Practices</b>
+              <span class="note">pick as many as you need</span></div>
+            <div class="sgrid" id="epPractice"></div>
+            <div class="block-h" style="border-top:1px solid var(--line-2)">
+              <span class="material-icons-round">menu_book</span><b>Teaching material</b></div>
+            <div class="sgrid" id="epMaterial"></div>
+            <div class="ep-foot">
+              <span class="ep-sum" id="epSum">Nothing picked yet</span>
+              <button class="btnp" id="epGo" disabled>Continue</button>
+            </div>
+          </div>
+
+          <div class="block solo">
+            <div class="block-h"><span class="material-icons-round">bolt</span><b>Or start from a preset</b></div>
+            <div class="duo" id="presets"></div>
+          </div>
+        </div>
+
+        <!-- ==================== FUNNEL ==================== -->
+        <div class="screen" id="scFunnel">
+          <div class="fbar">
+            <button class="back" data-back="start" aria-label="Back to start"><span class="material-icons-round">arrow_back</span></button>
+            <div class="fq"><b>Before we start</b><span id="fnSub"></span></div>
+          </div>
+
+          <div class="slots" id="slots"></div>
+
+          <div class="panel-w">
+            <div class="pw-h"><h3 id="fnHead">Two things to pin down</h3><span class="badge" id="fnBadge"></span></div>
+            <div class="pw-b" id="fnBody"></div>
+            <div class="pw-f">
+              <span class="sum" id="fnSum"></span>
+              <span class="acts"><button class="btnp" id="fnGo" disabled>Start</button></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PASSAGE (step 1) ==================== -->
+        <div class="screen" id="scText">
+          <div class="fbar">
+            <button class="back" data-back="start" aria-label="Back to start"><span class="material-icons-round">arrow_back</span></button>
+            <div class="fq"><b id="txTitle"></b><span id="txSub"></span></div>
+          </div>
+          <div class="stages" id="txStages"></div>
+
+          <div class="panel-w">
+            <div class="pw-h">
+              <h3>The passage</h3><span class="badge" id="txCount"></span>
+              <button class="btn-sm" id="txEdit" style="margin-left:auto"><span class="material-icons-round">edit</span>Edit</button>
+              <button class="btn-sm" id="txRedo"><span class="material-icons-round">refresh</span>Write another</button>
+            </div>
+            <div class="pw-b" id="txBody"></div>
+            <div class="pw-f">
+              <span class="sum">Everything else is built from this — the vocabulary, the sentences they record, the questions.</span>
+              <span class="acts"><button class="btnp" id="txGo">Looks right, continue</button></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TEACHING POINTS ==================== -->
+        <div class="screen" id="scTp">
+          <div class="fbar">
+            <button class="back" id="tpBack" aria-label="Back to the passage"><span class="material-icons-round">arrow_back</span></button>
+            <div class="fq"><b id="tpTitle"></b><span id="tpSub"></span></div>
+          </div>
+          <div class="stages" id="tpStages"></div>
+
+          <div class="panel-w">
+            <div class="pw-h">
+              <h3>Teaching points</h3><span class="badge" id="tpCount"></span>
+              <button class="btn-sm" id="tpRedo" style="margin-left:auto"><span class="material-icons-round">refresh</span>Re-read the passage</button>
+            </div>
+            <div class="pw-b" id="tpBody"></div>
+            <div class="pw-f">
+              <span class="sum" id="tpSum"></span>
+              <span class="acts"><button class="btnp" id="tpGo">Looks right, continue</button></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PREVIEW ==================== -->
+        <div class="screen" id="scPreview">
+          <div class="fbar">
+            <button class="back" id="pvBack" aria-label="Back"><span class="material-icons-round">arrow_back</span></button>
+            <div class="fq"><b id="pvTitle"></b><span id="pvSub"></span></div>
+          </div>
+          <div class="stages" id="pvStages"></div>
+
+          <div class="panel-w">
+            <div class="pw-h">
+              <h3>What this creates</h3><span class="badge" id="pvCount"></span>
+              <span id="pvProjWrap" style="margin-left:auto;display:none" class="assign">
+                Project
+                <select class="mini-sel" id="pvProj"></select>
+              </span>
+            </div>
+            <div id="pvCovers"></div>
+            <div id="pvRows"></div>
+            <div class="pw-f">
+              <span class="sum" id="pvSum"></span>
+              <span class="acts" id="pvActs"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== DONE ==================== -->
+        <div class="screen" id="scDone"></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets-v9/teacher-nav.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s);};
+  var $$=function(s){return [].slice.call(document.querySelectorAll(s));};
+  var tt; function say(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},2400);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  /* ================= teaching-point types (8, per TEACHING_POINT_TYPE_OPTIONS) ========= */
+  var TPT={
+    WORD:{l:'Word',c:'gray'}, NOUN:{l:'Noun',c:'gray'}, VERB:{l:'Verb',c:'gray'}, ADJECTIVE:{l:'Adj',c:'gray'},
+    GRAMMAR:{l:'Grammar',c:'purple'}, PHRASE:{l:'Phrase',c:'purple'}, MEASURE_WORD:{l:'Measure',c:'blue'}, OTHER:{l:'Other',c:'gray'}
+  };
+  var WORDISH=['WORD','NOUN','VERB','ADJECTIVE'];
+  var PATTERNISH=['GRAMMAR','PHRASE','MEASURE_WORD'];
+
+  /* ================= the five practice types + the vocabulary MC mode ================= */
+  var PT={
+    MIRRORING:       {n:'Mirroring',      icon:'mic',         bg:'var(--mir-bg)', fg:'var(--mir)', pill:'mir', src:'text', covers:'all'},
+    VOCABULARY:      {n:'Vocabulary',     icon:'bookmark',    bg:'var(--voc-bg)', fg:'var(--voc)', pill:'voc', src:'tp',   covers:WORDISH},
+    SENTENCE_SCRAMBLE:{n:'Sentence Scramble',icon:'reorder',  bg:'#FCE7F3',       fg:'#BE185D',    pill:'',    src:'tp',   covers:PATTERNISH},
+    QA:              {n:'QA',             icon:'chat_bubble', bg:'var(--qa-bg)',  fg:'var(--qa)',  pill:'qa',  src:'bank', covers:'byQaCat'},
+    VOCABULARY_MC:   {n:'Vocabulary × MC',icon:'quiz',        bg:'var(--voc-bg)', fg:'var(--voc)', pill:'voc', src:'tp',   covers:WORDISH},
+    MULTIPLE_CHOICE: {n:'Multiple Choice',icon:'quiz',      bg:'var(--mc-bg)',  fg:'var(--mc)',  pill:'mc',  src:'bank', covers:'byCat'}
+  };
+  /* A 課文選擇題 covers whatever its question-bank category actually drills.
+     Comprehension tests the passage as a whole —— it does not drill any single
+     teaching point, so it honestly contributes nothing to coverage. */
+  /* QA also comes from the question bank —— Content Base answers the passage,
+     Extension goes beyond it; neither drills a single teaching point. */
+  var QA_CAT={ shortAnswer:{l:'Content Base', covers:[]}, extension:{l:'Extension', covers:[]} };
+  var MC_CAT={
+    comprehension:{l:'Comprehension', covers:[]},
+    usage:        {l:'Fill in blank', covers:PATTERNISH},
+    meaning:      {l:'Meaning',       covers:WORDISH},
+    pinyin:       {l:'Pinyin',        covers:WORDISH}
+  };
+
+  /* ================= the 8+1 endpoints (spec §5.3) =================
+     Every endpoint needs a Project. Two of them additionally need a question
+     bank —— that is why the funnel only ever has to ask two questions. ====== */
+  var EP={
+    MIRRORING:        {t:'Mirroring Practice',  s:'Speaking and pronunciation',        needs:'text', kind:'practice'},
+    VOCABULARY:       {t:'Vocabulary Practice', s:'Word learning &amp; reinforcement', needs:'tp',   kind:'practice'},
+    VOCABULARY_MC:    {t:'Vocabulary × MC',     s:'Vocabulary practice in MC mode',    needs:'tp',   kind:'practice'},
+    SENTENCE_SCRAMBLE:{t:'Sentence Scramble',   s:'Listen &amp; rearrange words',      needs:'tp',   kind:'practice'},
+    QA:               {t:'QA Practice',         s:'Comprehension &amp; response',      needs:'bank', kind:'practice'},
+    MULTIPLE_CHOICE:  {t:'Multiple Choice',     s:'Questions from a question bank',    needs:'bank', kind:'practice'},
+    HANDOUT:          {t:'Handout',             s:'Printable A4 worksheet',            needs:'text', kind:'material'},
+    SLIDE:            {t:'Slides',              s:'Present the text in class',         needs:'text', kind:'material'},
+    PROJECT_ONLY:     {t:'Just the Project',    s:'Write the text now, decide later',  needs:'text', kind:'material'}
+  };
+  var EP_PRACTICE=['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','QA','MULTIPLE_CHOICE'];
+  var EP_MATERIAL=['HANDOUT','SLIDE','PROJECT_ONLY'];
+
+  var PRESETS=[
+    {k:'full',  t:'A complete assignment', s:'Vocabulary + Sentence Scramble + Multiple Choice, from a new Project',
+     ep:['VOCABULARY','SENTENCE_SCRAMBLE','MULTIPLE_CHOICE'], src:{kind:'write'}},
+    {k:'quiz',  t:'Just a quiz',           s:'Multiple Choice from one of your Projects',
+     ep:['MULTIPLE_CHOICE'], src:null},
+    {k:'text',  t:'Just a new Project',    s:'Write the text now, decide what to make later',
+     ep:['PROJECT_ONLY'], src:{kind:'write'}}
+  ];
+
+  /* what a question bank is needed for */
+  function needsBank(eps){ return eps.some(function(k){ return EP[k].needs==='bank'; }); }
+  function needsTp(eps){ return eps.some(function(k){ return EP[k].needs==='tp'; }); }
+  function hasPractice(eps){ return eps.some(function(k){ return EP[k].kind==='practice'; }); }
+
+  /* ================= the actual content behind each row =================
+     Planning claims "see it before you create it" —— that only means anything
+     if the rows can show the real sentences, cards and questions. ============ */
+  var TEXTS={
+    '食物':{
+      sents:[
+        {w:[['我','wǒ'],['喜欢','xǐhuan'],['吃','chī'],['米饭','mǐfàn'],['。','']], t:'I like eating rice.'},
+        {w:[['你','nǐ'],['饿','è'],['了','le'],['吗','ma'],['？','']], t:'Are you hungry?'},
+        {w:[['这个','zhège'],['苹果','píngguǒ'],['很','hěn'],['好吃','hǎochī'],['。','']], t:'This apple is delicious.'},
+        {w:[['我','wǒ'],['想','xiǎng'],['喝','hē'],['一','yì'],['碗','wǎn'],['牛奶','niúnǎi'],['。','']], t:'I want a bowl of milk.'},
+        {w:[['早饭','zǎofàn'],['你','nǐ'],['吃','chī'],['鸡蛋','jīdàn'],['吗','ma'],['？','']], t:'Do you eat eggs for breakfast?'},
+        {w:[['我','wǒ'],['不','bù'],['喜欢','xǐhuan'],['吃','chī'],['面条','miàntiáo'],['。','']], t:'I don’t like eating noodles.'}
+      ],
+      cards:[['米饭','mǐfàn','rice'],['面条','miàntiáo','noodles'],['鸡蛋','jīdàn','egg'],['牛奶','niúnǎi','milk'],
+             ['苹果','píngguǒ','apple'],['好吃','hǎochī','tasty']],
+      qs:[{q:'“我喜欢吃___。” 哪一个最合适？',o:['米饭','跑步','很好'],a:0},
+          {q:'“这个苹果很好吃” 是什么意思？',o:['This apple is expensive','This apple is delicious','This apple is small'],a:1}],
+      scram:[['我','喜欢','吃','米饭'],['吃','米饭','我','喜欢']],
+      prompts:['你早饭吃什么？','你最喜欢吃什么水果？','你饿的时候吃什么？']
+    },
+    '天气':{
+      sents:[
+        {w:[['今天','jīntiān'],['很','hěn'],['冷','lěng'],['。','']], t:'It is very cold today.'},
+        {w:[['外面','wàimiàn'],['在','zài'],['下雨','xiàyǔ'],['。','']], t:'It is raining outside.'},
+        {w:[['太','tài'],['热','rè'],['了','le'],['！','']], t:'It is too hot!'},
+        {w:[['外面','wàimiàn'],['刮风','guāfēng'],['了','le'],['。','']], t:'It has turned windy outside.'}
+      ],
+      cards:[['刮风','guāfēng','to be windy'],['下雨','xiàyǔ','to rain'],['冷','lěng','cold'],['热','rè','hot']],
+      qs:[{q:'“太热了” 的意思是？',o:['It is too hot','It is warm','It is cool'],a:0}],
+      scram:[['今天','很','冷'],['冷','今天','很']],
+      prompts:['今天天气怎么样？','你喜欢下雨天吗？']
+    }
+  };
+  function textOf(topic){ return TEXTS[topic]||TEXTS['食物']; }
+
+  function rubyLine(pairs){
+    return '<div class="rline">'+pairs.map(function(p){
+      return '<span class="wd"><span class="py">'+esc(p[1])+'</span><span class="hz">'+esc(p[0])+'</span></span>';
+    }).join('')+'</div>';
+  }
+
+  /* what the expanded body of a row shows */
+  function VOCAB_N(tps){ return tps.filter(function(x){return WORDISH.indexOf(x.ty)>-1;}).length; }
+  function rowContent(r, topic, tps){
+    var C=textOf(topic);
+    var live = S.sents.length ? S.sents : C.sents;
+    if(r.kind==='text'){
+      return '<div class="cbox"><span class="clbl">The passage you approved</span>'+
+        live.map(function(x){ return rubyLine(x.w)+(x.t?'<div class="rtr">'+esc(x.t)+'</div>':''); }).join('')+
+        '</div>'+
+        '<div class="cbox"><span class="clbl">Teaching points it has to cover</span>'+
+        '<div class="tps">'+tps.map(function(t){ var ty=TPT[t.ty];
+          return '<span class="tp" style="font-size:12.5px;padding:3px 9px">'+esc(t.w)+
+            '<span class="ty '+ty.c+'">'+ty.l+'</span></span>'; }).join('')+'</div>'+
+        '<div class="more-note">Edited in the first step — go back if you want to change it again.</div></div>';
+    }
+    if(r.kind==='bank'){
+      return '<div class="cbox"><span class="clbl">2 of the 10 questions</span>'+
+        C.qs.map(function(q){
+          return '<div class="qitem"><span class="qq">'+esc(q.q)+'</span><span class="qo">'+
+            q.o.map(function(o,i){ return '<span'+(i===q.a?' class="right"':'')+'>'+esc(o)+'</span>'; }).join('')+
+            '</span></div>'; }).join('')+
+        '<div class="more-note">Multiple Choice × Comprehension · the other 8 follow the same shape.</div></div>';
+    }
+    if(r.kind==='handout'){
+      return '<div class="cbox"><span class="clbl">Sections on the sheet</span>'+
+        '<div class="tps">'+['Reading with Pinyin','Full Reading','Translation','Teaching Points']
+          .concat(needsBank(S.ep)?['Questions','Answer Key']:[])
+          .map(function(x){ return '<span class="tp" style="font-size:12.5px;padding:3px 9px">'+x+'</span>'; }).join('')+'</div>'+
+        '<div class="more-note">Each section can be ticked out before printing · A4.</div></div>';
+    }
+    if(r.kind==='slide'){
+      return '<div class="cbox"><span class="clbl">The deck</span>'+
+        '<div class="tps">'+['Cover'].concat(live.map(function(x,i){return 'Sentence '+(i+1);}))
+          .concat(['Full text','Translation','Vocabulary ×'+VOCAB_N(tps)])
+          .map(function(x){ return '<span class="tp" style="font-size:12.5px;padding:3px 9px">'+esc(x)+'</span>'; }).join('')+'</div>'+
+        '<div class="more-note">Per-word pinyin, translation and vocabulary pinyin can each be switched off while presenting.</div></div>';
+    }
+    var t=r.type;
+    if(t==='MIRRORING'){
+      return '<div class="cbox"><span class="clbl">Sentences the students record</span>'+
+        live.slice(0,3).map(function(x){ return rubyLine(x.w)+(x.t?'<div class="rtr">'+esc(x.t)+'</div>':''); }).join('')+
+        '<div class="more-note">'+live.length+' sentences in total · scored on pronunciation.</div></div>';
+    }
+    if(t==='VOCABULARY'||t==='VOCABULARY_MC'){
+      var cards=C.cards;
+      return '<div class="cbox"><span class="clbl">'+(t==='VOCABULARY'?'The cards':'What each question shows')+'</span>'+
+        '<div class="wcards">'+cards.map(function(c){
+          return '<span class="wcard"><span class="py">'+esc(c[1])+'</span><span class="hz">'+esc(c[0])+
+            '</span><span class="en">'+esc(c[2])+'</span></span>'; }).join('')+'</div>'+
+        '<div class="more-note">'+(t==='VOCABULARY'
+          ? 'Audio plays on tap · pinyin and meaning can be hidden.'
+          : 'Each card becomes one question — the other three options come from the same set.')+'</div></div>';
+    }
+    if(t==='SENTENCE_SCRAMBLE'){
+      return '<div class="cbox"><span class="clbl">One of the sentences</span>'+
+        '<div class="scram">'+C.scram[1].map(function(w){return '<b>'+esc(w)+'</b>';}).join('')+
+        '<span class="arrow">→</span><span class="ans">'+esc(C.scram[0].join(''))+'</span></div>'+
+        '<div class="more-note">The student hears the sentence, then puts the words back in order.</div></div>';
+    }
+    if(t==='QA'){
+      return '<div class="cbox"><span class="clbl">The prompts, from the question bank</span>'+
+        C.prompts.map(function(x,i){
+          return '<div class="qitem"><span class="qq">'+(i+1)+'. '+esc(x)+'</span></div>'; }).join('')+
+        '<div class="more-note">Spoken answers · AI asks one follow-up per answer. Generated as the bank’s Content Base questions.</div></div>';
+    }
+    return '';
+  }
+
+  /* ================= projects ================= */
+  var ALL_PROJECTS=[
+    {sk:'p1', name:'食物 — What we eat', topic:'食物', level:'HSK 1', sents:6, bank:'食物 — Exit questions', bankQs:10,
+     tps:[['米饭','WORD'],['面条','WORD'],['鸡蛋','WORD'],['牛奶','WORD'],['苹果','WORD'],['早饭','NOUN'],
+          ['好吃','ADJECTIVE'],['饿','ADJECTIVE'],['喝','VERB'],['吃','VERB'],['了','GRAMMAR'],['碗','MEASURE_WORD']]},
+    {sk:'p2', name:'家人 — My family', topic:'家人', level:'HSK 1', sents:6, bank:'家人 — Unit check', bankQs:12,
+     tps:[['爸爸','NOUN'],['妈妈','NOUN'],['哥哥','NOUN'],['妹妹','NOUN'],['家','NOUN'],['爱','VERB'],
+          ['高','ADJECTIVE'],['这是…','GRAMMAR'],['口','MEASURE_WORD'],['一家人','PHRASE']]},
+    {sk:'p3', name:'数字 — Counting', topic:'数字', level:'HSK 1', sents:6, bank:null, bankQs:0,
+     tps:[['一','WORD'],['十','WORD'],['百','WORD'],['多少','WORD'],['几','GRAMMAR'],['个','MEASURE_WORD']]}
+  ];
+  var PROJECTS=ALL_PROJECTS.slice();
+
+  var RECENT=[
+    {n:'天气 — Weather today',  t:'Complete assignment', when:'yesterday'},
+    {n:'家人 · Multiple Choice',t:'One practice',        when:'2 days ago'},
+    {n:'学校 — At school',      t:'Create a project',    when:'last week'}
+  ];
+
+  var PLACEHOLDERS=[
+    'Build the whole 食物 lesson from scratch for 4A…',
+    'A mirroring practice from the 食物 text — six sentences, pinyin shown…',
+    'Create a new project on 天气 that teaches 刮风 and 下雨…',
+    'Ten multiple choice questions on 食物 — check they understood it…'
+  ];
+
+  /* ================= stages =================
+     Project → Teaching points → Question bank → Questions → Practices.
+     Which of them light up is derived from the chosen endpoints. ========== */
+  var STAGE_LABELS=['Project','Teaching points','Question bank','Questions','Practices'];
+
+  /* teaching points a model would pull out of a freshly written passage */
+  var PROPOSED={
+    '食物':[['米饭','WORD'],['面条','WORD'],['鸡蛋','WORD'],['牛奶','WORD'],['苹果','WORD'],['早饭','NOUN'],
+            ['好吃','ADJECTIVE'],['饿','ADJECTIVE'],['喝','VERB'],['吃','VERB'],['了','GRAMMAR'],['碗','MEASURE_WORD']],
+    '天气':[['刮风','VERB'],['下雨','VERB'],['冷','ADJECTIVE'],['热','ADJECTIVE'],['天气','NOUN'],['今天','NOUN'],
+            ['太…了','GRAMMAR'],['度','MEASURE_WORD']]
+  };
+  function proposeTps(topic){
+    return (PROPOSED[topic]||PROPOSED['食物']).map(function(t){ return {w:t[0], ty:t[1]}; });
+  }
+
+  /* ================= state ================= */
+  var S={ ep:[], src:null, cls:null, q:null, topic:'食物', sents:[], tps:[], rows:[], askQ:null, msgs:[] };
+
+  /* ================= start screen ================= */
+  function epCard(k, on, disabled){
+    var e=EP[k], ic=PT[k]||{icon:(k==='HANDOUT'?'description':k==='SLIDE'?'slideshow':'edit_note'),
+      bg:'var(--emerald-l)', fg:'var(--emerald-d)'};
+    return '<button class="sample'+(on?' on':'')+'" data-ep="'+k+'"'+(disabled?' disabled':'')+'>'+
+      '<span class="si" style="background:'+ic.bg+';color:'+ic.fg+'"><span class="material-icons-round">'+ic.icon+'</span></span>'+
+      '<span class="st"><b>'+e.t+'</b><span>'+e.s+'</span></span>'+
+      '<span class="tick"><span class="material-icons-round">check_circle</span></span></button>';
+  }
+
+  function renderStart(){
+    $('#epPractice').innerHTML=EP_PRACTICE.map(function(k){ return epCard(k, S.ep.indexOf(k)>-1, false); }).join('');
+    $('#epMaterial').innerHTML=EP_MATERIAL.map(function(k){ return epCard(k, S.ep.indexOf(k)>-1, false); }).join('');
+    var n=S.ep.length;
+    $('#epSum').textContent = n ? n+' picked · '+S.ep.map(function(k){return EP[k].t;}).join(', ') : 'Nothing picked yet';
+    $('#epGo').disabled = n===0;
+    $('#presets').innerHTML=PRESETS.map(function(x){
+      return '<button class="opt" data-preset="'+x.k+'">'+
+        '<span class="oi" style="background:var(--emerald-l);color:var(--emerald-d)"><span class="material-icons-round">bolt</span></span>'+
+        '<span class="ot"><b>'+esc(x.t)+'</b><span>'+esc(x.s)+'</span></span></button>';
+    }).join('');
+  }
+
+  $('#scStart').addEventListener('click',function(e){
+    var c=e.target.closest('[data-ep]');
+    if(c && !c.disabled){
+      var k=c.dataset.ep, i=S.ep.indexOf(k);
+      if(i>-1) S.ep.splice(i,1);
+      else {
+        // "Just the Project" is exclusive —— it means "nothing else yet"
+        if(k==='PROJECT_ONLY') S.ep=[];
+        else S.ep=S.ep.filter(function(x){return x!=='PROJECT_ONLY';});
+        S.ep.push(k);
+      }
+      renderStart(); return;
+    }
+    var pr=e.target.closest('[data-preset]');
+    if(pr){
+      var x=PRESETS.filter(function(y){return y.k===pr.dataset.preset;})[0];
+      S.ep=x.ep.slice(); S.src=x.src?JSON.parse(JSON.stringify(x.src)):null; S.q=null; S.msgs=[];
+      openFunnel(); return;
+    }
+    if(e.target.closest('#epGo')){ S.src=null; S.q=null; S.msgs=[]; openFunnel(); }
+  });
+
+  var pi=0;
+  $('#q').placeholder=PLACEHOLDERS[0];
+  setInterval(function(){
+    if(document.activeElement===$('#q')||$('#q').value) return;
+    pi=(pi+1)%PLACEHOLDERS.length; $('#q').placeholder=PLACEHOLDERS[pi];
+  },3800);
+  function syncMake(){ $('#makeBtn').disabled=$('#q').value.trim().length<4; }
+  $('#q').addEventListener('input',syncMake);
+  $('#q').addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!$('#makeBtn').disabled){ e.preventDefault(); fromPrompt(); }
+  });
+  $('#makeBtn').addEventListener('click',fromPrompt);
+
+  /* ================= parsing a typed sentence ================= */
+  var UNSUPPORTED=[
+    {re:/作文|寫作|写作|essay/i, name:'writing', near:'QA', why:'目前沒有寫作類練習'},
+    {re:/翻譯|翻译|translate/i,   name:'translation', near:'QA', why:'目前沒有翻譯練習'}
+  ];
+  var AMBIGUOUS={
+    read:{re:/念|唸|朗讀|朗读/, ask:'Reading what — the words, or the sentences?',
+      opts:[['VOCABULARY','Words','Vocabulary cards'],['MIRRORING','Sentences','Mirroring practice']]},
+    makeSentence:{re:/造句/, ask:'“造句” — which one do you mean?',
+      opts:[['SENTENCE_SCRAMBLE','Put words in order','Sentence Scramble'],['QA','Say one themselves','QA Practice']]},
+    dictate:{re:/聽寫|听写|默寫|默写/, ask:'“聽寫” has no exact match. The closest two:',
+      opts:[['VOCABULARY','Vocabulary cards','recognise and recall the words'],['MIRRORING','Mirroring','say them out loud']]}
+  };
+
+  function parse(q){
+    var out={ep:[], src:null, cls:null, ambiguous:null, unsupported:null};
+    var m=q.match(/([0-9]+[A-Za-z])\s*班?/); if(m) out.cls=m[1].toUpperCase();
+    UNSUPPORTED.forEach(function(u){ if(!out.unsupported && u.re.test(q)) out.unsupported=u; });
+    Object.keys(AMBIGUOUS).forEach(function(k){
+      if(!out.ambiguous && AMBIGUOUS[k].re.test(q) && !/單字|单字|生詞|生词|句子/.test(q)) out.ambiguous=k;
+    });
+    if(/單字|单字|生詞|生词|詞卡|词卡/.test(q) && /念|唸|背|記/.test(q)) out.ep.push('VOCABULARY');
+    if(/句型|語序|语序|重組|重组/.test(q)) out.ep.push('SENTENCE_SCRAMBLE');
+    if(/選擇題|选择题|出題|出题|幾題|几题|十題|十题/.test(q)) out.ep.push('MULTIPLE_CHOICE');
+    if(/問答|问答|口說|口试|口試/.test(q)) out.ep.push('QA');
+    if(/講義|讲义|handout/i.test(q)) out.ep.push('HANDOUT');
+    if(/投影片|簡報|slide/i.test(q)) out.ep.push('SLIDE');
+    if(/從頭|从头|完整|一口氣|一口气|全部做完|整課|整课/.test(q))
+      out.ep=['VOCABULARY','SENTENCE_SCRAMBLE','MULTIPLE_CHOICE'];
+    if(/寫一課|写一课|新課文|新课文|新的?\s*project/i.test(q) && !out.ep.length) out.ep=['PROJECT_ONLY'];
+
+    var hit=null;
+    PROJECTS.forEach(function(pj){ if(!hit && q.indexOf(pj.topic)>-1) hit=pj; });
+    if(/新建|新的|重新寫|重新写|還沒有|还没有|沒有課文|没有课文/.test(q)) out.src={kind:'write'};
+    else if(hit) out.src={kind:'existing', sk:hit.sk};
+    return out;
+  }
+
+  function fromPrompt(){
+    var q=$('#q').value.trim(); if(q.length<4) return;
+    var r=parse(q);
+    S.q=q; S.ep=r.ep.slice(); S.src=r.src; S.cls=r.cls; S.msgs=[];
+    if(q) S.msgs.push({who:'you', t:q});
+    S.unsupported=r.unsupported; S.askAmb=r.ambiguous;
+    openFunnel();
+  }
+
+  /* ================= the funnel ================= */
+  function openFunnel(){
+    $('#fnSub').textContent = S.q ? '“'+S.q+'”' : 'Confirm these two, then we start';
+    show('scFunnel'); renderFunnel();
+  }
+
+  function slotsHtml(){
+    var made = S.ep.length
+      ? S.ep.map(function(k){ return '<span class="chip-f">'+EP[k].t+
+          '<button data-unep="'+k+'" aria-label="Remove '+EP[k].t+'"><span class="material-icons-round">close</span></button></span>'; }).join('')
+      : '<span class="chip-empty">not decided</span>';
+    var src='<span class="chip-empty">not decided</span>';
+    if(S.src){
+      var label = S.src.kind==='existing'
+        ? (PROJECTS.filter(function(p){return p.sk===S.src.sk;})[0]||{}).name
+        : (S.src.kind==='upload' ? 'New — I’ll upload a text' : 'New — write it for me');
+      src='<span class="chip-f">'+esc(label||'—')+'<button data-unsrc="1" aria-label="Change"><span class="material-icons-round">close</span></button></span>';
+    }
+    var cls = S.cls ? '<span class="sep"></span><span class="sl"><span class="sk">Class</span><span class="chip-f">'+esc(S.cls)+
+      '<button data-uncls="1" aria-label="Remove class"><span class="material-icons-round">close</span></button></span></span>' : '';
+    return '<span class="sl"><span class="sk">Making</span>'+made+'</span><span class="sep"></span>'+
+           '<span class="sl"><span class="sk">Material</span>'+src+'</span>'+cls;
+  }
+
+  var convoOpen=false;
+
+  function runSummary(){
+    var existing = S.src && S.src.kind==='existing';
+    var proj = existing ? (PROJECTS.filter(function(p){return p.sk===S.src.sk;})[0]||{}).name
+                        : '新的 Project';
+    var eps = S.ep.filter(function(k){return k!=='PROJECT_ONLY';});
+    var made = eps.length ? eps.map(function(k){return EP[k].t;}).join('、') : '一份 Project';
+
+    var line = existing
+      ? 'Using <b>'+esc(proj)+'</b> · creating <b>'+esc(made)+'</b>'
+      : (S.src&&S.src.kind==='upload'
+          ? 'From <b>a text you upload</b> · creating <b>'+esc(made)+'</b>'
+          : 'Writing <b>a new Project</b> · creating <b>'+esc(made)+'</b>');
+
+    if(needsBank(S.ep)){
+      var hasBank = existing && (PROJECTS.filter(function(p){return p.sk===S.src.sk;})[0]||{}).bank;
+      line += hasBank
+        ? '<br/>Its question bank already exists, so nothing new is written there.'
+        : '<br/>A question bank is needed for that, so one gets created too.';
+    }
+    var next = existing
+      ? 'Next: what will be created.'
+      : 'Next: check the passage, then the teaching points.';
+    return '<div class="ready-line">'+line+'</div>'+
+      '<div class="ready-next"><span class="material-icons-round">arrow_forward</span>'+next+'</div>';
+  }
+
+  function renderFunnel(){
+    $('#slots').innerHTML=slotsHtml();
+    var done = !!(S.ep.length && S.src);
+    var body='';
+
+    if(S.unsupported){
+      body+='<div class="cant"><b>'+esc(S.unsupported.why)+'。</b> 最接近的是 <b>'+EP[S.unsupported.near].t+
+        '</b> —— 要改成這個嗎？<span class="qopts"><button class="qopt" data-near="'+S.unsupported.near+'">用 '+
+        EP[S.unsupported.near].t+'</button><button class="qopt" data-near="">我自己選</button></span></div>';
+    }
+
+    // once both slots are filled the transcript is redundant —— the chips carry
+    // the answers. Collapse it, but keep it reachable.
+    var msgsHtml=S.msgs.map(function(m){
+      return '<div class="msg '+m.who+'"><span class="who">'+(m.who==='you'?'你':'AI')+'</span><span class="bub">'+esc(m.t)+'</span></div>';
+    }).join('');
+    if(done && S.msgs.length){
+      var asked=S.msgs.filter(function(m){return m.who==='sys';}).length;
+      body+='<button class="convo-toggle'+(convoOpen?' open':'')+'" id="convoBtn">'+
+        '<span class="material-icons-round">chevron_right</span>'+
+        (asked?'Answered '+asked+' question'+(asked===1?'':'s'):'What you typed')+'</button>'+
+        (convoOpen?msgsHtml:'');
+    } else {
+      body+=msgsHtml;
+    }
+
+    if(done){
+      body='<div class="stages" id="fnStages">'+stagesHtml()+'</div>'+body+runSummary();
+    }
+
+    var q=done?null:nextQuestion();
+    S.askQ=q;
+    if(q) body+='<div class="msg sys"><span class="who">AI</span><span class="bub">'+esc(q.ask)+
+      '<span class="qopts">'+q.opts.map(function(o,i){
+        return '<button class="qopt" data-ans="'+i+'">'+esc(o.t)+(o.s?'<span class="sub">'+esc(o.s)+'</span>':'')+'</button>';
+      }).join('')+'</span></span></div>';
+
+    $('#fnBody').innerHTML=body;
+    $('#fnHead').textContent = done ? 'Ready to go' : 'Two things to pin down';
+    $('#fnBadge').textContent = (S.ep.length?1:0)+(S.src?1:0)+' / 2';
+    $('#fnGo').disabled = !done;
+    $('#fnGo').style.opacity = done ? 1 : .5;
+    $('#fnSum').innerHTML = done ? '' : 'Both need an answer before anything can be built.';
+  }
+
+  /* only asks what cannot be worked out —— endpoint first, then material */
+  function nextQuestion(){
+    if(S.unsupported) return null;
+    if(S.askAmb){
+      var a=AMBIGUOUS[S.askAmb];
+      return {key:'amb', ask:a.ask, opts:a.opts.map(function(o){ return {t:o[1], s:o[2], v:o[0]}; })};
+    }
+    if(!S.ep.length){
+      return {key:'ep', ask:'What do you want to make? Pick on the start screen, or one of these to begin with:',
+        opts:EP_PRACTICE.slice(0,4).map(function(k){ return {t:EP[k].t, s:EP[k].s.replace(/&amp;/g,'&'), v:k}; })};
+    }
+    if(!S.src){
+      var opts=PROJECTS.slice(0,3).map(function(p){ return {t:p.name, s:'existing Project', v:'ex:'+p.sk}; });
+      opts.push({t:'Upload a text', s:'new Project', v:'upload'});
+      opts.push({t:'Write it for me', s:'new Project', v:'write'});
+      return {key:'src', ask:'Where does the material come from?', opts:opts};
+    }
+    return null;
+  }
+
+  $('#fnBody').addEventListener('click',function(e){
+    if(e.target.closest('#convoBtn')){ convoOpen=!convoOpen; renderFunnel(); return; }
+    var near=e.target.closest('[data-near]');
+    if(near){
+      var k=near.dataset.near;
+      S.msgs.push({who:'sys', t:S.unsupported.why});
+      S.unsupported=null;
+      if(k){ S.ep=[k]; S.msgs.push({who:'you', t:'改用 '+EP[k].t}); }
+      renderFunnel(); return;
+    }
+    var b=e.target.closest('[data-ans]'); if(!b||!S.askQ) return;
+    var o=S.askQ.opts[+b.dataset.ans];
+    S.msgs.push({who:'sys', t:S.askQ.ask});
+    S.msgs.push({who:'you', t:o.t});
+    if(S.askQ.key==='amb'){ S.askAmb=null; S.ep=[o.v]; }
+    else if(S.askQ.key==='ep'){ S.ep=[o.v]; }
+    else if(S.askQ.key==='src'){
+      if(o.v==='upload') S.src={kind:'upload'};
+      else if(o.v==='write') S.src={kind:'write'};
+      else S.src={kind:'existing', sk:o.v.slice(3)};
+    }
+    renderFunnel();
+  });
+  $('#slots').addEventListener('click',function(e){
+    var u=e.target.closest('[data-unep]'), t=e.target.closest('[data-unsrc]'), c=e.target.closest('[data-uncls]');
+    if(u){ S.ep=S.ep.filter(function(k){return k!==u.dataset.unep;}); renderFunnel(); }
+    if(t){ S.src=null; renderFunnel(); }
+    if(c){ S.cls=null; renderFunnel(); }
+  });
+
+  $('#fnGo').addEventListener('click',function(){
+    if(!(S.ep.length && S.src)) return;
+    if(S.src.kind==='existing'){
+      S.proj=PROJECTS.filter(function(p){return p.sk===S.src.sk;})[0];
+      S.sents=[]; S.tps=[];
+      buildPreview();
+      return;
+    }
+    // new Project —— the two mandatory steps
+    S.topic = S.q ? ((S.q.match(/[「『]([^」』]+)[」』]/)||[])[1] || guessTopic(S.q)) : '食物';
+    S.sents = textOf(S.topic).sents.map(function(x){ return {w:x.w.slice(), t:x.t, edited:false}; });
+    $('#txTitle').textContent='New Project';
+    $('#txSub').textContent = S.src.kind==='upload'
+      ? 'Uploaded text — check it before we pull the teaching points out'
+      : 'Topic: '+S.topic+' — written by AI, yours to change';
+    $('#txStages').innerHTML=stagesHtml();
+    show('scText'); renderText();
+  });
+  function guessTopic(q){
+    var hit='食物';
+    Object.keys(TEXTS).forEach(function(t){ if(q.indexOf(t)>-1) hit=t; });
+    return hit;
+  }
+
+  /* stage strip is derived from the endpoints, not from a fixed path */
+  function stagesHtml(){
+    var newProj = !S.src || S.src.kind!=='existing';
+    var st=[ newProj, newProj, needsBank(S.ep), needsBank(S.ep), hasPractice(S.ep) ];
+    if(S.ep.indexOf('HANDOUT')>-1||S.ep.indexOf('SLIDE')>-1||S.ep.indexOf('PROJECT_ONLY')>-1) st[0]=st[0]||true;
+    return '<span class="lb">HOW FAR THIS RUN GOES</span>'+STAGE_LABELS.map(function(l,i){
+      return '<span class="stg'+(st[i]?' on':'')+'">'+l+'</span>'+(i<4?'<span class="arrow">›</span>':'');
+    }).join('');
+  }
+
+  /* ================= navigation ================= */
+  function show(id){
+    ['scStart','scFunnel','scText','scTp','scPreview','scDone'].forEach(function(x){ $('#'+x).classList.toggle('on',x===id); });
+    $('#canvas').classList.toggle('wide',id!=='scStart');
+    window.scrollTo(0,0);
+  }
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-back="start"]')){ show('scStart'); renderStart(); }
+  });
+
+  /* ---------------- step 1: the passage ---------------- */
+  var editing=false;
+  function passageText(){ return S.sents.map(function(x){ return x.w.map(function(p){return p[0];}).join(''); }); }
+
+  function renderText(){
+    $('#txCount').textContent=S.sents.length+' sentences';
+    $('#txEdit').innerHTML = editing
+      ? '<span class="material-icons-round">check</span>Done'
+      : '<span class="material-icons-round">edit</span>Edit';
+    if(editing){
+      $('#txBody').innerHTML='<div class="cbox"><span class="clbl">One sentence per line</span>'+
+        '<textarea id="txArea" class="txarea">'+esc(passageText().join('\n'))+'</textarea>'+
+        '<div class="more-note">Pinyin is regenerated for any line you change.</div></div>';
+      return;
+    }
+    $('#txBody').innerHTML='<div class="cbox">'+
+      S.sents.map(function(x,i){
+        return '<div class="srow">'+
+          (x.edited
+            ? '<div class="rline"><span class="wd"><span class="hz">'+esc(x.w.map(function(p){return p[0];}).join(''))+'</span></span></div>'+
+              '<div class="rtr" style="color:var(--amber)">Pinyin regenerates on save</div>'
+            : rubyLine(x.w)+'<div class="rtr">'+esc(x.t)+'</div>')+
+          '<button class="srow-x" data-dels="'+i+'" aria-label="Remove this sentence"><span class="material-icons-round">close</span></button>'+
+        '</div>';
+      }).join('')+'</div>';
+  }
+
+  $('#txEdit').addEventListener('click',function(){
+    if(editing){
+      var lines=$('#txArea').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+      var old=S.sents.slice();
+      S.sents=lines.map(function(l,i){
+        var prev=old[i];
+        if(prev && prev.w.map(function(p){return p[0];}).join('')===l) return prev;
+        return {w:[[l,'']], t:'', edited:true};
+      });
+    }
+    editing=!editing; renderText();
+  });
+  $('#txBody').addEventListener('click',function(e){
+    var d=e.target.closest('[data-dels]'); if(!d) return;
+    S.sents.splice(+d.dataset.dels,1); renderText();
+  });
+  $('#txRedo').addEventListener('click',function(){
+    S.sents=textOf(S.topic).sents.map(function(x){ return {w:x.w.slice(), t:x.t, edited:false}; });
+    editing=false; renderText(); say('Wrote the passage again');
+  });
+  $('#txGo').addEventListener('click',function(){
+    if(editing) $('#txEdit').click();
+    if(!S.sents.length){ say('Keep at least one sentence'); return; }
+    S.tps=proposeTps(S.topic);
+    $('#tpTitle').textContent='New Project';
+    $('#tpSub').textContent='Pulled out of the passage — mandatory, everything below is built from them';
+    $('#tpStages').innerHTML=stagesHtml();
+    show('scTp'); renderTps();
+  });
+  $('#tpBack').addEventListener('click',function(){ show('scText'); });
+
+  /* ---------------- step 2: teaching points ---------------- */
+  function inPassage(word){ return passageText().join('').indexOf(word)>-1; }
+
+  function renderTps(){
+    $('#tpCount').textContent=S.tps.length;
+    var absent=S.tps.filter(function(t){ return !inPassage(t.w); });
+    $('#tpBody').innerHTML='<div class="tps">'+S.tps.map(function(t,i){
+      var ty=TPT[t.ty], gone=!inPassage(t.w);
+      return '<span class="tp'+(gone?' miss':'')+'"'+(gone?' title="This word is not in the passage"':'')+'>'+esc(t.w)+
+        '<span class="ty '+ty.c+'">'+ty.l+'</span>'+
+        '<button class="x" data-del="'+i+'" aria-label="Remove '+esc(t.w)+'"><span class="material-icons-round" style="font-size:14px">close</span></button></span>';
+    }).join('')+'</div>'+
+    (absent.length?'<div class="tp-warn">'+absent.length+' of these no longer appear in the passage: '+
+      absent.map(function(t){return esc(t.w);}).join('、')+'</div>':'')+
+    '<div class="tp-add"><input id="tpNew" placeholder="Add a teaching point, e.g. 一边…一边…" />'+
+    '<select id="tpNewTy">'+Object.keys(TPT).map(function(k){
+      return '<option value="'+k+'">'+TPT[k].l+'</option>';}).join('')+'</select>'+
+    '<button class="btn-sm" id="tpAdd">Add</button></div>';
+    syncTpGo();
+  }
+  $('#tpBody').addEventListener('click',function(e){
+    var d=e.target.closest('[data-del]');
+    if(d){ S.tps.splice(+d.dataset.del,1); renderTps(); return; }
+    if(e.target.closest('#tpAdd')){
+      var v=$('#tpNew').value.trim(); if(!v) return;
+      S.tps.push({w:v, ty:$('#tpNewTy').value}); renderTps();
+    }
+  });
+  $('#tpBody').addEventListener('keydown',function(e){
+    if(e.target.id==='tpNew'&&e.key==='Enter'){ e.preventDefault(); $('#tpAdd').click(); }
+  });
+  $('#tpRedo').addEventListener('click',function(){ S.tps=proposeTps(S.topic); renderTps(); say('Read the passage again'); });
+  function syncTpGo(){
+    var n=S.tps.length;
+    $('#tpGo').disabled = n===0;
+    $('#tpGo').style.opacity = n===0 ? .5 : 1;
+    $('#tpSum').innerHTML = n
+      ? 'Vocabulary, Sentence Scramble and QA are all built from these — <b>'+n+'</b> point'+(n===1?'':'s')+'.'
+      : '<span style="color:var(--rose)">At least one teaching point is required — nothing can be built without them.</span>';
+  }
+  $('#tpGo').addEventListener('click',function(){
+    if(!S.tps.length){ say('At least one teaching point is required'); return; }
+    buildPreview(S.q);
+  });
+
+  /* ================= preview ================= */
+  function tpsForPath(){
+    if(S.src && S.src.kind!=='existing') return S.tps;
+    return (S.proj?S.proj.tps:[]).map(function(t){ return {w:t[0], ty:t[1]}; });
+  }
+
+  function buildPreview(q){
+    $('#pvTitle').textContent = S.ep.map(function(k){return EP[k].t;}).join(' + ');
+    $('#pvSub').textContent = existing ? 'Project: '+(S.proj?S.proj.name:'—') : 'New Project · '+S.topic;
+    $('#pvStages').innerHTML=stagesHtml();
+    $('#pvRows').innerHTML='<div class="thinking"><span class="spinner"></span>Reading your projects and question banks…</div>';
+    $('#pvCovers').innerHTML=''; $('#pvCount').textContent=''; $('#pvSum').textContent=''; $('#pvActs').innerHTML='';
+    var existing = S.src && S.src.kind==='existing';
+    $('#pvProjWrap').style.display = existing ? '' : 'none';
+    if(existing){
+      $('#pvProj').innerHTML=PROJECTS.map(function(p){
+        return '<option value="'+p.sk+'"'+(S.proj&&S.proj.sk===p.sk?' selected':'')+'>'+esc(p.name)+'</option>';}).join('');
+    }
+    show('scPreview');
+    setTimeout(function(){ S.rows=composeRows(); renderPreview(); }, 720);
+  }
+
+  function tpsCoveredBy(type, tps, cat){
+    var c=PT[type].covers;
+    if(c==='byCat')    c=MC_CAT[cat||'comprehension'].covers;
+    if(c==='byQaCat')  c=QA_CAT[cat||'shortAnswer'].covers;
+    if(c==='all') return tps.map(function(t){return t.w;});
+    return tps.filter(function(t){ return c.indexOf(t.ty)>-1; }).map(function(t){return t.w;});
+  }
+
+  function composeRows(){
+    var existing = S.src && S.src.kind==='existing';
+    var tps=tpsForPath(), rows=[];
+    var topic = existing ? S.proj.topic : S.topic;
+    var name  = existing ? S.proj.name  : (S.topic+' — new project');
+
+    // 1. the Project —— created unless the teacher picked an existing one
+    if(!existing){
+      rows.push({stage:'Project', kind:'text', on:true, open:true,
+        n:name, d:tps.length+' teaching points · '+(S.sents.length||6)+' sentences at HSK 1',
+        chips:[S.src&&S.src.kind==='upload'?'uploaded':'new'], covers:tps.map(function(t){return t.w;})});
+    }
+
+    // 2. the question bank —— only when an endpoint needs one
+    if(needsBank(S.ep)){
+      var hasBank = existing && S.proj.bank;
+      rows.push({stage:'Question bank', kind:'bank', on:true,
+        n: hasBank ? S.proj.bank : (topic+' — Exit questions'),
+        d:'Multiple Choice × Comprehension × 10'+(S.ep.indexOf('QA')>-1?' · QA × Content Base × 5':''),
+        chips:[hasBank?'existing bank':'new'], covers:[]});
+    }
+
+    // 3. every endpoint the teacher picked
+    S.ep.forEach(function(k){
+      if(k==='PROJECT_ONLY') return;
+      if(k==='HANDOUT'){
+        rows.push({stage:'Teaching material', kind:'handout', on:true, ep:k,
+          n:topic+' · Handout', d:'A4 · Reading with Pinyin, Full Reading, Translation, Teaching Points'+
+          (needsBank(S.ep)?', Questions, Answer Key':''),
+          chips:['from the Project'], covers:[]});
+        return;
+      }
+      if(k==='SLIDE'){
+        rows.push({stage:'Teaching material', kind:'slide', on:true, ep:k,
+          n:topic+' · Slides', d:'Cover · '+(S.sents.length||6)+' content slides · full text · translation · vocabulary',
+          chips:['from the Project'], covers:[]});
+        return;
+      }
+      var cat = k==='MULTIPLE_CHOICE' ? 'comprehension' : (k==='QA' ? 'shortAnswer' : null);
+      rows.push({stage:'Practices', kind:'practice', type:k, cat:cat, on:true,
+        n:topic+' · '+PT[k].n, d:detailFor(k,tps,cat),
+        chips:[srcLabel(k,topic)], covers:tpsCoveredBy(k,tps,cat)});
+    });
+    return rows;
+  }
+
+  function detailFor(t,tps,cat){
+    var w=tps.filter(function(x){return WORDISH.indexOf(x.ty)>-1;}).length;
+    var p=tps.filter(function(x){return PATTERNISH.indexOf(x.ty)>-1;}).length;
+    if(t==='MIRRORING') return (S.sents.length||6)+' sentences · pinyin shown · pronunciation scored';
+    if(t==='VOCABULARY') return w+' cards · audio, pinyin and meaning';
+    if(t==='SENTENCE_SCRAMBLE') return (p||1)*3+' sentences · listen, then rearrange';
+    if(t==='QA') return 'QA × '+QA_CAT[cat||'shortAnswer'].l+' × 5 · AI asks one follow-up each';
+    if(t==='VOCABULARY_MC') return w+' questions · image, pinyin and meaning';
+    return 'Multiple Choice × '+MC_CAT[cat||'comprehension'].l+' × 10';
+  }
+  function srcLabel(t,topic){
+    var s=PT[t].src;
+    if(s==='text') return 'from the passage';
+    if(s==='bank') return 'Bank: '+topic+' — Exit questions';
+    return 'from teaching points';
+  }
+
+  function renderPreview(){
+    var tps=tpsForPath();
+    var on=S.rows.filter(function(r){return r.on;});
+    // Coverage answers "which teaching points get PRACTISED" —— a project or a question
+    // bank is material, not practice, so neither counts towards it.
+    var practised=on.filter(function(r){return r.kind==='practice';});
+    var covered={}; practised.forEach(function(r){ (r.covers||[]).forEach(function(w){ covered[w]=1; }); });
+    var missing=tps.filter(function(t){ return !covered[t.w]; });
+
+    // material-only paths (建立課文 / 建立考題) have nothing to practise —— no strip
+    if(!S.rows.some(function(r){return r.kind==='practice';})){ $('#pvCovers').innerHTML=''; }
+    else $('#pvCovers').innerHTML =
+      '<div class="covers"><div class="ch"><b>Teaching points covered</b>'+
+        '<span>'+(tps.length-missing.length)+' of '+tps.length+'</span></div>'+
+        '<div class="tps">'+tps.map(function(t){
+          var ty=TPT[t.ty], miss=!covered[t.w];
+          return '<span class="tp'+(miss?' miss':'')+'" style="font-size:12.5px;padding:3px 9px">'+esc(t.w)+
+            '<span class="ty '+ty.c+'">'+ty.l+'</span></span>';
+        }).join('')+'</div>'+
+        (missing.length?'<div class="warn">'+missing.length+' teaching point'+(missing.length===1?'':'s')+
+          ' not practised by anything here: '+missing.map(function(t){return esc(t.w);}).join('、')+'</div>':'')+
+      '</div>';
+
+    var byStage={}, order=[];
+    S.rows.forEach(function(r,i){ if(!byStage[r.stage]){byStage[r.stage]=[];order.push(r.stage);} byStage[r.stage].push(i); });
+    $('#pvRows').innerHTML=order.map(function(st,si){
+      return '<div class="stage-t"><span class="n">'+(si+1)+'</span><b>'+esc(st)+'</b></div>'+
+        byStage[st].map(function(i){
+          var r=S.rows[i];
+          var ic = r.kind==='text' ? {icon:'description',bg:'var(--emerald-l)',fg:'var(--emerald-d)'}
+                 : r.kind==='bank' ? {icon:'quiz',bg:'var(--mc-bg)',fg:'var(--mc)'}
+                 : r.kind==='handout' ? {icon:'print',bg:'var(--qa-bg)',fg:'var(--qa)'}
+                 : r.kind==='slide' ? {icon:'slideshow',bg:'#EDE9FE',fg:'#6D28D9'}
+                 : {icon:PT[r.type].icon,bg:PT[r.type].bg,fg:PT[r.type].fg};
+          var topic = (S.src&&S.src.kind==='existing') ? S.proj.topic : S.topic;
+          return '<div class="prow'+(r.on?'':' off')+(r.open?' open':'')+'" data-i="'+i+'">'+
+            '<span class="tile" style="background:'+ic.bg+';color:'+ic.fg+'"><span class="material-icons-round">'+ic.icon+'</span></span>'+
+            '<span class="pt2"><b>'+esc(r.n)+'</b><span class="pd">'+esc(r.d)+'</span>'+
+              '<span class="chips">'+r.chips.map(function(c){return '<span class="pill line">'+esc(c)+'</span>';}).join('')+
+              (r.covers&&r.covers.length?'<span class="pill">covers '+r.covers.length+'</span>':'')+
+              '</span></span>'+
+            '<button class="prow-x" data-x="'+i+'" aria-label="'+(r.open?'Hide':'Show')+' the content of '+esc(r.n)+'" '+
+              'aria-expanded="'+(r.open?'true':'false')+'"><span class="material-icons-round">expand_more</span></button>'+
+            '<span class="ped"><input class="sw" type="checkbox" data-sw="'+i+'"'+(r.on?' checked':'')+
+              ' aria-label="Create '+esc(r.n)+'" /></span>'+
+            '<div class="prow-body">'+rowContent(r, topic, tps)+'</div></div>';
+        }).join('');
+    }).join('');
+
+    var hasPractice=on.some(function(r){return r.kind==='practice';});
+    $('#pvCount').textContent=on.length;
+    $('#pvSum').innerHTML = on.length
+      ? 'Creates <b>'+on.length+'</b> item'+(on.length===1?'':'s')+
+        (hasPractice?', practices assigned to <b>'+S.cls+'</b>':' — all material, nothing to assign')
+      : 'Everything is switched off — leave at least one on.';
+    $('#pvActs').innerHTML=
+      (hasPractice?'<span class="assign">Assign to <select class="mini-sel" id="clsSel">'+
+        ['4A','3B','5C','6A'].map(function(c){return '<option'+(c===S.cls?' selected':'')+'>'+c+'</option>';}).join('')+
+        '</select></span>':'')+
+      '<button class="btnp" id="goBtn"'+(on.length?'':' disabled style="opacity:.5"')+'>'+
+      (hasPractice?'Create &amp; assign':'Create')+'</button>';
+  }
+
+  $('#pvRows').addEventListener('change',function(e){
+    var sw=e.target.closest('[data-sw]'); if(!sw) return;
+    S.rows[+sw.dataset.sw].on=sw.checked; renderPreview();
+  });
+  $('#pvRows').addEventListener('click',function(e){
+    var x=e.target.closest('[data-x]'); if(!x) return;
+    var r=S.rows[+x.dataset.x]; r.open=!r.open; renderPreview();
+  });
+  $('#pvActs').addEventListener('change',function(e){
+    if(e.target.id==='clsSel'){ S.cls=e.target.value; renderPreview(); }
+  });
+  $('#pvProj').addEventListener('change',function(){
+    S.proj=PROJECTS.filter(function(p){return p.sk===this.value;}.bind(this))[0];
+    S.rows=composeRows(); renderPreview();
+  });
+  $('#pvBack').addEventListener('click',function(){ show(S.src&&S.src.kind!=='existing'?'scTp':'scFunnel'); });
+  // the passage note now points at a step the teacher has actually been through
+
+  $('#pvActs').addEventListener('click',function(e){
+    if(!e.target.closest('#goBtn')) return;
+    var on=S.rows.filter(function(r){return r.on;}); if(!on.length) return;
+    var hasPractice=on.some(function(r){return r.kind==='practice';});
+    // a created text becomes a real project for the rest of the session
+    if(on.some(function(r){return r.kind==='text';})){
+      PROJECTS.unshift({sk:'new'+PROJECTS.length, name:S.topic+' — new project', topic:S.topic, level:'HSK 1', sents:6,
+        bank:on.some(function(r){return r.kind==='bank';})?S.topic+' — Exit questions':null, bankQs:10,
+        tps:S.tps.map(function(t){return [t.w,t.ty];})});
+    }
+    $('#scDone').innerHTML=
+      '<div class="panel-w"><div class="done2">'+
+        '<span class="ic"><span class="material-icons-round">check</span></span>'+
+        '<h3>Created '+on.length+' item'+(on.length===1?'':'s')+(hasPractice?', assigned to '+S.cls:'')+'</h3>'+
+        '<p>'+on.map(function(r){return esc(r.n);}).join(' · ')+'</p>'+
+        '<div class="acts">'+
+          (hasPractice?'<a class="btn-sm" href="redesign-v9-practice.html">Open Practice List</a>':'')+
+          '<a class="btn-sm" href="redesign-v9-projects.html">Open Projects</a>'+
+          '<button class="btnp" id="againBtn">Plan another</button>'+
+        '</div></div></div>';
+    show('scDone'); renderStart();
+    say('Created '+on.length+' item'+(on.length===1?'':'s'));
+  });
+  $('#scDone').addEventListener('click',function(e){
+    if(e.target.closest('#againBtn')){
+      // a finished run must not leave its answers behind
+      S.ep=[]; S.src=null; S.cls=null; S.q=null; S.msgs=[]; S.askAmb=null; S.unsupported=null;
+      S.sents=[]; S.tps=[]; S.rows=[];
+      $('#q').value=''; syncMake(); renderStart(); show('scStart');
+    }
+  });
+
+  /* ================= empty-state demo ================= */
+  $('#demoEmpty').addEventListener('change',function(){
+    PROJECTS = this.checked ? [] : ALL_PROJECTS.slice();
+    S.proj = PROJECTS[0]||null;
+    if(this.checked && S.src && S.src.kind==='existing') S.src=null;
+    renderStart(); show('scStart');
+    say(this.checked ? 'No Projects at all — every endpoint still works, the material just has to be new'
+                     : 'Projects restored');
+  });
+
+  renderStart(); syncMake();
+})();
+</script>
+</body>
+</html>

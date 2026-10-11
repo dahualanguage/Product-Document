@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Word Game — Design System (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet" />
+<style>
+  /* ============ design tokens (mirror of student-redesign.html) ============ */
+  :root{
+    --green:#12A150; --green-d:#0B7A3B; --green-l:#DCF7E6; --green-ink:#0B5B30;
+    --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF;
+    --gold:#FFC219; --gold-d:#E8A400;
+    --coral:#FF5A6E; --coral-l:#FFE1E5;
+    --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7;
+    --paper:#FFFFFF; --shell:#EAF3EC;
+    --shadow-sm:0 3px 0 rgba(11,91,48,.10);
+    --shadow-md:0 12px 26px -14px rgba(11,91,48,.45);
+    --shadow-lg:0 26px 60px -24px rgba(11,60,35,.55);
+    --r-lg:20px; --r-md:20px; --r-sm:14px;
+    --font-d:'Fredoka', system-ui, sans-serif;
+    --font-b:'Nunito', system-ui, sans-serif;
+  }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:var(--font-b); color:var(--ink); background:#F4F8F5; line-height:1.7; font-size:14px; -webkit-font-smoothing:antialiased; }
+  code{ background:#EAF3EC; padding:1px 6px; border-radius:5px; font-size:12px; font-family:"SF Mono","Fira Code",monospace; color:var(--green-d); }
+  a{ color:var(--green-d); }
+
+  /* ── topbar ── */
+  .topbar{ background:#fff; border-bottom:1px solid var(--line); padding:14px 40px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+  .topbar a{ color:var(--ink-soft); text-decoration:none; font-size:13px; font-weight:800; }
+  .topbar a:hover{ color:var(--ink); }
+  .topbar .sep{ color:#C3D4C9; }
+  .topbar .current{ color:var(--green-d); font-weight:900; }
+  .topbar .chip{ margin-left:auto; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; padding:4px 11px; border-radius:999px; background:var(--green-l); color:var(--green-d); }
+
+  .container{ max-width:940px; margin:0 auto; padding:40px 24px 90px; }
+
+  /* ── header ── */
+  .doc-header{ margin-bottom:36px; padding-bottom:24px; border-bottom:2px solid var(--line); }
+  .doc-header h1{ font-family:var(--font-d); font-weight:700; font-size:34px; color:var(--ink); letter-spacing:.2px; }
+  .doc-header .subtitle{ color:var(--ink-soft); font-size:15px; font-weight:700; margin-top:4px; max-width:640px; }
+  .doc-header .meta{ margin-top:14px; display:flex; gap:10px; font-size:12px; flex-wrap:wrap; }
+  .doc-header .meta span{ background:#fff; padding:4px 12px; border-radius:8px; font-weight:800; color:var(--ink-soft); box-shadow:inset 0 0 0 1.5px var(--line); }
+
+  /* ── sections ── */
+  h2{ font-family:var(--font-d); font-weight:600; font-size:22px; color:var(--ink); margin:52px 0 16px; padding-bottom:9px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  h2 .num{ font-family:var(--font-b); font-size:12px; font-weight:900; color:#fff; background:var(--green); padding:3px 10px; border-radius:8px; }
+  h3{ font-family:var(--font-d); font-weight:600; font-size:16px; color:var(--ink); margin:28px 0 12px; }
+  p{ margin-bottom:10px; font-weight:600; color:#3f5548; }
+  p.lead{ color:var(--ink-soft); }
+
+  table{ width:100%; border-collapse:collapse; margin:12px 0 22px; font-size:13px; }
+  th,td{ padding:10px 14px; text-align:left; border:1px solid var(--line); }
+  th{ background:#F1F7F3; font-weight:900; color:var(--ink); font-size:12px; }
+  td{ color:#3f5548; background:#fff; font-weight:600; }
+  tbody tr:hover td{ background:#FAFDFB; }
+
+  .callout{ background:var(--green-l); border-left:4px solid var(--green); color:var(--green-ink); border-radius:10px; padding:14px 18px; margin:12px 0 18px; font-size:13.5px; font-weight:700; line-height:1.6; }
+
+  /* ── swatches ── */
+  .swatch-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; margin:16px 0 24px; }
+  .swatch{ border-radius:14px; overflow:hidden; box-shadow:inset 0 0 0 1.5px var(--line); background:#fff; }
+  .swatch .c{ height:62px; display:flex; align-items:flex-end; padding:7px 10px; }
+  .swatch .c span{ font-size:10px; font-weight:800; font-family:"SF Mono",monospace; padding:2px 7px; border-radius:5px; background:rgba(255,255,255,.9); color:#334155; }
+  .swatch .l{ padding:9px 11px; font-size:11px; color:var(--ink-soft); font-weight:800; line-height:1.35; }
+  .swatch .l b{ color:var(--ink); font-weight:900; }
+
+  /* ── font specimen ── */
+  .font-card{ background:#fff; border-radius:16px; box-shadow:inset 0 0 0 1.5px var(--line); padding:22px 24px; margin:14px 0; }
+  .font-card .fname{ display:flex; align-items:baseline; gap:12px; margin-bottom:12px; }
+  .font-card .fname b{ font-family:var(--font-d); font-weight:600; font-size:22px; color:var(--ink); }
+  .font-card .fname .tag{ font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--green-d); background:var(--green-l); padding:3px 9px; border-radius:7px; }
+  .font-card .fname .src{ font-size:12px; color:var(--ink-soft); font-weight:700; margin-left:auto; }
+  .glyphs{ font-size:34px; color:var(--ink); letter-spacing:.5px; margin-bottom:6px; }
+  .weights{ display:flex; flex-wrap:wrap; gap:18px; margin-top:10px; }
+  .weights div{ font-size:19px; color:#3f5548; }
+
+  .scale-demo{ background:#fff; border-radius:16px; box-shadow:inset 0 0 0 1.5px var(--line); padding:22px 26px; margin:14px 0 24px; }
+  .scale-demo>div{ margin-bottom:8px; }
+  .tk{ font-family:"SF Mono",monospace; font-size:11px; color:#8fa398; margin-left:10px; font-weight:400; }
+
+  /* ── demo stage (simulates the scene behind frosted panels) ── */
+  .stage-demo{ border-radius:20px; padding:24px; margin:16px 0 24px;
+    background:
+      radial-gradient(600px 300px at 85% -10%, #CFE7F7 0%, transparent 60%),
+      radial-gradient(500px 260px at 0% 120%, #DDF3E4 0%, transparent 55%),
+      linear-gradient(160deg,#BFE3D2,#A7D8E8);
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5); }
+  .stage-demo.light{ background:linear-gradient(160deg,#F4F8FD,#EEF5F0); }
+  .demo-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .demo-row{ display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+  .cap{ font-size:11px; font-weight:800; color:var(--ink-soft); margin-top:8px; font-family:"SF Mono",monospace; }
+
+  /* ============ product component styles (copied verbatim) ============ */
+  .panel{ background:rgba(255,255,255,.95); backdrop-filter:blur(6px); border-radius:20px; padding:18px 20px 20px; box-shadow:0 24px 52px -26px rgba(11,60,35,.6), inset 0 0 0 2px rgba(255,255,255,.6); }
+  .panel .p-hd{ display:flex; align-items:center; gap:11px; margin-bottom:14px; }
+  .panel .p-hd .pi{ width:40px; height:40px; border-radius:13px; display:grid; place-items:center; font-size:19px; color:#fff; flex:none; box-shadow:inset 0 -3px 0 rgba(0,0,0,.14); }
+  .panel .p-hd h3{ font-family:var(--font-d); font-weight:600; font-size:20px; color:var(--ink); line-height:1.05; margin:0; }
+  .panel .p-hd .see{ margin-left:auto; font-size:12.5px; font-weight:900; color:var(--green-d); cursor:pointer; text-decoration:none; }
+  .due .p-hd .pi{ background:linear-gradient(150deg,#FF8A45,#FF5A6E); }
+  .opt .p-hd .pi{ background:linear-gradient(150deg,var(--purple),#A78BFA); }
+  .free .p-hd .pi{ background:linear-gradient(150deg,var(--green),#37C46E); }
+
+  .qrow{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:16px; background:#F8FBF9; box-shadow:inset 0 0 0 1.5px var(--line); }
+  .qrow+.qrow{ margin-top:10px; }
+  .qrow .ico{ width:40px; height:40px; border-radius:13px; display:grid; place-items:center; font-size:19px; flex:none; }
+  .qrow .m{ flex:1; min-width:0; }
+  .qrow .m .top{ display:flex; align-items:center; gap:7px; margin-bottom:3px; }
+  .qrow .m h5{ font-family:var(--font-d); font-weight:500; font-size:15px; color:var(--ink); margin:0; }
+  .qrow .m .zh{ font-weight:400; color:var(--ink-soft); font-size:13px; }
+
+  .due-hero{ border-radius:20px; padding:15px 16px 16px; background:linear-gradient(160deg,#FFF4F1,#FFE7E1); box-shadow:inset 0 0 0 2px #FFC9BF; }
+  .due-hero .top{ display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+  .due-hero .ico{ width:44px; height:44px; border-radius:13px; display:grid; place-items:center; font-size:21px; flex:none; }
+  .due-hero h4{ font-family:var(--font-d); font-weight:600; font-size:21px; color:var(--ink); line-height:1.15; margin:0; }
+  .due-hero h4 .zh{ font-weight:400; color:var(--ink-soft); font-size:15px; }
+
+  .mode-row{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:16px; border:2.5px solid transparent; }
+  .mode-row+.mode-row{ margin-top:10px; }
+  .mode-row .em{ width:48px; height:48px; border-radius:14px; display:grid; place-items:center; font-size:26px; flex:none; background:rgba(255,255,255,.6); }
+  .mode-row .mt{ flex:1; min-width:0; }
+  .mode-row .mt b{ display:block; font-family:var(--font-d); font-weight:600; font-size:18px; line-height:1.05; }
+  .mode-row .mt span{ font-weight:800; font-size:12px; }
+  .mode-row .go{ flex:none; width:34px; height:34px; border-radius:11px; display:grid; place-items:center; color:#fff; font-weight:900; box-shadow:inset 0 -3px 0 rgba(0,0,0,.16); }
+  .mode-row.review{ background:linear-gradient(180deg,#EBFBF0,#DCF7E6); border-color:#8FE7AE; }
+  .mode-row.review .mt b{ color:var(--green-d);} .mode-row.review .mt span{ color:#1a5c2e;} .mode-row.review .go{ background:linear-gradient(180deg,#20B95F,#12A150);}
+  .mode-row.challenge{ background:linear-gradient(180deg,#F4EEFF,#E7DBFF); border-color:#C4B0FF; }
+  .mode-row.challenge .mt b{ color:var(--purple);} .mode-row.challenge .mt span{ color:var(--purple-d);} .mode-row.challenge .go{ background:linear-gradient(180deg,#8B5CF6,#7C3AED);}
+
+  /* chips / tags / badges */
+  .type-tag{ font-size:11px; font-weight:900; letter-spacing:.3px; padding:3px 9px; border-radius:8px; text-transform:uppercase; }
+  .t-qa{ background:#E6F0FF; color:#2563EB; } .ico.t-qa{ background:#E6F0FF; }
+  .t-mirror{ background:#FFEDE0; color:#EA7A21; } .ico.t-mirror{ background:#FFEDE0; }
+  .t-vocab{ background:#E9F9EE; color:var(--green-d);} .ico.t-vocab{ background:#E9F9EE; }
+  .t-mc{ background:#F0E9FF; color:#7C3AED; } .ico.t-mc{ background:#F0E9FF; }
+  .due-chip{ font-size:11px; font-weight:900; padding:3px 9px; border-radius:8px; white-space:nowrap; }
+  .due-chip.now{ background:var(--coral-l); color:var(--coral); }
+  .due-chip.soon{ background:#FFF1CF; color:#B77A00; }
+  .due-chip.ok{ background:var(--green-l); color:var(--green-d); }
+  .reward{ font-size:11px; font-weight:900; color:#B77A00; background:#FFF6DC; padding:3px 9px; border-radius:8px; }
+
+  /* buttons */
+  .btn{ all:unset; box-sizing:border-box; cursor:default; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-d); font-weight:600; color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.16); }
+  .btn.big{ height:46px; padding:0 22px; border-radius:14px; font-size:17px; background:linear-gradient(180deg,#20B95F,#12A150); }
+  .btn.sm{ height:36px; padding:0 16px; border-radius:12px; font-size:14px; background:linear-gradient(180deg,#20B95F,#12A150); }
+  .btn.pick{ height:36px; padding:0 15px; border-radius:12px; font-size:14px; background:linear-gradient(180deg,#9B6BF2,#7C3AED); }
+  .btn.done{ height:36px; padding:0 15px; border-radius:12px; font-size:14px; background:#E6EDE9; color:#5B7266; box-shadow:none; }
+  .chip-btn{ height:44px; padding:0 14px; border-radius:15px; display:inline-flex; align-items:center; gap:8px; background:#fff; font-weight:900; color:var(--ink); box-shadow:0 8px 18px -10px rgba(11,60,35,.6), inset 0 0 0 1.5px rgba(255,255,255,.7); font-family:var(--font-b); }
+  .chip-btn.gold{ color:#8a6300; background:linear-gradient(100deg,#FFF6DC,#FFEACB); box-shadow:inset 0 0 0 1.5px #FCE29A; }
+  .chip-btn.round{ width:44px; padding:0; justify-content:center; }
+
+  /* sidebar bits */
+  .stat{ display:inline-flex; align-items:center; gap:11px; padding:11px 15px; border-radius:16px; font-weight:900; }
+  .stat .emo{ font-size:20px; } .stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; display:block; }
+  .stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+  .stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8a6300; box-shadow:inset 0 0 0 1.5px #FCE29A; }
+  .stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#b23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; }
+  .navitem{ display:inline-flex; align-items:center; gap:13px; padding:12px 14px; border-radius:16px; color:var(--ink-soft); font-weight:800; font-size:14.5px; background:#fff; }
+  .navitem.on{ background:linear-gradient(100deg,var(--green-l),#EAF9EF); color:var(--green-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+  .navitem .ic{ font-size:17px; }
+
+  .coach{ display:flex; align-items:center; gap:14px; padding:12px 18px 12px 12px; background:#fff; border-radius:20px; box-shadow:var(--shadow-md); }
+  .coach .gav{ width:56px; height:56px; border-radius:16px; background:#EAF6EE; display:grid; place-items:center; font-size:28px; flex:none; box-shadow:inset 0 0 0 2px #CFEBD7; }
+  .coach .gt b{ font-family:var(--font-d); font-weight:500; font-size:18px; color:var(--ink); }
+  .coach .gt span{ display:block; font-weight:800; font-size:12.5px; color:var(--ink-soft); }
+  .coach .cname{ background:var(--gold); color:#3C3C3C; padding:0 8px; border-radius:8px; font-weight:900; }
+  .coach .cstars{ margin-left:auto; font-family:var(--font-d); font-weight:600; font-size:17px; color:#8a6300; background:linear-gradient(100deg,#FFF6DC,#FFEACB); padding:9px 15px; border-radius:14px; box-shadow:inset 0 0 0 1.5px #FCE29A; }
+
+  .toast{ display:inline-flex; align-items:center; gap:10px; background:var(--ink); color:#fff; font-weight:800; padding:13px 22px; border-radius:16px; box-shadow:var(--shadow-lg); }
+
+  /* motion demo */
+  .motion-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin:14px 0 24px; }
+  .motion-card{ background:#fff; border-radius:16px; box-shadow:inset 0 0 0 1.5px var(--line); padding:16px; text-align:center; }
+  .motion-card .dot{ width:44px; height:44px; border-radius:14px; margin:6px auto 12px; background:linear-gradient(150deg,var(--green),#37C46E); }
+  .motion-card b{ font-family:var(--font-d); font-weight:600; font-size:15px; color:var(--ink); display:block; }
+  .motion-card .tk{ margin:0; display:block; margin-top:4px; }
+  .m-pop .dot{ animation:pop 1.8s cubic-bezier(.34,1.56,.64,1) infinite; }
+  .m-float .dot{ animation:floaty 2.6s ease-in-out infinite; }
+  .m-twinkle .dot{ background:none; font-size:34px; line-height:44px; animation:twinkle 2.2s ease-in-out infinite; box-shadow:none; }
+  .m-lift .dot{ animation:lift 1.6s ease-in-out infinite; }
+  @keyframes pop{ 0%,100%{ transform:scale(.85);} 50%{ transform:scale(1);} }
+  @keyframes floaty{ 0%,100%{ transform:translateY(4px);} 50%{ transform:translateY(-4px);} }
+  @keyframes twinkle{ 0%,100%{ transform:translateY(0) rotate(-6deg);} 50%{ transform:translateY(-4px) rotate(6deg);} }
+  @keyframes lift{ 0%,100%{ transform:translateY(3px);} 50%{ transform:translateY(-3px);} }
+
+  footer{ text-align:center; padding:26px 0; color:#8fa398; font-size:12px; font-weight:700; border-top:1px solid var(--line); margin-top:44px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="overview.html">Chinese Modules</a>
+  <span class="sep">/</span>
+  <span class="current">Word Game · Design System</span>
+  <span class="chip">Playful</span>
+</div>
+
+<div class="container">
+
+  <div class="doc-header">
+    <h1>Word Game — Design System</h1>
+    <p class="subtitle">The playful, storybook-quest visual language for the student Word Game dashboard: rounded display type, a fresh brand-green palette with candy accents, chunky tactile components, and springy micro-motion.</p>
+    <div class="meta">
+      <span>Student · Chinese Modules</span>
+      <span>Fonts: Fredoka + Nunito</span>
+      <span>Live ref: <a href="student-redesign.html">student-redesign.html</a></span>
+      <span>Updated: July 2026</span>
+    </div>
+  </div>
+
+  <!-- 1. AESTHETIC -->
+  <h2><span class="num">1</span> Aesthetic Direction</h2>
+  <p>A kids' Chinese-learning game. The mood is <strong>storybook adventure</strong> — warm, tactile, rewarding. Three rules keep it coherent:</p>
+  <table>
+    <thead><tr><th>Principle</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Rounded &amp; chunky</strong></td><td>One <code>20px</code> radius for every card &amp; panel (controls 14px, chips 8px), thick inner borders, and a pressed <code>inset 0 -3px 0</code> bottom on buttons for a soft 3D "toy" feel.</td></tr>
+      <tr><td><strong>Green-first, candy accents</strong></td><td>Brand green dominates; gold (stars), coral (hearts/urgent) and purple (bonus) appear only as meaningful accents — never decoration.</td></tr>
+      <tr><td><strong>Frosted over scene</strong></td><td>Content sits on translucent white panels (<code>rgba(255,255,255,.95)</code> + blur) floating above the illustrated landscape.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2. TYPOGRAPHY -->
+  <h2><span class="num">2</span> Typography</h2>
+  <p>Two rounded Google fonts. <strong>Fredoka</strong> carries all display/heading/number moments; <strong>Nunito</strong> handles body, labels and chips.</p>
+
+  <div class="font-card">
+    <div class="fname"><b style="font-family:var(--font-d)">Fredoka</b><span class="tag">Display</span><span class="src">Google Fonts · wght 400–700</span></div>
+    <div class="glyphs" style="font-family:var(--font-d)">Let's Start! 你好 汉字 1234567890</div>
+    <div class="weights" style="font-family:var(--font-d)">
+      <div style="font-weight:400">400 Regular</div>
+      <div style="font-weight:500">500 Medium</div>
+      <div style="font-weight:600">600 SemiBold</div>
+      <div style="font-weight:700">700 Bold</div>
+    </div>
+  </div>
+
+  <div class="font-card">
+    <div class="fname"><b style="font-family:var(--font-b);font-weight:800">Nunito</b><span class="tag" style="color:var(--purple-d);background:var(--purple-l)">Body</span><span class="src">Google Fonts · wght 400–900</span></div>
+    <div class="glyphs" style="font-family:var(--font-b);font-weight:700">The quick brown fox · Review &amp; improve · 自選任務</div>
+    <div class="weights" style="font-family:var(--font-b)">
+      <div style="font-weight:600">600</div>
+      <div style="font-weight:700">700</div>
+      <div style="font-weight:800">800</div>
+      <div style="font-weight:900">900 Heavy</div>
+    </div>
+  </div>
+
+  <div class="callout"><strong>CSS variables:</strong> <code>--font-d:'Fredoka'</code> · <code>--font-b:'Nunito'</code>. Chinese glyphs currently fall back to the system CJK font — no dedicated CJK face is loaded yet.</div>
+
+  <h3>Import</h3>
+  <table>
+    <tbody>
+      <tr><td>Source</td><td>Google Fonts</td></tr>
+      <tr><td>Import</td><td><code>Fredoka:wght@400;500;600;700</code> &amp; <code>Nunito:ital,wght@0,400..900;1,700</code></td></tr>
+      <tr><td>Links</td><td><a href="https://fonts.google.com/specimen/Fredoka" target="_blank">Fredoka</a> · <a href="https://fonts.google.com/specimen/Nunito" target="_blank">Nunito</a></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Type Scale</h3>
+  <div class="scale-demo">
+    <div style="font-family:var(--font-d);font-weight:700;font-size:34px;color:var(--ink)">Display — My Assignments <span class="tk">Fredoka 700 · 34px</span></div>
+    <div style="font-family:var(--font-d);font-weight:600;font-size:22px;color:var(--ink)">Title — Do Next <span class="tk">Fredoka 600 · 20–22px</span></div>
+    <div style="font-family:var(--font-d);font-weight:600;font-size:17px;color:var(--ink)">Button / Mode — Start now ▸ <span class="tk">Fredoka 600 · 15–18px</span></div>
+    <div style="font-family:var(--font-b);font-weight:700;font-size:14px;color:#3f5548">Body — Pick one practice and give it your best <span class="tk">Nunito 700 · 14–15px</span></div>
+    <div style="font-family:var(--font-b);font-weight:800;font-size:12.5px;color:var(--ink-soft)">Label — keep your streak alive <span class="tk">Nunito 800 · 12–13px</span></div>
+    <div style="font-family:var(--font-b);font-weight:900;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--green-d)">Chip / Tag — VOCABULARY <span class="tk" style="text-transform:none;letter-spacing:0">Nunito 900 · 11px · UPPER</span></div>
+  </div>
+
+  <!-- 3. COLOR -->
+  <h2><span class="num">3</span> Color Palette</h2>
+
+  <h3>Brand Green</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="c" style="background:#12A150"><span>#12A150</span></div><div class="l"><b>--green</b><br>primary</div></div>
+    <div class="swatch"><div class="c" style="background:#0B7A3B"><span style="color:#fff;background:rgba(0,0,0,.25)">#0B7A3B</span></div><div class="l"><b>--green-d</b><br>text on light</div></div>
+    <div class="swatch"><div class="c" style="background:#0B5B30"><span style="color:#fff;background:rgba(0,0,0,.25)">#0B5B30</span></div><div class="l"><b>--green-ink</b><br>active nav text</div></div>
+    <div class="swatch"><div class="c" style="background:#DCF7E6"><span>#DCF7E6</span></div><div class="l"><b>--green-l</b><br>active bg / tag</div></div>
+  </div>
+
+  <h3>Accents</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="c" style="background:#FFC219"><span>#FFC219</span></div><div class="l"><b>--gold</b><br>stars ⭐</div></div>
+    <div class="swatch"><div class="c" style="background:#E8A400"><span style="color:#fff;background:rgba(0,0,0,.2)">#E8A400</span></div><div class="l"><b>--gold-d</b><br>gold text</div></div>
+    <div class="swatch"><div class="c" style="background:#FF5A6E"><span style="color:#fff;background:rgba(0,0,0,.2)">#FF5A6E</span></div><div class="l"><b>--coral</b><br>hearts / urgent</div></div>
+    <div class="swatch"><div class="c" style="background:#FFE1E5"><span>#FFE1E5</span></div><div class="l"><b>--coral-l</b><br>urgent bg</div></div>
+    <div class="swatch"><div class="c" style="background:#7C3AED"><span style="color:#fff;background:rgba(0,0,0,.2)">#7C3AED</span></div><div class="l"><b>--purple</b><br>bonus / challenge</div></div>
+    <div class="swatch"><div class="c" style="background:#EDE4FF"><span>#EDE4FF</span></div><div class="l"><b>--purple-l</b><br>bonus bg</div></div>
+  </div>
+
+  <h3>Ink &amp; Surfaces</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="c" style="background:#243B2E"><span style="color:#fff;background:rgba(0,0,0,.25)">#243B2E</span></div><div class="l"><b>--ink</b><br>primary text</div></div>
+    <div class="swatch"><div class="c" style="background:#5B7266"><span style="color:#fff;background:rgba(0,0,0,.2)">#5B7266</span></div><div class="l"><b>--ink-soft</b><br>secondary text</div></div>
+    <div class="swatch"><div class="c" style="background:#E4EDE7"><span>#E4EDE7</span></div><div class="l"><b>--line</b><br>borders</div></div>
+    <div class="swatch"><div class="c" style="background:#EAF3EC"><span>#EAF3EC</span></div><div class="l"><b>--shell</b><br>app bg</div></div>
+    <div class="swatch"><div class="c" style="background:#fff;box-shadow:inset 0 0 0 1px #E4EDE7"><span>#FFFFFF</span></div><div class="l"><b>--paper</b><br>cards</div></div>
+  </div>
+
+  <h3>Practice-Type Colors</h3>
+  <p class="lead">Each exercise type has a fixed icon-tint + tag color, reused everywhere it appears.</p>
+  <div class="demo-row">
+    <span class="type-tag t-qa">Q&amp;A</span>
+    <span class="type-tag t-mirror">Mirroring</span>
+    <span class="type-tag t-vocab">Vocabulary</span>
+    <span class="type-tag t-mc">Multiple Choice</span>
+  </div>
+  <table>
+    <thead><tr><th>Type</th><th>Background</th><th>Text</th><th>Icon</th></tr></thead>
+    <tbody>
+      <tr><td>Q&amp;A</td><td><code>#E6F0FF</code></td><td><code>#2563EB</code></td><td>💬</td></tr>
+      <tr><td>Mirroring</td><td><code>#FFEDE0</code></td><td><code>#EA7A21</code></td><td>🎤</td></tr>
+      <tr><td>Vocabulary</td><td><code>#E9F9EE</code></td><td><code>#0B7A3B</code></td><td>📚</td></tr>
+      <tr><td>Multiple Choice</td><td><code>#F0E9FF</code></td><td><code>#7C3AED</code></td><td>✅</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4. RADIUS / ELEVATION -->
+  <h2><span class="num">4</span> Radius &amp; Elevation</h2>
+  <div class="callout"><strong>One card radius.</strong> Every card, panel, sidebar and the stage share a single <code>20px</code> radius. Smaller tiers step down only for controls and chips, so the hierarchy stays readable without introducing near-identical card sizes.</div>
+  <div class="demo-row" style="margin-bottom:6px">
+    <div style="text-align:center"><div style="width:100px;height:66px;background:#fff;border-radius:20px;box-shadow:inset 0 0 0 1.5px var(--line)"></div><div class="cap">Card / Panel · 20px</div></div>
+    <div style="text-align:center"><div style="width:88px;height:56px;background:#fff;border-radius:16px;box-shadow:inset 0 0 0 1.5px var(--line)"></div><div class="cap">Row / tile · 16px</div></div>
+    <div style="text-align:center"><div style="width:78px;height:44px;background:#fff;border-radius:14px;box-shadow:inset 0 0 0 1.5px var(--line)"></div><div class="cap">Button · 14px</div></div>
+    <div style="text-align:center"><div style="width:60px;height:30px;background:#fff;border-radius:8px;box-shadow:inset 0 0 0 1.5px var(--line)"></div><div class="cap">Chip / tag · 8px</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Tier</th><th>Radius</th><th>Applies to</th></tr></thead>
+    <tbody>
+      <tr><td>Card / Panel / Surface</td><td><code>20px</code></td><td>Panels, coach strip, hero, tabs, empty state, sidebar, stage</td></tr>
+      <tr><td>Row / tile</td><td><code>16px</code></td><td>Task rows, list items, mode rows, nav items, stat pills, icon squares</td></tr>
+      <tr><td>Button / control</td><td><code>12–14px</code></td><td>Start / Pick up buttons, filter chips, chip-buttons</td></tr>
+      <tr><td>Chip / tag</td><td><code>8px</code></td><td>Type tags, due chips, reward badges</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>--shadow-sm</code></td><td><code>0 3px 0 rgba(11,91,48,.10)</code></td><td>Flat press / subtle lift</td></tr>
+      <tr><td><code>--shadow-md</code></td><td><code>0 12px 26px -14px rgba(11,91,48,.45)</code></td><td>Cards, coach strip</td></tr>
+      <tr><td><code>--shadow-lg</code></td><td><code>0 26px 60px -24px rgba(11,60,35,.55)</code></td><td>Stage, toast, hero panels</td></tr>
+      <tr><td>Toy press</td><td><code>inset 0 -3px 0 rgba(0,0,0,.16)</code></td><td>All filled buttons &amp; icon squares</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 5. BUTTONS -->
+  <h2><span class="num">5</span> Buttons &amp; Controls</h2>
+  <div class="stage-demo light">
+    <div class="demo-row">
+      <button class="btn big">Start now ▸</button>
+      <button class="btn sm">Start ▸</button>
+      <button class="btn pick">Pick up</button>
+      <button class="btn done">Added ✓</button>
+      <span class="chip-btn round">🔊</span>
+      <span class="chip-btn round">📖</span>
+      <span class="chip-btn gold">⭐ 319</span>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Button</th><th>Fill</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>Primary big</td><td><code>linear-gradient(180deg,#20B95F,#12A150)</code></td><td>Hero "Start now"</td></tr>
+      <tr><td>Primary sm</td><td>same green</td><td>List-row Start</td></tr>
+      <tr><td>Bonus / pick</td><td><code>linear-gradient(180deg,#9B6BF2,#7C3AED)</code></td><td>Optional quest "Pick up"</td></tr>
+      <tr><td>Done</td><td><code>#E6EDE9</code> / grey text</td><td>Picked-up state</td></tr>
+      <tr><td>Chip-btn</td><td>white / gold frosted</td><td>Top-right sound, word-bank, star count</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 6. CHIPS / TAGS -->
+  <h2><span class="num">6</span> Chips, Tags &amp; Badges</h2>
+  <div class="stage-demo light">
+    <div class="demo-row">
+      <span class="due-chip now">⏰ Today · 6h</span>
+      <span class="due-chip soon">⏰ Tomorrow</span>
+      <span class="due-chip ok">⏰ Fri</span>
+      <span class="reward">+30 ⭐</span>
+      <span class="reward">🎁 Chest</span>
+      <span class="type-tag t-vocab">Vocabulary</span>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Chip</th><th>Meaning</th><th>Color</th></tr></thead>
+    <tbody>
+      <tr><td>Due · now</td><td>Due today / overdue</td><td>coral <code>#FFE1E5 / #FF5A6E</code></td></tr>
+      <tr><td>Due · soon</td><td>Within a few days</td><td>amber <code>#FFF1CF / #B77A00</code></td></tr>
+      <tr><td>Due · ok</td><td>Later this week</td><td>green <code>#DCF7E6 / #0B7A3B</code></td></tr>
+      <tr><td>Reward</td><td>Bonus stars / prize</td><td>gold <code>#FFF6DC / #B77A00</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- 7. COMPONENTS -->
+  <h2><span class="num">7</span> Components</h2>
+
+  <h3>Coach strip</h3>
+  <div class="stage-demo">
+    <div class="coach">
+      <div class="gav">🐱</div>
+      <div class="gt"><b>Hi! I'm <span class="cname">Douhua</span> — ready to practice?</b><span>You have 3 tasks due soon · keep your streak alive! 🔥</span></div>
+      <div class="cstars">⭐ 319 · 🔥 5</div>
+    </div>
+  </div>
+
+  <h3>Panel + nearest-deadline hero + task rows</h3>
+  <div class="stage-demo">
+    <section class="panel due" style="max-width:460px">
+      <div class="p-hd"><div class="pi">⏰</div><h3>Do Next</h3><a class="see">See all ▸</a></div>
+      <div class="due-hero">
+        <div class="top"><div class="ico t-qa">💬</div><span class="type-tag t-qa">Q&amp;A</span><span class="due-chip now" style="margin-left:auto">⏰ Today · 6h</span></div>
+        <h4>Ordering Food <span class="zh">· 点餐对话</span></h4>
+        <button class="btn big" style="width:100%;margin-top:13px">Start now ▸</button>
+      </div>
+      <div style="margin-top:10px">
+        <div class="qrow"><div class="ico t-vocab">📚</div><div class="m"><div class="top"><span class="due-chip soon">⏰ Tomorrow</span></div><h5>Family Members <span class="zh">· 家人称呼</span></h5></div><button class="btn sm">Start ▸</button></div>
+        <div class="qrow"><div class="ico t-mirror">🎤</div><div class="m"><div class="top"><span class="due-chip ok">⏰ Fri</span></div><h5>Tone Practice · mā <span class="zh">· 声调练习</span></h5></div><button class="btn sm">Start ▸</button></div>
+      </div>
+    </section>
+  </div>
+
+  <h3>Free Practice rows + Optional Quests</h3>
+  <div class="stage-demo">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <section class="panel free">
+        <div class="p-hd"><div class="pi">▶</div><h3>Free Practice</h3></div>
+        <div class="mode-row review"><div class="em">📗</div><div class="mt"><b>Smart Review</b><span>Review &amp; improve</span></div><div class="go">▸</div></div>
+        <div class="mode-row challenge"><div class="em">🚀</div><div class="mt"><b>New Challenge</b><span>Explore new words</span></div><div class="go">▸</div></div>
+      </section>
+      <section class="panel opt">
+        <div class="p-hd"><div class="pi">✦</div><h3>Optional Quests</h3></div>
+        <div class="qrow"><div class="ico t-vocab">📚</div><div class="m"><div class="top"><span class="type-tag t-vocab">Vocabulary</span><span class="reward">+30 ⭐</span></div><h5>Idioms Challenge <span class="zh">· 成语挑战</span></h5></div><button class="btn pick">Pick up</button></div>
+        <div class="qrow"><div class="ico t-qa">💬</div><div class="m"><div class="top"><span class="type-tag t-qa">Q&amp;A</span><span class="reward">🎁 Chest</span></div><h5>Story Time <span class="zh">· 故事时间</span></h5></div><button class="btn done">Added ✓</button></div>
+      </section>
+    </div>
+  </div>
+
+  <h3>Sidebar nav &amp; stat cards</h3>
+  <div class="stage-demo light">
+    <div class="demo-row" style="gap:10px">
+      <span class="navitem on"><span class="ic">🎮</span> Word Game</span>
+      <span class="navitem"><span class="ic">📋</span> Assignment List</span>
+      <span class="stat gold"><span class="emo">⭐</span><span><span class="k">Stars</span><span class="v">319</span></span></span>
+      <span class="stat coral"><span class="emo">❤️</span><span><span class="k">Hearts</span><span class="v">10</span></span></span>
+    </div>
+  </div>
+
+  <h3>Toast</h3>
+  <div class="stage-demo light"><span class="toast">🎁 Added "Idioms Challenge" to your quests! +30 ⭐</span></div>
+
+  <!-- 8. MOTION -->
+  <h2><span class="num">8</span> Motion</h2>
+  <p>Springy and playful. Entrances use an overshoot cubic-bezier; idle elements breathe gently. Nothing is purely linear.</p>
+  <div class="motion-grid">
+    <div class="motion-card m-pop"><div class="dot"></div><b>pop</b><span class="tk">cubic-bezier(.34,1.56,.64,1)</span></div>
+    <div class="motion-card m-lift"><div class="dot"></div><b>hover lift</b><span class="tk">translateY(-3–8px)</span></div>
+    <div class="motion-card m-float"><div class="dot"></div><b>floaty</b><span class="tk">idle ±7px</span></div>
+    <div class="motion-card m-twinkle"><div class="dot">⭐</div><b>twinkle</b><span class="tk">rotate + rise</span></div>
+  </div>
+  <table>
+    <thead><tr><th>Name</th><th>Trigger</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>pop</code></td><td>Card / panel entrance</td><td>scale 0.85→1 with overshoot; stagger via <code>animation-delay</code></td></tr>
+      <tr><td><code>slide</code></td><td>List rows</td><td>fade + 10px rise, 45–55ms per-row stagger</td></tr>
+      <tr><td>hover lift</td><td>Buttons, mode rows, cards</td><td><code>translateY(-3~8px)</code> + soft shadow; mascots scale &amp; tilt</td></tr>
+      <tr><td><code>twinkle</code></td><td>Hero star trio</td><td>staggered rotate/rise, infinite</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 9. ICONOGRAPHY -->
+  <h2><span class="num">9</span> Iconography &amp; Mascot</h2>
+  <p>The prototype uses <strong>emoji</strong> as lightweight icons (⏰ 💬 🎤 📚 ✅ ✦ ⭐ ❤️ 🔥 🎁). The brand mascot <strong>Douhua</strong> (豆花), a tabby cat, appears as animated GIFs — waving in the coach strip, reading for Smart Review, winking for New Challenge.</p>
+  <div class="callout"><strong>Production note:</strong> emoji render differently per-OS. For the real app, swap to a consistent icon set (e.g. a rounded custom set or Phosphor/Lucide) while keeping the mascot GIFs from <code>/assets/game/moscot/</code>.</div>
+
+  <!-- 10. LAYOUT -->
+  <h2><span class="num">10</span> Layout &amp; App Shell</h2>
+  <p>Floating sidebar + rounded stage, on a soft green-blue app background. The Word Game dashboard is <strong>tasks-first</strong>: a wider left column for deadlines, a right rail for free practice + optional quests.</p>
+  <table>
+    <thead><tr><th>Element</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>App padding / gap</td><td><code>16px</code></td></tr>
+      <tr><td>Sidebar width</td><td><code>262px</code>, white, radius 20px, floating</td></tr>
+      <tr><td>Stage</td><td>rounded 20px, <code>overflow:hidden</code>, holds full-bleed scene</td></tr>
+      <tr><td>Dashboard grid</td><td><code>grid-template-columns: 1.35fr 1fr</code> (tasks : rail)</td></tr>
+      <tr><td>Panel max content</td><td><code>min(1000px, 100%)</code>, centered</td></tr>
+      <tr><td>Mobile</td><td>&lt; 820px collapses to single column, sidebar hidden</td></tr>
+    </tbody>
+  </table>
+
+  <footer>DAHUA AI · Word Game Design System · Chinese Modules · July 2026</footer>
+
+</div>
+</body>
+</html>

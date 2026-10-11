@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>History card — redline spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<style>
+  :root{
+    --green:#12A150; --green-d:#0B7A3B; --green-ink:#0B5B30; --green-l:#DCF7E6;
+    --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF;
+    --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7;
+    --font-d:'Fredoka', system-ui, sans-serif; --font-b:'Nunito', system-ui, sans-serif;
+  }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:var(--font-b); color:var(--ink); background:#EEF2F5; padding:40px 20px 80px; -webkit-font-smoothing:antialiased; }
+  .material-icons-round{ vertical-align:middle; line-height:1; }
+  .wrap{ max-width:1120px; margin:0 auto; }
+  h1{ font-family:var(--font-d); font-weight:700; font-size:26px; color:var(--ink); }
+  .sub{ color:var(--ink-soft); font-weight:700; font-size:14px; margin:2px 0 4px; }
+  .legend{ font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:26px; }
+  .legend code{ font:700 11px/1 "SF Mono",monospace; color:#B4531B; background:#FFF4E5; border:1px solid #F1C08A; padding:2px 6px; border-radius:5px; }
+
+  /* redline tag */
+  .tag{ position:absolute; z-index:6; font:700 10.5px/1.25 "SF Mono","Fira Code",monospace; color:#B4531B;
+    background:#FFF7EC; border:1px solid #F1C08A; padding:3px 6px; border-radius:5px; white-space:nowrap; box-shadow:0 2px 6px -2px rgba(180,83,27,.35); }
+  .tag.blue{ color:#1D5FBF; background:#EAF1FC; border-color:#B7CDEF; }
+  .tag.grn{ color:#0B7A3B; background:#E7F7EE; border-color:#A7DDBD; }
+
+  /* ---------- the actual card (exact values) ---------- */
+  .stage{ position:relative; padding:96px 250px 60px 90px; }
+  .hrec{ position:relative; background:#fff; border-radius:16px; box-shadow:inset 0 0 0 2.5px var(--line), 0 8px 20px -16px rgba(11,60,35,.6); overflow:visible; }
+  .hhead{ position:relative; display:flex; align-items:center; gap:14px; padding:14px 16px; }
+  .ico{ width:44px; height:44px; border-radius:14px; display:grid; place-items:center; flex:none; background:#E6F0FF; color:#2563EB; position:relative; }
+  .ico svg{ width:22px; height:22px; }
+  .hmeta h5{ font-family:var(--font-d); font-weight:500; font-size:16px; color:var(--ink); }
+  .hmeta h5 .zh{ font-weight:400; color:var(--ink-soft); font-size:14px; }
+  .hmeta-sub{ display:flex; align-items:center; gap:8px; margin-top:5px; }
+  .status{ font-size:11px; font-weight:900; padding:3px 9px; border-radius:8px; text-transform:uppercase; letter-spacing:.3px; background:var(--green-l); color:var(--green-d); }
+  .msep{ font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .harw{ width:30px; height:30px; border-radius:10px; display:grid; place-items:center; background:#F1F5F3; color:#64748B; font-size:12px; flex:none; margin-left:auto; position:relative; }
+  .hbody{ padding:2px 18px 16px 74px; }
+  .hc-div{ height:1.5px; background:var(--line); margin:0 -18px 16px -74px; position:relative; }
+  .dtiles{ display:flex; gap:10px; margin-bottom:16px; }
+  .dtile{ flex:0 1 190px; min-width:0; position:relative; background:#fff; border-radius:16px; box-shadow:inset 0 0 0 2.5px var(--line); padding:12px 14px 13px; }
+  .dtile.g{ box-shadow:inset 0 0 0 2.5px #C4EED2; } .dtile.g .lab,.dtile.g .val{ color:var(--green-d); }
+  .dtile.b{ box-shadow:inset 0 0 0 2.5px #C4DBF5; } .dtile.b .lab,.dtile.b .val{ color:#2F80ED; }
+  .dtile.y{ box-shadow:inset 0 0 0 2.5px #F6DFA6; } .dtile.y .lab,.dtile.y .val{ color:#E0961A; }
+  .dtile .lab{ font-size:11px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; margin-bottom:7px; }
+  .dtile .val{ display:flex; align-items:center; gap:8px; }
+  .dtile .val .material-icons-round{ font-size:24px; }
+  .dtile .val b{ font-family:var(--font-d); font-weight:600; font-size:24px; line-height:1; }
+  .dbadge{ position:absolute; top:-9px; right:-6px; font-size:10px; font-weight:900; letter-spacing:.3px; color:#fff; background:var(--green); padding:3px 9px; border-radius:999px; box-shadow:0 4px 10px -3px rgba(18,161,80,.8); }
+  .hc-fb{ display:flex; flex-direction:column; gap:9px; margin-bottom:16px; }
+  .hc-card{ position:relative; display:flex; gap:11px; align-items:flex-start; padding:12px 14px; border-radius:16px; box-shadow:inset 0 0 0 2px var(--line); background:#fff; }
+  .hc-card .av{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; flex:none; }
+  .hc-card.t .av{ background:var(--green-l); color:var(--green-d); } .hc-card.a .av{ background:var(--purple-l); color:var(--purple-d); }
+  .hc-card .av .material-icons-round{ font-size:19px; }
+  .hc-card b{ font-family:var(--font-d); font-weight:600; font-size:13px; display:block; margin-bottom:2px; }
+  .hc-card.t b{ color:var(--green-d); } .hc-card.a b{ color:var(--purple-d); }
+  .hc-card p{ font-weight:700; font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .hc-actions{ display:flex; align-items:center; gap:10px; justify-content:flex-end; position:relative; }
+  .hc-go{ display:inline-flex; align-items:center; justify-content:center; gap:8px; height:42px; padding:0 20px; border-radius:13px;
+    font-family:var(--font-d); font-weight:600; font-size:15px; color:#fff; background:linear-gradient(180deg,#20B95F,#12A150); box-shadow:0 8px 16px -10px rgba(18,161,80,.75), inset 0 -3px 0 rgba(0,0,0,.16); position:relative; }
+  .hc-go .material-icons-round{ font-size:20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>History card — redline spec</h1>
+  <p class="sub">Reviewed record, expanded. All values as currently built in student-redesign.html.</p>
+  <p class="legend">Tags read <code>px·weight</code> · <code>r</code>=radius · <code>b</code>=border · <code>○</code>=circle. Orange = box/space, blue = type, green = color-coded parts.</p>
+
+  <div class="stage">
+    <!-- CARD-level tag -->
+    <span class="tag" style="top:64px; left:90px;">CARD .hrec · r16 · border 2.5px</span>
+
+    <div class="hrec">
+      <!-- header -->
+      <span class="tag" style="top:-30px; left:16px;">HEADER .hhead · pad 14 / 16 · gap 14</span>
+      <div class="hhead">
+        <div class="ico">
+          <span class="tag" style="top:-30px; left:0;">icon 44×44 · r14</span>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm-2 12H6v-2h12Zm0-3H6V9h12Zm0-3H6V6h12Z"/></svg>
+        </div>
+        <div class="hmeta">
+          <h5>Ordering Food <span class="zh">· 点餐对话</span> <span class="tag blue" style="top:-2px; left:100%; margin-left:12px;">title 16·500 · zh 14·400</span></h5>
+          <div class="hmeta-sub">
+            <span class="status">Reviewed</span>
+            <span class="msep">Q&amp;A · Jul 8</span>
+            <span class="tag blue" style="top:-1px; left:100%; margin-left:12px;">status 11·900 pad3/9 r8 · meta 12·700 · mt5 gap8</span>
+          </div>
+        </div>
+        <div class="harw"><span class="tag" style="top:-28px; right:0;">▲ 30×30 · r10</span>▲</div>
+      </div>
+
+      <div class="hbody">
+        <span class="tag" style="top:2px; left:100%; margin-left:14px;">BODY .hbody · pad 2 / 18 / 16 / 74(L)</span>
+
+        <!-- divider 1 -->
+        <div class="hc-div"><span class="tag" style="top:-9px; left:100%; margin-left:14px;">DIVIDER 1.5px · margin 0 −18 16 −74</span></div>
+
+        <!-- tiles -->
+        <span class="tag" style="top:-2px; left:100%; margin-left:14px;">TILES gap 10 · mb 16</span>
+        <div class="dtiles">
+          <div class="dtile g">
+            <span class="dbadge">Great!</span>
+            <span class="tag" style="top:-30px; left:0;">tile 190w · r16 · b2.5 · pad 12/14/13</span>
+            <div class="lab">Score</div>
+            <div class="val"><span class="material-icons-round">emoji_events</span><b>92</b></div>
+            <span class="tag blue" style="bottom:-26px; left:0;">lab 11·900 mb7 · val 24·600 · icon 24 · gap8</span>
+          </div>
+          <div class="dtile b"><div class="lab">Tries</div><div class="val"><span class="material-icons-round">replay</span><b>3</b></div></div>
+          <div class="dtile y">
+            <div class="lab">Growth</div><div class="val"><span class="material-icons-round">trending_up</span><b>+18</b></div>
+            <span class="tag grn" style="top:-9px; right:-6px;">badge −9/−6 · 10·900 · r999</span>
+          </div>
+        </div>
+
+        <!-- feedback -->
+        <span class="tag" style="top:calc(100% + 0px); left:100%; margin-left:14px; transform:translateY(-140px);">FEEDBACK gap 9 · mb 16</span>
+        <div class="hc-fb">
+          <div class="hc-card t">
+            <span class="av"><span class="material-icons-round">school</span></span>
+            <div><b>Teacher</b><p>Great tones! Next time work on the question words 吗 / 呢.</p></div>
+            <span class="tag" style="top:-30px; left:0;">card pad 12/14 · r16 · b2 · gap 11</span>
+            <span class="tag blue" style="top:8px; left:52px;">av 34×34 ○ icon19</span>
+          </div>
+          <div class="hc-card a">
+            <span class="av"><span class="material-icons-round">auto_awesome</span></span>
+            <div><b>AI Summary</b><p>Strong fluency and clear pronunciation — a couple of particles were missing.</p></div>
+            <span class="tag blue" style="bottom:-26px; left:52px;">label 13·600 (mb2) · text 13.5·700 · lh1.5</span>
+          </div>
+        </div>
+
+        <!-- divider 2 -->
+        <div class="hc-div"></div>
+
+        <!-- actions -->
+        <div class="hc-actions">
+          <span class="tag" style="top:-30px; left:0;">ACTIONS align center · justify end · gap 10</span>
+          <button class="hc-go">
+            <span class="material-icons-round">refresh</span> Redo to improve
+            <span class="tag" style="top:-30px; right:0;">btn h42 · pad 0/20 · r13 · 15·600 · icon20</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

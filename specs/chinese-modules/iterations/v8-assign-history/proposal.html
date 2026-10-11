@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
 <style>
 /* ===========================================================================
+   第五十一輪（2026-10-07，Planning 回套）：送出前的覆核框只在有例外時才跳（部分學生、各班日期不同、Optional、逾期扣分、沒 Due），框裡只列例外；沒有例外按 Assign 直接派。班名不再用軌道色。
+   2026-10-07（鷹架）：&as=VOCABULARY 換成 Vocabulary Mirroring 的標題與步名，Planning 提案一／二的第四步嵌這一頁。
    提案 —— v8 · Assign 的指派歷史（指派中 vs 已過期）。用 Content Mirroring 當殼，只有第四步 Assign。
    從 v7 的 proposal.html 分岔（2026-09-21）——第四步是 v3／v4 定下來的 Assign 頁面（S8），這一版在它上面加：
      ASSIGNED 那段分成 In progress｜Past due 兩組（眉標右邊切換）；過期的卡灰一階、寫 Ended、幾個交了、只剩 Extend due date／Remove；
@@ -786,10 +788,10 @@ button{ font-family:inherit; }
 .rvc{ padding:12px 0; }
 .rvc + .rvc{ border-top:1px solid var(--divider); }
 .rvc .top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
-.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--label); }
+.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--text); }   /* 第五十一輪：不用軌道色 */
 .rvc .top .cnt{ font-size:13px; color:var(--text2); flex:none; }
 .rvc .when{ font-size:12px; color:var(--text2); margin-top:2px; }
-.rvc .ex{ font-size:12px; color:#7A4100; margin-top:6px; line-height:1.6; }
+.rvc .ex{ font-size:12px; color:var(--text2); margin-top:4px; line-height:1.6; }
 
 /* ---------- 共用⑤：頁腳按鈕 ---------- */
 .footer{ display:flex; align-items:center; justify-content:space-between; }
@@ -1353,7 +1355,11 @@ const CLASSES = [
 ];
 
 /* 四步。第一步的名字沿 Follow Pattern 的 'Teaching Points'，第二步就叫這種練習的素材 */
-const STEPS = ['Content','Edit Sentences','Settings','Assign Practice'];   // v3 Content Mirroring 的四步；這一版只有第四步   // STEPS_BY_TYPE[SENTENCE_SCRAMBLE]，第一步照 v4 叫 Teaching Points（產品叫 Content）   // 第二輪：第三步改叫 Questions（它沒有設定，是題目清單）   // VOCABULARY_MC_STEPS，第一步照 Follow Pattern 叫 Teaching Points（v4 的決定）
+const AS = new URLSearchParams(location.search).get('as');   // 2026-10-07 鷹架：&as=VOCABULARY 時標題與步名照 Vocabulary Mirroring（Planning 兩個提案的第四步嵌這一頁）
+const AS_INFO = { VOCABULARY:{ t:'New Vocabulary Mirroring', steps:['Teaching Points','Vocabulary','Settings','Assign Practice'], bg:'#FEF3C7', ink:'#D97706', mi:'mic' },
+  VOCABULARY_MC:{ t:'New Vocabulary Quiz', steps:['Teaching Points','Question Types','Questions','Assign Practice'], bg:'#FEF3C7', ink:'#D97706', mi:'quiz' },
+  SENTENCE_SCRAMBLE:{ t:'New Sentence Scramble', steps:['Teaching Points','Edit Sentences','Settings','Assign Practice'], bg:'#FEF2F8', ink:'#BE185D', mi:'shuffle' } }[AS];
+const STEPS = AS_INFO ? AS_INFO.steps : ['Content','Edit Sentences','Settings','Assign Practice'];   // v3 Content Mirroring 的四步；這一版只有第四步   // STEPS_BY_TYPE[SENTENCE_SCRAMBLE]，第一步照 v4 叫 Teaching Points（產品叫 Content）   // 第二輪：第三步改叫 Questions（它沒有設定，是題目清單）   // VOCABULARY_MC_STEPS，第一步照 Follow Pattern 叫 Teaching Points（v4 的決定）
 const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];
 const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];
 const IMAGES = ['SHOW','HIDE'];
@@ -2193,31 +2199,43 @@ function renderTypePreview(){
     </div>
   </div></div>`;
 }
-function renderReview(){
-  const rows = [...S.picked].map(id => {
+/* 第五十一輪（2026-10-07，Planning 回套）：送出前的覆核框只在「有例外」時才跳——部分學生、各班不同日期、Optional、逾期扣分、沒有 Due；
+   沒有例外（整班、同一組日期、Mandatory、Full credit）按 Assign 直接派。派完 HISTORY 有 Edit／Unassign，不需要事前再問一次。 */
+function reviewExceptions(){
+  const ex = [];
+  [...S.picked].forEach(id => {
     const c = CLASSES.find(x => x.id === id);
-    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };
     const add = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
     const skip = c.students.filter(nm => conflictFor(nm, id));
     const off = c.students.filter(nm => !S.sel.has(nm) && !conflictFor(nm, id));
-    const cnt = add.length === c.students.length ? `all ${add.length} students` : `${add.length} of ${c.students.length} students`;
-    const ex = [
-      ...skip.map(nm => `${nm} is already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}`),
-      ...(off.length ? [`Not selected: ${off.join('、')}`] : []),
-    ];
-    return `<div class="rvc">
-      <div class="top"><span class="nm">${c.name}</span><span class="cnt">${cnt}</span></div>
-      <div class="when">${fmt(d.start)} → ${fmt(d.due)}</div>
-      ${ex.length ? `<div class="ex">${ex.join('<br>')}</div>` : ''}
-    </div>`;
-  }).join('');
+    if (off.length) ex.push({ cls:c.name, t:`${add.length} of ${c.students.length} students`, d:`Not selected: ${off.join('、')}` });
+    skip.forEach(nm => ex.push({ cls:c.name, t:`${nm} is left out`, d:`Already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}` }));
+  });
+  if (S.perClass && [...S.picked].some(id => S.perDates[id] && (S.perDates[id].start !== S.start || S.perDates[id].due !== S.due)))
+    ex.push({ cls:'Dates differ by class', t:'', d:[...S.picked].map(id => { const d = S.perDates[id] || { start:S.start, due:S.due }; return `${CLASSES.find(x => x.id === id).name} · ${fmt(d.start)} → ${fmt(d.due)}`; }).join('<br>') });
+  if (S.kind === 'optional') ex.push({ cls:'Optional', t:'', d:'Not counted as homework —— no reminder emails, no late rule.' });
+  else if (!S.due) ex.push({ cls:'No due date', t:'', d:'Students can submit any time; late work can’t apply.' });
+  else if (S.late === 'reduced') ex.push({ cls:'Late work', t:tierSeq(tiersOf({ late:S.late, lateTiers:S.lateTiers })), d:`After the due date, ${fmt(S.due)}` });
+  return ex;
+}
+function doAssign(){
+  S.review = false; commit(); S.justAssigned = true; render();
+  window.scrollTo(0, 0);
+  setTimeout(() => { S.justAssigned = false; render(); }, 1600);
+}
+function renderReview(){
+  const ex = reviewExceptions();
   const total = [...S.picked].reduce((k, id) => k +
     CLASSES.find(x => x.id === id).students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id)).length, 0);
   const nc = S.picked.size;
+  const rows = ex.map(e => `<div class="rvc">
+      <div class="top"><span class="nm">${esc(e.cls)}</span>${e.t ? `<span class="cnt">${esc(e.t)}</span>` : ''}</div>
+      ${e.d ? `<div class="ex">${e.d}</div>` : ''}
+    </div>`).join('');
   return `<div class="scrim" data-act="closerev"><div class="dlg" data-stop="1">
     <div class="dlg-hd">
       <h3>Assign to ${nc} ${nc === 1 ? 'class' : 'classes'}</h3>
-      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students${lateShort({ kind:S.kind, late:S.due ? S.late : 'full', lateTiers:S.lateTiers })}</p>
+      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students · everything else is as shown on the page</p>
     </div>
     <div class="dlg-bd">${rows}</div>
     <div class="dlg-ft">
@@ -2529,12 +2547,7 @@ document.addEventListener('click', (e) => {
     if (a === 'histall'){ S.histAll = true; render(); return; }
     if (a === 'perclass') S.perClass = !S.perClass;
     if (a === 'closerev' && (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]'))) S.review = false;   // 鷹架修正：Back 鈕在 data-stop 裡面，原本按不到
-    if (a === 'confirm'){
-      S.review = false; commit(); S.justAssigned = true; render();
-      window.scrollTo(0, 0);
-      setTimeout(() => { S.justAssigned = false; render(); }, 1600);
-      return;
-    }
+    if (a === 'confirm'){ doAssign(); return; }
     render(); return;
   }
   if (S.open !== null || S.ddOpen || S.typeOpen || S.voiceOpen || S.exnOpen){ S.open = null; S.ddOpen = false; S.typeOpen = false; S.voiceOpen = false; S.exnOpen = false; render(); }   // 點外面關掉
@@ -2602,6 +2615,7 @@ document.addEventListener('dragover', (e) => { if (e.target.closest?.('[data-qke
 document.addEventListener('drop', (e) => { const c = e.target.closest?.('[data-qkey]'); if (!c || !S.dragKey || c.dataset.qkey === S.dragKey) return; e.preventDefault();
   const from = S.qorder.indexOf(S.dragKey), to = S.qorder.indexOf(c.dataset.qkey); S.qorder.splice(from, 1); S.qorder.splice(to, 0, S.dragKey); S.dragKey = null; render(); });
 el('back').addEventListener('click', () => {});   // v8 只有第四步
+if (AS_INFO){ const h = document.querySelector('.h4'); if (h) h.innerHTML = '<span class="tico" style="background:'+AS_INFO.bg+'; color:'+AS_INFO.ink+'"><span class="mi">'+AS_INFO.mi+'</span></span>'+AS_INFO.t; document.title = AS_INFO.t+' — v8 提案 · Assign 歷史'; }
 el('next').addEventListener('click', () => {
   if (S.step === 0){
     if (S.gen || !(S.projects.length && S.tp.size)) return;
@@ -2611,7 +2625,7 @@ el('next').addEventListener('click', () => {
   if (S.step === 1){ goStep(2); return; }
   if (S.step === 2){ goStep(3); return; }
   if (S.justAssigned) return;
-  if (S.picked.size){ S.review = true; render(); return; }
+  if (S.picked.size){ if (reviewExceptions().length){ S.review = true; render(); } else { doAssign(); } return; }   // 第五十一輪：沒有例外就直接派
   location.href = location.pathname;
 });
 

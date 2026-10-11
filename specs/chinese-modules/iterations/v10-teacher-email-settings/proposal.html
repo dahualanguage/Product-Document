@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit User — v10 提案：Notifications 第二張 Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   v10 提案（第一輪，2026-10-01）—— 從 profile.html（基準）分岔。
+   使用者 2026-10-01 決定：Profile 頁維持一張 Card、不做分頁，Notifications 做成第二張 Card 疊在 Edit User 下面。
+   新增：第二張 Card「Notifications」，兩段——Emails you receive（17、22）／Emails your students receive（14、15、48、49、59 鎖定）。
+     - 每列：標題 subtitle2 ＋ caption 說明 ＋ Preview 連結（開 Brevo 模板）；右邊 Switch 或 Select（照產品的 MUI Switch 58×38／TextField small 40）。
+     - 17：Send at（時間）、Only when someone hasn't submitted（Checkbox）、One email per assignment｜Combine into one（Select）。
+     - 14／15：Always｜Ask me each time｜Never（Select）；14 另有 Deferred start 的 Select。
+     - 48／49：Switch 預設關；規則欄位（天數、次數、預設訊息）關著時淡掉但保留。
+     - 59：沒有開關，右邊一顆 Chip「Managed by school」。
+     - 底列只有一顆 Save（跟 Edit User 的 Save Changes 分開存：不同 mutation），沒改過是灰的；存成功 snackbar「Notification settings saved」。
+     - 預設值＝今天的行為：17 On、22 On、14／15 Always、48／49 Off。17 的時間寫 07:30 是假設，要用現在 cron 的時間（ITERATION.md 待問 5）。
+   其他一律跟基準一樣。
+   踩過的雷：這張卡裡的欄位一度取名 .side／.main，撞到外殼的側欄與主區（position:fixed、padding 88px），整個側欄消失；已改成 .nt-side／.nt-main。
+   網址參數（提案專用）：&changed=1 Save 變成可按 · &saved=1 顯示存成功的 snackbar · 基準的 ?menu=1 照舊
+   -------------------------------------------------------------------------
+   下面是基準檔原本的檔頭：
+   v10 基準檔 —— 這一頁是「現行產品」/dashboard/users/edit?id=<自己>（Account 選單 → Profile）的複刻，不是提案。
+   提案要把 Notifications 掛在這裡，所以先把它現在的樣子畫出來。
+   出處：dahua-dash origin/develop @ 96d64382（2026-09-30 fetch）
+     src/layouts/common/account-popover.js（右上頭像 → CustomPopover 200 寬：名字＋email／Home、Profile／Logout；
+       Payment and Billings 只有 DAHUA_ADMIN；學生沒有）
+     src/app/dashboard/users/edit/page.js → src/sections/users/view/user-create-and-edit-view.js
+       （Container maxWidth xl；CustomBreadcrumbs heading「Edit User」、links Dashboard / Edit User，非 admin 沒有 User 那一節；
+        非 admin 開別人的 id → 403「No permission」）
+     src/sections/users/user-new-edit-form.js（Card p:3；兩欄 First Name／Last Name，Email／School／User ID 三個 disabled 滿版；
+       Divider my:3；subtitle1 Roles；RolesDisplay 每個角色一個 divider 框：Chip soft 角色名 ＋ program 名；
+       學生才有 Native／Target Language；permissions 表只有 DAHUA_ADMIN 看得到；Cancel（outlined error）／Save Changes）
+     src/layouts/dashboard/main.js（/dashboard/users 不在 hasTintedBg 名單 → 底色白）
+     src/theme/{palette,typography}.js · overrides/components/{textfield,chip,button,card,breadcrumbs}.js
+   外殼（側欄、Header）從 v9-program/program.html 抄；側欄沒有任何項目是 active（Profile 不在側欄）。
+   假資料：Joey Tsai（Class Teacher，跟 v9 的 Program 頁同一人）。
+   網址參數：?menu=1 打開右上的 Account 選單
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --secondary:#FF6A71; --secondary-light:#FFD0C3; --secondary-dark:#DB4D60; --secondary-darker:#932145;
+  --warning:#FFAB00; --warning-light:#FFD666; --warning-dark:#B76E00; --warning-darker:#7A4100;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8; --grey500:#919EAB; --grey600:#637381;
+  --shadow-card:0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* /school/program 走 hasTintedBg（main.js），底色 #f4f7fb */
+  background:#f4f7fb; color:var(--text); line-height:1.5; font-size:14px; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+.mo{ font-family:'Material Icons Outlined'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button, input, select{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80（config-layout.js） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+/* Logo：public/logo/dh_aI.webp，mt 3 / ml 4 / mb 1，高 37 */
+.side .logo{ margin:24px 0 8px 32px; height:37px; display:flex; align-items:center; }
+.side .logo img{ height:37px; width:auto; display:block; }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+/* ListSubheader：fontSize 11 / overline / grey.700 / p 16px 8px 8px 12px / mb 4 */
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; cursor:pointer; }
+.nav .grp > .sh.blank{ color:transparent; }
+/* NavItem：minHeight 44 / mb 4 / radius 8 / p 4px 8px 4px 12px / body2 500 / icon 24 + mr 16 */
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.nav a.on:hover{ background:rgba(0,203,97,.16); }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+/* NavToggleButton：fixed top 32 / left 240-12 / IconButton small p .5 / 1px dashed divider / bgBlur .48 */
+.navtoggle{ position:fixed; top:32px; left:228px; z-index:60; width:26px; height:26px; border-radius:50%;
+  border:1px dashed var(--divider); background:rgba(255,255,255,.48); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); }
+.navtoggle:hover{ background:#fff; }
+.navtoggle .mi{ font-size:16px; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+/* Header：fixed、高 80、bgBlur('#f4f7fb')、hasTintedBg 時沒有陰影也沒有底線 */
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+/* AccountPopover 的 Avatar：36、2px 白邊、alt 首字 T → colorByName → warning（main 底、grey800 字） */
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; border:2px solid #fff; background:var(--warning);
+  color:var(--text); font-weight:600; font-size:20px; display:flex; align-items:center; justify-content:center; }
+
+/* Main：pt 88（80+8）· px 40 · pb 88 · 沒有 Container */
+.main{ padding:88px 40px 88px; }
+
+
+/* /dashboard/users/edit 不是 tinted 頁：底色白，Header 也是白的 blur */
+body{ background:#fff; }
+.hdr{ background:rgba(255,255,255,.8); }
+.hdr .acct.open{ background:linear-gradient(135deg,#49DE91 0%,#00CB61 100%); }
+.main{ padding:88px 40px 88px; }
+
+/* ---------- Container maxWidth xl：1536、px 24 ---------- */
+.container{ max-width:1536px; margin:0 auto; padding:0 24px; }
+
+/* ---------- CustomBreadcrumbs：h4 gutterBottom ＋ Breadcrumbs body2；mb 5 ---------- */
+.crumbs{ margin-bottom:40px; }
+.crumbs .h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:.35em; }
+.crumbs .row{ display:flex; align-items:center; font-size:14px; line-height:22px; }
+.crumbs .row a{ color:var(--text); text-decoration:none; }
+.crumbs .row a:hover{ text-decoration:underline; }
+.crumbs .row .last{ color:var(--text3); }
+.crumbs .sep{ width:4px; height:4px; border-radius:50%; background:var(--text3); margin:0 16px; }
+
+/* ---------- Card p:3 ---------- */
+.card{ background:#fff; border-radius:16px; box-shadow:var(--shadow-card); padding:24px; }
+.form{ display:grid; grid-template-columns:repeat(2,1fr); column-gap:16px; row-gap:24px; }
+.form .full{ grid-column:1 / -1; }
+
+/* ---------- TextField outlined medium（textfield.js）：高 56、邊 alpha(grey500,.2)、radius 8 ---------- */
+.tf{ position:relative; }
+.tf input{ width:100%; height:56px; padding:16.5px 14px; font:inherit; font-size:14px; line-height:22px; color:var(--text);
+  border:1px solid rgba(145,158,171,.2); border-radius:8px; background:transparent; outline:0; transition:border-color .2s; }
+.tf input:hover{ border-color:var(--text); }
+.tf input:focus{ border-color:var(--text); }
+.tf label{ position:absolute; top:-9px; left:9px; padding:0 5px; background:#fff; font-size:12px; font-weight:600; line-height:1.5;
+  color:var(--text2); pointer-events:none; }
+.tf.disabled input{ color:var(--text3); border-color:rgba(145,158,171,.24); -webkit-text-fill-color:var(--text3); }
+.tf.disabled input:hover{ border-color:rgba(145,158,171,.24); }
+.tf.disabled label{ color:var(--text3); }
+
+.divider{ border:0; border-top:1px solid var(--divider); margin:24px 0; }
+.sub1{ font-size:16px; font-weight:600; line-height:1.5; margin-bottom:16px; }
+
+/* ---------- RolesDisplay：每個角色一個框 p 1.5、radius 8、divider 邊 ---------- */
+.role{ padding:12px; border-radius:8px; border:1px solid var(--divider); display:flex; flex-direction:column; gap:8px; }
+.role .line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+/* Chip soft small：高 24、bg alpha(grey500,.16)、字 text.primary 13px */
+.chip{ height:24px; padding:0 8px; border-radius:16px; background:rgba(145,158,171,.16); color:var(--text);
+  font-size:13px; font-weight:500; display:inline-flex; align-items:center; }
+
+/* ---------- 底列：mt 3、靠右、spacing 2 ---------- */
+.actions{ display:flex; justify-content:flex-end; align-items:flex-end; gap:16px; margin-top:24px; }
+.btn{ height:36px; padding:0 12px; border-radius:8px; font:inherit; font-size:14px; font-weight:700; line-height:24px; cursor:pointer;
+  display:inline-flex; align-items:center; }
+.btn.err-outlined{ background:#fff; color:#FF5630; border:1px solid rgba(255,86,48,.5); }
+.btn.err-outlined:hover{ border-color:currentColor; box-shadow:0 0 0 .5px currentColor; background:rgba(255,86,48,.08); }
+.btn.contained{ background:var(--primary); color:#fff; border:0; }
+.btn.contained:hover{ background:var(--primary-dark); box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+
+/* ---------- AccountPopover：CustomPopover width 200、p 0、arrow top-right ---------- */
+.acct-pop{ position:fixed; top:74px; right:56px; width:200px; background:#fff; border-radius:12px; z-index:70;
+  box-shadow:0 0 2px 0 rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); display:none; }
+.acct-pop.on{ display:block; }
+.acct-pop::before{ content:''; position:absolute; top:-6px; right:20px; width:12px; height:12px; background:#fff; transform:rotate(45deg);
+  border-top:1px solid rgba(145,158,171,.12); border-left:1px solid rgba(145,158,171,.12); }
+.acct-pop .who{ padding:16px 16px 12px; }
+.acct-pop .who b{ display:block; font-size:14px; font-weight:600; line-height:22px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.acct-pop .who span{ display:block; font-size:14px; line-height:22px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.acct-pop .dash{ border:0; border-top:1px dashed var(--divider); }
+.acct-pop .items{ padding:8px; display:flex; flex-direction:column; }
+.acct-pop .item{ padding:6px 8px; border-radius:6px; font-size:14px; line-height:22px; color:var(--text); cursor:pointer; }
+.acct-pop .item:hover{ background:rgba(145,158,171,.08); }
+.acct-pop .item.on{ background:rgba(145,158,171,.16); }
+.acct-pop .logout{ margin:8px; padding:6px 8px; border-radius:6px; font-size:14px; line-height:22px; font-weight:700; color:#FF5630; cursor:pointer; }
+.acct-pop .logout:hover{ background:rgba(145,158,171,.08); }
+
+/* ===================== 提案：第二張 Card「Notifications」 ===================== */
+.card + .card{ margin-top:24px; }          /* Grid spacing 3 */
+.nt-head{ margin-bottom:8px; }
+.nt-head .h6{ font-size:18px; font-weight:700; line-height:28px; }
+.nt-sec{ margin-top:24px; }
+.nt-sec .sub2{ font-size:14px; font-weight:600; line-height:22px; }
+.nt-sec .cap{ font-size:12px; line-height:1.5; color:var(--text2); }
+.nt-row{ display:flex; align-items:flex-start; gap:16px; padding:16px 0; border-top:1px solid var(--divider); }
+.nt-sec .nt-row:first-of-type{ margin-top:12px; }
+.nt-row .nt-main{ flex:1; min-width:0; }
+.nt-row .ttl{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; line-height:22px; flex-wrap:wrap; }
+.nt-row .ttl .tid{ font-size:12px; font-weight:600; color:var(--text3); border:1px solid var(--divider); border-radius:6px; padding:0 6px; line-height:20px; }
+.nt-row .ttl a{ font-size:14px; font-weight:400; color:var(--primary); text-decoration:underline; text-underline-offset:2px; }
+.nt-row .desc{ font-size:12px; line-height:1.5; color:var(--text2); margin-top:2px; }
+.nt-row .ctrls{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px; margin-top:12px; }
+.nt-row.off .ctrls{ opacity:.48; pointer-events:none; }
+.nt-row .nt-side{ flex:none; display:flex; align-items:center; min-height:38px; }
+
+/* MUI Switch（switch.js）：root 58×38、padding 9/13/9/12、track radius 14、thumb 14、checked translateX(13) */
+.sw{ position:relative; width:58px; height:38px; padding:9px 13px 9px 12px; border:0; background:none; cursor:pointer; }
+.sw .track{ display:block; width:33px; height:20px; border-radius:14px; background:rgba(145,158,171,.48); transition:background .15s; }
+.sw .thumb{ position:absolute; top:12px; left:15px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .15s; }
+.sw[aria-checked="true"] .track{ background:var(--primary); }
+.sw[aria-checked="true"] .thumb{ transform:translateX(13px); }
+.sw:focus-visible{ outline:2px solid var(--primary); outline-offset:-6px; border-radius:19px; }
+
+/* TextField small（高 40）＋ Select icon（select.js：right 10、18px） */
+.tf.sm input, .tf.sm select{ height:40px; padding:8.5px 14px; font:inherit; font-size:14px; line-height:22px; color:var(--text);
+  border:1px solid rgba(145,158,171,.2); border-radius:8px; background:#fff; outline:0; }
+.tf.sm input:hover, .tf.sm select:hover{ border-color:var(--text); }
+.tf.sm input:focus, .tf.sm select:focus{ border-color:var(--text); }
+.tf.sm label{ top:-9px; }
+.tf.sm.sel{ position:relative; }
+.tf.sm.sel select{ appearance:none; -webkit-appearance:none; padding-right:34px; cursor:pointer; min-width:150px; }
+.tf.sm.sel .mi{ position:absolute; right:10px; top:calc(50% - 9px); font-size:18px; color:var(--text2); pointer-events:none; }
+.tf.sm.num input{ width:72px; text-align:center; font-variant-numeric:tabular-nums; }
+.tf.sm.time input{ width:140px; }   /* 中文 locale 會顯示「上午 07:30」，窄了會截掉 */
+.tf.sm.msg input{ width:260px; }
+.inl{ display:inline-flex; align-items:center; gap:8px; font-size:14px; line-height:22px; color:var(--text); }
+.inl .t2{ color:var(--text2); }
+
+/* FormControlLabel ＋ Checkbox（checkbox.js：padding 8；primary） */
+.fcl{ display:inline-flex; align-items:center; gap:0; margin-left:-8px; cursor:pointer; font-size:14px; line-height:22px; }
+.fcl .cb{ width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
+.fcl .cb input{ appearance:none; -webkit-appearance:none; width:18px; height:18px; border:2px solid var(--grey600); border-radius:3px; margin:0; cursor:pointer; position:relative; }
+.fcl .cb input:checked{ border-color:var(--primary); background:var(--primary); }
+.fcl .cb input:checked::after{ content:''; position:absolute; left:4px; top:0px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+
+.chip.soft-default{ background:rgba(145,158,171,.16); color:var(--text); }
+.btn.contained:disabled{ background:rgba(145,158,171,.24); color:rgba(145,158,171,.8); box-shadow:none; cursor:default; }
+
+/* Snackbar（components/snackbar/styles.js）：右上、白底、左邊 icon 方塊 */
+.snack{ position:fixed; top:24px; right:24px; z-index:1400; background:#fff; border-radius:8px; padding:4px 16px 4px 4px;
+  box-shadow:0 8px 16px 0 rgba(145,158,171,.16); display:none; align-items:center; gap:12px; font-size:14px; font-weight:600; min-width:280px; }
+.snack.show{ display:flex; }
+.snack .ib{ width:44px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:none;
+  background:rgba(34,197,94,.16); color:#22C55E; }
+.snack .ib .mi{ font-size:24px; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_aI.webp" alt="DAHUA AI"></div>
+  <nav class="nav">
+    <div class="grp">
+      <div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
+      <a href="#"><span class="mi">rate_review</span>Annotation</a>
+    </div>
+    <div class="grp">
+      <div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a>
+    </div>
+    <div class="grp">
+      <div class="sh">practice</div>
+      <a href="#"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a>
+    </div>
+    <div class="grp">
+      <div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a>
+    </div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<button class="navtoggle" aria-label="Collapse / Expand"><span class="mi">chevron_left</span></button>
+
+<div class="mainwrap">
+  <div class="hdr"><button class="acct" id="acctBtn" aria-label="Account" style="border:0;cursor:pointer"><div class="av">J</div></button></div>
+
+  <!-- AccountPopover：account-popover.js。CLASS_TEACHER：Home、Profile；沒有 Payment and Billings -->
+  <div class="acct-pop" id="acctPop">
+    <div class="who"><b>Joey Tsai</b><span>joey.tsai@dahua-demo.school</span></div>
+    <hr class="dash">
+    <div class="items">
+      <div class="item">Home</div>
+      <div class="item on">Profile</div>
+    </div>
+    <hr class="dash">
+    <div class="logout">Logout</div>
+  </div>
+
+  <div class="snack" id="snack"><div class="ib"><span class="mi">check_circle</span></div><span id="snackMsg">Notification settings saved</span></div>
+
+  <div class="main">
+    <div class="container">
+
+      <!-- CustomBreadcrumbs：user-create-and-edit-view.js。非 admin 沒有「User」那一節 -->
+      <div class="crumbs">
+        <h1 class="h4">Edit User</h1>
+        <div class="row"><a href="#">Dashboard</a><span class="sep"></span><span class="last">Edit User</span></div>
+      </div>
+
+      <!-- UserNewEditForm：Card p:3 -->
+      <div class="card">
+        <div class="form">
+          <div class="tf"><label>First Name</label><input value="Joey"></div>
+          <div class="tf"><label>Last Name</label><input value="Tsai"></div>
+          <div class="tf disabled full"><label>Email</label><input value="joey.tsai@dahua-demo.school" disabled></div>
+          <div class="tf disabled full"><label>School</label><input value="Dahua Demo School" disabled></div>
+          <div class="tf disabled full"><label>User ID</label><input value="3f9c2a71-6d0e-4b2a-9c1f-2a7d5e8b4c10" disabled></div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="sub1">Roles</div>
+        <!-- RolesDisplay：老師沒有 Learning Profile，非 admin 沒有 permissions 表 -->
+        <div class="role">
+          <div class="line"><span class="chip">Class Teacher</span><span class="body2 t2">Dahua Chinese Program</span></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn err-outlined">Cancel</button>
+          <button class="btn contained">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- ===================== 提案：第二張 Card「Notifications」 ===================== -->
+      <div class="card" id="ntCard">
+        <div class="nt-head">
+          <h2 class="h6">Notifications</h2>
+          <div class="body2 t2">Which emails DAHUA AI sends to you and to your students. Defaults match what is sent today.</div>
+        </div>
+
+        <!-- 段 1：老師自己收 -->
+        <div class="nt-sec">
+          <div class="sub2">Emails you receive</div>
+          <div class="cap">Sent to joey.tsai@dahua-demo.school</div>
+
+          <div class="nt-row" data-row="17">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">17</span>Due-today submission summary <a href="#">Preview</a></div>
+              <div class="desc">One email per assignment due today, with who has and hasn't submitted.</div>
+              <div class="ctrls">
+                <span class="inl"><span class="t2">Send at</span>
+                  <span class="tf sm time"><input type="time" value="07:30" data-dirty></span>
+                  <span class="t2">school time</span></span>
+                <label class="fcl"><span class="cb"><input type="checkbox" data-dirty></span>Only when someone hasn't submitted</label>
+                <span class="tf sm sel"><select data-dirty><option>One email per assignment</option><option>Combine into one email</option></select><span class="mi">arrow_drop_down</span></span>
+              </div>
+            </div>
+            <div class="nt-side"><button class="sw" role="switch" aria-checked="true" aria-label="Due-today submission summary"><span class="track"></span><span class="thumb"></span></button></div>
+          </div>
+
+          <div class="nt-row" data-row="22">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">22</span>Question bank ready <a href="#">Preview</a></div>
+              <div class="desc">When AI generation finishes for a question bank you started.</div>
+            </div>
+            <div class="nt-side"><button class="sw" role="switch" aria-checked="true" aria-label="Question bank ready"><span class="track"></span><span class="thumb"></span></button></div>
+          </div>
+        </div>
+
+        <!-- 段 2：學生收 -->
+        <div class="nt-sec">
+          <div class="sub2">Emails your students receive</div>
+          <div class="cap">Triggered by what you do in your classes. Applies to all your classes.</div>
+
+          <div class="nt-row" data-row="14">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">14</span>New assignment <a href="#">Preview</a></div>
+              <div class="desc">When you assign work. You can change this for a single assignment when you assign it.</div>
+              <div class="ctrls">
+                <span class="tf sm sel"><select data-dirty><option>Always</option><option>Ask me each time</option><option>Never</option></select><span class="mi">arrow_drop_down</span></span>
+                <span class="inl"><span class="t2">Deferred start:</span>
+                  <span class="tf sm sel"><select data-dirty><option>Send on the start date</option><option>Send when I assign</option></select><span class="mi">arrow_drop_down</span></span></span>
+              </div>
+            </div>
+            <div class="nt-side"></div>
+          </div>
+
+          <div class="nt-row" data-row="15">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">15</span>Feedback notification <a href="#">Preview</a></div>
+              <div class="desc">When you leave feedback on a submission.</div>
+              <div class="ctrls">
+                <span class="tf sm sel"><select data-dirty><option>Always</option><option>Ask me each time</option><option>Never</option></select><span class="mi">arrow_drop_down</span></span>
+              </div>
+            </div>
+            <div class="nt-side"></div>
+          </div>
+
+          <div class="nt-row off" data-row="48">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">48</span>Automatic assignment reminders <a href="#">Preview</a></div>
+              <div class="desc">You can always send a reminder from the Dashboard. Turn this on to also remind on a schedule.</div>
+              <div class="ctrls">
+                <span class="inl"><span class="tf sm num"><input type="number" value="2" min="0" max="14" data-dirty></span><span class="t2">days before due</span></span>
+                <span class="inl"><span class="tf sm num"><input type="number" value="1" min="0" max="14" data-dirty></span><span class="t2">days after due</span></span>
+                <span class="inl"><span class="t2">then every</span><span class="tf sm num"><input type="number" value="3" min="1" max="14" data-dirty></span><span class="t2">days, up to</span><span class="tf sm num"><input type="number" value="2" min="1" max="5" data-dirty></span><span class="t2">times</span></span>
+              </div>
+            </div>
+            <div class="nt-side"><button class="sw" role="switch" aria-checked="false" aria-label="Automatic assignment reminders"><span class="track"></span><span class="thumb"></span></button></div>
+          </div>
+
+          <div class="nt-row off" data-row="49">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">49</span>Automatic Word Game goal reminders <a href="#">Preview</a></div>
+              <div class="desc">For students behind a Word Game goal you set.</div>
+              <div class="ctrls">
+                <span class="inl"><span class="tf sm num"><input type="number" value="3" min="0" max="14" data-dirty></span><span class="t2">days before the goal date</span></span>
+                <span class="inl"><span class="t2">Default message</span><span class="tf sm msg"><input type="text" value="Keep going, you're close!" data-dirty></span></span>
+              </div>
+            </div>
+            <div class="nt-side"><button class="sw" role="switch" aria-checked="false" aria-label="Automatic Word Game goal reminders"><span class="track"></span><span class="thumb"></span></button></div>
+          </div>
+
+          <div class="nt-row" data-row="59">
+            <div class="nt-main">
+              <div class="ttl"><span class="tid">59</span>Daily assignment digest <a href="#">Preview</a></div>
+              <div class="desc">Every student gets one digest a day covering all their classes. Managed by the school, not per teacher.</div>
+            </div>
+            <div class="nt-side"><span class="chip soft-default">Managed by school</span></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn contained" id="ntSave" disabled>Save</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const acctBtn = document.getElementById('acctBtn');
+const acctPop = document.getElementById('acctPop');
+function setMenu(on){ acctPop.classList.toggle('on', on); acctBtn.classList.toggle('open', on); }
+acctBtn.addEventListener('click', (e) => { e.stopPropagation(); setMenu(!acctPop.classList.contains('on')); });
+document.addEventListener('click', (e) => { if (!acctPop.contains(e.target)) setMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+const Q = new URLSearchParams(location.search);
+if (Q.get('menu')) setMenu(true);
+
+/* ---------- 提案：Notifications Card ---------- */
+const ntSave = document.getElementById('ntSave');
+const markDirty = () => { ntSave.disabled = false; };
+document.querySelectorAll('#ntCard .sw').forEach((sw) => {
+  sw.addEventListener('click', () => {
+    const on = sw.getAttribute('aria-checked') === 'true';
+    sw.setAttribute('aria-checked', on ? 'false' : 'true');
+    sw.closest('.nt-row').classList.toggle('off', on);
+    markDirty();
+  });
+});
+document.querySelectorAll('#ntCard [data-dirty]').forEach((el) => el.addEventListener('change', markDirty));
+document.querySelectorAll('#ntCard .ttl a').forEach((a) => a.addEventListener('click', (e) => e.preventDefault()));
+
+let snackTimer;
+function showSnack(msg){
+  document.getElementById('snackMsg').textContent = msg;
+  const el = document.getElementById('snack'); el.classList.add('show');
+  clearTimeout(snackTimer); snackTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+ntSave.addEventListener('click', () => { ntSave.disabled = true; showSnack('Notification settings saved'); });
+if (Q.get('changed')) markDirty();
+if (Q.get('saved')) showSnack('Notification settings saved');
+</script>
+</body>
+</html>

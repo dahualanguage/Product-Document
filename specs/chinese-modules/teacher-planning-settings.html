@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>設定練習細項 — 介面重新設計（提案 v2）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --emerald:#059669; --emerald-d:#047857; --emerald-dd:#065f46;
+  --emerald-l:#ecfdf5; --emerald-l2:#d1fae5; --emerald-ring:#6ee7b7;
+  --ink:#0f172a; --slate:#334155; --slate-2:#475569; --muted:#64748b; --faint:#94a3b8;
+  --line:#e6ebf1; --line-2:#eef2f7; --bg:#f4f7fb;
+  --sh-sm:0 1px 2px rgba(15,23,42,.05);
+}
+body{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg); color:var(--slate-2); line-height:1.55; -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-style:normal; line-height:1; -webkit-font-feature-settings:'liga'; }
+
+.wrap{ max-width:1180px; margin:0 auto; padding:44px 26px 90px; }
+.kick{ font-size:11.5px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:var(--emerald); }
+h1{ font-size:28px; font-weight:800; color:var(--ink); letter-spacing:-.5px; margin:7px 0 9px; }
+.lede{ font-size:14.5px; color:var(--muted); max-width:66ch; }
+.lede b{ color:var(--ink); font-weight:700; }
+
+h2{ font-size:12px; font-weight:800; letter-spacing:.9px; text-transform:uppercase; color:var(--faint); margin:46px 0 5px; }
+.cap{ font-size:13.5px; color:var(--muted); margin-bottom:16px; max-width:70ch; }
+.cap b{ color:var(--ink); font-weight:700; }
+
+.two{ display:grid; grid-template-columns:1fr 392px; gap:22px; align-items:start; }
+@media (max-width:980px){ .two{ grid-template-columns:1fr; } }
+
+/* ---------- 對話側 ---------- */
+.chat{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 18px 20px;
+  box-shadow:var(--sh-sm);
+  background-image:radial-gradient(var(--line-2) 1px,transparent 1px); background-size:15px 15px; }
+.msg{ display:flex; gap:9px; margin-bottom:11px; }
+.msg .who{ width:22px; height:22px; border-radius:7px; background:var(--emerald-l); color:var(--emerald-dd);
+  font-size:9.5px; font-weight:800; display:grid; place-items:center; flex:none; margin-top:3px; }
+.bub{ background:#fff; border:1px solid var(--line); border-radius:13px; padding:12px 14px; font-size:14px;
+  color:var(--ink); font-weight:600; box-shadow:var(--sh-sm); flex:1; }
+.msg.you{ justify-content:flex-end; }
+.msg.you .bub{ flex:none; background:var(--emerald-l); border-color:var(--emerald-l2); color:var(--emerald-dd); }
+.opts{ display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+.opts button{ border:1px solid var(--line); background:#fff; border-radius:9px; padding:6px 12px; font:inherit;
+  font-size:12.5px; font-weight:700; color:var(--slate-2); cursor:pointer; }
+.opts button:hover{ border-color:var(--emerald-ring); color:var(--emerald-dd); background:var(--emerald-l); }
+.opts button.go{ background:linear-gradient(145deg,#10b981,#059669); border-color:transparent; color:#fff; }
+.more{ text-align:center; font-size:12px; font-weight:700; color:var(--faint); padding:6px 0 2px; }
+.count{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800;
+  padding:3px 10px; border-radius:999px; margin-bottom:14px; }
+.count.bad{ background:#fef3c7; color:#92400e; }
+.count.good{ background:var(--emerald-l); color:var(--emerald-dd); }
+
+/* ---------- 面板 ---------- */
+.panel{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--sh-sm); overflow:hidden; }
+.p-h{ display:flex; align-items:center; gap:8px; padding:14px 15px 12px; border-bottom:1px solid var(--line-2); }
+.p-h .mi{ font-size:18px; color:var(--emerald); }
+.p-h b{ font-size:14px; font-weight:800; color:var(--ink); }
+.p-h .x{ margin-left:auto; color:var(--faint); font-size:17px; }
+.p-b{ padding:14px 15px 15px; }
+
+/* 看得到什麼 —— 貼在預覽卡頂端 */
+.seg{ display:flex; align-items:center; gap:7px; }
+.seg .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--faint); }
+.seg .g{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.seg .g button{ border:0; background:#fff; font:inherit; font-size:11.5px; font-weight:700; color:var(--muted);
+  padding:4px 9px; cursor:pointer; }
+.seg .g button+button{ border-left:1px solid var(--line); }
+.seg .g button.on{ background:var(--emerald-l); color:var(--emerald-dd); }
+
+.look{ border:1px solid var(--line); border-radius:13px; overflow:hidden; }
+.look-h{ display:flex; gap:14px; padding:9px 11px; background:#fbfdfe; border-bottom:1px solid var(--line-2); flex-wrap:wrap; }
+.stu{ padding:11px 12px 4px; }
+.s{ display:flex; gap:9px; margin-bottom:11px; }
+.s .pl{ width:22px; height:22px; border-radius:50%; background:var(--emerald); color:#fff; display:grid;
+  place-items:center; flex:none; margin-top:2px; }
+.s .pl .mi{ font-size:14px; }
+.py{ font-size:11px; font-weight:700; color:var(--emerald-d); letter-spacing:.4px; }
+.hz{ font-size:16px; font-weight:800; color:var(--ink); letter-spacing:1px; margin:1px 0; }
+.tr{ font-size:12px; font-weight:600; color:var(--muted); }
+.rest{ font-size:11.5px; font-weight:700; color:var(--faint); padding:0 12px 11px; }
+
+/* 聽到什麼 —— 貼著播放的語意 */
+.grp{ margin-top:13px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.grp-h{ display:flex; align-items:center; gap:7px; margin-bottom:9px; }
+.grp-h .mi{ font-size:15px; color:var(--faint); }
+.grp-h b{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--faint); }
+.line{ display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12.5px; font-weight:600; color:var(--slate); }
+.line + .line{ border-top:1px dashed var(--line-2); }
+.line .v{ margin-left:auto; display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line);
+  border-radius:8px; padding:3px 8px; font-size:12px; font-weight:700; color:var(--ink); background:#fff; cursor:pointer; }
+.line .v .mi{ font-size:14px; color:var(--faint); }
+.sw{ margin-left:auto; width:32px; height:18px; border-radius:999px; background:var(--emerald); position:relative; flex:none; }
+.sw::after{ content:''; position:absolute; top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:#fff; }
+.sw.off{ background:#cbd5e1; }
+.sw.off::after{ right:auto; left:2px; }
+
+.hint{ font-size:11.5px; color:var(--faint); font-weight:600; margin-top:9px; display:flex; gap:6px; }
+.hint .mi{ font-size:14px; flex:none; margin-top:1px; }
+
+/* 舊版對照 */
+.old{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+.old .r{ padding:7px 0; border-bottom:1px dashed var(--line-2); font-size:12.5px; font-weight:700; color:var(--slate); }
+.old .r:last-child{ border-bottom:0; }
+.old .r span{ display:block; font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
+  color:var(--faint); margin-bottom:4px; }
+.old .btns{ display:inline-flex; gap:5px; }
+.old .btns i{ font-style:normal; border:1px solid var(--line); border-radius:7px; padding:3px 9px;
+  font-size:11.5px; font-weight:700; color:var(--muted); }
+.old .btns i.on{ background:var(--emerald-l); border-color:var(--emerald-ring); color:var(--emerald-dd); }
+
+.why{ margin-top:50px; background:#fff; border:1px solid var(--line); border-left:3px solid var(--emerald);
+  border-radius:12px; padding:20px 22px; }
+.why h3{ font-size:15px; font-weight:800; color:var(--ink); margin-bottom:10px; }
+.why p{ font-size:13.5px; color:var(--slate-2); margin-bottom:9px; }
+.why p:last-child{ margin-bottom:0; }
+.why b{ color:var(--ink); } .why em{ color:var(--emerald-dd); font-style:normal; font-weight:700; }
+.ask{ width:18px; height:18px; border-radius:50%; border:1px solid var(--line); background:#fff;
+  color:var(--faint); font-size:11px; font-weight:800; line-height:1; cursor:pointer; flex:none;
+  display:grid; place-items:center; margin-left:6px; transition:.13s; }
+.ask:hover{ border-color:var(--emerald-ring); color:var(--emerald-d); background:var(--emerald-l); }
+.seg .k{ display:inline-flex; align-items:center; }
+.pinbar{ display:flex; align-items:center; gap:10px; margin-top:12px; padding:11px 12px;
+  background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 -1px 0 rgba(15,23,42,.02),var(--sh-sm); }
+.pinbar .done{ border:0; border-radius:10px; padding:9px 16px; font:inherit; font-size:13.5px; font-weight:800;
+  color:#fff; background:linear-gradient(145deg,#10b981,#059669); cursor:pointer; display:inline-flex;
+  align-items:center; gap:6px; flex:none; }
+.pinbar .done .mi{ font-size:16px; }
+.pinbar .pinnote{ font-size:12px; font-weight:600; color:var(--faint); }
+.composer{ display:flex; align-items:center; gap:10px; margin-top:9px; padding:9px 12px; background:#fff;
+  border:1px solid var(--line); border-radius:14px; box-shadow:var(--sh-sm); }
+.composer input{ flex:1; border:0; outline:0; font:inherit; font-size:14px; font-weight:600; color:var(--ink); }
+.composer input::placeholder{ color:#9fb0c2; font-weight:500; }
+.composer .snd{ width:32px; height:32px; border-radius:50%; border:0; background:#e2e8f0; color:#94a3b8;
+  display:grid; place-items:center; flex:none; }
+.composer .snd .mi{ font-size:17px; }
+
+/* ---------- 放在哪裡：三種示意 ---------- */
+.places{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:start; }
+@media (max-width:900px){ .places{ grid-template-columns:1fr; } }
+.pl-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px;
+  box-shadow:var(--sh-sm); }
+.pl-card h4{ font-size:13.5px; font-weight:800; color:var(--ink); margin-bottom:3px; }
+.pl-card .sz{ font-size:11.5px; font-weight:700; color:var(--faint); margin-bottom:11px; }
+.dia{ position:relative; height:132px; border-radius:9px; background:var(--bg);
+  border:1px solid var(--line-2); overflow:hidden; display:flex; gap:4px; padding:5px; }
+.dia .col{ border-radius:5px; }
+.dia .side{ width:20px; background:#e8edf3; }
+.dia .chatb{ flex:1; background:#fff; border:1px solid var(--line); }
+.dia .panelb{ background:var(--emerald-l); border:1px solid var(--emerald-ring); }
+.dia .sheet{ position:absolute; border-radius:7px; background:var(--emerald-l);
+  border:1px solid var(--emerald-ring); }
+.dia .scrim{ position:absolute; inset:0; background:rgba(15,23,42,.28); }
+.pl-card p{ font-size:12.5px; color:var(--muted); margin-top:11px; line-height:1.6; }
+.pl-card p b{ color:var(--ink); font-weight:700; }
+.verdict{ display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.4px;
+  padding:2px 9px; border-radius:999px; margin-top:10px; }
+.v-ok{ background:var(--emerald-l); color:var(--emerald-dd); }
+.v-no{ background:#fef3c7; color:#92400e; }
+
+/* ---------- 大單子 ---------- */
+.sheetbox{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 24px 60px -30px rgba(15,23,42,.4);
+  overflow:hidden; max-width:940px; }
+.sh-h{ display:flex; align-items:center; gap:9px; padding:16px 20px; border-bottom:1px solid var(--line-2); }
+.sh-h .mi{ font-size:19px; color:var(--emerald); }
+.sh-h b{ font-size:15px; font-weight:800; color:var(--ink); }
+.sh-h .sub{ font-size:12.5px; font-weight:600; color:var(--faint); }
+.sh-h .x{ margin-left:auto; color:var(--faint); font-size:18px; }
+.sh-b{ display:grid; grid-template-columns:1.05fr .95fr; }
+@media (max-width:820px){ .sh-b{ grid-template-columns:1fr; } }
+.sh-l{ padding:18px 20px; border-right:1px solid var(--line-2); background:#fbfdfe; }
+.sh-r{ padding:18px 20px; }
+.sh-f{ display:flex; align-items:center; gap:12px; padding:13px 20px; border-top:1px solid var(--line-2); background:#fff; }
+.sh-f .done{ border:0; border-radius:10px; padding:9px 17px; font:inherit; font-size:13.5px; font-weight:800;
+  color:#fff; background:linear-gradient(145deg,#10b981,#059669); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.sh-f .done .mi{ font-size:16px; }
+.sh-f .ask2{ margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12.5px;
+  font-weight:600; color:var(--faint); }
+.sh-l .stu{ padding:0; }
+.sh-l .s{ margin-bottom:14px; }
+.sh-l .hz{ font-size:19px; }
+.sh-l .tr{ font-size:13px; }
+footer{ margin-top:46px; font-size:12px; color:var(--faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kick">Planning mode · §8.2 提案</div>
+  <h1>設定練習細項</h1>
+  <p class="lede">Content Mirroring 有七項設定要確認。現在的做法是<b>對話問七題</b>，右邊再擺一張<b>把同樣七項攤成一列一列的設定表</b> ——
+  同一件事問兩次，而且兩邊都很長。這一版的作法是：<b>讓預覽本身變成控制介面</b>，而對話改去做它真正擅長的事 —— 解釋。</p>
+
+  <!-- ============ 現在 ============ -->
+  <h2>現在</h2>
+  <p class="cap">左邊七則訊息一題一題問；右邊的面板把七項再列一次。設定與它造成的結果<b>分在兩塊</b> —— 你改「Pinyin: Hidden」的時候，得自己往上看句子有沒有變。</p>
+  <div class="two">
+    <div class="chat">
+      <span class="count bad"><span class="mi" style="font-size:13px">forum</span>七則訊息，還沒算句子那一步</span>
+      <div class="msg"><span class="who">AI</span><div class="bub">Should they see the pinyin?
+        <div class="opts"><button>Shown</button><button>Hidden</button><button>Their choice</button></div></div></div>
+      <div class="msg you"><div class="bub">Shown</div></div>
+      <div class="msg"><span class="who">AI</span><div class="bub">Should they see the translation?
+        <div class="opts"><button>Shown</button><button>Hidden</button><button>Their choice</button></div></div></div>
+      <div class="msg you"><div class="bub">Shown</div></div>
+      <div class="msg"><span class="who">AI</span><div class="bub">How fast should the audio play?
+        <div class="opts"><button>Slow</button><button>Normal</button><button>Fast</button></div></div></div>
+      <div class="more">⋮　還有四題：聲音、先聽英文、Auto Pass、Audio Mode</div>
+    </div>
+
+    <div class="old">
+      <div class="r"><span>Sentences</span>6 lines</div>
+      <div class="r"><span>Audio Mode</span><span class="btns"><i class="on">Fixed as set</i><i>Students control it</i></span></div>
+      <div class="r"><span>English first</span><span class="btns"><i>Yes</i><i class="on">No —— Chinese only</i></span></div>
+      <div class="r"><span>Pinyin</span><span class="btns"><i class="on">Shown</i><i>Hidden</i><i>Their choice</i></span></div>
+      <div class="r"><span>Translation</span><span class="btns"><i class="on">Shown</i><i>Hidden</i><i>Their choice</i></span></div>
+      <div class="r"><span>Auto Pass</span>3 tries</div>
+      <div class="r"><span>Speed</span><span class="btns"><i>Slow</i><i class="on">Normal</i><i>Fast</i></span></div>
+      <div class="r"><span>Voice</span><span class="btns"><i class="on">Sarah</i><i>Daniel</i></span></div>
+    </div>
+  </div>
+
+  <!-- ============ 提案 ============ -->
+  <h2>提案</h2>
+  <p class="cap">七項設定<b>按照「它改變什麼」重新歸位</b>。對話不再問設定 —— 它換了一個角色：<b>面板負責「做」，對話負責「解釋」</b>。
+  每一項旁邊的 <b>?</b> 點下去，就在對話裡問出那一題。</p>
+  <div class="two">
+    <div class="chat">
+      <span class="count good"><span class="mi" style="font-size:13px">forum</span>一則訊息，其餘都是老師自己問的</span>
+
+      <div class="msg"><span class="who">AI</span><div class="bub">These are the settings students will practise with —— the defaults are already applied on the right.<br>Change anything there, or ask me about it.</div></div>
+
+      <div class="msg you"><div class="bub">What is auto pass?</div></div>
+      <div class="msg"><span class="who">AI</span><div class="bub">If a student keeps missing the same sentence, auto pass lets them move on after a set number of tries —— so one hard line does not block the whole practice.<br>At <b>3 tries</b> they get three goes before it moves them on.</div></div>
+
+      <div class="pinbar">
+        <button class="done"><span class="mi">check</span>Done adjusting</button>
+        <span class="pinnote">停在最下面 —— 問幾題都不會被沖走</span>
+      </div>
+      <div class="composer">
+        <input placeholder="Ask about any of these settings…" />
+        <span class="snd"><span class="mi">arrow_upward</span></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-h"><span class="mi">visibility</span><b>What the student sees</b><span class="mi x">close</span></div>
+      <div class="p-b">
+
+        <div class="look">
+          <div class="look-h">
+            <span class="seg"><span class="k">Pinyin <button class="ask">?</button></span><span class="g">
+              <button class="on">Shown</button><button>Hidden</button><button>Their choice</button></span></span>
+            <span class="seg"><span class="k">Translation <button class="ask">?</button></span><span class="g">
+              <button class="on">Shown</button><button>Hidden</button><button>Their choice</button></span></span>
+          </div>
+          <div class="stu">
+            <div class="s"><span class="pl"><span class="mi">play_arrow</span></span>
+              <span><span class="py">wǒ xǐhuan chī mǐfàn</span>
+              <div class="hz">我 喜欢 吃 米饭。</div><div class="tr">I like eating rice.</div></span></div>
+            <div class="s"><span class="pl"><span class="mi">play_arrow</span></span>
+              <span><span class="py">nǐ è le ma</span>
+              <div class="hz">你 饿 了 吗？</div><div class="tr">Are you hungry?</div></span></div>
+          </div>
+          <div class="rest">4 more like this</div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h"><span class="mi">volume_up</span><b>What they hear on play</b></div>
+          <div class="line">Voice<button class="ask">?</button><span class="v">Sarah<span class="mi">expand_more</span></span></div>
+          <div class="line">Speed<button class="ask">?</button><span class="v">Normal<span class="mi">expand_more</span></span></div>
+          <div class="line">English meaning first<button class="ask">?</button><span class="sw off"></span></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h"><span class="mi">task_alt</span><b>When it counts as passed</b></div>
+          <div class="line">Tries on one sentence<button class="ask">?</button><span class="v">3<span class="mi">expand_more</span></span></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h"><span class="mi">lock_open</span><b>What students can change</b></div>
+          <div class="line">Turn pinyin and translation on or off<button class="ask">?</button><span class="sw off"></span></div>
+        </div>
+
+        <div class="hint"><span class="mi">info</span>
+          <div>Turn this off and “Their choice” above stops being available —— they are two ends of the same thing.</div></div>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>放在哪裡</h2>
+  <p class="cap"><b>先講一個會決定形狀的限制：</b>面板每一項的 <b>?</b> 是<b>在對話裡</b>問出問題、答案也回到對話裡。
+  所以面板一旦蓋住對話，這個互動就斷了 —— 你按了 ?，答案出現在一個你看不到的地方。</p>
+
+  <div class="places">
+    <div class="pl-card">
+      <h4>A · 側邊加寬</h4>
+      <div class="sz">392 → 480px</div>
+      <div class="dia"><div class="col side"></div><div class="col chatb" style="flex:1"></div><div class="col panelb" style="width:46px"></div></div>
+      <p>就是現在這個，只是寬一點。<b>對話一直看得見</b>，? 的問答直接在旁邊發生。代價是預覽還是窄，學生畫面只能給個意思。</p>
+      <span class="verdict v-ok">? 互動完整</span>
+    </div>
+
+    <div class="pl-card">
+      <h4>B · 置中單子</h4>
+      <div class="sz">720px · 一欄</div>
+      <div class="dia"><div class="col side"></div><div class="col chatb" style="flex:1"></div>
+        <div class="scrim"></div><div class="sheet" style="left:22%;right:8%;top:10%;bottom:10%"></div></div>
+      <p>大、專注，預覽終於放得下。但它<b>蓋住對話</b> —— 按了 ? 之後答案在背後，得先關掉單子才看得到。<b>? 這個設計會壞掉。</b></p>
+      <span class="verdict v-no">? 互動會斷</span>
+    </div>
+
+    <div class="pl-card">
+      <h4>C · 置中單子 · 兩欄</h4>
+      <div class="sz">940px · 左預覽 右設定</div>
+      <div class="dia"><div class="col side"></div><div class="col chatb" style="flex:1"></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="left:12%;right:6%;top:14%;bottom:14%"></div>
+        <div class="sheet" style="left:12%;width:32%;top:14%;bottom:14%;background:#fff"></div></div>
+      <p>一樣蓋住對話，但<b>把問答收進單子裡</b>：? 的答案直接出現在右欄下方，不必回頭找對話。等於這一步<b>暫時脫離對話、變成自己的畫面</b>。</p>
+      <span class="verdict v-ok">? 改在單子裡發生</span>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:20px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--emerald);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--slate-2)">
+    <b style="color:var(--ink)">B 我覺得可以直接刪掉。</b>它拿走了對話、又沒有補上替代品 —— 大是唯一的好處。
+    真正的選擇在 <b style="color:var(--ink)">A</b> 和 <b style="color:var(--ink)">C</b> 之間，而它們差的不是尺寸，是<b style="color:var(--ink)">這一步還算不算對話的一部分</b>。
+  </div>
+
+  <h2>C 長什麼樣</h2>
+  <p class="cap">左邊放大的學生畫面，右邊設定 ＋ 問答。<b>? 按下去答案就長在右欄底下</b>，不用回頭找對話。</p>
+
+  <div class="sheetbox">
+    <div class="sh-h"><span class="mi">visibility</span><b>What the student sees</b>
+      <span class="sub">Content Mirroring · 食物 — What we eat</span><span class="mi x">close</span></div>
+    <div class="sh-b">
+      <div class="sh-l">
+        <div class="look-h" style="border:1px solid var(--line);border-radius:10px;margin-bottom:14px;background:#fff">
+          <span class="seg"><span class="k">Pinyin <button class="ask">?</button></span><span class="g">
+            <button class="on">Shown</button><button>Hidden</button><button>Their choice</button></span></span>
+          <span class="seg"><span class="k">Translation <button class="ask">?</button></span><span class="g">
+            <button class="on">Shown</button><button>Hidden</button><button>Their choice</button></span></span>
+        </div>
+        <div class="stu">
+          <div class="s"><span class="pl"><span class="mi">play_arrow</span></span>
+            <span><span class="py">wǒ xǐhuan chī mǐfàn</span>
+            <div class="hz">我 喜欢 吃 米饭。</div><div class="tr">I like eating rice.</div></span></div>
+          <div class="s"><span class="pl"><span class="mi">play_arrow</span></span>
+            <span><span class="py">nǐ è le ma</span>
+            <div class="hz">你 饿 了 吗？</div><div class="tr">Are you hungry?</div></span></div>
+          <div class="s"><span class="pl"><span class="mi">play_arrow</span></span>
+            <span><span class="py">zhège píngguǒ hěn hǎochī</span>
+            <div class="hz">这个 苹果 很 好吃。</div><div class="tr">This apple is delicious.</div></span></div>
+        </div>
+        <div class="rest" style="padding:0">3 more like this</div>
+      </div>
+
+      <div class="sh-r">
+        <div class="grp" style="margin-top:0">
+          <div class="grp-h"><span class="mi">volume_up</span><b>What they hear on play</b></div>
+          <div class="line">Voice<button class="ask">?</button><span class="v">Sarah<span class="mi">expand_more</span></span></div>
+          <div class="line">Speed<button class="ask">?</button><span class="v">Normal<span class="mi">expand_more</span></span></div>
+          <div class="line">English meaning first<button class="ask">?</button><span class="sw off"></span></div>
+        </div>
+        <div class="grp">
+          <div class="grp-h"><span class="mi">task_alt</span><b>When it counts as passed</b></div>
+          <div class="line">Tries on one sentence<button class="ask">?</button><span class="v">3<span class="mi">expand_more</span></span></div>
+        </div>
+        <div class="grp">
+          <div class="grp-h"><span class="mi">lock_open</span><b>What students can change</b></div>
+          <div class="line">Turn pinyin and translation on or off<button class="ask">?</button><span class="sw off"></span></div>
+        </div>
+
+        <div class="msg you" style="margin-top:14px"><div class="bub">What is auto pass?</div></div>
+        <div class="msg"><span class="who">AI</span><div class="bub">If a student keeps missing the same sentence, auto pass lets them move on after a set number of tries —— so one hard line does not block the whole practice.</div></div>
+      </div>
+    </div>
+    <div class="sh-f">
+      <button class="done"><span class="mi">check</span>Done adjusting</button>
+      <span class="ask2">按 <b style="color:var(--slate)">?</b> 問任何一項，答案就出現在右欄</span>
+    </div>
+  </div>
+
+  <div class="why">
+    <h3>四個決定</h3>
+    <p><b>1 · 設定貼在它改變的東西旁邊。</b>拼音和翻譯改的就是下面那張卡的內容，所以它們<em>就放在那張卡的頂端</em>，改完立刻在同一個視線範圍內看到結果。原本那張表要你讀「Pinyin: Hidden」再自己往上對照 —— 那是把「看得見的東西」寫成了文字說明。</p>
+    <p><b>2 · 剩下的按「它改變什麼」分三組。</b>聲音／速度／先聽英文都是「按下播放會聽到什麼」；Auto Pass 是「什麼時候算過」；Audio Mode 其實是前面兩個開關的<b>元設定</b>，所以排最後，而且跟「學生自選」互相牽制 —— 面板上寫明這件事，原本七列並排時完全看不出來。</p>
+    <p><b>3 · 對話換角色：不再問設定，改成解釋設定。</b>七項裡<em>只有 auto pass 是產品術語</em>，其餘六個看名字就懂。所以「逐題帶著走」是假需求 —— 老師不想被帶，他只是有一項看不懂。<b>逐題問的那條路整條移除</b>，面板旁的 <b>?</b> 取代它：卡在哪就問哪，問題跟設定綁在一起，不必事先猜。輸入框留著，因為想問的不一定是這七項之一。</p>
+    <p><b>4 · 那一則釘在最下面。</b>問答會把對話撐長，如果「Done adjusting」跟著捲上去，老師會不知道怎麼繼續。所以它固定在對話底部 —— <em>問幾題都不會被沖走</em>。</p>
+  </div>
+
+  <footer>DAHUA AI · Planning mode · 設定練習細項介面提案 v2 · 2026-08-26</footer>
+</div>
+</body>
+</html>

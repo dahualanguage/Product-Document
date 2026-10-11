@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program Dashboard — v9 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 這一頁是「現行產品」/school/program（CLASS_TEACHER 看到的 Program 頁）的複刻，不是提案。
+   出處：dahua-dash origin/develop @ 6405607f（2026-09-23 fetch；5447ca51 → 6405607f 之間
+         src/sections/school、src/theme、src/layouts 都沒有動）
+     src/app/school/program/page.js · src/app/school/layout.js（DashboardLayout，沒有 Container，
+       所以內容吃滿 main 的 px:5）
+     src/sections/school/program/index.js（頁頭 Program Dashboard / Welcome back, {schoolName}!、
+       資料整形：className 是所有班級用「, 」串起來、joinDate = createdAt yyyy-MM-dd、依 createdAt 新→舊）
+     src/sections/school/program/component/school-stats-overview.js（三張 StatCard）
+     src/components/dahua/school/stat-card.js
+     src/sections/school/program/component/school-users-section.js（Program Users 卡：三顆 Chip 分頁、
+       All Classes 下拉、Search；Teachers & Coordinators／Students 兩段各一張表，不分頁）
+     src/components/dahua/school/school-users-table.js（表格本體）· role-chip.js（Class Teacher＝warning，
+       Student 不在對照表 → secondary）
+     src/sections/school/program/component/pending-invitations-section.js ＋
+       src/sections/school/invitations/components/{invitations-table,invitation-search-bar}.js
+     src/layouts/dashboard/{main,header,nav-vertical,nav-items,menu-by-role}.js · src/layouts/common/nav-toggle-button.js
+     src/theme/{palette,typography,custom-shadows}.js · overrides/components/{table,chip,switch,card,avatar}.js
+   顏色、字級、圓角、間距逐項照抄 theme + sx，不做自由發揮。
+
+   ★ 無法在程式碼裡確認、照截圖畫的三樣（2026-09-23 截圖 vs 6405607f 與 98 條遠端分支都找不到）：
+     1. 表格最左的勾選欄（程式裡 canBulkSelect 在這一頁沒有傳，預設 false）。截圖裡只有 Students 那張表有，
+        老師那張沒有（老師列的頭像跟學生列的勾選框對齊）
+     2. Target Language 標題旁的 ⓘ（程式裡沒有 Tooltip）
+     3. 整個「Game Level ⓘ」欄（程式裡沒有這個欄位，也沒有 gameLevel 資料）
+     截圖是使用者實機截的，所以畫面照截圖；工程那邊的版本比 develop 新，接手時先問是哪個分支。
+     ⓘ 的 tooltip 文字未知，先寫「（無法確認）」。
+
+   其他照程式碼、不是照截圖的：
+     - 表頭 sx backgroundColor:'grey.50' 在這個 theme 沒有 grey[50]，實際是 theme override 的
+       background.neutral（grey200）；列 hover 的 'grey.50' 同理無效，所以列沒有 hover 底色。
+     - 頁頭、三張 StatCard、Pending Invitations 卡在截圖外，照程式畫；席位數（Students / Seats）與
+       Total Users 是假資料。
+     - 截圖裡 Joey Tsai（Class Teacher）上面還有一列被糊掉，這裡補一列 Programme Coordinator 假資料，
+       名字對應右上角頭像的 T。
+
+   網址參數：?tab=all|teachers|students · &cls=<班名> · &q=<關鍵字>
+   &edit=<email> 開現行的 Edit User 對話框（按列尾鉛筆也會開）
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --secondary:#FF6A71; --secondary-light:#FFD0C3; --secondary-dark:#DB4D60; --secondary-darker:#932145;
+  --warning:#FFAB00; --warning-light:#FFD666; --warning-dark:#B76E00; --warning-darker:#7A4100;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8; --grey500:#919EAB; --grey600:#637381;
+  --shadow-card:0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* /school/program 走 hasTintedBg（main.js），底色 #f4f7fb */
+  background:#f4f7fb; color:var(--text); line-height:1.5; font-size:14px; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+.mo{ font-family:'Material Icons Outlined'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button, input, select{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80（config-layout.js） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+/* Logo：public/logo/dh_aI.webp，mt 3 / ml 4 / mb 1，高 37 */
+.side .logo{ margin:24px 0 8px 32px; height:37px; display:flex; align-items:center; }
+.side .logo img{ height:37px; width:auto; display:block; }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+/* ListSubheader：fontSize 11 / overline / grey.700 / p 16px 8px 8px 12px / mb 4 */
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; cursor:pointer; }
+.nav .grp > .sh.blank{ color:transparent; }
+/* NavItem：minHeight 44 / mb 4 / radius 8 / p 4px 8px 4px 12px / body2 500 / icon 24 + mr 16 */
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.nav a.on:hover{ background:rgba(0,203,97,.16); }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+/* NavToggleButton：fixed top 32 / left 240-12 / IconButton small p .5 / 1px dashed divider / bgBlur .48 */
+.navtoggle{ position:fixed; top:32px; left:228px; z-index:60; width:26px; height:26px; border-radius:50%;
+  border:1px dashed var(--divider); background:rgba(255,255,255,.48); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); }
+.navtoggle:hover{ background:#fff; }
+.navtoggle .mi{ font-size:16px; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+/* Header：fixed、高 80、bgBlur('#f4f7fb')、hasTintedBg 時沒有陰影也沒有底線 */
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+/* AccountPopover 的 Avatar：36、2px 白邊、alt 首字 T → colorByName → warning（main 底、grey800 字） */
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; border:2px solid #fff; background:var(--warning);
+  color:var(--text); font-weight:600; font-size:20px; display:flex; align-items:center; justify-content:center; }
+
+/* Main：pt 88（80+8）· px 40 · pb 88 · 沒有 Container */
+.main{ padding:88px 40px 88px; }
+
+/* ---------- 頁頭：mb:4 外框 + mb:2 內列 ---------- */
+.pg-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:48px; }
+.pg-head .l{ display:flex; align-items:center; gap:16px; }
+.pg-head .ic{ width:48px; height:48px; border-radius:50%; background:var(--grey200); flex:none;
+  display:flex; align-items:center; justify-content:center; color:var(--text2); }
+.pg-head .ic .mi{ font-size:26px; }
+.h4{ font-size:24px; font-weight:700; line-height:1.5; }
+.h6{ font-size:18px; font-weight:700; line-height:28px; }
+.body2{ font-size:14px; line-height:22px; }
+.cap{ font-size:12px; line-height:1.5; }
+.sub2{ font-size:14px; font-weight:600; line-height:22px; }
+.t2{ color:var(--text2); }
+
+/* ---------- StatCard ×3：Grid spacing 3、mb 4 ---------- */
+.stats{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; margin-bottom:32px; }
+.card{ background:#fff; border-radius:16px; box-shadow:var(--shadow-card); position:relative; }
+.stat{ padding:24px; }
+.stat .row{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; }
+.stat .ttl{ display:flex; align-items:center; gap:4px; margin-bottom:4px; font-size:14px; font-weight:700; line-height:22px; }
+.stat .ttl .mo{ font-size:16px; color:var(--text2); cursor:help; }
+.stat .val{ font-size:32px; font-weight:700; line-height:1.5; }
+.stat .sub{ display:block; margin-top:4px; font-size:12px; color:var(--text2); }
+.stat .ib{ width:48px; height:48px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center; }
+.stat .ib .mi{ font-size:24px; }
+
+/* ---------- Program Users 卡 ---------- */
+.card-top{ padding:24px 24px 0; }
+.card-top .h6{ margin-bottom:24px; }
+.toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:12px; margin-bottom:16px; }
+.toolbar .sp{ flex:1; }
+/* Chip medium：高 32、13px、radius 8、label 0 12px；sx fontWeight 600 */
+.chip{ height:32px; padding:0 12px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center;
+  border:1px solid transparent; background:transparent; color:var(--text); cursor:pointer; }
+.chip.outlined{ border-color:rgba(145,158,171,.32); }
+.chip.outlined:hover{ background:rgba(145,158,171,.08); }
+.chip.filled{ background:var(--primary); color:#fff; }
+/* Select size small / TextField size small：高 40、radius 8、邊框 alpha(grey500,.2) */
+.ctrl{ height:40px; border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 14px;
+  display:flex; align-items:center; gap:8px; font-size:14px; color:var(--text); cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.ctrl.sel{ min-width:140px; }
+.ctrl.sel .caret{ margin-left:auto; font-size:24px; color:var(--text2); }
+.ctrl.search{ width:180px; cursor:text; }
+.ctrl.search .mi{ font-size:20px; color:var(--text3); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; min-width:0; }
+.ctrl input::placeholder{ color:var(--text3); opacity:1; }
+.ctrl select{ border:0; outline:0; font:inherit; color:inherit; background:transparent; appearance:none; -webkit-appearance:none; flex:1; cursor:pointer; }
+.ctrl.md{ height:56px; width:100%; }
+.card-body{ padding:0 24px 24px; }
+.grp-sec{ margin-bottom:24px; }
+.grp-sec .gh{ display:flex; align-items:center; gap:8px; margin-bottom:12px; padding:0 8px; }
+.grp-sec .gh .mi{ font-size:20px; }
+.grp-sec .gh .sub2{ font-weight:600; }
+
+/* ---------- MUI Table（overrides/table.js：cell borderBottom dashed；head bg neutral；last row 透明） ---------- */
+table.mui{ width:100%; border-collapse:collapse; }
+table.mui th{ text-align:left; font-size:14px; font-weight:600; color:var(--text2); background:var(--grey200);
+  padding:16px; border-bottom:1px dashed var(--divider); line-height:22px; white-space:normal; }
+table.mui th .mo{ font-size:16px; vertical-align:-3px; margin-left:8px; color:var(--text2); cursor:help; }
+table.mui td{ padding:16px; border-bottom:1px dashed var(--divider); vertical-align:middle; }
+table.mui tr:last-child td{ border-bottom-color:transparent; }
+table.mui th.ck, table.mui td.ck{ width:48px; padding:16px 0 16px 8px; }
+table.mui th.r, table.mui td.r{ text-align:right; }
+/* Checkbox：action.active 24px 圖示 */
+.cb{ width:18px; height:18px; border:2px solid var(--grey600); border-radius:3px; display:inline-block; margin:3px; vertical-align:middle; }
+/* User cell：Avatar 36 / .8rem 600；學生 secondary.light+darker、老師 warning.light+darker */
+.usr{ display:flex; align-items:center; gap:16px; }
+.av{ width:36px; height:36px; border-radius:50%; flex:none; font-size:12.8px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+.av.stu{ background:var(--secondary-light); color:var(--secondary-darker); }
+.av.tea{ background:var(--warning-light); color:var(--warning-darker); }
+.usr .nm{ font-size:14px; font-weight:600; line-height:22px; }
+.usr .em{ font-size:12px; color:var(--text2); display:block; line-height:1.5; }
+/* Chip small soft：高 24、13px、radius 8、label 0 8px、500 */
+.rchip{ height:24px; padding:0 8px; border-radius:8px; font-size:13px; font-weight:500; display:inline-flex; align-items:center; white-space:nowrap; }
+.rchip.warning{ color:var(--warning-dark); background:rgba(255,171,0,.16); }
+.rchip.secondary{ color:var(--secondary-dark); background:rgba(255,106,113,.16); }
+/* Switch small：root 40×24、padding 4px 8px 4px 7px、thumb 10、track radius 14、checked 平移 9 */
+.stat-cell{ display:flex; align-items:center; width:100px; }
+.sw{ display:block; width:40px; height:24px; padding:4px 8px 4px 7px; position:relative; flex:none; cursor:pointer; }
+.sw .track{ display:block; width:25px; height:16px; border-radius:14px; background:rgba(145,158,171,.48); }
+.sw .thumb{ position:absolute; top:7px; left:10px; width:10px; height:10px; border-radius:50%; background:#fff; transition:transform .15s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .thumb{ transform:translateX(9px); }
+.stat-cell .cap{ color:var(--text2); font-weight:500; }
+.lvl{ font-size:14px; font-weight:600; }
+/* IconButton small：padding 5、icon 20、action.active */
+.ibtn{ width:30px; height:30px; border-radius:50%; border:0; background:transparent; color:var(--grey600);
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.ibtn:hover{ background:rgba(145,158,171,.08); }
+.ibtn .mi{ font-size:20px; }
+.empty{ text-align:center; padding:32px 16px; color:var(--text2); font-size:14px; }
+.empty-inline{ text-align:center; padding:32px 0; color:var(--text2); font-size:14px; }
+
+/* ---------- Pending Invitations 卡：mt 3 mb 3 ---------- */
+.card.pend{ margin:24px 0; }
+.pend .card-top .ctrl.md{ margin-bottom:16px; }
+/* TablePagination：toolbar 64、右對齊、body2 */
+.pager{ height:64px; display:flex; align-items:center; justify-content:flex-end; gap:24px; padding:0 8px 0 16px; font-size:14px; color:var(--text); }
+.pager .rpp{ display:flex; align-items:center; gap:4px; }
+.pager .rpp .mi{ font-size:16px; color:var(--text2); }
+.pager .arrows{ display:flex; gap:0; margin-right:8px; }
+.pager .arrows .ibtn{ width:40px; height:40px; color:var(--text3); cursor:default; }
+.pager .arrows .ibtn:hover{ background:transparent; }
+.pager .arrows .ibtn .mi{ font-size:24px; }
+
+/* ======================= 現行的 Edit User 對話框（user-form.js，isEdit）=======================
+   Dialog maxWidth sm(600) fullWidth · Title pb 2 · Divider · Content py 3、Stack spacing 2.5 · Divider · Actions px 3 py 2
+   TextField medium 56、label shrink = body1×.75 = 12px/600 text.secondary、disabled 邊框 action.disabledBackground
+   學生才有 LEARNING PROFILE（Divider textAlign left）＋ Native Language (optional)／Target Language (optional)；
+   非 ESL 的老師只有 Email＋姓名。裡面沒有 Game Level。 */
+.ed-ov{ position:fixed; inset:0; z-index:1300; background:rgba(22,28,36,.8); display:none; align-items:center; justify-content:center; }
+.ed-ov.open{ display:flex; }
+.ed-dlg{ width:600px; max-width:calc(100% - 64px); max-height:calc(100% - 64px); background:#fff; border-radius:16px;
+  box-shadow:-40px 40px 80px -8px rgba(0,0,0,.24); display:flex; flex-direction:column; }
+.ed-hd{ padding:24px 24px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.ed-hd .tt{ display:flex; align-items:center; gap:8px; font-size:18px; font-weight:700; line-height:28px; }
+.ed-hd .tt .mi{ font-size:22px; color:var(--primary); }
+.ed-hd .st{ font-size:14px; line-height:22px; color:var(--text2); margin-top:4px; }
+.ed-hd .x{ width:30px; height:30px; margin-top:4px; border-radius:50%; border:0; background:transparent; color:var(--grey600); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+.ed-hd .x:hover{ background:rgba(145,158,171,.08); } .ed-hd .x .mi{ font-size:20px; }
+.ed-div{ height:0; border-top:1px solid var(--divider); }
+.ed-bd{ padding:24px; overflow:auto; display:flex; flex-direction:column; gap:20px; }
+.ed-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.ed-f{ position:relative; }
+.ed-f > label.fl{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1; font-size:12px; font-weight:600; color:var(--text2); line-height:1.2; }
+.ed-f.dis > label.fl{ color:var(--text3); }
+.ed-f .in{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 14px; display:flex; align-items:center; gap:8px; font-size:14px; color:var(--text); }
+.ed-f .in:hover{ border-color:var(--text); }
+.ed-f.dis .in{ border-color:rgba(145,158,171,.24); color:var(--text3); cursor:default; }
+.ed-f.dis .in:hover{ border-color:rgba(145,158,171,.24); }
+.ed-f .in input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.ed-f .in select{ border:0; outline:0; font:inherit; color:inherit; background:transparent; appearance:none; -webkit-appearance:none; flex:1; cursor:pointer; }
+.ed-f .in select{ text-align:left; text-align-last:left; }
+.ed-f .in select.empty{ font-style:italic; }
+.ed-f .in .caret{ margin-left:auto; font-size:24px; color:var(--text2); }
+/* Divider textAlign="left"：::before 10% / ::after 90%，字是 caption uppercase letter-spacing .5 */
+.ed-sec{ display:flex; align-items:center; white-space:nowrap; }
+.ed-sec::before{ content:''; width:10%; border-top:1px solid var(--divider); }
+.ed-sec::after{ content:''; flex:1; border-top:1px solid var(--divider); }
+.ed-sec span{ padding:0 9.6px; font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; line-height:1.5; }
+.ed-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px; }
+.ed-btn{ height:36px; padding:6px 16px; border-radius:8px; font-size:14px; font-weight:700; line-height:24px; cursor:pointer; border:0; }
+.ed-btn.outl{ background:transparent; color:var(--text); border:1px solid rgba(145,158,171,.32); }
+.ed-btn.outl:hover{ background:rgba(145,158,171,.08); border-color:var(--text); }
+.ed-btn.prim{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.ed-btn.prim:hover{ background:var(--primary-dark); box-shadow:none; }
+.ed-btn.prim[disabled]{ background:rgba(145,158,171,.24); color:var(--text3); box-shadow:none; cursor:default; }
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     Sidebar —— MENU_BY_ROLE[CLASS_TEACHER]（menu-by-role.js），非 ESL。
+     第一組的 subheader 是一個空白字元 ' '，所以會多一條看不見的 subheader。
+     截圖裡有 Annotation，代表這個帳號在 annotator 名單上（isAnnotator gating）。
+     Word Bank Game History 在所有環境都隱藏。
+     ===================================================================== -->
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_aI.webp" alt="DAHUA AI"></div>
+  <nav class="nav">
+    <div class="grp">
+      <div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
+      <a href="#"><span class="mi">rate_review</span>Annotation</a>
+    </div>
+    <div class="grp">
+      <div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a>
+    </div>
+    <div class="grp">
+      <div class="sh">practice</div>
+      <a href="#"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a>
+    </div>
+    <div class="grp">
+      <div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#" class="on"><span class="mi">groups</span>Program</a>
+    </div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<button class="navtoggle" aria-label="Collapse / Expand"><span class="mi">chevron_left</span></button>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">T</div></div></div>
+
+  <div class="main">
+
+    <!-- 頁頭：index.js 472–505 -->
+    <div class="pg-head">
+      <div class="l">
+        <div class="ic"><span class="mi">groups</span></div>
+        <div>
+          <h1 class="h4">Program Dashboard</h1>
+          <div class="body2 t2">Welcome back, Dahua Demo School!</div>
+        </div>
+      </div>
+      <!-- Import Users 只有 SCHOOL_ADMIN 看得到（canImport），CLASS_TEACHER 這裡是空的 -->
+    </div>
+
+    <!-- StatCard ×3：school-stats-overview.js -->
+    <div class="stats">
+      <div class="card stat">
+        <div class="row">
+          <div>
+            <div class="ttl">Total Users</div>
+            <div class="val" style="color:var(--primary)" id="stTotal">8</div>
+            <span class="sub">All program users</span>
+          </div>
+          <div class="ib" style="background:linear-gradient(135deg,#00CB6120 0%,#00CB6110 100%);color:var(--primary)"><span class="mi">groups</span></div>
+        </div>
+      </div>
+      <div class="card stat">
+        <div class="row">
+          <div>
+            <div class="ttl">Students / Seats <span class="mo" title="Shows how many students are using seats out of your total allocated capacity.">info</span></div>
+            <div class="val" style="color:var(--secondary)"><span id="stStu">6</span> / 30</div>
+            <span class="sub">24 seats available</span>
+          </div>
+          <div class="ib" style="background:linear-gradient(135deg,#FF6A7120 0%,#FF6A7110 100%);color:var(--secondary)"><span class="mi">people</span></div>
+        </div>
+      </div>
+      <div class="card stat">
+        <div class="row">
+          <div>
+            <div class="ttl">Teachers</div>
+            <div class="val" style="color:var(--warning)" id="stTea">2</div>
+            <span class="sub">Including 1 coordinator</span>
+          </div>
+          <div class="ib" style="background:linear-gradient(135deg,#FFAB0020 0%,#FFAB0010 100%);color:var(--warning)"><span class="mi">co_present</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Program Users：school-users-section.js -->
+    <div class="card">
+      <div class="card-top">
+        <h2 class="h6">Program Users</h2>
+        <div class="toolbar" id="toolbar">
+          <button class="chip filled" data-tab="all">All Users (<span>0</span>)</button>
+          <button class="chip outlined" data-tab="teachers">Teachers &amp; Coordinators (<span>0</span>)</button>
+          <button class="chip outlined" data-tab="students">Students (<span>0</span>)</button>
+          <div class="sp"></div>
+          <label class="ctrl sel"><select id="clsSel"><option value="all">All Classes</option></select><span class="mi caret">arrow_drop_down</span></label>
+          <label class="ctrl search"><span class="mi">search</span><input id="q" placeholder="Search..."></label>
+        </div>
+      </div>
+      <div class="card-body" id="body"></div>
+    </div>
+
+    <!-- Pending Invitations：pending-invitations-section.js（CLASS_TEACHER 看得到，只列自己班級的邀請） -->
+    <div class="card pend">
+      <div class="card-top">
+        <h2 class="h6">Pending Invitations</h2>
+        <label class="ctrl md"><span class="mi" style="font-size:24px;color:var(--text3)">search</span><input placeholder="Search by email..."></label>
+      </div>
+      <table class="mui">
+        <thead><tr><th>Email</th><th>Source</th><th>Role</th><th>Class</th><th>Created At</th><th class="r">Actions</th></tr></thead>
+        <tbody><tr><td colspan="6" class="empty">No pending invitations</td></tr></tbody>
+      </table>
+      <div class="pager">
+        <div class="rpp">Rows per page: <b style="font-weight:400;padding-left:8px">10</b><span class="mi">arrow_drop_down</span></div>
+        <div>0–0 of 0</div>
+        <div class="arrows"><button class="ibtn" disabled><span class="mi">chevron_left</span></button><button class="ibtn" disabled><span class="mi">chevron_right</span></button></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // 假資料照 2026-09-23 截圖抄；第一列老師（Teacher Test）是截圖裡被糊掉的那列，內容是假的。
+  const CLS_JW="Joey's Classroom, Joey + Wilson= this classroom";
+  const USERS=[
+    {n:'Teacher Test', e:'teacher.t@dahua.teacher.ai', role:'Programme Coordinator', cls:'', tl:null, gl:null, join:'2026-08-01', stu:false},
+    {n:'Joey Tsai', e:'joey.t@dahua.teacher.ai', role:'Class Teacher', cls:CLS_JW, tl:null, gl:null, join:'2026-08-03', stu:false},
+    {n:'Student Test', e:'student1@dahua.student.ai', role:'Student', cls:'Chinese - A1 - SC', tl:null, gl:null, join:'2026-09-03', stu:true},
+    {n:'Wilson Wu', e:'wilson.w@dahua.student.ai', role:'Student', cls:CLS_JW, tl:'zh-CN', gl:null, join:'2026-08-20', stu:true},
+    {n:'Joey Tsai', e:'joey.t@dahua.student.ai', role:'Student', cls:CLS_JW, tl:'zh-CN', gl:'Level 6', join:'2026-08-13', stu:true},
+    {n:'Student3 Test', e:'student3@dahua.summer.program', role:'Student', cls:'Advance', tl:'zh-CN', gl:'Level 6', join:'2026-06-16', stu:true},
+    {n:'Student2 Test', e:'student2@dahua.summer.program', role:'Student', cls:'Intermediate', tl:'zh-TW', gl:'Level 6', join:'2026-06-16', stu:true},
+    {n:'Student123 Test', e:'student1@dahua.summer.program', role:'Student', cls:'Novice', tl:'zh-TW', gl:'Level 6', join:'2026-06-16', stu:true},
+  ];
+  const P=new URLSearchParams(location.search);
+  const st={ tab:P.get('tab')||'all', cls:P.get('cls')||'all', q:P.get('q')||'' };
+  const esc=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const initials=(n)=>n.split(' ').map(w=>w[0]).join('');
+  const roleCls=(r)=>r==='Student'?'secondary':'warning';           // role-chip.js：Student 不在對照表 → secondary
+  const dash='<span class="body2 t2">—</span>';
+  const th=(t,info)=>'<th>'+t+(info?'<span class="mo" title="（無法確認）">info</span>':'')+'</th>';
+  const HEAD=(ck)=>'<thead><tr>'+(ck?'<th class="ck"><span class="cb"></span></th>':'')+th('User')+th('Role')+th('Class')+th('Target Language',1)+th('Game Level',1)+th('Status')+th('Join Date')+'<th class="r">Actions</th></tr></thead>';
+  const row=(u)=>'<tr>'+
+    (u.stu?'<td class="ck"><span class="cb"></span></td>':'')+
+    '<td><div class="usr"><div class="av '+(u.stu?'stu':'tea')+'">'+esc(initials(u.n))+'</div><div><div class="nm">'+esc(u.n)+'</div><span class="em">'+esc(u.e)+'</span></div></div></td>'+
+    '<td><span class="rchip '+roleCls(u.role)+'">'+esc(u.role)+'</span></td>'+
+    '<td><span class="body2 t2">'+(u.cls?esc(u.cls):'—')+'</span></td>'+
+    '<td>'+(u.stu&&u.tl?'<span class="body2">'+esc(u.tl)+'</span>':dash)+'</td>'+
+    '<td>'+(u.stu&&u.gl?'<span class="lvl">'+esc(u.gl)+'</span>':dash)+'</td>'+
+    '<td>'+(u.stu?'<div class="stat-cell"><span class="sw on"><span class="track"></span><span class="thumb"></span></span><span class="cap">Active</span></div>':'<span class="cap t2">—</span>')+'</td>'+
+    '<td><span class="body2">'+u.join+'</span></td>'+
+    '<td class="r"><button class="ibtn" aria-label="Edit '+esc(u.n)+'" title="Edit"><span class="mi">edit</span></button></td>'+
+    '</tr>';
+  const section=(title,icon,color,list)=> !list.length?'':'<div class="grp-sec"><div class="gh"><span class="mi" style="color:'+color+'">'+icon+'</span><span class="sub2">'+title+' ('+list.length+')</span></div><table class="mui">'+HEAD(list[0].stu)+'<tbody>'+list.map(row).join('')+'</tbody></table></div>';
+
+  // school-users-section.js：先套 name/email 搜尋與班級篩選，再分老師／學生；老師依 Coordinator → Class Teacher 排
+  function render(){
+    let src=USERS;
+    const q=st.q.trim().toLowerCase();
+    if(q) src=src.filter(u=>u.n.toLowerCase().includes(q)||u.e.toLowerCase().includes(q));
+    if(st.cls!=='all') src=src.filter(u=>(u.cls||'').includes(st.cls));
+    const tea=src.filter(u=>!u.stu), stu=src.filter(u=>u.stu);
+    const counts={all:tea.length+stu.length, teachers:tea.length, students:stu.length};
+    document.querySelectorAll('#toolbar .chip').forEach(b=>{ b.querySelector('span').textContent=counts[b.dataset.tab]; b.className='chip '+(b.dataset.tab===st.tab?'filled':'outlined'); });
+    let h='';
+    if(st.tab!=='students') h+=section('Teachers &amp; Coordinators','co_present','var(--warning-dark)',tea);
+    if(st.tab!=='teachers') h+=section('Students','people','var(--secondary-dark)',stu);
+    if(!counts.all) h+='<div class="empty-inline">'+(q||st.cls!=='all'?'No users match the current filters.':'No users found')+'</div>';
+    document.getElementById('body').innerHTML=h;
+  }
+  // classOptions：所有班名去重排序（多班的字串用「, 」拆開才是一班一個選項）
+  const names=[...new Set(USERS.flatMap(u=>u.cls?u.cls.split(', '):[]))].sort();
+  const sel=document.getElementById('clsSel');
+  names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  sel.value=st.cls; document.getElementById('q').value=st.q;
+  document.getElementById('toolbar').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return; st.tab=b.dataset.tab; render(); });
+  sel.addEventListener('change',()=>{ st.cls=sel.value; render(); });
+  document.getElementById('q').addEventListener('input',e=>{ st.q=e.target.value; render(); });
+  render();
+})();
+</script>
+
+<!-- ======================= 現行的 Edit User 對話框（user-form.js）：按列尾的鉛筆或 ?edit=<email> ======================= -->
+<div class="ed-ov" id="edOv">
+  <div class="ed-dlg" role="dialog" aria-labelledby="edTitle">
+    <div class="ed-hd">
+      <div><div class="tt"><span class="mi">edit</span><span id="edTitle">Edit User</span></div><div class="st">Email, role, and program cannot be changed after creation.</div></div>
+      <button class="x" id="edX" aria-label="Close"><span class="mi">close</span></button>
+    </div>
+    <div class="ed-div"></div>
+    <div class="ed-bd" id="edBd"></div>
+    <div class="ed-div"></div>
+    <div class="ed-ft"><button class="ed-btn outl" id="edCancel">Cancel</button><button class="ed-btn prim" id="edSave" disabled>Save Changes</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  // 從列上抓資料（name／email／role／Target Language），不碰主 script 的閉包
+  const ov=document.getElementById('edOv'), bd=document.getElementById('edBd'), save=document.getElementById('edSave');
+  const LANGS=[['zh-CN','Simplified Chinese'],['zh-TW','Traditional Chinese'],['zh-HK','Traditional Chinese (Hong Kong)'],['en','English'],['ar','Arabic'],['fr','French'],['ja','Japanese'],['ko','Korean'],['ms','Malay'],['es','Spanish'],['th','Thai'],['vi','Vietnamese']];
+  const esc=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const opts=(list,cur)=>'<option value=""'+(cur?'':' selected')+'>Not set</option>'+list.map(([v,l])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+esc(l)+'</option>').join('');
+  const field=(label,inner,dis)=>'<div class="ed-f'+(dis?' dis':'')+'"><label class="fl">'+label+'</label><div class="in">'+inner+'</div></div>';
+  const sel=(label,list,cur)=>field(label,'<select class="'+(cur?'':'empty')+'">'+opts(list,cur)+'</select><span class="mi caret">arrow_drop_down</span>');
+  function openFor(tr){
+    const name=tr.querySelector('.nm').textContent.trim(), email=tr.querySelector('.em').textContent.trim();
+    const isStu=tr.querySelector('.rchip').textContent.trim()==='Student';
+    const tds=tr.querySelectorAll('td'); const tlCell=tds[tds.length-5].textContent.trim(); const tl=/^zh-/.test(tlCell)?tlCell:'';
+    const parts=name.split(' '); const first=parts.shift(), last=parts.join(' ');
+    let h=field('Email','<input value="'+esc(email)+'" disabled>',true)+
+      '<div class="ed-grid">'+field('First Name','<input value="'+esc(first)+'">')+field('Last Name','<input value="'+esc(last)+'">')+'</div>';
+    if(isStu) h+='<div class="ed-sec"><span>Learning Profile</span></div>'+sel('Native Language (optional)',LANGS,'')+sel('Target Language (optional)',LANGS.slice(0,2),tl);
+    bd.innerHTML=h; save.disabled=true; ov.classList.add('open');
+    bd.querySelectorAll('input:not([disabled]),select').forEach(el=>el.addEventListener('input',()=>{ save.disabled=false; }));
+    bd.querySelectorAll('select').forEach(el=>el.addEventListener('change',()=>{ el.classList.toggle('empty',!el.value); save.disabled=false; }));
+  }
+  const close=()=>ov.classList.remove('open');
+  document.getElementById('body').addEventListener('click',e=>{ const b=e.target.closest('.ibtn[title="Edit"]'); if(b) openFor(b.closest('tr')); });
+  document.getElementById('edX').addEventListener('click',close); document.getElementById('edCancel').addEventListener('click',close);
+  ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&ov.classList.contains('open')) close(); });
+  const want=new URLSearchParams(location.search).get('edit');
+  if(want){ const tr=[...document.querySelectorAll('#body tr')].find(r=>r.querySelector('.em')&&r.querySelector('.em').textContent.trim()===want); if(tr) openFor(tr); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spec — 學生端 Practice 計分規則</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 14px 40px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar a {
+      color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px; transition: color .15s;
+    }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #f59e0b; font-weight: 700; }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 80px; }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; color: #94a3b8; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    h2 .num {
+      font-size: 11px; font-weight: 700; color: #fff; background: #f59e0b;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    code {
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12.5px;
+      background: #fff7ed; color: #9a3412; padding: 1px 6px; border-radius: 4px;
+      border: 1px solid #fed7aa;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Two-column split for the flow cards ── */
+    .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .flow-card2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .flow-card2 .tag { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+    .flow-card2.backend .tag { color: #b45309; }
+    .flow-card2.frontend .tag { color: #0d766c; }
+    .flow-card2 h4 { margin: 0 0 4px; font-size: 15px; color: #0f172a; }
+    .flow-card2 p { margin: 0; font-size: 12.5px; color: #64748b; }
+    @media (max-width: 640px) { .split2 { grid-template-columns: 1fr; } }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; white-space: nowrap; }
+    td { color: #475569; }
+    tr:hover td { background: #fafbfc; }
+    td.type { font-weight: 700; color: #0f172a; white-space: nowrap; }
+    td.type small { display: block; font-weight: 400; color: #94a3b8; font-size: 11px; margin-top: 1px; }
+    .num-col { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; color: #334155; }
+
+    /* ── Formula blocks ── */
+    .formula {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 14px 18px; margin: 10px 0 16px;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+      line-height: 1.8; color: #334155; white-space: pre-wrap; overflow-x: auto;
+    }
+    .formula .cmt { color: #94a3b8; }
+
+    /* ── Callouts ── */
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .callout-goal { background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; }
+    .callout-key { background: #fff7ed; border-left: 4px solid #f59e0b; color: #9a3412; }
+
+    /* ── Star pills ── */
+    .star { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #b45309; font-variant-numeric: tabular-nums; }
+
+    /* ── Color semantic pills ── */
+    .cpill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+    .cpill.green { background: #dcfce7; color: #166534; }
+    .cpill.yellow { background: #fef9c3; color: #854d0e; }
+    .cpill.red { background: #fee2e2; color: #991b1b; }
+
+    /* ── TOC ── */
+    .toc { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
+    .toc h3 { margin-top: 0; font-size: 13px; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; }
+    .toc ol { margin: 10px 0 0 18px; }
+    .toc li { margin-bottom: 3px; }
+    .toc a { color: #d97706; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../../index.html">Home</a>
+  <span class="sep">/</span>
+  <a href="../../flowcharts/flow-3-student-practice.html">Flow 3 — Student Practice</a>
+  <span class="sep">/</span>
+  <span class="current">計分規則</span>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <div class="doc-header">
+    <h1>學生端 Practice 計分規則</h1>
+    <p class="subtitle">三種練習類型的分數計算方式、後端/前端分工,以及星等與分數的換算公式</p>
+    <div class="meta">
+      <span>Flow 3 — Student Practice</span>
+      <span>Status: Implemented</span>
+      <span>Source: src/utils/assignment.js</span>
+      <span>Last updated: 2026-07-16</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ TOC ════════════════ -->
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#arch">計分架構(後端 vs 前端)</a></li>
+      <li><a href="#rules">各練習類型的計分規則</a></li>
+      <li><a href="#convert">星等 ↔ 分數 換算函式</a></li>
+      <li><a href="#pct2star">percentToStarRating — 每句顯示星等</a></li>
+      <li><a href="#colors">colorsToStarRating — 依單字顏色算星等</a></li>
+      <li><a href="#rubric">rubric 細項計算</a></li>
+      <li><a href="#source">資料來源與檔案</a></li>
+    </ol>
+  </div>
+
+  <!-- ════════════════ 1. ARCHITECTURE ════════════════ -->
+  <h2 id="arch"><span class="num">1</span> 計分架構(後端 vs 前端)</h2>
+
+  <div class="callout callout-goal">
+    <strong>分數本體由後端(Azure 發音 AI)算好回傳,前端只負責四捨五入、平均,以及把分數換算成星等顯示。</strong>
+  </div>
+
+  <p>學生完成練習後,答案(錄音 / 對話)送到後端,由發音評分服務算出分數並存進 assignment history。前端拿到時分數已經算好,前端做的事比較像「把成績單翻譯成星星與百分比」,<strong>不會重新評分</strong>。</p>
+
+  <div class="split2">
+    <div class="flow-card2 backend">
+      <p class="tag">◆ 後端 — 改考卷的老師</p>
+      <h4>算出原始分數</h4>
+      <p>Azure 發音評分回傳 <code>percentageScore</code>、<code>averageScore</code>、<code>completenessScore</code>、每句 <code>overall / fluency / accuracy</code>(0–5 分)。</p>
+    </div>
+    <div class="flow-card2 frontend">
+      <p class="tag">◆ 前端 — 謄成績單</p>
+      <h4>換算與顯示</h4>
+      <p>四捨五入、取平均、把分數換成 0–5 星等。所有計算數學集中在 <code>src/utils/assignment.js</code>。</p>
+    </div>
+  </div>
+
+  <!-- ════════════════ 2. RULES ════════════════ -->
+  <h2 id="rules"><span class="num">2</span> 各練習類型的計分規則</h2>
+
+  <p>整份作業的星等由哪個後端欄位決定,以及後端沒給分數時前端的後備算法:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>練習類型</th>
+          <th>整份作業星等(主)</th>
+          <th>後備算法(後端無分數時)</th>
+          <th>rubric 細項算法</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="type">QA<small>對話問答</small></td>
+          <td>直接用後端 <code>completenessScore</code>(已是 0–5 星)</td>
+          <td>每句 practitioner 對話的 <code>overall</code> 取平均</td>
+          <td>fluency / pronunciation / tone / overall 各自平均;<strong>accuracy =(pronunciation + tone)/ 2</strong>,再 <code>/5×100</code></td>
+        </tr>
+        <tr>
+          <td class="type">MIRRORING<small>跟讀</small></td>
+          <td>completed 且 <code>averageScore &gt; 0</code> → 直接用 <code>averageScore</code></td>
+          <td>每句 <code>overall</code> 取平均,四捨五入到小數 1 位</td>
+          <td>每句 fluency / accuracy / overall 平均後 <code>/5×100</code>;<strong>vocabulary 固定 0</strong></td>
+        </tr>
+        <tr>
+          <td class="type">VOCABULARY<small>單字</small></td>
+          <td>同 MIRRORING</td>
+          <td>同 MIRRORING</td>
+          <td>同 MIRRORING(vocabulary 亦為 0)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-key">
+    <strong>關鍵:</strong>QA 用 <code>completenessScore</code>,Mirroring / Vocabulary 用 <code>averageScore</code> —— 兩者都是後端算好的 0–5 分。前端只在後端沒給時才自己平均每句 <code>overall</code>。
+  </div>
+
+  <p>每次 attempt 顯示的分數,則是直接四捨五入後端的 <code>percentageScore</code>:</p>
+  <div class="formula"><span class="cmt">// completed/index.js</span>
+score = Math.round(attempt.percentageScore || 0)</div>
+
+  <!-- ════════════════ 3. CONVERT ════════════════ -->
+  <h2 id="convert"><span class="num">3</span> 星等 ↔ 分數 換算函式</h2>
+
+  <p>三個基本轉換工具,線性對應:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>函式</th><th>輸入 → 輸出</th><th>公式</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="type mono">starsToPercentage</td>
+          <td>星(0–5)→ 百分比</td>
+          <td class="mono">Math.round(stars / 5 × 100)</td>
+        </tr>
+        <tr>
+          <td class="type mono">percentageToStars</td>
+          <td>百分比 → 星(0–5)</td>
+          <td class="mono">Math.round(percentage / 100 × 5)</td>
+        </tr>
+        <tr>
+          <td class="type mono">overallToRating</td>
+          <td>overall → 整數星</td>
+          <td class="num-col">≥4.5→5　≥3→4　≥2.5→3　≥1.5→2　≥1→1　其餘→0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════════ 4. PCT TO STAR ════════════════ -->
+  <h2 id="pct2star"><span class="num">4</span> percentToStarRating — 每句顯示星等</h2>
+
+  <p>把分數換成星星時<strong>依難度有不同門檻</strong>,門檻之間線性內插,四捨五入到半顆星。每句 percent = 後端 <code>overall</code>(0–5)× 20。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>難度</th><th>5 星門檻(allGreen · 全綠)</th><th>3 星門檻(noRed · 無紅)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="type">easy <small>預設</small></td><td class="num-col">≥ 75 分</td><td class="num-col">60 分</td></tr>
+        <tr><td class="type">medium</td><td class="num-col">≥ 85 分</td><td class="num-col">70 分</td></tr>
+        <tr><td class="type">hard</td><td class="num-col">≥ 95 分</td><td class="num-col">85 分</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="formula"><span class="cmt"># 計算邏輯</span>
+percent ≥ allGreen            → 5 星
+noRed ≤ percent &lt; allGreen     → 3 + 2×(percent − noRed) ÷ (allGreen − noRed)
+percent &lt; noRed               → 3 × percent ÷ noRed
+
+<span class="cmt"># 範例(easy 難度)</span>
+90 分 → 5 星
+68 分 → 3 + 2×8/15 ≈ 4 星
+30 分 → 3×30/60 = 1.5 星</div>
+
+  <!-- ════════════════ 5. COLORS ════════════════ -->
+  <h2 id="colors"><span class="num">5</span> colorsToStarRating — 依單字顏色算星等</h2>
+
+  <p>用每個字的顏色加權:<span class="mono">weighted =(綠 + 黃×0.3)÷ 總字數</span></p>
+
+  <p>
+    顏色語意 —
+    <span class="cpill green">correct / green(對)</span>
+    <span class="cpill yellow">warning / yellow(部分對)</span>
+    <span class="cpill red">red(不計入加權)</span>
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>weighted</th><th>星等</th><th>weighted</th><th>星等</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num-col">≥ 1.0</td><td><span class="star">5</span></td><td class="num-col">≥ 0.5</td><td><span class="star">2.5</span></td></tr>
+        <tr><td class="num-col">≥ 0.9</td><td><span class="star">4.5</span></td><td class="num-col">≥ 0.35</td><td><span class="star">2</span></td></tr>
+        <tr><td class="num-col">≥ 0.8</td><td><span class="star">4</span></td><td class="num-col">≥ 0.2</td><td><span class="star">1.5</span></td></tr>
+        <tr><td class="num-col">≥ 0.7</td><td><span class="star">3.5</span></td><td class="num-col">≥ 0.1</td><td><span class="star">1</span></td></tr>
+        <tr><td class="num-col">≥ 0.65</td><td><span class="star">3</span></td><td class="num-col">&gt; 0</td><td><span class="star">0.5</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════════ 6. RUBRIC ════════════════ -->
+  <h2 id="rubric"><span class="num">6</span> rubric 細項計算</h2>
+
+  <p>rubric 面板顯示的 fluency / accuracy / pronunciation / vocabulary 四項百分比,由 <code>calculateRubric()</code> 從每句分數平均後 <code>/5×100</code> 得出。</p>
+
+  <h3>MIRRORING / VOCABULARY</h3>
+  <div class="formula">fluency      = round( 平均(每句 fluency)  / 5 × 100 )
+accuracy     = round( 平均(每句 accuracy) / 5 × 100 )
+pronunciation= round( 平均(每句 overall)  / 5 × 100 )
+vocabulary   = 0   <span class="cmt">// 固定</span></div>
+
+  <h3>QA</h3>
+  <div class="formula"><span class="cmt">// 先平均每段對話的 pronunciationScores</span>
+accuracy =(平均 pronunciation + 平均 tone)/ 2
+
+fluency      = round( 平均 fluency      / 5 × 100 )
+accuracy     = round( accuracy          / 5 × 100 )
+vocabulary   = round( 平均 overall      / 5 × 100 )
+pronunciation= round( 平均 pronunciation/ 5 × 100 )</div>
+
+  <div class="callout callout-info">
+    QA 的 <strong>vocabulary</strong> 取自對話的 <code>overall</code>,而 Mirroring / Vocabulary 的 vocabulary 固定為 0 —— 這是兩者 rubric 的主要差異。
+  </div>
+
+  <!-- ════════════════ 7. SOURCE ════════════════ -->
+  <h2 id="source"><span class="num">7</span> 資料來源與檔案</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>用途</th><th>檔案</th></tr></thead>
+      <tbody>
+        <tr><td>所有前端計分數學(本 spec 全部公式)</td><td class="mono">src/utils/assignment.js</td></tr>
+        <tr><td>後端欄位映射成顯示分數 / 星等</td><td class="mono">src/sections/student/practice/completed/index.js</td></tr>
+        <tr><td>attempt 分數 + 星等渲染</td><td class="mono">src/sections/student/practice/completed/attempt-accordion.js</td></tr>
+        <tr><td>GraphQL 分數欄位來源</td><td class="mono">src/api/graphql/queries/getStudentAssignmentAttempts.js</td></tr>
+        <tr><td>QA 提交(送後端評分,不在前端算分)</td><td class="mono">src/sections/student/practice/qa/practice-content-list.js</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-key">
+    <strong>一句話總結:</strong>QA 看 <code>completenessScore</code>、Mirroring / Vocabulary 看 <code>averageScore</code>(皆後端 0–5 分);顯示時 percent = overall × 20,再用難度門檻的內插公式換成半顆星等。
+  </div>
+
+  <footer>DAHUA AI &middot; Product Spec &middot; Flow 3 &mdash; Student Practice &middot; July 2026</footer>
+</div>
+
+</body>
+</html>

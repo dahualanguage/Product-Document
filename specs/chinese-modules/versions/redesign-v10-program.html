@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign v9 — Teacher · Program (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<link rel="stylesheet" href="assets-v10/teacher-shell.css" />
+<style>
+  .prog-hero{ display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:var(--r-lg);
+    background:linear-gradient(135deg,#065f46,#047857); color:#fff; margin-bottom:20px; }
+  .prog-hero .ph{ width:52px; height:52px; border-radius:15px; background:rgba(255,255,255,.16); display:grid; place-items:center; flex:none; }
+  .prog-hero .ph .material-icons-round{ font-size:26px; }
+  .prog-hero h2{ font-size:20px; font-weight:800; letter-spacing:-.3px; }
+  .prog-hero p{ font-size:13px; font-weight:600; opacity:.85; margin-top:2px; }
+  .prog-hero .meta{ margin-left:auto; display:flex; gap:26px; text-align:right; }
+  .prog-hero .meta .k{ font-size:11px; font-weight:700; opacity:.75; }
+  .prog-hero .meta .v{ font-size:19px; font-weight:800; }
+  .mrow .a{ width:38px; height:38px; border-radius:11px; display:grid; place-items:center; color:#fff;
+    font-size:13px; font-weight:800; flex:none; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:800; color:var(--slate); margin-bottom:6px; }
+  .field input,.field select{ width:100%; height:38px; border:1px solid var(--line); border-radius:10px; padding:0 12px;
+    font:inherit; font-size:13.5px; font-weight:600; color:var(--ink); background:#fff; }
+  .field input:focus,.field select:focus{ outline:none; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+  .code{ display:flex; align-items:center; gap:10px; padding:13px 15px; border-radius:12px; background:var(--emerald-l);
+    border:1px solid var(--emerald-l2); }
+  .code b{ font-size:20px; font-weight:800; letter-spacing:2px; color:var(--emerald-dd); font-variant-numeric:tabular-nums; }
+  @media (max-width:820px){ .prog-hero{ flex-wrap:wrap; } .prog-hero .meta{ margin-left:0; width:100%; text-align:left; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" id="side" data-current="program"></aside>
+
+  <div class="main">
+    <div class="pagebar">
+      <button class="navtoggle" data-navtoggle aria-label="Open menu" aria-expanded="false"><span class="material-icons-round">menu</span></button>
+      <div class="hdr-ic"><span class="material-icons-round">groups</span></div>
+      <div class="dt"><b>Program</b><span>Everyone taking part in this program</span></div>
+      <div class="pb-acts">
+        <button class="btn-ghost" id="codeBtn"><span class="material-icons-round" style="font-size:17px">key</span> Invite code</button>
+        <button class="btnp" id="addBtn"><span class="material-icons-round">person_add</span> Add member</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="prog-hero">
+        <span class="ph"><span class="material-icons-round">workspace_premium</span></span>
+        <div>
+          <h2>Summer Chinese 2026</h2>
+          <p>Riverside International School · 14 June – 22 August</p>
+        </div>
+        <div class="meta">
+          <div><div class="k">Teachers</div><div class="v" id="nT">0</div></div>
+          <div><div class="k">Students</div><div class="v" id="nS">0</div></div>
+          <div><div class="k">Classes</div><div class="v">4</div></div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div class="tabs" id="tabs" style="padding:0;gap:6px"></div>
+          <span class="spacer"></span>
+          <span class="sbox"><span class="material-icons-round">search</span><input id="q" placeholder="Search members" aria-label="Search members" /></span>
+        </div>
+        <div id="body"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="mh"><span class="material-icons-round" id="mIcon" style="color:var(--emerald)">person_add</span>
+    <h3 id="mTitle">Member</h3>
+    <button class="x" id="mClose" aria-label="Close"><span class="material-icons-round">close</span></button></div>
+  <div class="mb" id="mBody"></div>
+  <div class="mf" id="mFoot"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="assets-v10/teacher-nav.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(s){return document.querySelector(s);};
+  var tt; function say(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},2400);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var HUES=['#059669','#2563eb','#d97706','#7c3aed','#e11d48','#0891b2'];
+  function hue(s){ var h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return HUES[Math.abs(h)%HUES.length]; }
+  function initials(n){ return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+
+  var DATA=[
+    {n:'Lin Wei',       r:'Class teacher', e:'lin.wei@riverside.edu',    cls:['4A','3B'], st:'active', you:true},
+    {n:'Marta Ibáñez',  r:'Class teacher', e:'m.ibanez@riverside.edu',   cls:['5C'],      st:'active'},
+    {n:'Daniel Osei',   r:'Class teacher', e:'d.osei@riverside.edu',     cls:['6A'],      st:'active'},
+    {n:'Chen Hui',      r:'Coordinator',   e:'chen.hui@riverside.edu',   cls:[],          st:'active'},
+    {n:'Emma Chen',     r:'Student',       e:'emma.c@riverside.edu',     cls:['4A'],      st:'active'},
+    {n:'Liam Wu',       r:'Student',       e:'liam.w@riverside.edu',     cls:['4A'],      st:'active'},
+    {n:'Sofia Ríos',    r:'Student',       e:'sofia.r@riverside.edu',    cls:['4A'],      st:'active'},
+    {n:'Ada Lin',       r:'Student',       e:'ada.l@riverside.edu',      cls:['3B'],      st:'active'},
+    {n:'Ruby Ng',       r:'Student',       e:'ruby.n@riverside.edu',     cls:['5C'],      st:'active'},
+    {n:'Iris Zhao',     r:'Student',       e:'iris.z@riverside.edu',     cls:['6A'],      st:'active'},
+    {n:'Theo Brandt',   r:'Student',       e:'theo.b@riverside.edu',     cls:['3B'],      st:'invited'},
+    {n:'Kai Nakamura',  r:'Student',       e:'kai.n@riverside.edu',      cls:['5C'],      st:'invited'}
+  ];
+
+  var TABS=[['all','Everyone'],['Class teacher','Teachers'],['Student','Students'],['invited','Pending invites']];
+  var filter='all', query='';
+
+  function match(m){
+    if(filter==='all') return true;
+    if(filter==='invited') return m.st==='invited';
+    if(filter==='Class teacher') return m.r==='Class teacher'||m.r==='Coordinator';
+    return m.r===filter;
+  }
+  function rows(){
+    return DATA.filter(function(m){
+      if(!match(m)) return false;
+      if(query && (m.n+' '+m.e).toLowerCase().indexOf(query)<0) return false;
+      return true;
+    });
+  }
+  function counts(t){
+    if(t==='all') return DATA.length;
+    if(t==='invited') return DATA.filter(function(m){return m.st==='invited';}).length;
+    if(t==='Class teacher') return DATA.filter(function(m){return m.r==='Class teacher'||m.r==='Coordinator';}).length;
+    return DATA.filter(function(m){return m.r===t;}).length;
+  }
+  function tabs(){
+    $('#tabs').innerHTML=TABS.map(function(t){
+      return '<button class="tab'+(filter===t[0]?' on':'')+'" data-t="'+esc(t[0])+'">'+t[1]+' <span class="n">('+counts(t[0])+')</span></button>';
+    }).join('');
+  }
+
+  function render(){
+    var list=rows();
+    if(!list.length){
+      $('#body').innerHTML='<div class="empty"><span class="material-icons-round">person_off</span><b>Nobody here</b><span>Try another filter, or add a member.</span></div>';
+      return;
+    }
+    $('#body').innerHTML='<div class="lrows">'+list.map(function(m,i){
+      var role = m.r==='Student' ? '' : '<span class="pill green">'+esc(m.r)+'</span>';
+      return '<div class="lrow mrow" data-i="'+DATA.indexOf(m)+'">'+
+        '<span class="a" style="background:'+hue(m.n)+'">'+esc(initials(m.n))+'</span>'+
+        '<span class="lt"><b>'+esc(m.n)+(m.you?' <span class="pill line">You</span>':'')+'</b>'+
+          '<span class="sub">'+esc(m.e)+(m.cls.length?'<span class="dot">·</span>'+esc(m.cls.join(', ')):'')+'</span></span>'+
+        role+
+        (m.st==='invited'?'<span class="pill amber">Invite pending</span>':'')+
+        '<span class="lacts">'+
+          (m.st==='invited'?'<button class="btn-sm" data-resend="'+DATA.indexOf(m)+'">Resend</button>':'')+
+          '<button class="btn-sm" data-edit="'+DATA.indexOf(m)+'">Edit</button>'+
+          (m.you?'':'<button class="btn-sm" data-rm="'+DATA.indexOf(m)+'" aria-label="Remove"><span class="material-icons-round">person_remove</span></button>')+
+        '</span></div>';
+    }).join('')+'</div>';
+    $('#nT').textContent=DATA.filter(function(m){return m.r!=='Student';}).length;
+    $('#nS').textContent=DATA.filter(function(m){return m.r==='Student';}).length;
+  }
+
+  function open(icon,title,body,foot){
+    $('#mIcon').textContent=icon; $('#mTitle').textContent=title;
+    $('#mBody').innerHTML=body; $('#mFoot').innerHTML=foot;
+    $('#ov').classList.add('on'); $('#modal').classList.add('on');
+  }
+  function close(){ $('#ov').classList.remove('on'); $('#modal').classList.remove('on'); }
+  $('#mClose').addEventListener('click',close);
+  $('#ov').addEventListener('click',close);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+
+  function form(m){
+    return '<div class="field"><label>Full name</label><input id="fN" value="'+esc(m?m.n:'')+'" placeholder="e.g. Marta Ibáñez" /></div>'+
+      '<div class="field"><label>Email</label><input id="fE" value="'+esc(m?m.e:'')+'" placeholder="name@school.edu" /></div>'+
+      '<div class="field"><label>Role</label><select id="fR">'+
+        ['Class teacher','Coordinator','Student'].map(function(r){
+          return '<option'+(m&&m.r===r?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'+
+      '<div class="field"><label>Classes</label><select id="fC">'+
+        ['— none —','4A','3B','5C','6A'].map(function(c){
+          return '<option'+(m&&m.cls[0]===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>';
+  }
+
+  $('#tabs').addEventListener('click',function(e){ var b=e.target.closest('[data-t]'); if(!b) return; filter=b.dataset.t; tabs(); render(); });
+  $('#q').addEventListener('input',function(){ query=this.value.toLowerCase(); render(); });
+
+  $('#body').addEventListener('click',function(e){
+    var ed=e.target.closest('[data-edit]'), rm=e.target.closest('[data-rm]'), rs=e.target.closest('[data-resend]');
+    if(rs){ say('Invitation resent to '+DATA[+rs.dataset.resend].n); return; }
+    if(rm){
+      var m=DATA[+rm.dataset.rm];
+      open('person_remove','Remove '+m.n+'?',
+        '<p style="font-size:13.5px;color:var(--slate);font-weight:600">'+esc(m.n)+' loses access to this program and everything assigned to them. This cannot be undone.</p>',
+        '<button class="btn-sm" id="mCancel">Cancel</button><button class="btnp" id="mGo" style="background:var(--rose);box-shadow:none">Remove</button>');
+      $('#mCancel').onclick=close;
+      $('#mGo').onclick=function(){ DATA.splice(DATA.indexOf(m),1); close(); tabs(); render(); say('Removed '+m.n); };
+      return;
+    }
+    if(ed){
+      var mm=DATA[+ed.dataset.edit];
+      open('edit','Edit '+mm.n, form(mm),
+        '<button class="btn-sm" id="mCancel">Cancel</button><button class="btnp" id="mSave">Save changes</button>');
+      $('#mCancel').onclick=close;
+      $('#mSave').onclick=function(){
+        mm.n=$('#fN').value||mm.n; mm.e=$('#fE').value||mm.e; mm.r=$('#fR').value;
+        mm.cls=$('#fC').value==='— none —'?[]:[$('#fC').value];
+        close(); tabs(); render(); say('Member updated');
+      };
+    }
+  });
+
+  $('#addBtn').addEventListener('click',function(){
+    open('person_add','Add a member', form(null),
+      '<button class="btn-sm" id="mCancel">Cancel</button><button class="btnp" id="mGo">Send invitation</button>');
+    $('#mCancel').onclick=close;
+    $('#mGo').onclick=function(){
+      var n=$('#fN').value.trim(); if(!n){ say('Enter a name'); return; }
+      DATA.push({n:n,r:$('#fR').value,e:$('#fE').value||'—',
+        cls:$('#fC').value==='— none —'?[]:[$('#fC').value],st:'invited'});
+      close(); tabs(); render(); say('Invitation sent to '+n);
+    };
+  });
+
+  $('#codeBtn').addEventListener('click',function(){
+    var code=String(Math.floor(100000+Math.random()*899999));
+    open('key','Program invite code',
+      '<p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">Anyone with this code joins Summer Chinese 2026 as a student.</p>'+
+      '<div class="code"><span class="material-icons-round" style="color:var(--emerald-d)">key</span><b>'+code+'</b>'+
+      '<button class="btn-sm" id="cp" style="margin-left:auto">Copy</button></div>'+
+      '<p style="font-size:12px;color:var(--faint);font-weight:600;margin-top:12px">Expires in 7 days · 2 invitations still pending</p>',
+      '<button class="btn-sm" id="mCancel">Close</button>');
+    $('#mCancel').onclick=close;
+    $('#cp').onclick=function(){ say('Code copied'); };
+  });
+
+  tabs(); render();
+})();
+</script>
+</body>
+</html>

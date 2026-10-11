@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redesign — Teacher · Students (DAHUA AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+<style>
+  :root{
+    --emerald:#059669; --emerald-d:#047857; --emerald-dd:#065f46; --emerald-l:#ecfdf5; --emerald-l2:#d1fae5; --emerald-ring:#6ee7b7;
+    --ink:#0f172a; --ink-2:#1e293b; --slate:#334155; --slate-2:#475569; --muted:#64748b; --faint:#94a3b8;
+    --line:#e6ebf1; --line-2:#eef2f7; --bg:#f4f7fb; --card:#ffffff;
+    --qa:#2563EB;--qa-bg:#e8f0ff; --mir:#EA7A21;--mir-bg:#fdeede; --voc:#0B7A3B;--voc-bg:#e6f7ec; --mc:#7C3AED;--mc-bg:#f1e9ff;
+    --amber:#d97706;--amber-bg:#fef3c7; --rose:#e11d48;--rose-bg:#ffe4e6;
+    --side:250px; --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --sh-sm:0 1px 2px rgba(15,23,42,.05); --sh-md:0 2px 8px -2px rgba(15,23,42,.10),0 1px 3px rgba(15,23,42,.05);
+  }
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ font-family:var(--font); color:var(--ink-2); background:var(--bg); -webkit-font-smoothing:antialiased; font-size:14px; line-height:1.5; }
+  .tnum{ font-variant-numeric:tabular-nums; }
+  ::-webkit-scrollbar{ width:10px; height:10px; } ::-webkit-scrollbar-thumb{ background:#cdd7e3; border-radius:20px; border:3px solid var(--bg); background-clip:content-box; }
+  button{ font-family:inherit; }
+
+  .app{ display:grid; grid-template-columns:var(--side) 1fr; min-height:100vh; }
+
+  /* sidebar (same shell as teacher-redesign) */
+  .side{ background:var(--card); border-right:1px solid var(--line); display:flex; flex-direction:column; position:sticky; top:0; height:100vh; padding:20px 14px 16px; }
+  .brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 20px; }
+  .brand .logo{ width:38px; height:38px; border-radius:11px; flex:none; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#10b981,#047857); box-shadow:0 6px 14px -5px rgba(5,150,105,.65); }
+  .brand .logo svg{ width:21px; height:21px; }
+  .brand .bt b{ display:block; font-weight:800; font-size:15.5px; color:var(--ink); letter-spacing:-.2px; line-height:1.1; }
+  .brand .bt span{ font-size:11px; font-weight:700; color:var(--emerald); letter-spacing:.6px; text-transform:uppercase; }
+  .nav-grp{ padding:0 8px; margin:14px 0 6px; font-size:10.5px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--faint); }
+  .nav{ display:flex; flex-direction:column; gap:2px; }
+  .nav a{ display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:10px; cursor:pointer; color:var(--slate-2); font-weight:600; font-size:13.5px; text-decoration:none; transition:.14s; position:relative; }
+  .nav a .material-icons-round{ font-size:19px; width:18px; text-align:center; flex:none; color:var(--faint); transition:.14s; }
+  .nav a:hover{ background:#f5f8fb; color:var(--ink); } .nav a:hover .material-icons-round{ color:var(--slate-2); }
+  .nav a.on{ background:var(--emerald-l); color:var(--emerald-dd); } .nav a.on .material-icons-round{ color:var(--emerald); }
+  .nav a.on::before{ content:""; position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:4px; height:20px; border-radius:0 4px 4px 0; background:var(--emerald); }
+  .side .grow{ flex:1; }
+  .me{ display:flex; align-items:center; gap:10px; padding:9px; border-radius:12px; border:1px solid var(--line); background:#fbfcfe; }
+  .me .av{ width:36px; height:36px; border-radius:10px; flex:none; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; background:linear-gradient(145deg,#34d399,#059669); }
+  .me .mt b{ display:block; font-size:13px; font-weight:700; color:var(--ink); } .me .mt span{ font-size:11px; color:var(--muted); font-weight:600; }
+
+  /* master-detail */
+  .main{ min-width:0; display:grid; grid-template-columns:380px 1fr; }
+  .list-pane{ border-right:1px solid var(--line); background:var(--card); height:100vh; position:sticky; top:0; display:flex; flex-direction:column; }
+  .lp-head{ padding:22px 22px 14px; border-bottom:1px solid var(--line-2); }
+  .lp-head .top{ display:flex; align-items:center; gap:10px; }
+  .lp-head h1{ font-size:20px; font-weight:800; color:var(--ink); }
+  .lp-head .cnt{ font-size:13px; font-weight:800; color:var(--faint); }
+  .lp-head .manage{ margin-left:auto; border:1px solid var(--line); background:#fff; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700; color:var(--slate); cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .lp-head .manage .material-icons-round{ font-size:15px; }
+  .lp-head p{ font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .lp-search{ position:relative; margin-top:14px; }
+  .lp-search .material-icons-round{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--faint); }
+  .lp-search input{ width:100%; height:40px; border:1px solid var(--line); border-radius:11px; padding:0 12px 0 38px; font:inherit; font-size:13.5px; color:var(--ink); }
+  .lp-search input:focus{ outline:none; border-color:var(--emerald-ring); box-shadow:0 0 0 3px var(--emerald-l2); }
+  .lp-filters{ display:flex; gap:8px; margin-top:11px; }
+  .fsel{ flex:1; border:1px solid var(--line); background:#fff; border-radius:9px; padding:7px 10px; font:inherit; font-size:12px; font-weight:700; color:var(--slate-2); cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:4px; }
+  .fsel .material-icons-round{ font-size:15px; color:var(--faint); }
+  .stu-list{ flex:1; overflow-y:auto; padding:10px; }
+  .srow{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:13px; cursor:pointer; border:1.5px solid transparent; transition:.13s; }
+  .srow:hover{ background:#f6f9fc; }
+  .srow.on{ background:var(--emerald-l); border-color:var(--emerald-ring); }
+  .srow .av{ width:40px; height:40px; border-radius:11px; flex:none; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; }
+  .srow .sm{ flex:1; min-width:0; }
+  .srow .sm .nm{ display:flex; align-items:center; gap:8px; }
+  .srow .sm b{ font-size:14px; font-weight:700; color:var(--ink); }
+  .srow .sm .sub{ font-size:12px; color:var(--muted); font-weight:600; margin-top:1px; }
+  .hsk{ font-size:10.5px; font-weight:800; padding:1px 8px; border-radius:6px; white-space:nowrap; }
+
+  /* detail pane */
+  .detail{ min-width:0; height:100vh; overflow-y:auto; }
+  .topbar{ position:sticky; top:0; z-index:5; background:rgba(244,247,251,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:16px 30px; display:flex; align-items:center; gap:14px; }
+  .topbar .av{ width:46px; height:46px; border-radius:13px; flex:none; display:grid; place-items:center; color:#fff; font-weight:800; font-size:17px; }
+  .topbar .dt b{ font-size:19px; font-weight:800; color:var(--ink); }
+  .topbar .dt span{ font-size:13px; color:var(--muted); font-weight:600; }
+  .topbar .edit{ margin-left:auto; width:40px; height:40px; border-radius:11px; border:1px solid var(--line); background:#fff; cursor:pointer; display:grid; place-items:center; color:var(--slate-2); }
+  .topbar .edit .material-icons-round{ font-size:18px; }
+  .dbody{ padding:24px 30px 60px; max-width:1000px; }
+  .sec-t{ font-size:13px; font-weight:800; color:var(--ink); letter-spacing:-.1px; margin:26px 0 12px; display:flex; align-items:center; gap:9px; }
+  .sec-t:first-child{ margin-top:6px; }
+  .sec-t .chip{ font-size:11px; font-weight:800; color:var(--muted); background:#eef2f7; padding:2px 9px; border-radius:999px; }
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--sh-sm); }
+
+  /* KPI goal */
+  .kpi{ padding:17px 20px; }
+  .kpi .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
+  .kpi .top .g{ font-size:13.5px; font-weight:700; color:var(--slate); } .kpi .top .g b{ color:var(--ink); }
+  .kpi .top .frac{ font-size:14px; font-weight:800; color:var(--ink); }
+  .gbar{ height:9px; border-radius:99px; background:#eef2f7; overflow:hidden; position:relative; }
+  .gbar > i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#34d399,#059669); }
+
+  /* vocab tiles */
+  .vtiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:16px 16px 4px; }
+  .vtile{ background:#f8fafc; border:1px solid var(--line-2); border-radius:12px; padding:14px; text-align:center; }
+  .vtile .v{ font-size:24px; font-weight:800; color:var(--ink); letter-spacing:-.5px; }
+  .vtile .v.up{ color:var(--qa); }
+  .vtile .v.gold{ color:#d97706; }
+  .vtile .k{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+  .mastery{ padding:6px 16px 16px; }
+  .mastery .mtop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
+  .mastery .mtop b{ font-size:12.5px; font-weight:800; color:var(--slate); }
+  .mastery .mtop span{ font-size:12.5px; font-weight:800; color:var(--ink); }
+  .mbar{ height:9px; border-radius:99px; overflow:hidden; display:flex; }
+  .mbar .seg1{ background:#34d399; } .mbar .seg2{ background:#fbbf24; }
+  .mleg{ display:flex; gap:16px; margin-top:8px; font-size:11.5px; font-weight:700; color:var(--muted); }
+  .mleg .d{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+
+  /* tables */
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{ text-align:left; font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--faint); padding:12px 18px; border-bottom:1px solid var(--line-2); }
+  tbody td{ padding:13px 18px; border-bottom:1px solid var(--line-2); color:var(--slate); font-weight:600; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover td{ background:#f9fbfd; }
+  .ttag{ font-size:11px; font-weight:800; padding:2px 9px; border-radius:7px; }
+  .score{ display:flex; align-items:center; gap:10px; }
+  .score .sbar{ width:56px; height:6px; border-radius:99px; background:#eef2f7; overflow:hidden; }
+  .score .sbar > i{ display:block; height:100%; border-radius:99px; }
+  .score b{ font-size:13px; font-weight:800; }
+  .stt{ font-size:11px; font-weight:800; padding:2px 9px; border-radius:7px; }
+  .stt.sub{ background:var(--emerald-l); color:var(--emerald-d); } .stt.pend{ background:var(--amber-bg); color:var(--amber); } .stt.over{ background:var(--rose-bg); color:var(--rose); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- sidebar -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+      <div class="bt"><b>DAHUA AI</b><span>Teacher</span></div>
+    </div>
+    <nav class="nav" style="margin-top:4px">
+      <a href="teacher-redesign.html"><span class="material-icons-round">space_dashboard</span> Dashboard</a>
+    </nav>
+    <div class="nav-grp">Content</div>
+    <nav class="nav">
+      <a><span class="material-icons-round">folder</span> Projects</a>
+      <a><span class="material-icons-round">quiz</span> Question Banks</a>
+    </nav>
+    <div class="nav-grp">Practice</div>
+    <nav class="nav">
+      <a><span class="material-icons-round">assignment</span> Practice List</a>
+    </nav>
+    <div class="nav-grp">Overview</div>
+    <nav class="nav">
+      <a><span class="material-icons-round">groups</span> Program</a>
+      <a><span class="material-icons-round">school</span> Classes</a>
+      <a class="on"><span class="material-icons-round">people</span> Students</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="me"><div class="av">WC</div><div class="mt"><b>Wei Chen</b><span>陳老師 · Class Teacher</span></div></div>
+  </aside>
+
+  <div class="main">
+    <!-- student list -->
+    <aside class="list-pane">
+      <div class="lp-head">
+        <div class="top">
+          <h1>Students</h1><span class="cnt" id="stuCount">(0)</span>
+          <button class="manage"><span class="material-icons-round">settings</span> Manage</button>
+        </div>
+        <p>Select a student to view details</p>
+        <div class="lp-search">
+          <span class="material-icons-round">search</span>
+          <input id="stuSearch" placeholder="Search by name…" autocomplete="off" />
+        </div>
+        <div class="lp-filters">
+          <button class="fsel">All classes <span class="material-icons-round">expand_more</span></button>
+          <button class="fsel">All HSK <span class="material-icons-round">expand_more</span></button>
+        </div>
+      </div>
+      <div class="stu-list" id="stuList"></div>
+    </aside>
+
+    <!-- detail -->
+    <div class="detail">
+      <div class="topbar">
+        <div class="av" id="dAv">EC</div>
+        <div class="dt"><b id="dName">—</b><br><span id="dSub">—</span></div>
+        <button class="edit"><span class="material-icons-round">edit</span></button>
+      </div>
+      <div class="dbody" id="dBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const HSKC = { 1:['#e8f0ff','#2563EB'], 2:['#e6f7ec','#0B7A3B'], 3:['#f1e9ff','#7C3AED'] };
+  const AV = [['#2563EB'],['#0B7A3B'],['#EA7A21'],['#7C3AED'],['#e11d48'],['#0369a1']];
+  const TYPE = { qa:['Q&A','var(--qa)','var(--qa-bg)'], mirror:['Mirroring','var(--mir)','var(--mir-bg)'], vocab:['Vocabulary','var(--voc)','var(--voc-bg)'], mc:['Multiple Choice','var(--mc)','var(--mc-bg)'] };
+  const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avc = n => AV[(n.charCodeAt(0)+n.length)%AV.length][0];
+
+  const STUDENTS = [
+    {n:'Lena Ho',      hsk:1, cls:'4A', avg:88, goal:[3,5], w:{nw:2,learn:6,master:18}},
+    {n:'Marcus Tan',   hsk:1, cls:'3B', avg:72, goal:[2,5], w:{nw:1,learn:9,master:10}},
+    {n:'Sofia Lim',    hsk:2, cls:'5C', avg:95, goal:[5,5], w:{nw:3,learn:4,master:31}},
+    {n:'Aisha Rahman', hsk:2, cls:'4A', avg:80, goal:[4,5], w:{nw:2,learn:7,master:22}},
+    {n:'Daniel Koh',   hsk:1, cls:'3D', avg:84, goal:[3,5], w:{nw:1,learn:5,master:16}},
+    {n:'Priya Nair',   hsk:2, cls:'5C', avg:69, goal:[2,5], w:{nw:0,learn:11,master:14}},
+    {n:'Noah Lim',     hsk:3, cls:'6A', avg:91, goal:[4,5], w:{nw:4,learn:6,master:40}},
+    {n:'Chloe Sim',    hsk:1, cls:'3B', avg:80, goal:[3,5], w:{nw:2,learn:8,master:12}},
+    {n:'Ethan Wong',   hsk:3, cls:'6A', avg:58, goal:[1,5], w:{nw:0,learn:13,master:9}},
+    {n:'Zoe Chan',     hsk:2, cls:'6A', avg:86, goal:[5,5], w:{nw:3,learn:5,master:27}},
+    {n:'Ivan Goh',     hsk:1, cls:'4A', avg:76, goal:[3,5], w:{nw:1,learn:7,master:15}},
+    {n:'Mia Teo',      hsk:2, cls:'5C', avg:90, goal:[4,5], w:{nw:2,learn:4,master:29}},
+    {n:'Kai Ong',      hsk:3, cls:'6A', avg:64, goal:[2,5], w:{nw:1,learn:10,master:18}},
+    {n:'Ruby Ng',      hsk:1, cls:'3D', avg:82, goal:[3,5], w:{nw:2,learn:6,master:14}},
+    {n:'Leo Tan',      hsk:2, cls:'3B', avg:78, goal:[3,5], w:{nw:1,learn:7,master:17}},
+    {n:'Ana Sy',       hsk:1, cls:'4A', avg:74, goal:[2,5], w:{nw:1,learn:8,master:11}},
+    {n:'Ben Chua',     hsk:3, cls:'6A', avg:88, goal:[4,5], w:{nw:3,learn:5,master:33}},
+    {n:'Ella Lim',     hsk:2, cls:'5C', avg:83, goal:[3,5], w:{nw:2,learn:6,master:20}},
+    {n:'Finn Yeo',     hsk:1, cls:'3B', avg:66, goal:[2,5], w:{nw:0,learn:10,master:9}},
+    {n:'Gia Koh',      hsk:2, cls:'3D', avg:91, goal:[5,5], w:{nw:3,learn:4,master:28}},
+    {n:'Hana Wee',     hsk:1, cls:'4A', avg:79, goal:[3,5], w:{nw:1,learn:7,master:15}},
+    {n:'Ravi Menon',   hsk:3, cls:'6A', avg:70, goal:[2,5], w:{nw:1,learn:9,master:19}},
+    {n:'Sara Lee',     hsk:2, cls:'5C', avg:85, goal:[4,5], w:{nw:2,learn:5,master:23}},
+    {n:'Tom Ang',      hsk:1, cls:'3D', avg:81, goal:[3,5], w:{nw:2,learn:6,master:16}},
+  ];
+  const TYPES=['qa','mirror','vocab','mc'];
+  const DATES=['2026/07/21','2026/07/18','2026/07/16','2026/07/14','2026/07/11','2026/07/09','2026/07/07'];
+  // deterministic practice history around the student's avg
+  const history = (s)=> DATES.map((d,i)=>{ const t=TYPES[(s.n.charCodeAt(0)+i)%4]; const sc=Math.max(45,Math.min(100, s.avg + ((i%2?1:-1)*((i*7+s.n.length)%14)) )); return {d, t, sc:Math.round(sc/1)}; });
+  const ASSIGN = (s)=>[
+    {n:'Ordering Food', t:'qa', st:'sub'},
+    {n:'Tone Practice · mā', t:'mirror', st: s.avg>75?'sub':'pend'},
+    {n:'Family Members', t:'vocab', st: s.avg>85?'sub':'pend'},
+    {n:'Numbers 1–100', t:'mc', st: s.avg>70?'sub':'over'},
+  ];
+  const scoreColor = v => v>=85?'#059669':v>=70?'#d97706':'#e11d48';
+
+  const listEl=document.getElementById('stuList');
+  let cur=STUDENTS[0], q='';
+
+  function renderList(){
+    const rows=STUDENTS.filter(s=>s.n.toLowerCase().includes(q.toLowerCase()));
+    document.getElementById('stuCount').textContent='('+STUDENTS.length+')';
+    listEl.innerHTML=rows.map(s=>{
+      const [hb,hf]=HSKC[s.hsk], fg=avc(s.n);
+      return '<div class="srow'+(s===cur?' on':'')+'" data-n="'+s.n+'">'+
+        '<div class="av" style="background:linear-gradient(145deg,'+fg+'cc,'+fg+')">'+initials(s.n)+'</div>'+
+        '<div class="sm"><div class="nm"><b>'+s.n+'</b><span class="hsk" style="background:'+hb+';color:'+hf+'">HSK '+s.hsk+'</span></div>'+
+          '<div class="sub">Class '+s.cls+'</div></div></div>';
+    }).join('');
+    listEl.querySelectorAll('.srow').forEach(r=>r.addEventListener('click',()=>{ cur=STUDENTS.find(x=>x.n===r.dataset.n); renderList(); renderDetail(); }));
+  }
+
+  function renderDetail(){
+    const s=cur, [hb,hf]=HSKC[s.hsk], fg=avc(s.n);
+    const av=document.getElementById('dAv'); av.textContent=initials(s.n); av.style.background='linear-gradient(145deg,'+fg+'cc,'+fg+')';
+    document.getElementById('dName').textContent=s.n;
+    document.getElementById('dSub').textContent='HSK '+s.hsk+' · Class '+s.cls;
+    const level=s.hsk, stage=Math.max(1,Math.min(54,Math.round(s.avg/100*54))), stars=s.w.master*5+s.w.learn*2, spct=Math.round(stage/54*100);
+    const hist=history(s), asg=ASSIGN(s);
+    document.getElementById('dBody').innerHTML=
+      '<div class="sec-t">Word Game Level <span class="chip">HSK '+level+'</span></div>'+
+      '<div class="panel"><div class="vtiles">'+
+        '<div class="vtile"><div class="v">HSK '+level+'</div><div class="k">Level</div></div>'+
+        '<div class="vtile"><div class="v tnum">'+stage+'/54</div><div class="k">Stage</div></div>'+
+        '<div class="vtile"><div class="v gold tnum">'+stars+'</div><div class="k">Stars</div></div>'+
+      '</div><div class="mastery"><div class="mtop"><b>Level Progress</b><span class="tnum">'+stage+' / 54 stages</span></div>'+
+        '<div class="gbar"><i style="width:'+spct+'%"></i></div></div></div>'+
+
+      '<div class="sec-t">Assignment Status</div>'+
+      '<div class="panel"><table><thead><tr><th>Assignment</th><th>Type</th><th style="width:150px">Status</th></tr></thead><tbody>'+
+        asg.map(a=>{ const t=TYPE[a.t]; const lbl=a.st==='sub'?'Submitted':a.st==='pend'?'Pending':'Overdue'; return '<tr><td style="color:var(--ink);font-weight:700">'+a.n+'</td>'+
+          '<td><span class="ttag" style="background:'+t[2]+';color:'+t[1]+'">'+t[0]+'</span></td>'+
+          '<td><span class="stt '+a.st+'">'+lbl+'</span></td></tr>'; }).join('')+
+      '</tbody></table></div>'+
+
+      '<div class="sec-t">Practice History <span class="chip">'+hist.length+' sessions</span></div>'+
+      '<div class="panel"><table><thead><tr><th>Date</th><th>Type</th><th style="width:180px">Score</th></tr></thead><tbody>'+
+        hist.map(h=>{ const t=TYPE[h.t], col=scoreColor(h.sc); return '<tr><td class="tnum">'+h.d+'</td>'+
+          '<td><span class="ttag" style="background:'+t[2]+';color:'+t[1]+'">'+t[0]+'</span></td>'+
+          '<td><div class="score"><div class="sbar"><i style="width:'+h.sc+'%;background:'+col+'"></i></div><b style="color:'+col+'">'+h.sc+'%</b></div></td></tr>'; }).join('')+
+      '</tbody></table></div>';
+  }
+
+  const _sq=new URLSearchParams(location.search).get('s');
+  if(_sq){ const _f=STUDENTS.find(x=>x.n===_sq); if(_f) cur=_f; }
+  document.getElementById('stuSearch').addEventListener('input',e=>{ q=e.target.value; renderList(); });
+  renderList(); renderDetail();
+  { const on=listEl.querySelector('.srow.on'); if(on) on.scrollIntoView({block:'center'}); }
+})();
+</script>
+</body>
+</html>
