@@ -577,12 +577,15 @@
   function EXPL(){ return cfg().explain; }
 
   /* ---------- 狀態 ---------- */
+  /* 問卷用的完成碼（2026-10-12）：從載入到完成的秒數、Back 幾次、點了幾次設定解釋；?s=1|2 是情境編號。做完在完成頁顯示，老師貼進問卷 */
+  var TRK={ t0:Date.now(), back:0, help:0, s:(new URLSearchParams(location.search)).get('s')||'0' };
+  function trkCode(){ var sec=Math.round((Date.now()-TRK.t0)/1000); return 'D1-S'+TRK.s+'-'+Math.floor(sec/60)+'m'+String(sec%60).padStart(2,'0')+'s-B'+TRK.back+'-H'+TRK.help; }
   var S, HIST=[];
   function blank(){ return { cp:null, sel:[], queue:[], qi:0, lastClasses:null, prefill:false, ep:null, assignedTo:null, src:null, topic:'', lvl:'HSK 2', tps:'', writing:false, newProj:false, proj:null, step:0, hide:null, audio:false, exp:null, picked:[], review:false, assigned:false, due:'2026-09-17T23:59', kind:'mandatory', log:[], fin:false, turns:[] }; }
   S=blank();
   window.__rail=function(){ return S; };   /* 測試用：headless 流程讀助手欄狀態 */
   function snap(){ HIST.push(JSON.stringify(S)); if(HIST.length>60) HIST.shift(); }
-  function back(){ if(!HIST.length) return; S=JSON.parse(HIST.pop()); render(); }
+  function back(){ if(!HIST.length) return; TRK.back++; S=JSON.parse(HIST.pop()); render(); }
   function ai(kind, extra){ var t={who:'sys', kind:kind, ep:S.ep}; if(extra) for(var k in extra) t[k]=extra[k]; S.turns.push(t); }
   function hasTurn(kind){ return S.turns.some(function(t){ return t.kind===kind && t.ep===S.ep; }); }
   function epName(ep){ var e=EP.filter(function(x){return x[0]===ep;})[0]; return e?e[1]:''; }
@@ -624,7 +627,8 @@
   var lastUrl=null;
   function syncPage(){
     var u=S.fin ? null : pageUrl(), f=$('#page');
-    $('#stageFin').style.display = S.fin ? 'block' : 'none';
+    document.addEventListener('click', function(e){ var c=e.target.closest('[data-copycode]'); if(!c) return; e.preventDefault(); var code=c.parentElement.querySelector('b').textContent; try{ navigator.clipboard.writeText(code); }catch(e2){} c.textContent='Copied ✓'; });
+  $('#stageFin').style.display = S.fin ? 'block' : 'none';
     if(S.fin){ $('#stageFin').innerHTML=renderFin(); $('#stageEmpty').style.display='none'; f.style.display='none'; return; }
     $('#stageEmpty').style.display = u ? 'none' : 'grid';
     $('#stageEmpty').innerHTML = S.writing
@@ -820,7 +824,8 @@
       return '<div class="row"><span class="th" style="--tk:'+tk.ink+'">'+THUMB[l.ep]+'</span><div class="tx"><b>'+esc(epName(l.ep))+'</b><span>'+esc(l.set)+'</span><span><em>'+esc(c.names.join(', '))+'</em> · '+c.n+' students · Due '+esc(fmtDue(l.due))+' · '+(l.kind==='optional'?'Optional':'Mandatory')+'</span></div><a href="#">Open</a></div>'; }).join('');
     var next='<div class="next">Students see '+(np===1?'it':'these')+' in their practice list from the start date. Mandatory practices send reminder emails before the due date; late work follows the stages you set.</div>';
     return '<div class="wrap"><div class="hd"><span class="ok"><span class="material-icons-round">check</span></span><div><h1>All set</h1><p>'+sub+'</p></div></div>'+
-      '<div class="sec">Project</div>'+proj+'<div class="sec">Practices</div><div class="card">'+rows+'</div><div class="sec">What happens next</div>'+next+'</div>';   /* 頁上不放 Plan another（頁腳鈕有）——跟嵌入頁同一條規則：導航鈕只在助手欄（使用者 2026-10-12「不用出現重複按鈕」） */
+      '<div class="sec">Project</div>'+proj+'<div class="sec">Practices</div><div class="card">'+rows+'</div><div class="sec">What happens next</div>'+next+
+      '<div class="sec">完成碼 · Completion code</div><div class="card"><div class="row"><div class="tx"><b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em">'+trkCode()+'</b><span>請複製貼到問卷 · Copy this into the survey</span></div><a href="#" data-copycode="1">Copy</a></div></div></div>';   /* 頁上不放 Plan another（頁腳鈕有）——跟嵌入頁同一條規則：導航鈕只在助手欄（使用者 2026-10-12「不用出現重複按鈕」） */
   }
   /* 把佇列裡每個練習都走完、都指派給 to（示範入口與歷史的種子共用） */
   function finishAll(to, due, kind){
@@ -859,6 +864,7 @@
     if(S.step===2){ S.step=3; S.exp=null; if(!hasTurn('step3')) ai('step3'); lastUrl=null; render(); return; }
     try{ var b=$('#page').contentDocument.querySelector('#next'); if(b && !b.classList.contains('dis')) b.click(); }catch(e){} });
   $('#navBack').addEventListener('click', function(){
+    TRK.back++;
     if(S.cp){ try{ var cbk=$('#page').contentDocument.querySelector('#back'); if(cbk) cbk.click(); }catch(e){} return; }
     if(S.step===0 && S.qi===0){ if(S.newProj) cpReturn(); else projReturn(); return; }
     if(S.step===3){ S.step=2; S.turns=S.turns.filter(function(t){ return !(t.ep===S.ep && (t.kind==='step3' || (t.kind==='done' && !S.assigned))); }); lastUrl=null; render(); return; }   /* v8 只有第四步，回上一步＝重載 v3／v4 的第三步 */
@@ -916,7 +922,7 @@
     /* 只改狀態、不換題的動作不寫進對話 —— 寫了會把這一題變成非 live、按鈕消失；套用的結果寫在那一題的句子裡 */
     if(e.target.closest('[data-list]')){ restart(); return; }
     if(e.target.closest('[data-cpskip]')){ try{ var sk=$('#page').contentDocument.querySelector('.acts [data-act="next"]'); if(sk) sk.click(); }catch(e2){} return; }
-    if((t=e.target.closest('[data-exp]'))){ S.exp = S.exp===t.dataset.exp ? null : t.dataset.exp; render(false); return; }
+    if((t=e.target.closest('[data-exp]'))){ if(S.exp!==t.dataset.exp) TRK.help++; S.exp = S.exp===t.dataset.exp ? null : t.dataset.exp; render(false); return; }
     if(e.target.closest('[data-same]')){ snap(); S.picked = sameAsLast() ? [] : S.lastClasses.slice(); S.review=false; render(); return; }
     if((t=e.target.closest('[data-cls]'))){ snap(); var id=t.dataset.cls, i=S.picked.indexOf(id); if(i>-1) S.picked.splice(i,1); else S.picked.push(id); S.review=false; render(); return; }
     if((t=e.target.closest('[data-again]'))){ restart(); return; }

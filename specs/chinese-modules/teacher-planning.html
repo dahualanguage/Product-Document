@@ -3404,13 +3404,18 @@
       '<button class="qopt rich" data-ckind="mandatory"><span class="material-icons-round">assignment_turned_in</span><span><b>Mandatory</b><small>Sends reminder emails</small></span></button>'+
       '<button class="qopt rich" data-ckind="optional"><span class="material-icons-round">note_add</span><span><b>Optional</b><small>No reminders</small></span></button></div>';
   }
+  /* 問卷用的完成碼（2026-10-12）：秒數、Back、開 Edit／Settings、開 Preview 幾次；?s=1|2 情境 */
+  var TRK={ t0:Date.now(), back:0, edit:0, prev:0, s:(new URLSearchParams(location.search)).get('s')||'0' };
+  function trkCode(){ var sec=Math.round((Date.now()-TRK.t0)/1000); return 'D2-S'+TRK.s+'-'+Math.floor(sec/60)+'m'+String(sec%60).padStart(2,'0')+'s-B'+TRK.back+'-E'+TRK.edit+'-P'+TRK.prev; }
+  document.addEventListener('click', function(e){ var c=e.target.closest('[data-copycode]'); if(!c) return; e.preventDefault(); var code=c.parentElement.querySelector('b').textContent; try{ navigator.clipboard.writeText(code); }catch(e2){} c.textContent='Copied ✓'; });
   function cdoneBody(live){
     var eps=cPracticeEps(), cl=pmClassLine(S.c.who);
     var head='All set —— '+eps.length+' practice'+(eps.length===1?'':'s')+' assigned to <b>'+esc(cl.names.join(', '))+'</b> · '+cl.n+' students · Due '+esc(dtNice(S.c.due))+' · '+(S.c.kind==='optional'?'Optional':'Mandatory')+(S.c.kind==='optional'?'':' · '+esc(cLateLabel()))+'.';
     var rows='<div class="cdrafts">'+eps.map(function(ep){ var c=TRACKS[EP_TRACK[ep]]||{};
       return '<div class="cdraft" style="--tk:'+(c.ink||'#059669')+'">'+(THUMB[ep]||'')+'<div class="cd-tx"><b>'+esc(EP[ep].t)+'</b><span class="cd-st ok"><span class="material-icons-round">check_circle</span>Assigned</span></div></div>'; }).join('')+'</div>';
-    if(!live) return head+rows;
-    return head+rows+'<div class="turn-acts"><button class="qopt" data-go="again">Plan another</button></div>';
+    var code='<div class="cbox" style="margin-top:12px"><span class="clbl">完成碼 · Completion code</span><div style="display:flex;align-items:center;gap:12px"><b style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em;font-size:15px">'+trkCode()+'</b><button class="qopt sm" data-copycode="1">Copy</button><span class="qhint" style="margin:0">請複製貼到問卷 · Copy this into the survey</span></div></div>';
+    if(!live) return head+rows+code;
+    return head+rows+code+'<div class="turn-acts"><button class="qopt" data-go="again">Plan another</button></div>';
   }
   BODY.cwho=cwhoBody; BODY.cdue=cdueBody; BODY.ckind=ckindBody; BODY.cdone=cdoneBody;
   /* 指派一步（使用者 2026-10-12「assign 變成一步就好」）：三段同一題，一顆 Assign 送出 */
@@ -4736,7 +4741,7 @@
 
   /* ---------------- clicks anywhere in the thread ---------------- */
   $('#fnBody').addEventListener('click',function(e){
-    if(e.target.closest('[data-back]')){ goBack(); return; }
+    if(e.target.closest('[data-back]')){ TRK.back++; goBack(); return; }
     mark();
     if(cClick(e)) return;   /* v14 C */
     var pk=e.target.closest('[data-pick]');
@@ -5653,6 +5658,7 @@
     return spSents().length;
   }
   function openStudentPreview(ep){
+    TRK.prev++;
     spEp=ep||null; spVocCache=null;
     if(!spListLength()){ spEp=null; return; }
     spIndex=0; $('#spOverlay').classList.remove('off');
@@ -5841,6 +5847,7 @@
     }catch(e){}
   }
   function openPageModal(ep, what){
+    if(what!=='assign') TRK.edit++;
     var url = what==='assign' ? cAssignUrl(ep) : (what==='settings' ? cOpenUrl(ep).replace(/step=\d/,'step=3') : cOpenUrl(ep));
     $('#pmTitle').innerHTML=(what==='assign'?'Assign':(what==='settings'?'Settings':'Edit'))+'<b>'+esc(EP[ep].t)+'</b>';
     PM={ep:ep, what:what, step:(what==='assign'?3:(what==='settings'?2:1)), exp:null, picked:[], done:false, timer:null};
