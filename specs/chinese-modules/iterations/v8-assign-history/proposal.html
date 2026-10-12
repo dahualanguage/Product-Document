@@ -31,6 +31,8 @@
    第三十五輪（2026-09-29）：WHO 的班級列拿掉副標（人數、did this before、n of N assigned）——派過的看 History，人數在覆核與 Choose students 都有；列只剩班名 ＋ Assigned pill／Choose students。
    第四十九輪（2026-10-02）：分界時間改了，範圍的日期跟著變——時間跟 Due 一樣（23:59）才用「隔天起」的日期寫法（Sep 20–23）；時間不一樣就寫到分（Sep 19 12:59 – Sep 23）。範圍＝(這段分界, 下一段分界]。歷史列與 Review 同一套。
    第四十八輪（2026-10-02）：CREDIT 的 % 做成看得出能打字的欄位——固定 3 字寬、游標 text、滑上去淡灰底、點 % 那一格就聚焦並全選、Enter 套用（之前能打但只有 20px 寬、看起來像純文字）。
+   第四十九輪（2026-10-12）：兩個 bug——分班日期沒綁狀態（改一班、任何重畫就被共用日期蓋回去，看起來像兩班同步）：Start／Due 欄位加 data-dt 寫回 S／S.perDates，+n days 與 Now 也分班算，
+     送出時各班存自己的日期；+n days 改用本地時間（原本 toISOString 會變 UTC 的 15:59）。日期改成真的今天：NOW＝new Date()（&now=YYYY-MM-DD 釘住），預設 Start 今天 08:00、Due 一週後，歷史假資料相對 NOW 平移。
    第四十七輪（2026-10-01）：pill 點不開（showPicker 不是每個瀏覽器都會跳，尤其 datetime-local）——改成跟 Start／Due 同一種可見的原生 datetime-local 欄位（.dt2 縮成 32px），不再藏 input、不再靠 showPicker；顯示格式交給瀏覽器。
    第四十六輪（2026-10-01）：分界的時間也可以選——pill 的隱藏 input 改成 datetime-local，選了存成每段自己的 time（沒設就跟 Due）；日期仍換算成 Due 後第幾天。資料：lateTiers[{days, off, time?}]。
    第四十五輪（2026-10-01）：AFTER 的 pill 把時間也放上來——Sep 17 · 23:59（時間跟 Due 走，每一段的分界都是 Due 的那個時刻；日曆只選日期，時間不另設）。
@@ -1249,6 +1251,10 @@ body{ padding-bottom:48px; }
 /* ---------------------------------------------------------------------------
    假資料跟基準檔同一份（兩邊才比得起來）。
    --------------------------------------------------------------------------- */
+/* 第四十九輪（2026-10-12，使用者「日期改成今日」）：NOW ＝ 真的今天（&now=2026-09-21 可以釘住，截圖用）；預設日期與歷史假資料都從 NOW 算 */
+const NOW = (() => { const q = new URLSearchParams(location.search).get('now'); const d = q ? new Date(q.length === 10 ? q + 'T12:00' : q) : new Date(); return dtLocal(d); })();
+function dtLocal(d){ const z = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`; }
+function relDT(days, time){ const d = new Date(NOW); d.setDate(d.getDate() + days); return dtLocal(d).slice(0, 10) + 'T' + time; }   // NOW 前後 n 天的某個時間
 const S = {
   step:0, empty:false, gen:false, loaded:false, banner:false, assigned:false,
   projects:[], practiceName:'', nameEdited:false,   // 從頭走：還沒選專案、還沒有 teaching points；名稱老師改過就不再跟專案走
@@ -1258,7 +1264,7 @@ const S = {
   tp:null, added:[], poolOpen:false, customType:'WORD', typeOpen:false,   // Custom word 的型別（產品 CustomWordDialog 的下拉，預設 WORD）
   hiddenW:null, imgSel:{}, uploaded:null, imgHidden:null,
   order:null, cardOff:null,   // 第三步：字的順序／關掉不練的卡（'字|word' / '字|ex1' / '字|ex2'）   // 第二步：隱藏的字／每個字選的圖／老師上傳的圖   // 勾選的 teaching point ／ 加進來的字 ／ From Project 展開
-  picked:null, sel:null, done:null, start:'2026-09-10T08:00', due:'2026-09-17T23:59',
+  picked:null, sel:null, done:null, start:relDT(0, '08:00'), due:relDT(7, '23:59'),   // 第四十九輪（2026-10-12）：預設 Start＝今天 08:00、Due＝一週後（老師測試要看到今天的日期）
   kind:'mandatory', late:'full', lateTiers:[{ days:1, off:10 }], perClass:false, perDates:{}, roster:null, justAssigned:false, review:false,
 };
 
@@ -1430,7 +1436,6 @@ S.uploaded = new Set(qs.get('upload') === '1' ? [WORDS[0].w] : []);
 if (qs.get('upload') === '1') S.imgSel[WORDS[0].w] = 'mine';
 S.picked = new Set((qs.get('pick') || '').split(',').filter(Boolean));
 S.sel    = new Set([...S.picked].flatMap(id => CLASSES.find(c => c.id === id)?.students ?? []));
-const NOW = '2026-09-21T12:00';   // 今天（截圖穩定）
 S.hist = qs.get('hist') === '1'; S.histTab = qs.get('past') === '1' ? 'past' : 'active'; S.histOpen = qs.get('histclosed') !== '1'; S.histAll = false;   // 第三十四輪：收合／Show all
 S.ed = null; S.rm = null;
 if (qs.get('kind')) S.kind = qs.get('kind');                    // 需求 2：&kind=optional
@@ -1439,12 +1444,12 @@ if (qs.get('pct')) S.lateTiers = [{ days:1, off:100 - parseInt(qs.get('pct'), 10
 if (qs.get('tiers')) S.lateTiers = qs.get('tiers').split(',').map(t => { const [d, o] = t.split(':'); return { days:parseInt(d, 10), off:parseInt(o, 10) }; }).slice(0, 3);   // &tiers=1:10,3:20,7:50
 if (qs.get('nodue') === '1') S.due = '';                        // &nodue=1：Mandatory 沒 Due，這列灰掉   // 第十三輪：&edit=<列的索引>（&stage=review 看覆核頁，示範用：先改了一個學生與 Due）· &rm=<索引> 開移除確認
 S.done = S.hist ? [
-  { id:'3b', start:'2026-09-18T08:00', due:'2026-10-02T23:59', kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:10 }], students:CLASSES[0].students },   // 進行中：3B 過期後又派一次，逾期 −10%（第三十二輪：demo 從一條規則開始）0%、收到 Oct 9
-  { id:'4a', start:'2026-09-10T08:00', due:'2026-09-25T23:59', kind:'optional', late:'full', students:CLASSES[1].students },      // 進行中，Optional 不套
-  { id:'3b', start:'2026-09-01T08:00', due:'2026-09-08T23:59', kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:10 }], students:CLASSES[0].students },     // 過期，單段 −10%15
-  { id:'5c', start:'2026-04-20T08:00', due:'2026-05-20T23:59', kind:'optional', late:'full', students:CLASSES[2].students },      // 過期，上學期
-  { id:'4a', start:'2026-03-02T08:00', due:'2026-03-09T23:59', kind:'mandatory', late:'full', students:CLASSES[1].students },     // 過期，上學期，全額
-  { id:'3b', start:'2025-11-03T08:00', due:'2025-11-10T23:59', kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:20 }], students:CLASSES[0].students }   // 過期，去年——日期要帶年
+  { id:'3b', start:relDT(-3, '08:00'), due:relDT(11, '23:59'), kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:10 }], students:CLASSES[0].students },   // 進行中：3B 過期後又派一次，逾期 −10%（第三十二輪：demo 從一條規則開始）0%、收到 Oct 9
+  { id:'4a', start:relDT(-11, '08:00'), due:relDT(4, '23:59'), kind:'optional', late:'full', students:CLASSES[1].students },      // 進行中，Optional 不套
+  { id:'3b', start:relDT(-20, '08:00'), due:relDT(-13, '23:59'), kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:10 }], students:CLASSES[0].students },     // 過期，單段 −10%15
+  { id:'5c', start:relDT(-154, '08:00'), due:relDT(-124, '23:59'), kind:'optional', late:'full', students:CLASSES[2].students },      // 過期，上學期
+  { id:'4a', start:relDT(-203, '08:00'), due:relDT(-196, '23:59'), kind:'mandatory', late:'full', students:CLASSES[1].students },     // 過期，上學期，全額
+  { id:'3b', start:relDT(-322, '08:00'), due:relDT(-315, '23:59'), kind:'mandatory', late:'reduced', lateTiers:[{ days:1, off:20 }], students:CLASSES[0].students }   // 過期，去年——日期要帶年
 ] : S.assigned ? [{ id:'3b', start:S.start, due:S.due, kind:'mandatory', students:CLASSES[0].students.slice(0, 5).concat('郑雅文') }] : [];
 if (qs.has('edit') && S.done[+qs.get('edit')]){
   openEdit(+qs.get('edit'));
@@ -2104,12 +2109,12 @@ function renderStep3(){
               <div class="pc-name">${c.name}</div>
               <div class="dtrow" style="margin-bottom:10px">
                 <span class="lbl">Start</span>
-                <input class="dt2" type="datetime-local" value="${d.start}">
+                <input class="dt2" type="datetime-local" value="${d.start}" data-dt="start:${id}">
                 <span class="quick"><button data-now="${id}">Now</button></span>
               </div>
               <div class="dtrow">
                 <span class="lbl">Due</span>
-                <input class="dt2" type="datetime-local" value="${d.due}">
+                <input class="dt2" type="datetime-local" value="${d.due}" data-dt="due:${id}">
                 <span class="quick">${[1,3,7].map(k =>
                   `<button data-days="${k}" data-for="${id}">+${k} ${k === 1 ? 'day' : 'days'}</button>`).join('')}</span>
               </div>
@@ -2117,12 +2122,12 @@ function renderStep3(){
           }).join('')
         : `<div class="rw"><div class="dtrow">
         <span class="lbl">Start</span>
-        <input class="dt2" type="datetime-local" value="${S.start}">
+        <input class="dt2" type="datetime-local" value="${S.start}" data-dt="start">
         <span class="quick"><button data-now="1">Now</button></span>
       </div></div>
       <div class="rw"><div class="dtrow">
         <span class="lbl">Due</span>
-        <input class="dt2" type="datetime-local" value="${S.due}">
+        <input class="dt2" type="datetime-local" value="${S.due}" data-dt="due">
         <span class="quick">${days}</span>
       </div></div>`}
     </div></div></div>
@@ -2249,7 +2254,8 @@ function commit(){
   [...S.picked].forEach(id => {
     const c = CLASSES.find(x => x.id === id);
     const students = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
-    if (students.length) S.done.push({ id, start:S.start, due:S.due, kind:S.kind, late:S.due ? S.late : 'full', lateTiers:S.lateTiers.map(t => ({ ...t })), students });
+    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };   // 第四十九輪：分班時各班存自己的日期
+    if (students.length) S.done.push({ id, start:d.start, due:d.due, kind:S.kind, late:d.due ? S.late : 'full', lateTiers:S.lateTiers.map(t => ({ ...t })), students });
   });
   S.picked = new Set(); S.sel = new Set(); S.roster = null;
 }
@@ -2493,10 +2499,16 @@ document.addEventListener('click', (e) => {
     }
     render(); return;
   }
-  if (dy){
-    const d = +dy.dataset.days, dt = new Date(S.start);
-    dt.setDate(dt.getDate() + d); dt.setHours(23, 59);
-    S.due = dt.toISOString().slice(0, 16); render(); return;
+  if (dy){   // 第四十九輪：+n days 從那一班自己的 Start 算（分班時）；用本地時間，不再經 toISOString（會變成 UTC 的 15:59）
+    const d = +dy.dataset.days, id = dy.dataset.for;
+    if (id){ const pd = S.perDates[id] || { start:S.start, due:S.due }; S.perDates[id] = { ...pd, due:plusDays(pd.start, d) }; }
+    else S.due = plusDays(S.start, d);
+    render(); return;
+  }
+  const nw = e.target.closest('[data-now]');
+  if (nw){ const id = nw.dataset.now; const v = dtLocal(new Date());
+    if (id === '1') S.start = v; else S.perDates[id] = { ...(S.perDates[id] || { start:S.start, due:S.due }), start:v };
+    render(); return;
   }
   const sc = e.target.closest('[data-speed]');
   if (sc){
@@ -2583,7 +2595,11 @@ document.addEventListener('change', (e) => {
   if (tn){ const [pf, k, f] = tn.dataset.tiernum.split(':'); const T = pf === 'ed' ? S.ed : S; const b = tierBounds(T.lateTiers, +k); const v = parseInt(tn.value, 10);
     if (!isNaN(v)) { if (f === 'pct') T.lateTiers[+k].off = Math.min(b.oMax, Math.max(b.oMin, 100 - v));   // 第三十八輪：打的是算幾成，存的仍是扣幾 %
       else T.lateTiers[+k][f] = f === 'days' ? Math.min(b.dMax, Math.max(b.dMin, v)) : Math.min(b.oMax, Math.max(b.oMin, v)); } render(); return; }
-  const ed = e.target.closest?.('[data-ed]'); if (ed && S.ed && ed.value){ S.ed[ed.dataset.ed] = ed.value; render(); } });   // 第十三輪：Edit 對話框的 Start／Due
+  const ed = e.target.closest?.('[data-ed]'); if (ed && S.ed && ed.value){ S.ed[ed.dataset.ed] = ed.value; render(); return; }   // 第十三輪：Edit 對話框的 Start／Due
+  const dt = e.target.closest?.('[data-dt]');   // 第四十九輪（2026-10-12，使用者「設定兩班不同日期但時間會同步」）：Start／Due 欄位寫回狀態——分班時各寫各的（以前沒綁，重畫就被共用的日期蓋掉）
+  if (dt){ const [f, id] = dt.dataset.dt.split(':'); const v = dt.value;
+    if (id) S.perDates[id] = { ...(S.perDates[id] || { start:S.start, due:S.due }), [f]:v }; else S[f] = v;
+    render(); return; } });
 document.addEventListener('input', (e) => {
   const inp = e.target.closest?.('[data-custom]'); if (inp) S.custom = inp.value;
   if (e.target.id === 'pname'){ S.practiceName = e.target.value; S.nameEdited = true; }

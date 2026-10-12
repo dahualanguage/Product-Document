@@ -363,6 +363,7 @@
   'use strict';
   var $=function(s){ return document.querySelector(s); };
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function dAt(n){ var d=new Date(); d.setDate(d.getDate()+n); var z=function(x){return String(x).padStart(2,'0');}; return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T23:59'; }   /* 今天前後 n 天的 23:59（2026-10-12：日期跟著真的今天） */
 
   /* ---------- 跟 iterations 同一份假資料 ---------- */
   var EP=[
@@ -581,7 +582,7 @@
   var TRK={ t0:Date.now(), back:0, help:0, s:(new URLSearchParams(location.search)).get('s')||'0' };
   function trkCode(){ var sec=Math.round((Date.now()-TRK.t0)/1000); return 'D1-S'+TRK.s+'-'+Math.floor(sec/60)+'m'+String(sec%60).padStart(2,'0')+'s-B'+TRK.back+'-H'+TRK.help; }
   var S, HIST=[];
-  function blank(){ return { cp:null, sel:[], queue:[], qi:0, lastClasses:null, prefill:false, ep:null, assignedTo:null, src:null, topic:'', lvl:'HSK 2', tps:'', writing:false, newProj:false, proj:null, step:0, hide:null, audio:false, exp:null, picked:[], review:false, assigned:false, due:'2026-09-17T23:59', kind:'mandatory', log:[], fin:false, turns:[] }; }
+  function blank(){ return { cp:null, sel:[], queue:[], qi:0, lastClasses:null, prefill:false, ep:null, assignedTo:null, src:null, topic:'', lvl:'HSK 2', tps:'', writing:false, newProj:false, proj:null, step:0, hide:null, audio:false, exp:null, picked:[], review:false, assigned:false, due:dAt(7), kind:'mandatory', log:[], fin:false, turns:[] }; }
   S=blank();
   window.__rail=function(){ return S; };   /* 測試用：headless 流程讀助手欄狀態 */
   function snap(){ HIST.push(JSON.stringify(S)); if(HIST.length>60) HIST.shift(); }
@@ -991,9 +992,9 @@
   /* 示範入口：?at=proj|step0|step1|step2|step3|done ＋ &ep=MIRRORING|VOCABULARY（預設 MIRRORING） */
   var qs0=new URLSearchParams(location.search), at=qs0.get('at'), ep0=qs0.get('ep');
   /* 歷史的種子（假資料，跟提案二同樣三筆的形狀）：昨天兩個、上週一個 */
-  PLANS=[ seedPlan({proj:0, ep:['VOCABULARY','SENTENCE_SCRAMBLE'], to:['5c'], at:'Last week', due:'2026-09-10T23:59', kind:'mandatory'}) ];
-  PLANS.unshift(seedPlan({proj:0, ep:['VOCABULARY_MC'], to:['3b'], at:'Yesterday', due:'2026-09-13T23:59', kind:'optional'}));
-  PLANS.unshift(seedPlan({proj:1, ep:['MIRRORING'], to:['4a'], at:'Yesterday', due:'2026-09-12T23:59', kind:'mandatory'}));
+  PLANS=[ seedPlan({proj:0, ep:['VOCABULARY','SENTENCE_SCRAMBLE'], to:['5c'], at:'Last week', due:dAt(-2), kind:'mandatory'}) ];
+  PLANS.unshift(seedPlan({proj:0, ep:['VOCABULARY_MC'], to:['3b'], at:'Yesterday', due:dAt(6), kind:'optional'}));
+  PLANS.unshift(seedPlan({proj:1, ep:['MIRRORING'], to:['4a'], at:'Yesterday', due:dAt(5), kind:'mandatory'}));
   if(qs0.get('hist')==='1'){ document.querySelector('.app').classList.add('hist-on'); $('#histToggle').setAttribute('aria-expanded','true'); }
   ai('start');
   if(at){ S.queue=(ep0||'MIRRORING').split(',').filter(function(x){return CFG[x];}); if(!S.queue.length) S.queue=['MIRRORING']; S.qi=0; S.ep=S.queue[0]; you(S.queue.map(epName).join(' + ')); ai('src'); S.src='existing'; you('A Project I have'); ai('proj');
