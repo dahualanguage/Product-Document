@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Comprehension Quiz — v14 提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— 這一頁是 v14 的設計提案，不是現行產品。
+   對照組是 create-comprehension-quiz.html（現行複刻）。分岔自 v3-content-mirroring/proposal.html：
+   外殼、字體、色票、Stepper、第一步的 .fld／.dd／.frame、Assign 步（S8 原封不動）、.baseline 底欄都沿用。
+   套的是八張卡共用的 S1–S9（shared-practice-changes.html）。這條流程沒有顯示／音檔／拼音／翻譯／Max tries
+   設定（基準檔登記第 1 條），所以沒有 R11 的設定面板——第二步是題目清單。
+
+   三步：Question Bank → Edit & Preview → Assign Practice（STEPS_BY_TYPE[MULTIPLE_CHOICE]；v3 的 Edit Sentences 整步拿掉）
+     第一步  S1 Practice name 搬到這裡（選了題庫就填入題庫名；老師改過之後不再跟著換）。
+             S2 題庫選單照 v3 的 .dd（每列 題庫名 ＋ `4 True/False · 6 Multi-Choice`；沒題的紅字 No questions、不可選）。
+             .frame 用 Comprehension 欄的 wash（#F7F3FE／#6D28D9，practice-type-labels.js）：
+             課文一段一行帶編號 ＋ 題目預覽（型別 chip ＋ 題目）——現行第二步的 Project Content 卡併進這裡。
+             S9 題庫沒題時 Next 灰、原因寫在內容區（現行是紅字一行 ＋ 鈕灰著不說話）。
+     第二步  Test Mode 一張卡（開關；開了才出現 Suggested time／Slider 1–60／一行算式，文案照 ExamModeCard）
+             → eyebrow Questions · N（hint：True/False N · Multi-Choice N · drag to reorder；
+               Edit Questions & Answers in Question Bank 留著當一顆次要鈕，放 eyebrow 右邊）
+             → 一題一張卡，照 v6-vocabulary-quiz/proposal.html 的 renderMcCard：拖曳把手、Q 號膠囊、
+               型別 chip（True/False 綠 #10B981／Multi-Choice 藍 #3B82F6 ＝ MC_TYPE_COLORS）、分類 chip、題目、
+               展開看選項（正解框色＋✓）、✕ 移除。
+             預設收合（現行全部展開：10 題一頁很長、拖曳要拖過整張卡——基準檔第 5 條）；
+             剩一題時 ✕ 鎖住、hint 寫原因（R9；現行刪光了 Save 還能按——第 6 條）。
+     第三步  Assign：v3 的 renderStep3 ＋ renderReview ＋ commit 原封不動（S8）。
+
+   網址參數：?step=1|2|3（從 1 數）
+             &proj=0|1|2 預選題庫（題庫名＝專案名，順序跟基準檔一樣：0 我的一天 · 1 环境保护与可持续发展 · 2 餐厅点餐（对话）＝沒題）
+             &dd=1 選單打開 · &exam=1 Test Mode 開 · &open=1 第一題展開（預設全部收合）
+             &pick=3b,4a 已選班級 · &roster=3b 展開名冊 · &perclass=1 逐班日期 · &review=1 預覽框 · &assigned=1 已指派過
+   沒搬過來的基準檔參數：&gen／&done（現行第一步按 Next 就 createPractice、回頭題庫鎖住——提案不在第一步建 practice，S10 待工程）
+             &dlg（ProcessingDialog 對 MC 沒有自己的文案、會不會出現無法確認——基準檔第 8 條）
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --student-green:#22C55E; --student-wash:#E8FFF0;
+  /* 色票 = PRACTICE_TYPE_COLUMNS.COMPREHENSION（practice-type-labels.js）。
+     Comprehension Quiz 是 Comprehension 欄那張卡，frame 的底用它那一欄的 wash，
+     --label 是同一欄為「文字」準備的紫（v3 用 Content 欄的綠，同一個位置換色票）。 */
+  --wash:#F7F3FE; --label:#6D28D9;
+  /* 題型色 = MC_TYPE_COLORS（enum/practices.js）：True/False 綠、Multi-Choice 藍 */
+  --tf:#10B981; --tf-bg:#F0FDF4; --tf-bd:#A7F3D0;
+  --mc:#3B82F6; --mc-bg:#EFF6FF; --mc-bd:#BFDBFE;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼（跟基準檔同一套，出自 config-layout.js） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* 標題前的圖示：出處是 PRACTICE_TYPE_ENTRIES 每一項的 tag
+   （practice-type-labels.js，#922 加的），八種型別都有：
+     MULTIPLE_CHOICE: { wash:'#EDE9FE', label:'#7C3AED', icon:'quiz' }
+   wash 當底、label 當圖示色。 */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px;
+  display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none;
+  background:#EDE9FE; color:#7C3AED; display:flex; align-items:center; justify-content:center; }
+.h4 .tico .mi{ font-size:22px; }
+
+/* ---------- Stepper —— 換成 ReUI c-stepper-2 的做法，配色改成產品的綠 ----------
+   出處：https://reui.io/r/c-stepper-2.json ＋ @reui/stepper
+     StepperIndicator  size-6（24px）· rounded-full · text-xs · font-medium
+     StepperSeparator  h-0.5（2px）· rounded-sm · m-0.5（2px）· flex-1
+     走過的那一段 separator 變色（group-data-[state=completed]/step）
+   兩處刻意不照抄：
+     ① 原版 active 用 bg-primary（shadcn 預設近黑）、completed 用 green-500。
+        這裡兩個都是綠的，所以改用「實心＋光環」區分「正在這一步」。
+     ② 原版沒有文字標籤，只有數字。Content / Settings / Assign 是必要資訊，保留。 */
+.stepper{ display:flex; align-items:center; width:100%; margin-bottom:32px; }
+.stp-item{ display:flex; align-items:center; gap:10px; }
+.stp-ind{ width:24px; height:24px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; background:var(--grey300); color:var(--text2);
+  transition:background .2s, box-shadow .2s; }
+  /* 原版 bg-accent 是預設「白底」才看得見；這一頁底色是 #f4f7fb，
+     grey200 會整個糊掉，所以未走到的那格加深一階到 grey300。 */
+.stp-item.done .stp-ind{ background:var(--primary); color:#fff; }
+.stp-item.active .stp-ind{ background:var(--primary); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.stp-lbl{ font-size:14px; font-weight:400; color:var(--text3); white-space:nowrap; }
+.stp-item.done .stp-lbl{ color:var(--text); }
+.stp-item.active .stp-lbl{ color:var(--text); font-weight:600; }
+.stp-sep{ flex:1; min-width:24px; height:2px; border-radius:2px; margin:2px 10px;
+  background:var(--divider); transition:background .2s; }
+.stp-sep.done{ background:var(--primary); }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* =====================================================================
+   提案的新語彙
+   ===================================================================== */
+
+/* --- 段落眉標：三段各自回答一個問題 --- */
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:40px 0 12px; }
+.eyebrow:first-child{ margin-top:0; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); }
+.eyebrow .hint{ font-size:12px; color:var(--text3); }
+
+/* --- 模式：兩選一，不是開關 --- */
+.modes{ display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:560px; }
+.mode{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:14px 16px;
+  display:flex; gap:12px; align-items:flex-start; cursor:pointer; text-align:left;
+  transition:border-color .15s, background .15s; }
+.mode:hover{ border-color:var(--text3); }
+.mode .dot{ width:20px; height:20px; border-radius:50%; border:2px solid var(--text3); flex:none; margin-top:2px; }
+.mode.sel{ border-color:var(--primary); background:var(--wash); }
+.mode.sel .dot{ border-color:var(--primary); border-width:6px; }
+.mode .t{ display:block; font-size:14px; font-weight:700; }
+.mode .d{ display:block; font-size:12px; color:var(--text2); margin-top:2px; }
+
+/* --- 設定列：不再一個設定一張卡 --- */
+.rows{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:4px 20px; }
+.rw{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 0; }
+.rw + .rw{ border-top:1px solid var(--divider); }
+.rw .lb{ font-size:14px; font-weight:600; }
+.rw .hp{ font-size:12px; color:var(--text2); margin-top:2px; max-width:44ch; }
+.rw .ct{ flex:none; }
+
+/* --- 三段式（分段控制項）：一個決定讀起來是一個控制項 --- */
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px;
+  font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.seg.dis{ opacity:.5; }
+.seg.dis button{ cursor:default; }
+
+/* --- 聲音 chip：點一下＝選它＋聽它 --- */
+.voices{ display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.vgrp{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.vgrp .vl{ font-size:11px; font-weight:700; letter-spacing:.2px;
+  color:var(--text3); margin-right:2px; }
+.chip{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; }
+.chip:hover{ border-color:var(--text3); color:var(--text); }
+.chip .mi{ font-size:16px; }
+.chip.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.chip.playing .mi{ color:var(--primary); }
+
+/* --- 次數：小型 stepper --- */
+.stp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; }
+.stp .n{ display:inline-block; }
+.stp button{ width:38px; height:38px; border:0; background:#fff; color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.stp button:hover{ background:var(--grey200); color:var(--text); }
+.stp .n{ width:44px; text-align:center; font-size:15px; font-weight:700;
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); line-height:38px; }
+
+/* =====================================================================
+   Step 1 的兩個欄位 —— 參考 ReUI
+     c-input-2         = Field + FieldLabel + Input：標籤在輸入框「上面」，
+                         不是 MUI 那種浮在框線上的凹槽標籤。
+     c-dropdown-menu-18 = outline 按鈕觸發 + 選單；選單有群組標題、
+                         每一列帶一個圖示、箭頭用 ml-auto 推到最右。
+   兩者都改成 label-above 之後，第一步就是統一的「標籤在上、控制項在下」。
+   ===================================================================== */
+.fld{ display:flex; flex-direction:column; gap:8px; max-width:520px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.fld .help{ font-size:12px; color:var(--text2); }
+.inp{ height:40px; width:100%; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); }
+.inp::placeholder{ color:var(--text3); }
+.inp:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); }
+
+.dd{ position:relative; }
+.dd-trig{ width:100%; height:40px; display:flex; align-items:center; gap:10px;
+  border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 12px;
+  font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.dd-trig:hover{ background:var(--grey100); }
+.dd-trig .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-trig .caret{ font-size:18px; color:var(--text2); flex:none; }   /* ml-auto */
+/* c-18 每一列的 logo 位；這裡放 targetLanguage。
+   值是 BCP-47（src/enum/languageTags.js：'zh-CN' / 'zh-TW' / 'zh-HK'），
+   產品直接印 cfg.targetLanguage，所以不縮寫、不改大小寫。
+   顏色沿用產品給語言 chip 的藍（#EFF6FF / #1D4ED8），跟綠色的級數 chip 分開。 */
+.mark{ height:22px; padding:0 8px; border-radius:6px; flex:none; display:inline-flex;
+  align-items:center; font-size:11px; font-weight:700; letter-spacing:.2px;
+  background:#EFF6FF; color:#1D4ED8; }
+.dd-menu{ position:absolute; top:46px; left:0; right:0; z-index:30; background:#fff;
+  border:1px solid var(--divider); border-radius:10px; padding:4px;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+/* DropdownMenuLabel */
+.dd-lbl{ font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--text3); padding:8px 8px 6px; }
+.dd-item{ display:flex; align-items:center; gap:10px; width:100%; padding:8px; border:0;
+  background:transparent; border-radius:6px; font-size:14px; color:var(--text);
+  cursor:pointer; text-align:left; font-family:inherit; }
+.dd-item:hover{ background:var(--grey200); }
+.dd-item .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-item .lvl, .dd-trig .lvl{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px;
+  background:#F0FDF4; color:#065F46; flex:none; }
+/* 現行產品的語言／級數 chip 只有在選單打開時看得到，收起來就消失了。
+   觸發鈕也帶上，選完之後還看得出「這是哪一個專案」。 */
+.dd-item .tick{ font-size:18px; color:var(--primary); flex:none; }
+
+/* =====================================================================
+   Step 4 · Assign —— 從 modal 搬回頁面上
+   現行是「一個只放按鈕的頁面 ＋ 一個 1728 行的對話框」，而對話框裡
+   Schedule／Optional／Students 每選一個班就整組重複一次。
+   這一版：三段（誰／什麼時候／算不算作業），一份時間套用到全部，
+   要分開再展開。名詞跟 AssignmentTypeChip 對齊（Mandatory / Optional）。
+   ===================================================================== */
+.clsrow{ display:flex; align-items:center; gap:12px; padding:14px 0; }
+.clsrow + .clsrow{ border-top:1px solid var(--divider); }
+.clsrow .box{ width:20px; height:20px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.clsrow .box .mi{ font-size:15px; opacity:0; }
+.clsrow.on .box{ background:var(--primary); border-color:var(--primary); }
+.clsrow.on .box .mi{ opacity:1; }
+.clsrow .nm{ display:block; font-size:14px; font-weight:600; }
+.clsrow .sub{ display:block; font-size:12px; color:var(--text2); margin-top:1px; }
+.clsrow .grow{ flex:1; min-width:0; }
+.clsrow.done{ opacity:.55; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; }
+.pill.mand{ background:#F1F5F9; color:#475569; }
+.pill.opt{ background:#E0E7FF; color:#3730A3; }
+.linkbtn{ border:0; background:transparent; padding:0; font-family:inherit; font-size:12px;
+  font-weight:700; color:var(--primary-dark); cursor:pointer; text-decoration:underline; }
+
+.dtrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dtrow .lbl{ font-size:14px; font-weight:600; width:52px; flex:none; }
+.dt2{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 12px;
+  font-family:inherit; font-size:14px; color:var(--text); background:#fff; width:220px; }
+.quick{ display:inline-flex; gap:4px; }
+.quick button{ height:30px; padding:0 11px; border-radius:8px; border:1px solid var(--divider);
+  background:#fff; font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; }
+.quick button:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.quick button.on{ background:rgba(0,203,97,.10); border-color:var(--primary); color:var(--primary-dark); }
+
+/* 「全部同一份 / 每班各自」是兩種模式，不是一個附加選項——
+   所以用「現況陳述 ＋ 切換動作」，而且就放在日期正上方，不是右上角的 hint。 */
+.modeline{ display:flex; align-items:center; gap:12px; padding:14px 0 12px;
+  font-size:13px; color:var(--text2); border-bottom:1px solid var(--divider); margin-bottom:4px; }
+.perclass{ padding:14px 0; }
+.perclass + .perclass{ border-top:1px solid var(--divider); }
+.pc-name{ font-size:13px; font-weight:700; margin-bottom:10px; }
+
+.checkline{ display:flex; align-items:center; gap:10px; padding:14px 0; border-top:1px solid var(--divider);
+  font-size:14px; cursor:pointer; }
+.checkline .box{ width:18px; height:18px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.checkline .box .mi{ font-size:13px; opacity:0; }
+.checkline.on .box{ background:var(--primary); border-color:var(--primary); }
+.checkline.on .box .mi{ opacity:1; }
+
+/* 名冊：預設收起來，例外才展開 */
+.roster{ margin:2px 0 6px 32px; padding:12px 14px; background:var(--grey100);
+  border:1px solid var(--divider); border-radius:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.stu{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; color:var(--text); cursor:pointer; }
+.stu .box{ width:15px; height:15px; border-radius:4px; border:2px solid var(--text3); flex:none; }
+.stu.on{ border-color:var(--primary); background:rgba(0,203,97,.08); }
+.stu.on .box{ background:var(--primary); border-color:var(--primary); }
+.stu.off{ opacity:.58; cursor:default; }
+.stu .tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; }
+.stu .tag.ok{ background:#D3FCD2; color:#118D57; }
+.stu .tag.new{ background:#DCECFE; color:#193592; }
+.stu .tag.bad{ background:#FFE9D5; color:#B71D18; }
+.stu .tag.warn{ background:#FFF5CC; color:#7A4100; }
+
+/* ---------- Step 3（沿用基準檔，這一版沒改） ---------- */
+.sub1{ font-size:16px; font-weight:600; }
+.sub2{ font-size:14px; font-weight:600; }
+.cap{ font-size:12px; color:var(--text2); }
+.cap.dis{ color:var(--text3); }
+/* =====================================================================
+   Content preview —— 換成 ReUI 的 c-frame-6（Frame with ghost variant）
+   出處：https://reui.io/r/c-frame-6.json ＋ @reui/frame
+     Frame        bg-muted/50 · border 1px · rounded(--frame-radius)
+                  padding + gap = --spacing(0.75) = 3px
+     FrameHeader  px --spacing(4)=16 · py --spacing(2)=8 · gap 0
+                  FrameTitle text-sm font-semibold / FrameDescription muted
+     FramePanel   白底(--color-card) · border 1px · shadow-xs · px/py 16
+   （c-frame-6 的範例只有 Header + Panel，沒有 FrameFooter，這裡照它）
+   ghost 變體：外框「沒有邊框」，只剩底色與 panel。因為少了那 1px 邊框，
+   同心圓角的算式也跟著少減 1：
+     ghost: [--frame-panel-radius:calc(var(--frame-radius) - var(--frame-px))]
+     --frame-radius = --radius-xl = calc(0.625rem + 4px) = 14px
+     --frame-panel-radius = 14 − 3 = 11px（default 變體是 14 − 3 − 1 = 10px）
+   這一塊同時收掉了現行的三層標題（Content Preview 分隔線／綠色專案名／
+   Article Content 小標）——同一件事本來被標了四次。 */
+.frame{ --frame-radius:14px; --frame-px:3px;
+  /* ghost：沒有 1px 外框，所以 panel 圓角少減那 1px */
+  --frame-panel-radius:calc(var(--frame-radius) - var(--frame-px));
+  display:flex; flex-direction:column; gap:var(--frame-px);
+  /* 原版是 bg-muted/50。這裡換成 CONTENT.wash。用實色而不是半透明：
+     ghost 沒有邊框，形狀全靠這層底色撐，實色才不會隨背後的東西變色。 */
+  background:var(--wash);
+  border-radius:var(--frame-radius); padding:var(--frame-px);
+  margin-top:32px; }
+.frame-hd{ display:flex; flex-direction:column; gap:0; padding:8px 16px; }
+.frame-ttl{ font-size:14px; font-weight:600; color:var(--text); }
+.frame-desc{ font-size:14px; color:var(--text2); }
+.frame-panel{ position:relative; overflow:hidden; background:#fff;
+  border:1px solid var(--divider); border-radius:var(--frame-panel-radius);
+  box-shadow:0 1px 2px rgba(33,43,54,.05); padding:16px; }
+/* 課文照專案存的分段一段一行。沒有 max-height——這是第一步，
+   底下沒有東西在跟它搶空間，而讓它長完才看得出「這篇有多少」。
+   寬度維持整欄（2026-09-10 決定）——中文 16px 的舒適行長雖然約 520–640px，
+   但收窄會讓這一塊在頁面上失去份量，取捨後選擇不收。 */
+/* 注意：.seg 已經被 Settings 的分段控制項用掉了，這裡另取名 */
+.aline{ display:flex; gap:12px; align-items:baseline; padding:7px 0; }
+.aline + .aline{ border-top:1px solid var(--divider); }
+.aline .n{ font-size:12px; color:var(--text3); min-width:14px; text-align:right; flex:none;
+  font-variant-numeric:tabular-nums; }
+.aline .t{ flex:1; font-size:16px; line-height:1.75; }
+/* 提醒條：MUI Alert severity=warning 的 standard 變體（v3 的 .conv，這裡拿來寫「題庫沒題」的原因 S9／R9） */
+.alert{ display:flex; gap:10px; align-items:center; margin:4px 16px 10px; padding:10px 14px; border-radius:8px;
+  background:#FFF5CC; color:#7A4100; box-shadow:inset 3px 0 0 #FFAB00; }
+.alert .mi{ font-size:22px; color:#B76E00; flex:none; }
+.alert span{ font-size:15px; font-weight:500; color:#7A4100; line-height:1.5; }
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.dt{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-size:12.8px;
+  width:190px; font-family:inherit; color:var(--text); background:#fff; }
+.opt-chip{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+
+/* ---------- 送出前的預覽（照產品的 ConfirmDialog） ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex;
+  align-items:center; justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:16px; width:100%; max-width:560px; overflow:hidden;
+  box-shadow:0 24px 48px rgba(33,43,54,.24); max-height:88vh; display:flex; flex-direction:column; }
+.dlg-hd{ padding:20px 24px 0; }
+.dlg-hd h3{ font-size:18px; font-weight:700; }
+.dlg-hd p{ font-size:13px; color:var(--text2); margin-top:4px; }
+.dlg-bd{ padding:16px 24px; overflow-y:auto; }
+.dlg-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px;
+  border-top:1px solid var(--divider); }
+/* 只講例外，不覆述常規：整班就寫「all N students」，不列名字；
+   有人拿不到才把那幾個人（和原因）寫出來。 */
+.rvc{ padding:12px 0; }
+.rvc + .rvc{ border-top:1px solid var(--divider); }
+.rvc .top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
+.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--label); }
+.rvc .top .cnt{ font-size:13px; color:var(--text2); flex:none; }
+.rvc .when{ font-size:12px; color:var(--text2); margin-top:2px; }
+.rvc .ex{ font-size:12px; color:#7A4100; margin-top:6px; line-height:1.6; }
+
+/* ---------- Footer ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.contained.dis:hover{ background:var(--grey300); }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+
+/* ---------- 提案說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; } .main{ padding:88px 16px; }
+}
+@media (max-width:820px){
+  .modes{ grid-template-columns:1fr; }
+  .rw{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .voices{ align-items:flex-start; } .vgrp{ justify-content:flex-start; }
+  .stepper .stp-lbl{ display:none; }
+}
+
+/* =====================================================================
+   v14 · Comprehension Quiz 自己的語彙（2026-10-19）
+   ===================================================================== */
+/* 題庫選單每列：題庫名 ＋ 題數（S2）；沒題的紅字 No questions、不可選（S9） */
+.dd-trig .cnt, .dd-item .cnt{ font-size:12px; color:var(--text2); flex:none; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.cnt.none{ color:var(--error); font-weight:700; }
+.dd-item:disabled{ cursor:default; } .dd-item:disabled:hover{ background:transparent; } .dd-item:disabled .nm{ color:var(--text3); }
+/* 第一步的題目預覽列：編號欄跟 .aline 對齊 */
+.qline{ display:flex; gap:10px; align-items:center; padding:7px 0; }
+.qline + .qline{ border-top:1px solid var(--divider); }
+.qline .n{ font-size:12px; color:var(--text3); min-width:14px; text-align:right; flex:none; font-variant-numeric:tabular-nums; }
+.qline .t{ flex:1; min-width:0; font-size:14px; }
+/* 小 chip：Q 號膠囊、型別、分類（照 v6 proposal 的 .chip.sm；型別色＝MC_TYPE_COLORS） */
+.chip.sm{ height:24px; padding:0 8px; font-size:12px; gap:4px; cursor:default; }
+.chip.sm:hover{ border-color:var(--divider); color:var(--text2); }
+.chip.sm.qno{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:700; }
+.chip.sm.tchip.tf, .chip.sm.tchip.tf:hover{ background:var(--tf-bg); border-color:rgba(16,185,129,.45); color:var(--tf); }
+.chip.sm.tchip.mc, .chip.sm.tchip.mc:hover{ background:var(--mc-bg); border-color:rgba(59,130,246,.45); color:var(--mc); }
+/* Test Mode 卡（practice-unified-view.js 的 ExamModeCard）：開關 ＋ 開了才出現的三行 */
+.sw2{ display:inline-block; width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; cursor:pointer; flex:none; transition:background .2s; }
+.sw2::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .2s; }
+.sw2.on{ background:var(--primary); } .sw2.on::after{ left:15px; }
+.exam-bd{ margin-top:16px; padding-top:16px; border-top:1px dashed var(--divider); display:flex; flex-direction:column; gap:12px; }
+.exam-bd .sug{ font-size:14px; color:var(--text2); }
+.exam-bd .calc{ font-size:14px; font-weight:600; }
+/* MUI Slider：rail opacity .32、thumb 20、hover 光環 */
+.slider{ position:relative; height:28px; display:flex; align-items:center; cursor:pointer; padding:0 10px; max-width:520px; }
+.slider .rail{ position:absolute; left:10px; right:10px; height:4px; border-radius:2px; background:var(--primary); opacity:.32; }
+.slider .track{ position:absolute; left:10px; height:4px; border-radius:2px; background:var(--primary); }
+.slider .thumb{ position:absolute; width:20px; height:20px; border-radius:50%; background:var(--primary); transform:translateX(-50%); box-shadow:0 0 0 0 rgba(0,203,97,.16); transition:box-shadow .15s; }
+.slider:hover .thumb{ box-shadow:0 0 0 8px rgba(0,203,97,.16); }
+/* 題目卡（照 v6 proposal 的 renderMcCard：.mcq／.mcq-hd／.mcq-bd／.mc-opts） */
+.mcq-list{ display:flex; flex-direction:column; gap:12px; }
+.mcq{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:12px 16px; cursor:grab; transition:border-color .15s, opacity .15s; }
+.mcq:active{ cursor:grabbing; }
+.mcq.over{ border-color:var(--primary); box-shadow:0 0 0 1px var(--primary) inset; }
+.mcq.dragging{ opacity:.4; }
+.mcq-hd{ display:flex; align-items:center; gap:8px; }
+.mcq-hd .drag{ color:var(--text3); font-size:20px; flex:none; }
+.mcq-hd .qt{ flex:1; min-width:0; font-size:14px; font-weight:600; }
+.mcq-bd{ margin-top:12px; padding-left:28px; }
+.mc-opts{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.mc-opt{ min-height:36px; display:flex; align-items:center; gap:5px; padding:6px 10px; border-radius:6px; border:1.5px solid var(--divider); font-size:14px; }
+/* 正解框用題型色；字用同色系深一階，14px 才讀得動 */
+.mc-opt.ok.tf{ border-color:var(--tf-bd); background:var(--tf-bg); color:#047857; font-weight:700; }
+.mc-opt.ok.mc{ border-color:var(--mc-bd); background:var(--mc-bg); color:#1D4ED8; font-weight:700; }
+.iconbtn{ width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.iconbtn:hover{ background:rgba(145,158,171,.08); }
+.iconbtn .mi{ font-size:20px; }
+.iconbtn.err{ color:var(--error); }
+.iconbtn:disabled{ color:var(--text3); opacity:.4; cursor:not-allowed; } .iconbtn:disabled:hover{ background:transparent; }
+.btn.outlined{ background:transparent; border:1px solid rgba(145,158,171,.32); color:var(--text); }
+.btn.outlined:hover{ background:rgba(145,158,171,.08); border-color:var(--text); }
+.btn.outlined .mi{ font-size:18px; }
+.eyebrow .btn{ margin-left:4px; white-space:nowrap; }
+/* 嵌進 Planning 的主欄只有 ~820px：標題、提示都不換行，提示塞不下就省略（2026-10-19） */
+.eyebrow b{ white-space:nowrap; }
+.eyebrow .hint{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex-shrink:1; }
+.eyebrow .rule{ min-width:16px; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main">
+    <div class="container">
+      <div class="h4"><span class="tico"><span class="mi">quiz</span></span>New Comprehension Quiz</div>
+      <div class="stepper" id="stepper"></div>
+      <div class="content" id="content"></div>
+      <div class="footer">
+        <button class="btn text" id="back">Back</button>
+        <button class="btn contained" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><b>提案</b>　v14 · 對照組 <a href="create-comprehension-quiz.html?step=0&amp;proj=0">現行複刻 ↗</a></span>
+  <span>
+    <a href="?step=1&amp;proj=0" id="l0">1 Question Bank</a> ·
+    <a href="?step=1&amp;proj=0&amp;dd=1" id="l0d">1 選單打開</a> ·
+    <a href="?step=1&amp;proj=2" id="l0e">1 沒題的題庫</a> ·
+    <a href="?step=2&amp;proj=0" id="l1">2 Edit &amp; Preview</a> ·
+    <a href="?step=2&amp;proj=0&amp;exam=1" id="l1x">2 Test Mode</a> ·
+    <a href="?step=2&amp;proj=0&amp;open=1" id="l1o">2 第一題展開</a> ·
+    <a href="?step=3&amp;proj=0&amp;assigned=1" id="l2">3 Assign</a>
+  </span>
+</div>
+
+<script>
+const S = {
+  step:0, assigned:false,
+  bank:0, practiceName:'', nameTouched:false, ddOpen:false,
+  exam:false, timeLimit:5, questions:[], expanded:null, dragIdx:null, overIdx:null,
+  picked:null, sel:null, done:null, start:'2026-10-19T08:00', due:'2026-10-26T23:59',
+  kind:'mandatory', perClass:false, perDates:{}, roster:null, justAssigned:false, review:false,
+};
+
+/* 假資料照基準檔 create-comprehension-quiz.html：題庫（rowType questionsBank）每個專案各掛一個、題庫名＝專案名，
+   順序就是 Planning 的 &proj 索引。只有「我的一天」有完整的 True/False 4（comprehension）＋ Multi-Choice 6
+   （3 comprehension、1 meaning、1 usage、1 pinyin）；第二個 2 ＋ 3；第三個 0 題（countMCQuestions → 0）。
+   lines = 專案存的分段，一段一行（S2）。True/False 的 choice 形狀前端看不到（後端生的），這裡用 A True / B False。
+   flattenMCTFQuestions 的順序：true_or_false 全部在前、multi_choice 在後。 */
+const TF = (question, ok) => ({ questionType:'true_or_false', category:'comprehension', question, choice:{ A:'True', B:'False' }, answer:[ok] });
+const MC = (category, question, choice, ok) => ({ questionType:'multi_choice', category, question, choice, answer:[ok] });
+const BANKS = [
+  { name:'我的一天', lang:'zh-CN',
+    lines:['我每天七点起床。','我早饭吃面包。','我八点上课。','下午我去图书馆看书。','我十一点睡觉。'],
+    questions:[
+      TF('我每天八点起床。', 'B'),
+      TF('我早饭吃面包。', 'A'),
+      TF('下午我去图书馆看书。', 'A'),
+      TF('我十点睡觉。', 'B'),
+      MC('comprehension', '我几点起床？', { A:'六点', B:'七点', C:'八点', D:'九点' }, 'B'),
+      MC('comprehension', '我早饭吃什么？', { A:'面条', B:'米饭', C:'面包', D:'包子' }, 'C'),
+      MC('comprehension', '下午我去哪里？', { A:'学校', B:'图书馆', C:'商店', D:'公园' }, 'B'),
+      MC('meaning', '“起床”的意思是什么？', { A:'去睡觉', B:'从床上起来', C:'吃早饭', D:'去上课' }, 'B'),
+      MC('usage', '我八点＿＿＿。', { A:'起床', B:'上课', C:'睡觉', D:'看书' }, 'B'),
+      MC('pinyin', '“图书馆”的拼音是？', { A:'tú shū guǎn', B:'tú shù guān', C:'tù shū guǎn', D:'tú shū guān' }, 'A'),
+    ] },
+  { name:'环境保护与可持续发展', lang:'zh-CN',
+    lines:['近年来，全球暖化的问题越来越严重。','许多国家开始重视环境保护，并且制定相关的政策。','我们每个人都可以从日常生活做起，例如随手关灯、自备购物袋、减少使用一次性餐具。'],
+    questions:[
+      TF('全球暖化的问题越来越严重。', 'A'),
+      TF('环境保护只是政府的责任。', 'B'),
+      MC('comprehension', '许多国家开始重视什么？', { A:'经济发展', B:'环境保护', C:'教育改革', D:'交通建设' }, 'B'),
+      MC('comprehension', '下面哪一个是日常生活可以做的？', { A:'随手关灯', B:'多开冷气', C:'多用塑料袋', D:'浪费食物' }, 'A'),
+      MC('meaning', '“制定”的意思是什么？', { A:'取消', B:'订立', C:'反对', D:'忘记' }, 'B'),
+    ] },
+  { name:'餐厅点餐（对话）', lang:'zh-CN', lines:[], questions:[] },
+];
+const CLASSES = [
+  { id:'3b', name:'Chinese 3B', students:['陈小明','林佳蓉','王大卫','张怡君','李承恩','吴宜庭','黄柏翰','郑雅文'] },
+  { id:'4a', name:'Chinese 4A', students:['蔡宗翰','郑雅文','许博涵','杨子萱','周彦廷','高子涵'] },
+  { id:'5c', name:'Chinese 5C', students:['苏韵如','范文杰','邱柏宇','何昀蓁','曾筱婷'] },
+];
+// 郑雅文 同時在 3B 與 4A —— 指派過 3B 之後，她在 4A 的名冊裡就是「已由別班指派」的衝突狀態
+
+const STEPS = ['Question Bank','Edit & Preview','Assign Practice'];   // STEPS_BY_TYPE[MULTIPLE_CHOICE]
+const TYPE_LABEL = { true_or_false:'True/False', multi_choice:'Multi-Choice' };                                    // MC_TYPE_LABELS
+const CAT_LABEL = { comprehension:'Comprehension', pinyin:'Pinyin', meaning:'Meaning', usage:'Fill in blank' };    // MC_CATEGORY_LABELS
+const qkind = (q) => q.questionType === 'true_or_false' ? 'tf' : 'mc';
+const count = (arr) => ({ tf:arr.filter(q => q.questionType === 'true_or_false').length,
+                          mc:arr.filter(q => q.questionType === 'multi_choice').length, total:arr.length });
+const suggested = (n) => Math.max(1, Math.round((n * 30) / 60));   // getSuggestedTime：每題 30 秒，下限 1 分
+
+/* 選了題庫：題目複製一份給第二步編（刪、換序只在本機，Save 才送）、名稱填入題庫名（S1；老師改過就不再跟著換）、
+   time limit 從建議值起算（hydrate：practice.timeLimit 空 → 建議值）、卡片全部收合 */
+function loadBank(i){
+  S.bank = i;
+  const b = BANKS[i];
+  S.questions = b.questions.map(q => ({ ...q }));
+  if (!S.nameTouched) S.practiceName = b.name;
+  S.expanded = new Set();
+  S.timeLimit = suggested(S.questions.length);
+}
+
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(2, Math.max(0, (parseInt(qs.get('step') ?? '1', 10) || 1) - 1));   // ?step= 從 1 數，內部 0-based
+S.assigned = qs.get('assigned') === '1';
+S.ddOpen = qs.get('dd') === '1';
+if (qs.has('proj')) S.bank = Math.min(2, Math.max(0, +qs.get('proj') || 0));
+loadBank(S.bank);
+S.exam = qs.get('exam') === '1';
+if (qs.get('open') === '1' && S.questions.length) S.expanded.add(0);   // &open=1 第一題展開
+S.picked = new Set((qs.get('pick') || '').split(',').filter(Boolean));
+S.sel    = new Set([...S.picked].flatMap(id => CLASSES.find(c => c.id === id)?.students ?? []));
+/* 已指派 3B 的 6 個人，其中包含郑雅文——她同時在 4A，
+   所以 4A 的名冊裡她會是「已由別班指派」的衝突狀態，不能重複派。 */
+S.done   = S.assigned ? [{ id:'3b', start:S.start, due:S.due, kind:'mandatory',
+                           students:CLASSES[0].students.slice(0, 5).concat('郑雅文') }] : [];
+if (qs.has('roster')) S.roster = qs.get('roster');
+S.perClass = qs.get('perclass') === '1';
+S.review = qs.get('review') === '1';    // 讓 spec 能嵌一張預覽框的圖
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+function renderStepper(){
+  // separator 的顏色跟著「它左邊那一步」走，跟 StepperItem 內含 separator 的結構一致
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const sep = i ? `<div class="stp-sep ${i - 1 < S.step ? 'done' : ''}"></div>` : '';
+    return sep + `<div class="stp-item ${cls}">
+      <span class="stp-ind">${i + 1}</span><span class="stp-lbl">${label}</span></div>`;
+  }).join('');
+}
+
+/* 分段控制項 */
+function seg(name, value, options, disabled){
+  return `<div class="seg ${disabled ? 'dis' : ''}">${options.map(([v,t]) =>
+    `<button type="button" ${disabled ? 'disabled' : `data-seg="${name}" data-val="${v}"`}
+      class="${v === value ? 'on' : ''}" aria-pressed="${v === value}">${t}</button>`).join('')}</div>`;
+}
+
+
+/* =====================================================================
+   Step 1 · Question Bank —— 選題庫、看它有什麼、Practice name 在這裡被填好（S1／S2）
+   現行：MUI Select（題庫名 ＋ 兩顆小 chip）→ 三顆統計 chip ／ 紅字 → Questions Preview（綠框課文 ＋ 十列題目）。
+   這裡：.dd 選單每列 題庫名 ＋ 題數；.frame 兩段——課文一段一行帶編號、題目一列一題（型別 chip ＋ 題目）。
+   ===================================================================== */
+const tchip = (q) => `<span class="chip sm tchip ${qkind(q)}">${TYPE_LABEL[q.questionType]}</span>`;
+const cntText = (b) => { const c = count(b.questions);
+  return c.total ? `<span class="cnt">${c.tf} True/False · ${c.mc} Multi-Choice</span>` : `<span class="cnt none">No questions</span>`; };
+
+function renderStep0(){
+  const b = BANKS[S.bank];
+  const c = count(b.questions);
+  const picker = `
+    <div class="fld" style="margin-bottom:24px">
+      <label>Question bank</label>
+      <div class="dd">
+        <button class="dd-trig" data-act="dd" aria-haspopup="menu" aria-expanded="${S.ddOpen}">
+          <span class="nm">${esc(b.name)}</span>
+          ${cntText(b)}
+          <span class="mi caret">expand_more</span>
+        </button>
+        ${S.ddOpen ? `<div class="dd-menu" role="menu">
+          <div class="dd-lbl">Question bank</div>
+          ${BANKS.map((x, i) => `<button class="dd-item" role="menuitem" ${x.questions.length
+              ? `data-bank="${i}"`
+              : 'disabled title="No True/False or Multi-Choice questions in this bank"'}>
+            <span class="nm">${esc(x.name)}</span>
+            ${cntText(x)}
+            ${i === S.bank ? '<span class="mi tick">check</span>' : ''}
+          </button>`).join('')}
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="fld">
+      <label for="pname">Practice name</label>
+      <input class="inp" id="pname" type="text" value="${esc(S.practiceName)}">
+      <span class="help">Filled in from the question bank. Change it if this practice needs its own name.</span>
+    </div>`;
+
+  /* S9／R9：題庫沒題 → Next 灰，原因寫在這裡（現行是紅字一行、Next 灰著不說為什麼） */
+  if (!c.total) return picker + `
+    <div class="alert" style="margin:32px 0 0">
+      <span class="mi">quiz</span>
+      <span>This question bank has no True/False or Multi-Choice questions, so there is nothing to quiz. Pick another bank to continue.</span>
+    </div>`;
+
+  return picker + `
+    <div class="frame">
+      <div class="frame-hd">
+        <div class="frame-ttl">Article content</div>
+        <div class="frame-desc">${b.lines.length} lines</div>
+      </div>
+      <div class="frame-panel">${b.lines.map((t, n) =>
+        `<div class="aline"><span class="n">${n + 1}</span><span class="t">${esc(t)}</span></div>`).join('')}
+      </div>
+      <div class="frame-hd">
+        <div class="frame-ttl">Questions</div>
+        <div class="frame-desc">True/False ${c.tf} · Multi-Choice ${c.mc}</div>
+      </div>
+      <div class="frame-panel">${b.questions.map((q, n) =>
+        `<div class="qline"><span class="n">${n + 1}</span>${tchip(q)}<span class="t">${esc(q.question)}</span></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* =====================================================================
+   Step 2 · Edit & Preview —— Test Mode 一張卡 ＋ 一題一張卡
+   現行（practice-unified-view.js activeStep===1 && isMC）：Practice Name → ExamModeCard → Project Content 卡 →
+   Edit in Question Bank 鈕 → 「Edit & Preview」小標 ＋ 三顆統計 chip → 十張卡全部展開。
+   這裡：名稱與課文都已經在第一步；統計 chip 併進 eyebrow 的 hint；卡片照 v6 proposal 的 renderMcCard、預設收合。
+   ===================================================================== */
+function renderExamCard(){
+  const n = S.questions.length;
+  const sec = n ? Math.round((S.timeLimit * 60) / n) : 0;
+  const pct = (S.timeLimit - 1) / 59;
+  return `<div class="card" style="padding:16px 20px">
+    <div class="row">
+      <div style="display:flex; align-items:center; gap:12px; min-width:0">
+        <span class="mi" style="font-size:24px; color:var(--text2)">timer</span>
+        <div><div class="sub2">Test Mode</div>
+          <div class="cap">Students see a countdown; the quiz is handed in when the time is up.</div></div>
+      </div>
+      <span class="sw2 ${S.exam ? 'on' : ''}" data-act="exam" role="switch" aria-checked="${S.exam}" aria-label="Test mode" tabindex="0"></span>
+    </div>
+    ${S.exam ? `<div class="exam-bd">
+      <div class="sug">Suggested time: ${suggested(n)} min (based on ${n} questions, ~30s each)</div>
+      <div class="slider" id="slider" role="slider" aria-valuemin="1" aria-valuemax="60" aria-valuenow="${S.timeLimit}" aria-label="Time limit in minutes" tabindex="0">
+        <span class="rail"></span>
+        <span class="track" style="width:calc((100% - 20px) * ${pct})"></span>
+        <span class="thumb" style="left:calc(10px + (100% - 20px) * ${pct})"></span>
+      </div>
+      <div class="calc">${S.timeLimit} minutes (${n} questions, ~${sec}s per question)</div>
+    </div>` : ''}
+  </div>`;
+}
+
+/* 一題一張卡（照 v6 proposal 的 renderMcCard）：拖曳把手 · Q 號膠囊 · 型別 chip · 分類 chip · 題目 · 展開 · ✕
+   選項只在展開時出現，正解框用題型色＋✓。剩一題時 ✕ 鎖住（R9，原因在 eyebrow 的 hint）。 */
+function renderQCard(q, i){
+  const t = qkind(q), ok = q.answer[0], open = S.expanded.has(i), last = S.questions.length === 1;
+  const over = S.overIdx === i && S.dragIdx !== i, dragging = S.dragIdx === i;
+  return `<div class="mcq ${over ? 'over' : ''} ${dragging ? 'dragging' : ''}" draggable="true" data-q="${i}">
+    <div class="mcq-hd">
+      <span class="mi drag" title="Drag to reorder">drag_indicator</span>
+      <span class="chip sm qno">Q${i + 1}</span>
+      ${tchip(q)}
+      <span class="chip sm">${CAT_LABEL[q.category] || esc(q.category)}</span>
+      <span class="qt">${esc(q.question)}</span>
+      <button class="iconbtn" data-act="expand" data-i="${i}" aria-expanded="${open}" aria-label="${open ? 'Hide options' : 'Show options'}"><span class="mi">${open ? 'expand_less' : 'expand_more'}</span></button>
+      <button class="iconbtn err" data-act="remove" data-i="${i}" ${last ? 'disabled' : ''} title="${last ? 'A quiz needs at least one question' : 'Remove this question'}" aria-label="Remove question"><span class="mi">close</span></button>
+    </div>
+    ${open ? `<div class="mcq-bd"><div class="mc-opts">${Object.entries(q.choice).map(([k, v]) =>
+      `<div class="mc-opt ${k === ok ? 'ok ' + t : ''}"><strong>${k}.</strong> ${esc(v)}${k === ok ? ' ✓' : ''}</div>`).join('')}</div></div>` : ''}
+  </div>`;
+}
+
+function renderStep1(){
+  const c = count(S.questions);
+  const hint = c.total === 1
+    ? 'Last question — a quiz needs at least one, so it can’t be removed'
+    : `True/False ${c.tf} · Multi-Choice ${c.mc} · drag to reorder`;
+  return `
+    ${renderExamCard()}
+    <div class="eyebrow" style="margin-top:32px"><b>Questions · ${c.total}</b><span class="rule"></span>
+      <span class="hint">${hint}</span>
+      <button class="btn outlined sm" data-act="qb" title="Wording and answers are edited in the question bank; you come back to this step afterwards."><span class="mi">edit_note</span>Edit Questions &amp; Answers in Question Bank</button>
+    </div>
+    <div class="mcq-list">${S.questions.map(renderQCard).join('')}</div>`;
+}
+
+function removeQ(i){
+  S.questions.splice(i, 1);
+  S.expanded = new Set([...S.expanded].filter(k => k !== i).map(k => (k > i ? k - 1 : k)));
+}
+
+/* =====================================================================
+   Step 3 · Assign Practice —— v3 的 renderStep3 ＋ renderReview ＋ commit 原封不動（S8）；只有函式名改成 renderStep2
+   把工作從對話框搬回頁面：三段各回答一個問題——誰做／什麼時候／算不算作業。
+   一份時間套用到所有選到的班，要分開再展開（現行是每個班整組重複一次）。
+   名詞跟 AssignmentTypeChip 對齊：Mandatory / Optional。
+   ===================================================================== */
+const fmt = (v) => {
+  const d = new Date(v);
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${
+    String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+// 這個班有哪些人已經被指派過（不分是哪一筆）
+const assignedIn = (id) => new Set(S.done.filter(a => a.id === id).flatMap(a => a.students));
+// 這個人是不是已經由「別的班」指派了
+const conflictFor = (name, id) => S.done.find(a => a.id !== id && a.students.includes(name));
+
+function renderStep2(){
+  const list = !S.done.length ? '' : `
+    <div class="eyebrow"><b>Assigned</b><span class="rule"></span></div>
+    ${S.done.map((a, k) => {
+      const c = CLASSES.find(x => x.id === a.id);
+      return `<div class="card" style="${k ? 'margin-top:8px' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+          <div style="min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="sub2">${c.name}</span>
+              <span class="pill ${a.kind === 'optional' ? 'opt' : 'mand'}">${
+                a.kind === 'optional' ? 'Optional' : 'Mandatory'}</span></div>
+            <div class="cap dis" style="margin-top:2px">${a.students.length} of ${c.students.length} students</div>
+            <div class="cap" style="margin-top:4px">${fmt(a.start)} → ${fmt(a.due)}</div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn text sm">Edit</button>
+            <button class="btn outerr sm">Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+
+  const classRows = CLASSES.map(c => {
+    const had = assignedIn(c.id);
+    const full = had.size === c.students.length;
+    const on = S.picked.has(c.id);
+    const open = S.roster === c.id;
+    const left = c.students.length - had.size;
+
+    const sub = full ? 'Everyone is assigned'
+      : had.size ? `${had.size} of ${c.students.length} assigned · ${left} left`
+      : `${c.students.length} students`;
+
+    const row = `<div class="clsrow ${on ? 'on' : ''} ${full ? 'done' : ''}"
+        ${full ? '' : `data-cls="${c.id}"`} style="${full ? '' : 'cursor:pointer'}">
+      <span class="box"><span class="mi">check</span></span>
+      <span class="grow"><span class="nm">${c.name}</span><span class="sub">${sub}</span></span>
+      ${full ? '<span class="pill mand">Assigned</span>'
+             : (on ? `<button class="linkbtn" data-roster="${c.id}">${open ? 'Close' : 'Choose students'}</button>` : '')}
+    </div>`;
+
+    /* 名冊是一個 diff：本班已派的維持勾選標 Assigned、新勾的標 New、
+       取消勾的標 Will remove、已被別班派走的不能選（照 assign-practice.js 的四種狀態）。 */
+    const roster = (on && open) ? `<div class="roster">${c.students.map(nm => {
+      const cf = conflictFor(nm, c.id);
+      if (cf) return `<span class="stu off"><span class="box"></span>${nm}
+        <span class="tag warn">In ${CLASSES.find(x => x.id === cf.id).name}</span></span>`;
+      const was = had.has(nm);
+      const sel = S.sel.has(nm);
+      const tag = was && sel ? '<span class="tag ok">Assigned</span>'
+        : was && !sel ? '<span class="tag bad">Will remove</span>'
+        : sel ? '<span class="tag new">New</span>' : '';
+      return `<span class="stu ${sel ? 'on' : ''}" data-stu="${nm}"><span class="box"></span>${nm}${tag}</span>`;
+    }).join('')}</div>` : '';
+    return row + roster;
+  }).join('');
+
+  const n = S.picked.size;
+  const allFull = CLASSES.every(c => assignedIn(c.id).size === c.students.length);
+  const days = [1, 3, 7].map(d => `<button data-days="${d}">+${d} ${d === 1 ? 'day' : 'days'}</button>`).join('');
+
+  const form = allFull ? `<div class="card empty">Every class already has this practice.</div>` : `
+    <div class="eyebrow"><b>Who does it</b><span class="rule"></span>
+      ${S.done.length ? '<span class="hint">Assign it again to another class, with its own dates</span>' : ''}</div>
+    <div class="rows">${classRows}</div>
+
+    <div class="eyebrow"><b>When</b><span class="rule"></span></div>
+    <div class="rows">
+      ${n > 1 ? `<div class="modeline">
+        <span>${S.perClass
+          ? `Each class has its own dates.`
+          : `These dates apply to all ${n} classes.`}</span>
+        <button class="linkbtn" data-act="perclass">${S.perClass
+          ? 'Use one schedule for all' : 'Set dates per class'}</button>
+      </div>` : ''}
+      ${(n > 1 && S.perClass)
+        ? [...S.picked].map(id => {
+            const c = CLASSES.find(x => x.id === id);
+            const d = S.perDates[id] || { start:S.start, due:S.due };
+            return `<div class="perclass">
+              <div class="pc-name">${c.name}</div>
+              <div class="dtrow" style="margin-bottom:10px">
+                <span class="lbl">Start</span>
+                <input class="dt2" type="datetime-local" value="${d.start}">
+                <span class="quick"><button data-now="${id}">Now</button></span>
+              </div>
+              <div class="dtrow">
+                <span class="lbl">Due</span>
+                <input class="dt2" type="datetime-local" value="${d.due}">
+                <span class="quick">${[1,3,7].map(k =>
+                  `<button data-days="${k}" data-for="${id}">+${k} ${k === 1 ? 'day' : 'days'}</button>`).join('')}</span>
+              </div>
+            </div>`;
+          }).join('')
+        : `<div class="rw"><div class="dtrow">
+        <span class="lbl">Start</span>
+        <input class="dt2" type="datetime-local" value="${S.start}">
+        <span class="quick"><button data-now="1">Now</button></span>
+      </div></div>
+      <div class="rw"><div class="dtrow">
+        <span class="lbl">Due</span>
+        <input class="dt2" type="datetime-local" value="${S.due}">
+        <span class="quick">${days}</span>
+      </div></div>`}
+    </div>
+
+    <div class="eyebrow"><b>How it counts</b><span class="rule"></span></div>
+    <div class="rows">
+      <div class="rw">
+        <div><div class="lb">${S.kind === 'optional' ? 'Optional' : 'Mandatory'}</div>
+          <div class="hp">${S.kind === 'optional'
+            ? 'Self-paced practice. Students are not reminded and it is not chased as homework.'
+            : 'Counts as homework. Students get reminder emails until they finish it.'}</div></div>
+        <div class="ct">${seg('kind', S.kind, [['mandatory','Mandatory'],['optional','Optional']])}</div>
+      </div>
+    </div>
+
+`;
+
+  return list + form;
+}
+
+/* 一份作業可以重複指派：送出一筆之後表單清空，可以再派一次 */
+/* 送出前的預覽：每個班一段——班名、Mandatory/Optional、起訖，
+   要加進去的人，以及「被跳過的人與原因」（產品的確認框沒有講後者，
+   但衝突是真的會發生的，老師應該在送出前就知道）。 */
+function renderReview(){
+  const rows = [...S.picked].map(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };
+    const add = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    const skip = c.students.filter(nm => conflictFor(nm, id));
+    const off = c.students.filter(nm => !S.sel.has(nm) && !conflictFor(nm, id));
+
+    // 整班 → 一句話。有人拿不到 → 只把那幾個人寫出來。
+    const cnt = add.length === c.students.length
+      ? `all ${add.length} students`
+      : `${add.length} of ${c.students.length} students`;
+    const ex = [
+      ...skip.map(nm => `${nm} is already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}`),
+      ...(off.length ? [`Not selected: ${off.join('、')}`] : []),
+    ];
+
+    return `<div class="rvc">
+      <div class="top"><span class="nm">${c.name}</span><span class="cnt">${cnt}</span></div>
+      <div class="when">${fmt(d.start)} → ${fmt(d.due)}</div>
+      ${ex.length ? `<div class="ex">${ex.join('<br>')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const total = [...S.picked].reduce((k, id) => k +
+    CLASSES.find(x => x.id === id).students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id)).length, 0);
+
+  /* 標題用跟觸發鈕一模一樣的字——同一個動作從頭到尾同一個說法，
+     而且有 Back / Assign 兩顆鈕，本來就看得出這是確認關卡，
+     不需要再寫一次「Review before assigning」。
+     副標只留兩個要確認的數：模式與人數；它的解釋在後面那一頁上。 */
+  const nc = S.picked.size;
+  return `<div class="scrim" data-act="closerev"><div class="dlg" data-stop="1">
+    <div class="dlg-hd">
+      <h3>Assign to ${nc} ${nc === 1 ? 'class' : 'classes'}</h3>
+      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students</p>
+    </div>
+    <div class="dlg-bd">${rows}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closerev">Back</button>
+      <button class="btn contained" data-act="confirm">Assign</button>
+    </div>
+  </div></div>`;
+}
+
+function commit(){
+  [...S.picked].forEach(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const students = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    if (students.length) S.done.push({ id, start:S.start, due:S.due, kind:S.kind, students });
+  });
+  S.picked = new Set(); S.sel = new Set(); S.roster = null;
+}
+
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2][S.step]()
+    + (S.review ? renderReview() : '');
+  el('back').classList.toggle('dis', S.step === 0);
+  // resolvePrimaryActionLabel：倒數第二步是 Save，最後一步照 S8
+  /* 第三步把「送出一筆指派」與「結束流程」合併成同一顆，依狀態換標籤：
+       有勾班           → Assign to N classes（送出後留在原地，可以再派一次）
+       沒勾、已指派過   → Done
+       沒勾、完全沒指派 → Skip for now（照現行空狀態的說法：之後可以從 Practice List 指派）
+     送出後先停在 Assigned ✓ 一下再變回去，避免連點直接把人送出流程。 */
+  const n4 = S.step === 2 ? S.picked.size : 0;
+  el('next').textContent = S.step === 2
+    ? (S.justAssigned ? 'Assigned ✓'
+       : n4 ? `Assign to ${n4} ${n4 === 1 ? 'class' : 'classes'}`
+       : (S.done.length ? 'Done' : 'Skip for now'))
+    : (S.step === 1 ? 'Save' : 'Next');
+  const blocked = S.step === 0 && !S.questions.length;   // S9：題庫沒題 → Next 灰，原因寫在內容區
+  el('next').className = 'btn contained' + (S.justAssigned || blocked ? ' dis' : '');
+
+  ['l0','l0d','l0e','l1','l1x','l1o','l2'].forEach(id => el(id).classList.remove('cur'));
+  const key = S.step === 0 ? (S.ddOpen ? 'l0d' : !S.questions.length ? 'l0e' : 'l0')
+    : S.step === 1 ? (S.exam ? 'l1x' : S.expanded.size ? 'l1o' : 'l1')
+    : 'l2';
+  el(key).classList.add('cur');
+}
+
+document.addEventListener('click', (e) => {
+  const bk = e.target.closest('[data-bank]');
+  if (bk){ loadBank(+bk.dataset.bank); S.ddOpen = false; render(); return; }
+  const sg = e.target.closest('[data-seg]');
+  const cl = e.target.closest('[data-cls]');
+  const rs = e.target.closest('[data-roster]');
+  const dy = e.target.closest('[data-days]');
+  const st = e.target.closest('[data-stu]');
+  if (st){
+    const nm = st.dataset.stu;
+    S.sel.has(nm) ? S.sel.delete(nm) : S.sel.add(nm);
+    render(); return;
+  }
+  if (rs){ S.roster = S.roster === rs.dataset.roster ? null : rs.dataset.roster; render(); return; }
+  if (cl){
+    const id = cl.dataset.cls, c = CLASSES.find(x => x.id === id);
+    if (S.picked.has(id)){
+      S.picked.delete(id); c.students.forEach(nm => S.sel.delete(nm));
+      if (S.roster === id) S.roster = null;
+    } else {
+      S.picked.add(id);
+      // 預設整班，但已被別班派走的人不能選
+      c.students.forEach(nm => { if (!conflictFor(nm, id)) S.sel.add(nm); });
+    }
+    render(); return;
+  }
+  if (dy){
+    const d = +dy.dataset.days, st = new Date(S.start);
+    st.setDate(st.getDate() + d); st.setHours(23, 59);
+    S.due = st.toISOString().slice(0, 16); render(); return;
+  }
+  const sl = e.target.closest('#slider');
+  if (sl){   // MUI Slider：點哪裡就是幾分鐘（1–60）
+    const r = sl.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - r.left - 10) / (r.width - 20)));
+    S.timeLimit = Math.round(1 + ratio * 59); render(); return;
+  }
+  if (sg){ S[sg.dataset.seg] = sg.dataset.val; render(); return; }
+  const ac = e.target.closest('[data-act]');
+  if (ac){
+    const a = ac.dataset.act, i = +ac.dataset.i;
+    if (a === 'dd') S.ddOpen = !S.ddOpen;
+    if (a === 'exam') S.exam = !S.exam;
+    if (a === 'expand'){ S.expanded.has(i) ? S.expanded.delete(i) : S.expanded.add(i); }
+    if (a === 'remove'){ if (ac.disabled) return; removeQ(i); }
+    if (a === 'qb') return;   // 產品：router.push 到題庫頁（帶 returnTo 回這一步）；原型沒有那一頁
+    if (a === 'perclass') S.perClass = !S.perClass;
+    if (a === 'closerev' && !e.target.closest('[data-stop]')) S.review = false;
+    if (a === 'confirm'){
+      S.review = false; commit(); S.justAssigned = true; render();
+      // 送出後結果長在頁面最上面的 Assigned 清單裡，捲上去才看得到
+      window.scrollTo(0, 0);
+      setTimeout(() => { S.justAssigned = false; render(); }, 1600);
+      return;
+    }
+    render();
+    return;
+  }
+  const hd = e.target.closest('.mcq-hd');   // 點卡頭任何地方也能展開／收合
+  if (hd){ const i = +hd.parentElement.dataset.q; S.expanded.has(i) ? S.expanded.delete(i) : S.expanded.add(i); render(); return; }
+  if (S.ddOpen){ S.ddOpen = false; render(); }   // 點外面關掉
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'pname'){ S.practiceName = e.target.value; S.nameTouched = true; }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.classList?.contains('sw2') && (e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); S.exam = !S.exam; render(); }
+  if (e.target.id === 'slider' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){
+    e.preventDefault(); S.timeLimit = Math.min(60, Math.max(1, S.timeLimit + (e.key === 'ArrowRight' ? 1 : -1))); render(); el('slider')?.focus();
+  }
+});
+
+/* 拖曳換順序（CombinedView 的 HTML5 drag & drop；moveItem）——展開狀態跟著卡走 */
+document.addEventListener('dragstart', (e) => {
+  const c = e.target.closest?.('.mcq'); if (!c) return;
+  S.dragIdx = +c.dataset.q; e.dataTransfer.effectAllowed = 'move';
+  requestAnimationFrame(() => c.classList.add('dragging'));
+});
+document.addEventListener('dragover', (e) => {
+  const c = e.target.closest?.('.mcq'); if (!c) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  const i = +c.dataset.q;
+  if (S.overIdx !== i){ S.overIdx = i;
+    document.querySelectorAll('.mcq').forEach(x => x.classList.toggle('over', +x.dataset.q === i && i !== S.dragIdx)); }
+});
+document.addEventListener('drop', (e) => {
+  const c = e.target.closest?.('.mcq'); if (!c) return;
+  e.preventDefault();
+  const to = +c.dataset.q, from = S.dragIdx;
+  if (from !== null && from !== to){
+    const [q] = S.questions.splice(from, 1); S.questions.splice(to, 0, q);
+    const wasOpen = S.expanded.has(from);
+    S.expanded = new Set([...S.expanded].filter(k => k !== from).map(k => {
+      if (from < to && k > from && k <= to) return k - 1;
+      if (from > to && k >= to && k < from) return k + 1;
+      return k;
+    }));
+    if (wasOpen) S.expanded.add(to);
+  }
+  S.dragIdx = null; S.overIdx = null; render();
+});
+document.addEventListener('dragend', () => { S.dragIdx = null; S.overIdx = null; render(); });
+
+/* 換步驟＝換一頁，捲動位置要回到最上面（S9；現行產品沒做）。 */
+function goStep(n){ S.step = n; S.review = false; S.ddOpen = false; render(); window.scrollTo(0, 0); }
+
+el('back').addEventListener('click', () => { if (S.step > 0) goStep(S.step - 1); });
+el('next').addEventListener('click', () => {
+  if (S.step === 0 && !S.questions.length) return;   // S9：灰著，原因在內容區
+  if (S.step < 2){ goStep(S.step + 1); return; }
+  if (S.justAssigned) return;                     // 送出後的短暫緩衝，擋連點
+  if (S.picked.size){ S.review = true; render(); return; }   // 先預覽，不直接送出
+  /* 沒有待送出的選擇時這一顆是 Done / Skip for now。
+     產品會導到練習清單或專案頁（handleFinish）；原型沒有那些頁面，
+     所以回到乾淨的第一步，流程可以再走一次。 */
+  location.href = location.pathname;
+});
+
+render();
+</script>
+</body>
+</html>

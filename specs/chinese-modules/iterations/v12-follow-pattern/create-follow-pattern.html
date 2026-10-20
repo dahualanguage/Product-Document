@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Sentence Response — v12 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 這一頁是「現行產品」的複刻，不是提案。
+   出處：dahua-dash origin/develop @ c8179072（2026-10-19 fetch）
+     外殼（側欄、頁首、stepper、頁腳、Assign 那一步、ProcessingDialog）從 v7 基準檔分岔，八種共用。
+     產品型別 FOLLOW_PATTERN，兩個子型別走同一條流程：GUIDED_RESPONSE＝Sentence Response（預設）、SENTENCE_BUILDING＝Sentence Building。
+     產品網址 /dashboard/practice/create/?type=FOLLOW_PATTERN&subType=GUIDED_RESPONSE|SENTENCE_BUILDING（AddNewPracticeDialog 的 buildCreateUrl；
+     practice-unified-view.js 讀 searchParams.get('subType')，沒有就 DEFAULT_SUB_TYPES[FOLLOW_PATTERN] = GUIDED_RESPONSE）。
+     這張卡自己的是前三步（STEPS_BY_TYPE[FOLLOW_PATTERN] = Teaching Points · Question Review · Settings · Assign Practice）：
+     src/sections/practice/view/unified/steps/step-one-follow-pattern.js （Step 1 Teaching Points：專案多選 → Teaching Points Preview
+        （逐專案分組、Select All、Custom Teaching Points 可加）→ Number of questions（1–20，預設 8、選點時自動＝點數）→
+        按 Generate 生成；生成完自動跳第二步；回來欄位照舊可改、鈕變 Next，沒有已生成清單）
+     src/sections/practice/view/unified/steps/follow-pattern-preview.js （Step 2 Question Review：Practice Name、標頭 Guided Response／
+        Sentence Building、Teaching Points header（每點幾題 ＋ 選一個點再生一題）、每題一張卡：上下移、Q 號、教學點 chip、Edit／Delete；
+        Question 框 → Pattern 框（只有 Guided）→ Suggested answer 框，每框 chunk 對齊拼音＋翻譯；點拼音開 Edit Pinyin 對話框）
+     src/sections/practice/view/unified/steps/follow-pattern-settings.js （Step 3 Settings：Audio Mode 卡、AudioSettingsPanel（Speed／Voice）、
+        Student Settings（Pinyin 下拉、Translation 下拉都是 enum 原字、Attempts per question）、Questions (n) 每題 Question＋Suggested answer 各一顆播放）
+     src/sections/practice/view/unified/components/follow-pattern-chunks.js（chunk 對齊拼音＋教學點高亮 #D1FAE5／#065F46——只有學生端用）
+     src/utils/follow-pattern-questions.js（Pattern＝suggested answer 挖 ＿＿＿；findQuestionFailure 的檢查文案）
+     src/config/practices.js（BLANK_PLACEHOLDER ＿＿＿、MIN/MAX_QUESTION_COUNT 1–20、DEFAULT_QUESTION_COUNT 8、DEFAULT_MAX_ATTEMPTS 3）
+     src/sections/practice/view/unified/practice-unified-view.js（showFollowPatternGenerateCta → Generate；resolvePrimaryActionLabel；
+        FOLLOW_PATTERN_STEPS Analyzing／Building／Finalizing；ProcessingDialog 文案 processing-dialog-copy.js）
+     學生端 src/sections/assignments/content/follow-pattern/{index,intro-screen,question-card,constants}.js（spec.html §3）
+   顏色、字級、圓角、間距逐項照抄 theme + sx。音檔拿不到，播放鈕只是樣子。
+
+   網址參數：?step=0|1|2|3（從 0 數）
+     &sub=GUIDED_RESPONSE|SENTENCE_BUILDING（預設 GUIDED_RESPONSE）：標題 New Sentence Response／New Sentence Building、第二步標頭與卡片、第三步題目文字跟著換
+     &proj=0|1|2 預選專案：0 我的一天（zh-CN · HSK 2，七個點、七題假資料）、1 环境保护与可持续发展（HSK 4，12 個點、沒有題目）、2 餐厅点餐（对话）（HSK 3，0 個點）；
+             step>0 或 &done=1 沒給 proj 就當 0（&sel=1 是 v7 的舊寫法，等於 proj=0）
+     step 0：Teaching Points。預設沒選專案；&proj=0 選了「我的一天」（教學點全勾、題數自動 7）；&warn=1 點數多過題數的警告（題數 4）；
+             &gen=1 生成中（Generate 轉圈、內容換 skeleton）；&done=1 生成完回到這一步（鈕變 Next，沒有清單）；&fail=1 生成失敗
+     step 1：Question Review。&edit=1 第一題在編輯模式（答案改過：翻譯欄鎖住、Auto-update on save、header 鎖住）；&py=1 Edit Pinyin 對話框；&regen=1 存檔後重生的 ProcessingDialog
+     step 2：Settings。&audio=1 Audio Mode 開；&sc=1 Speed 選 Student choice；&voice=1 換聲音後重生音檔的 ProcessingDialog
+     step 3：Assign（&assigned=1 已指派一個班）
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --success:#22C55E; --success-lighter:#D3FCD2;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-lighter:#DCECFE;
+  --warning-lighter:#FFF5CC; --warning-dark:#B76E00;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* /dashboard/practice 走 hasTintedBg（main.js），底色是 #f4f7fb 不是白的 */
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80，出自 config-layout.js ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; cursor:pointer; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.nav a.on:hover{ background:rgba(0,203,97,.16); }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px; }
+.h5{ font-size:20px; font-weight:700; line-height:1.5; }
+.h6{ font-size:18px; font-weight:700; line-height:1.55; }
+
+/* ---------- Stepper ---------- */
+.stepper{ display:flex; align-items:center; margin-bottom:32px; }
+.step{ display:flex; align-items:center; gap:8px; }
+.step-dot{ width:24px; height:24px; border-radius:50%; background:var(--divider); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:500; flex-shrink:0; }
+.step.active .step-dot, .step.done .step-dot{ background:var(--primary); }
+.step-label{ font-size:14px; font-weight:400; color:var(--text3); }
+.step.active .step-label{ font-weight:600; color:var(--text); }
+.step.done .step-label{ font-weight:400; color:var(--text); }
+.step-line{ flex:1; height:1px; background:var(--divider); margin:0 8px; min-width:24px; }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- Paper / 通用 ---------- */
+.paper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.paper + .paper{ margin-top:16px; }        /* Step 2 的 Stack spacing={2} */
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.row-l{ display:flex; align-items:center; gap:8px; }
+.sub2{ font-size:14px; font-weight:600; }
+.sub1{ font-size:16px; font-weight:600; }
+.body2{ font-size:14px; }
+.cap{ font-size:12px; color:var(--text2); line-height:1.5; }
+.cap.dis{ color:var(--text3); }
+.mi.info{ font-size:18px; color:var(--text2); cursor:help; }
+
+/* ---------- TextField / Select（outlined） ---------- */
+.field{ position:relative; }
+.field.full{ width:100%; }
+.field > label{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1;
+  font-size:12px; color:var(--text2); line-height:1.2; }
+.field.dis > label{ color:var(--text3); }
+.ctrl{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 14px; font-size:14px; color:var(--text); font-family:inherit;
+  display:flex; align-items:center; gap:8px; cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.field.sm .ctrl{ height:40px; }          /* size="small" */
+.field.dis .ctrl{ background:var(--grey100); color:var(--text3); cursor:default; }
+.field.dis .ctrl:hover{ border-color:var(--divider); }
+.field.dis > label{ background:linear-gradient(#fff 50%, var(--grey100) 50%); }
+.ctrl .caret{ margin-left:auto; font-size:22px; color:var(--text2); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.helper{ font-size:12px; color:var(--text2); margin:3px 14px 0; }
+
+.menu{ position:absolute; top:60px; left:0; right:0; z-index:30; background:#fff; border-radius:8px;
+  box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:8px;
+  max-height:300px; overflow:auto; }
+.field.sm .menu{ top:44px; }
+.menu .opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:14px; cursor:pointer; }
+.menu .opt:hover{ background:var(--grey200); }
+.menu .opt.sel{ background:rgba(0,203,97,.08); }
+.menu .opt .play{ width:28px; height:28px; border-radius:50%; border:0; background:transparent; color:var(--text2);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.menu .opt .play:hover{ background:var(--grey200); }
+.chip-lang{ padding:1px 8px; background:#EFF6FF; color:#1D4ED8; font-size:11.2px; font-weight:600; border-radius:6px; }
+.chip-lvl{ padding:1px 8px; background:#F0FDF4; color:#065F46; font-size:11.2px; font-weight:600; border-radius:6px; }
+.opt .cnt{ margin-left:auto; font-size:12px; color:var(--text3); flex-shrink:0; }
+.opt .cnt.err{ color:var(--error); }
+
+/* ---------- Autocomplete multiple（Step 1） ---------- */
+.ac .ctrl{ height:auto; min-height:56px; flex-wrap:wrap; padding:9px 14px; gap:6px; }
+.ac .tagchip{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 4px 0 12px;
+  border:1px solid rgba(145,158,171,.32); border-radius:16px; font-size:13px; font-weight:500; }
+.ac .tagchip .mi{ font-size:18px; color:rgba(145,158,171,.6); }
+.ac .tagchip .mi:hover{ color:var(--text2); }
+.field.dis .tagchip{ color:var(--text3); }
+.ac .ph{ color:var(--text3); flex:1; }
+.ac .caret2{ margin-left:auto; display:flex; gap:4px; color:var(--text2); }
+.ac .caret2 .mi{ font-size:22px; }
+
+/* ---------- Step 1 · Teaching Points Preview ---------- */
+.tp-card{ border:1px solid var(--divider); border-radius:16px; overflow:hidden; background:#fff; }
+.tp-card + .tp-card{ margin-top:16px; }
+.tp-card .hd{ display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--divider); background:#FAFBFC; }
+.tp-card .hd .mi{ font-size:20px; color:var(--text2); }
+.tp-card .bd{ padding:20px; display:flex; flex-wrap:wrap; gap:6px; }
+.chip{ display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:16px;
+  border:1px solid rgba(145,158,171,.32); font-size:14px; font-weight:600; white-space:nowrap; }
+.chip.sm{ height:24px; padding:0 8px; font-size:12px; }
+.chip.primary{ border-color:rgba(0,203,97,.48); color:var(--primary); }
+.chip.info{ border-color:rgba(80,138,252,.48); color:var(--info); }
+.chip.secondary{ border-color:rgba(142,51,255,.48); color:#8E33FF; }
+.chip.n{ font-weight:600; }
+.genbar{ display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:16px;
+  background:#F0FDF4; border:1px solid #D1FAE5; margin-top:16px; }
+
+/* ---------- Step 1 · Loading（VocabularyLoadingState） ---------- */
+.loading{ margin:32px 0; padding:48px 24px; border-radius:24px; text-align:center;
+  background:linear-gradient(135deg, rgba(187,241,208,.3) 0%, rgba(211,252,210,.3) 100%); }
+.loading .orb{ width:80px; height:80px; border-radius:50%; margin:0 auto 24px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--primary) 0%, var(--success) 100%); box-shadow:0 8px 24px rgba(0,203,97,.3); color:#fff; }
+.loading .orb .mi{ font-size:36px; animation:spin 1.2s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.loading .h6{ background:linear-gradient(90deg, var(--primary), var(--success)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+.loading .dots{ display:flex; gap:8px; justify-content:center; margin-top:24px; }
+.loading .dots i{ width:8px; height:8px; border-radius:50%; background:var(--primary); opacity:.35; }
+.loading .dots i:nth-child(2){ opacity:.7; } .loading .dots i:nth-child(3){ opacity:1; }
+.skel{ background:rgba(145,158,171,.16); border-radius:6px; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:.5;} }
+.skel-grid{ display:flex; gap:16px; flex-wrap:wrap; margin-top:32px; }
+.skel-card{ width:280px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; }
+
+/* ---------- Step 1 · Vocabulary Content（Accordion + 卡） ---------- */
+.acc{ background:#fff; border-radius:16px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); margin-bottom:16px; overflow:hidden; }
+.acc .sum{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; background:var(--grey200); cursor:pointer; min-height:48px; }
+.acc .sum .l{ display:flex; align-items:center; gap:16px; }
+.acc .sum .l .mi{ font-size:24px; }
+.acc .sum .r{ display:flex; align-items:center; gap:16px; padding-right:16px; }
+.acc .sum .r > .mi{ font-size:24px; color:var(--text2); }
+.btn.success{ background:var(--success); color:#fff; box-shadow:0 8px 16px 0 rgba(34,197,94,.24); font-size:12px; padding:4px 12px; }
+.btn.success .mi{ font-size:16px; }
+.acc .det{ padding:8px 16px 16px; display:flex; flex-wrap:wrap; gap:16px; }
+.vcard{ min-width:280px; max-width:320px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; position:relative; transition:all .3s; }
+.vcard:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.vcard.hidden{ opacity:.45; }
+.vcard.hidden .word{ text-decoration:line-through; }
+.vcard .acts{ display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; }
+.vcard .ib{ width:36px; height:36px; border-radius:50%; border:0; background:rgba(0,0,0,.04); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.vcard .ib .mi{ font-size:20px; }
+.vcard .ib.edit{ color:var(--primary); } .vcard .ib.edit:hover{ background:var(--primary); color:#fff; }
+.vcard .ib.eye{ color:var(--text2); } .vcard .ib.eye:hover{ background:rgba(0,0,0,.08); color:var(--text); }
+.vcard .ib.eye.off{ color:var(--text3); } .vcard .ib.eye.off:hover{ background:#FFAB00; color:#fff; }
+.imgph{ width:100%; max-width:280px; height:160px; border-radius:8px; margin-bottom:8px;
+  background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.imgph .mi{ font-size:28px; }
+.thumbs{ display:flex; gap:6px; margin-bottom:16px; }
+.thumbs i{ width:48px; height:36px; border-radius:6px; background:#E9F5EE; border:2px solid transparent; display:block; }
+.thumbs i.sel{ border-color:var(--primary); }
+.vcard .word{ font-size:18px; font-weight:700; margin-bottom:5.6px; }
+.vcard .py{ font-size:14px; color:var(--text2); margin-bottom:5.6px; }
+.vcard .tr{ font-size:14px; color:var(--primary); margin-bottom:5.6px; }
+.vcard .tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+.vcard .ro{ margin-top:16px; padding:12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.vcard .ex{ margin-top:16px; padding:12px; background:var(--grey200); border-radius:8px; }
+.vcard .ex + .ex{ margin-top:12px; }
+.vcard .ex .c{ font-size:12px; display:block; margin-bottom:5.6px; }
+.vcard .ex .c.py{ color:var(--text2); margin-bottom:0; } .vcard .ex .c.tr{ color:var(--primary); margin:0; }
+.vcard .gram{ font-size:12px; color:var(--text3); font-style:italic; }
+
+/* ---------- Switch ---------- */
+.sw{ display:flex; align-items:center; gap:8px; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; transition:background .2s; cursor:pointer; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .track::after{ transform:translateX(13px); }
+
+/* ---------- Divider with label ---------- */
+.divlabel{ display:flex; align-items:center; gap:16px; margin:24px 0; }
+.divlabel::before, .divlabel::after{ content:''; flex:1; height:1px; background:var(--divider); }
+.divlabel span{ font-size:14px; font-weight:600; color:var(--text2); padding:0 8px; }
+
+/* ---------- Alert / ProcessingIndicator ---------- */
+.alert{ display:flex; gap:12px; align-items:center; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:16px; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.spin{ width:18px; height:18px; border-radius:50%; border:2px solid rgba(80,138,252,.3); border-top-color:var(--info); animation:spin 1s linear infinite; flex-shrink:0; }
+.proc{ display:flex; align-items:center; gap:16px; padding:16px; border-radius:8px; background:var(--warning-lighter); margin-bottom:24px; font-size:14px; color:var(--warning-dark); }
+.proc .spin{ width:24px; height:24px; border-width:3px; border-color:#FFD666; border-top-color:#FFAB00; }
+
+/* ---------- Step 2 · Display Settings Accordion ---------- */
+.dsacc{ border:1px solid var(--divider); border-radius:8px; background:#fff; }
+.dsacc .sum{ display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:8px 16px; cursor:pointer; }
+.dsacc .sum .l{ display:flex; align-items:center; gap:8px; }
+.dsacc .sum .l .mi{ font-size:20px; color:var(--primary); }
+.dsacc .sum > .mi{ font-size:24px; color:var(--text2); }
+.dsacc .det{ padding:0 16px 16px; display:flex; gap:16px; flex-wrap:wrap; }
+.dsacc .det .field{ flex:1; min-width:180px; }
+
+/* ---------- Step 2 · Vocabulary Preview ---------- */
+.pv-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:24px; margin-bottom:32px; }
+.pv{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; transition:all .2s; }
+.pv:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.pv .hd{ margin-bottom:16px; }
+.pv .box{ display:flex; gap:24px; margin-bottom:24px; padding:16px; border-radius:16px; background:rgba(0,203,97,.05); border:2px solid rgba(0,203,97,.2); }
+.pv .box .col{ flex:1; min-width:0; }
+.pv .ov{ display:block; font-size:10.4px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--text2); line-height:1.5; }
+.pv .w{ font-size:20px; font-weight:700; }
+.pv .p{ font-size:18px; font-weight:700; color:var(--text2); }
+.pv .t{ font-size:18px; font-weight:700; color:var(--primary); }
+.pv .box .wcol{ display:flex; align-items:center; gap:8px; }
+.play{ border:0; background:transparent; border-radius:50%; color:var(--success); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.play.lg{ width:48px; height:48px; } .play.lg .mi{ font-size:32px; }
+.play.sm{ width:34px; height:34px; } .play.sm .mi{ font-size:24px; }
+.play:hover{ background:rgba(34,197,94,.08); }
+.pv .tags{ display:flex; flex-direction:column; gap:4px; }
+.pv .exs{ display:flex; gap:16px; }
+.pv .exs .ex{ flex:1; padding:16px; border-radius:8px; background:var(--grey200); border:1px solid var(--divider); }
+.pv .ex .lbl{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pv .ex .lbl .lt{ font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2); }
+.pv .ex .s{ font-size:14px; font-weight:500; margin-bottom:4px; }
+.pv .ex .py{ font-size:12px; color:var(--text2); display:block; margin-bottom:4px; }
+.pv .ex .tr{ font-size:12px; color:var(--primary); display:block; }
+.pv .imgph{ max-width:280px; }
+
+/* ---------- Step 3 ---------- */
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card + .card{ margin-top:8px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.dt{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-size:12.8px;
+  width:190px; font-family:inherit; color:var(--text); cursor:pointer; background:#fff; }
+.opt-chip{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+.iconbtn{ width:34px; height:34px; border-radius:50%; border:0; background:transparent; color:var(--primary);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.iconbtn:hover{ background:rgba(0,203,97,.08); }
+
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+
+/* ---------- ProcessingDialog ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center;
+  justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:24px; overflow:hidden; width:100%; max-width:600px; }
+.dlg .bar{ height:4px; background:#D3FCD2; position:relative; overflow:hidden; }
+.dlg .bar::after{ content:''; position:absolute; inset:0 60% 0 0; background:#22C55E; animation:sl 1.6s infinite ease-in-out; }
+@keyframes sl{ 0%{ transform:translateX(-100%);} 100%{ transform:translateX(260%);} }
+.dlg .body{ text-align:center; padding:40px 24px; }
+.dlg h5{ font-size:20px; font-weight:700; margin-bottom:4px; }
+.dlg .pipe{ display:flex; justify-content:center; align-items:flex-start; margin:32px 16px; }
+.dlg .pipe .st{ width:120px; display:flex; flex-direction:column; align-items:center; }
+.dlg .pipe .dot{ width:40px; height:40px; border-radius:50%; background:var(--primary); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+.dlg .pipe .st.todo .dot{ background:var(--grey300); color:#C4CDD5; }
+.dlg .pipe .cl{ font-size:12px; font-weight:700; color:var(--primary); }
+.dlg .pipe .st.todo .cl{ color:var(--text3); }
+.dlg .pipe .ln{ flex:1; height:3px; margin-top:20px; border-radius:2px; background:var(--primary); }
+.dlg .pipe .ln.todo{ background:var(--grey300); }
+.dlg .note{ background:#F0FDF4; border-radius:16px; padding:20px; margin-bottom:24px; display:flex; gap:16px; align-items:center; text-align:left; }
+.dlg .note .circ{ width:48px; height:48px; border-radius:50%; background:#DCFCE7; color:#10B981;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+/* ---------- 基準檔的說明條（不是產品的一部分） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#212B36; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; color:#fff; text-decoration:none; } .baseline .bl-home .mi{ font-size:14px; }   /* 回 Versions & Iteration index */
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; }
+  .main{ padding:88px 16px; }
+}
+@media (max-width:900px){ .stepper .step-label{ display:none; } .pv-grid{ grid-template-columns:1fr; } }
+/* ---------- Scramble 自己的三步（照 sx） ---------- */
+.btn.outlined{ background:transparent; border:1px solid var(--divider); color:var(--text); }
+.btn.outlined:hover{ background:var(--grey200); }
+.btn.sm{ padding:4px 12px; font-size:13px; border-radius:8px; }
+.btn.xs{ padding:2px 8px; font-size:12px; display:inline-flex; align-items:center; gap:4px; border-radius:8px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.alert.warn{ background:var(--warning-lighter); color:var(--warning-dark); }
+.alert.err{ background:#FFE9D5; color:#7A0916; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.alert .mi{ font-size:22px; flex:none; }
+/* Step 1：Select All 那一列、章節卡、teaching point chip */
+.selall{ display:flex; align-items:center; gap:8px; margin-bottom:16px; cursor:pointer; }
+.selall .cb .mi{ font-size:24px; }
+.tp-card .hd .chip.sm.success{ border-color:rgba(34,197,94,.48); color:#118D57; margin-left:auto; }
+.tp-card .hd .cnt{ margin-left:auto; }
+.tpchip{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 12px 0 8px; border-radius:16px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid rgba(145,158,171,.32); background:#fff; color:var(--text); }
+.tpchip .mi{ font-size:18px; }
+.tpchip.on{ background:var(--success); border-color:var(--success); color:#fff; }
+.tpchip.lock{ cursor:default; }
+.addrow{ display:flex; gap:8px; align-items:center; }
+.addrow .field{ flex:1; }
+.numfld{ margin-bottom:16px; }
+/* 生成後的唯讀清單 ＋ 詞塊列 */
+.scard{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:20px; }
+.scard + .scard{ margin-top:16px; }
+.chunk{ display:flex; align-items:flex-end; flex-wrap:wrap; gap:4px; }
+.chunk .u{ display:flex; flex-direction:column; align-items:center; padding:2px 6px; border-radius:8px; background:#F1F5F9; }
+.chunk .u.ed{ cursor:pointer; } .chunk .u.ed:hover{ background:#E2E8F0; }
+.chunk .u .py{ font-size:13.5px; color:var(--text2); line-height:1.2; margin-bottom:4px; min-height:16px; }
+.chunk .u .tx{ font-size:16px; font-weight:700; line-height:1.3; }
+.chunk .pt{ font-weight:700; color:#64748B; padding-bottom:4px; }
+/* Step 2：標頭、Teaching Points header、句子卡 */
+.scr-hd{ display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+.scr-hd .ic{ width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:#FCE7F3; color:#EC4899; } .scr-hd .ic .mi{ font-size:20px; }
+.tph{ border:1px solid var(--divider); border-radius:16px; background:#FAFBFC; padding:20px; margin-bottom:24px; }
+.tph .t{ display:flex; align-items:center; gap:8px; margin-bottom:12px; } .tph .t .mi{ font-size:20px; color:#64748B; }
+.pchip{ display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:12px; background:#FCE7F3; color:#BE185D; font-size:12px; font-weight:600; }
+.pchip.lg{ height:30px; font-size:.85rem; font-weight:700; padding:0 10px; }
+.tph .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.tph .gen{ display:flex; gap:8px; align-items:stretch; } .tph .gen .field{ flex:1; }
+.qcard{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:20px; transition:border-color .15s; }
+.qcard + .qcard{ margin-top:16px; }
+.qrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.qrow .l{ display:flex; align-items:center; gap:8px; }
+.updown{ display:flex; flex-direction:column; margin-right:2px; }
+.ib{ width:28px; height:28px; border:0; background:transparent; border-radius:50%; color:#94A3B8; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.ib .mi{ font-size:18px; } .ib:hover{ background:rgba(145,158,171,.12); } .ib.dis{ opacity:.4; cursor:default; } .ib.dis:hover{ background:transparent; }
+.ib.del{ color:#EF4444; } .ib.on{ color:#EC4899; }
+.updown .ib{ width:24px; height:20px; }
+.qno{ font-size:16px; font-weight:700; color:#EC4899; }
+.qtr{ font-size:12px; color:var(--text2); margin-top:8px; }
+.qedit{ display:flex; flex-direction:column; gap:12px; }
+.qedit .ctrl input{ font-size:14px; }
+.autonote{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px; background:#F1F5F9; border:1px solid #E2E8F0; }
+.autonote .mi{ font-size:18px; color:#059669; animation:spin 2s linear infinite; }
+.autonote b{ font-size:12px; font-weight:700; color:#059669; } .autonote i{ width:1px; height:14px; background:#CBD5E1; } .autonote span{ font-size:12px; color:#64748B; }
+.qedit .ft{ display:flex; justify-content:space-between; }
+/* 剪刀模式 */
+.seg{ display:flex; flex-direction:column; gap:12px; }
+.seg .pieces{ display:flex; align-items:stretch; flex-wrap:wrap; row-gap:8px; }
+.seg .pc{ display:grid; place-items:center; padding:4px; font-size:20px; font-weight:700; line-height:1.3; }
+.seg .pc.w{ background:#F1F5F9; } .seg .pc.p{ color:#64748B; }
+.seg .pc.l{ border-top-left-radius:6px; border-bottom-left-radius:6px; } .seg .pc.r{ border-top-right-radius:6px; border-bottom-right-radius:6px; }
+.seg .gap{ width:10px; align-self:stretch; background:#F1F5F9; border:0; cursor:pointer; position:relative; padding:0; }
+.seg .gap.cut{ width:16px; background:transparent; }
+.seg .gap::after{ content:''; position:absolute; left:50%; top:15%; height:70%; width:2px; border-radius:1px; transform:translateX(-50%); background:transparent; }
+.seg .gap.cut::after{ background:#EC4899; } .seg .gap:hover::after{ background:#F9A8D4; } .seg .gap.cut:hover::after{ background:#BE185D; }
+.seg .sp{ width:6px; }
+.seg .ft{ display:flex; justify-content:space-between; gap:8px; }
+/* Edit Pinyin 對話框 */
+.scrim2{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center; justify-content:center; z-index:60; padding:24px; }
+.dlg2{ background:#fff; border-radius:16px; width:100%; max-width:444px; }
+.dlg2 .t{ font-size:18px; font-weight:700; padding:16px 24px 8px; }
+.dlg2 .bd{ padding:0 24px 16px; }
+.dlg2 .big{ font-size:32px; font-weight:700; text-align:center; letter-spacing:2px; margin:16px 0; }
+.syls{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+.syl{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px; border-radius:16px; background:var(--grey100); border:1px solid var(--divider); min-width:80px; }
+.syl .in{ width:80px; height:36px; border:1px solid var(--divider); border-radius:8px; text-align:center; font:inherit; font-size:14px; }
+.syl .tone{ width:100px; height:36px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; }
+.dlg2 .ft{ display:flex; justify-content:flex-end; gap:8px; padding:8px 16px 16px; }
+/* Step 3：兩張 Paper ＋ 句子列 */
+.paper .ph{ margin-bottom:12px; }
+.paper .ph .cap{ margin-top:2px; }
+.frow{ display:flex; gap:16px; flex-wrap:wrap; }
+.frow .field{ width:31%; min-width:220px; }
+.srow{ display:flex; align-items:center; gap:12px; }
+.srow .n{ font-size:14px; font-weight:700; color:var(--text2); min-width:22px; }
+.srow .chunk{ flex:1; min-width:0; }
+.play.xs{ width:30px; height:30px; color:var(--primary); } .play.xs .mi{ font-size:20px; } .play.xs:hover{ background:rgba(0,203,97,.08); }
+/* skeleton（isProcessing 時整步換成三條） */
+.skels{ display:flex; flex-direction:column; gap:16px; padding:16px 0; }
+.lb-spin{ width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
+/* ---------- Follow Pattern 自己的（照 follow-pattern-preview.js / follow-pattern-settings.js 的 sx） ---------- */
+.fp-hd .ic.g{ background:var(--primary-lighter); color:var(--primary); }   /* isGuided：primary.lighter / primary.main */
+.fp-hd .ic.b{ background:var(--info-lighter); color:var(--info); }          /* Sentence Building：info.lighter / info.main */
+.fpchip{ display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:12px; background:#D1FAE5; color:#065F46; font-size:12px; font-weight:600; }
+.qno.fp{ color:#10B981; }
+.tpc{ display:inline-flex; align-items:center; height:30px; padding:0 10px; border-radius:15px; background:#D1FAE5; color:#065F46; font-size:.85rem; font-weight:700; white-space:nowrap; }
+.ib.fpedit{ color:#94A3B8; }
+.fbox{ border-radius:12px; padding:10px 16px; }          /* px:2 py:1.25 */
+.fbox + .fbox{ margin-top:12px; }
+.fbox.q{ border:1px solid #E2E8F0; }
+.fbox.p{ background:#FEF3C7; }
+.fbox.a{ background:#F0FDF4; }
+.fbox .lbl{ display:block; font-size:12px; font-weight:700; margin-bottom:4px; line-height:1.5; }
+.fbox.q .lbl{ color:#64748B; } .fbox.p .lbl{ color:#D97706; } .fbox.a .lbl{ color:#059669; }
+.fline{ display:flex; flex-wrap:wrap; gap:4px; }
+.fline .u{ display:flex; flex-direction:column; align-items:center; padding:0 4px; border-radius:8px; }
+.fline .u.ed{ cursor:pointer; } .fline .u.ed:hover{ background:rgba(145,158,171,.08); }
+.fline .u .py{ font-size:12px; color:var(--text2); line-height:1.2; min-height:14px; white-space:nowrap; }
+.fline .u .tx{ font-size:18px; font-weight:700; line-height:1.3; white-space:pre; }
+.ftr{ display:block; font-size:12px; margin-top:4px; padding-left:4px; line-height:1.5; }
+.fedit .fbox{ padding:16px; } .fedit .fbox .lbl{ margin-bottom:8px; }
+.fedit .fbox.q.ro{ padding:10px 16px; } .fedit .fbox.q.ro .lbl{ margin-bottom:4px; }
+.fedit .fields{ display:flex; flex-direction:column; gap:8px; }
+.fedit .ft{ display:flex; justify-content:space-between; }
+.fedit .ctrl input:disabled{ color:var(--text3); }
+.field.sm.dis .ctrl{ background:var(--grey100); }
+.hint{ font-size:12px; color:var(--text3); line-height:1.5; }
+.ampaper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.ampaper.on{ background:var(--primary-lighter); border-color:var(--primary); }
+.sw{ cursor:pointer; } .sw .lab{ font-size:14px; }
+.qlist{ border:1px solid var(--divider); border-radius:16px; background:#fff; overflow:hidden; }
+.qlist .qi + .qi{ border-top:1px solid var(--divider); }
+.qlist .qrow1{ display:flex; align-items:center; gap:12px; padding:12px 16px; }
+.qlist .qrow2{ display:flex; align-items:center; gap:12px; padding:0 16px 12px 52px; }
+.qlist .n{ font-size:14px; font-weight:700; color:var(--text2); min-width:22px; }
+.qlist .col{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.qlist .lbl{ font-size:12px; font-weight:700; line-height:1.5; }
+.qlist .qrow1 .lbl{ color:#64748B; } .qlist .qrow2 .lbl{ color:#059669; }
+.qlist .zh{ font-size:14px; font-weight:600; } .qlist .qrow2 .zh{ font-weight:400; color:var(--text2); }
+.qlist .py{ font-size:12px; color:var(--text2); }
+.snack{ position:fixed; left:24px; bottom:64px; z-index:120; background:#212B36; color:#fff; border-radius:8px; padding:10px 16px; font-size:14px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 16px rgba(0,0,0,.24); }
+.snack .mi{ color:#FFAB00; font-size:20px; }
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="logo">
+    <img src="../../assets/dh_single.png" alt="Dahua.ai">
+    <b>Dahua<i>.ai</i></b>
+  </div>
+  <nav class="nav">
+    <div class="grp">
+      <div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
+    </div>
+    <div class="grp">
+      <div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a>
+    </div>
+    <div class="grp">
+      <div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a>
+    </div>
+    <div class="grp">
+      <div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a>
+    </div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr">
+    <div class="acct"><div class="av">L</div></div>
+  </div>
+
+  <div class="main">
+<div class="container">
+
+  <!-- `New ${getTypeLabel(FOLLOW_PATTERN, subType)}` = New Sentence Response ／ New Sentence Building -->
+  <div class="h4" id="title">New Sentence Response</div>
+
+  <!-- STEPS_BY_TYPE[FOLLOW_PATTERN] = ['Teaching Points', 'Question Review', 'Settings', 'Assign Practice'] -->
+  <div class="stepper" id="stepper"></div>
+
+  <div class="content" id="content"></div>
+
+  <div class="footer">
+    <button class="btn text" id="back">Back</button>
+    <button class="btn contained" id="next">Next</button>
+  </div>
+</div>
+  </div>
+</div>
+
+<!-- ProcessingDialog：activeStep > 0 才開（第一步生成不開，換 skeleton）。文案照 processing-dialog-copy.js 的 follow pattern 分支 -->
+<div class="scrim" id="scrim" style="display:none">
+  <div class="dlg">
+    <div class="bar"></div>
+    <div class="body">
+      <h5 id="pd-title">Generating questions...</h5>
+      <div class="cap" style="margin-bottom:32px">This may take a few moments.</div>
+      <div class="pipe">
+        <div class="st"><div class="dot"><span class="mi">auto_awesome</span></div><div class="cl">Analyzing</div></div>
+        <div class="ln"></div>
+        <div class="st"><div class="dot"><span class="mi">route</span></div><div class="cl">Building</div></div>
+        <div class="ln todo"></div>
+        <div class="st todo"><div class="dot"><span class="mi">check_circle</span></div><div class="cl">Finalizing</div></div>
+      </div>
+      <div class="note">
+        <div class="circ"><span class="mi" id="pd-icon">route</span></div>
+        <div>
+          <div class="sub2" id="pd-t2">Creating sentence pattern questions</div>
+          <div class="cap" id="pd-d2">We&rsquo;re generating practice questions based on your teaching points.</div>
+        </div>
+      </div>
+      <div class="cap dis">Please don&rsquo;t close this page</div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準檔</b>　現行產品複刻 · dahua-dash <code>origin/develop</code> @ c8179072</span>
+  <span id="bl-links">
+    <a href="?step=0" id="l0">1 未選</a> ·
+    <a href="?step=0&amp;proj=0" id="l0s">1 已選專案</a> ·
+    <a href="?step=0&amp;proj=0&amp;warn=1" id="l0w">1 點數＞題數</a> ·
+    <a href="?step=0&amp;proj=0&amp;gen=1" id="l0g">1 Generating</a> ·
+    <a href="?step=0&amp;proj=0&amp;done=1" id="l0d">1 已生成</a> ·
+    <a href="?step=0&amp;proj=0&amp;fail=1" id="l0f">1 失敗</a> ·
+    <a href="?step=1" id="l1">2 Question Review</a> ·
+    <a href="?step=1&amp;edit=1" id="l1e">2 編輯中</a> ·
+    <a href="?step=1&amp;py=1" id="l1p">2 Edit Pinyin</a> ·
+    <a href="?step=1&amp;regen=1" id="l1r">2 重生中</a> ·
+    <a href="?step=2" id="l2">3 Settings</a> ·
+    <a href="?step=2&amp;audio=1" id="l2a">3 Audio Mode 開</a> ·
+    <a href="?step=2&amp;sc=1" id="l2s">3 Student choice</a> ·
+    <a href="?step=2&amp;voice=1" id="l2v">3 換聲音</a> ·
+    <a href="?step=3" id="l3">4 Assign</a> ·
+    <a href="?step=3&amp;assigned=1" id="l3a">4 已指派</a>
+    <span style="margin-left:10px">sub：<a href="?step=1&amp;sub=GUIDED_RESPONSE" id="lsg">GUIDED_RESPONSE</a> · <a href="?step=1&amp;sub=SENTENCE_BUILDING" id="lsb">SENTENCE_BUILDING</a></span>
+  </span>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   假資料：專案「我的一天」zh-CN · HSK 2，七個教學點（六個詞 ＋ 一個文法點 一……就）——跟 v7 同一份。
+   每個點一題 Q&A。欄位照 updatedArticleArray[i]：content（題目）、contentTranslation、
+   followPattern.{suggestedAnswer, pattern, teachingPoint, answerTranslation, patternTranslation,
+   questionChunks, answerChunks, patternChunks, teachingPointChunks}；chunk = {text, pinyin, highlight}。
+   Pattern 照 follow-pattern-questions.js 的定義：suggested answer 把一段以上換成 ＿＿＿（BLANK_PLACEHOLDER），
+   兩槽的點（一……就）每槽一個空格、教學點本身留在 pattern 裡。
+   Sentence Building 的題目是後端從教學點寫的（hasDerivedQuestion）；前端沒有寫法，這裡照
+   generation-draft-overlay.test.js 的 fixture「請用「是」造句。」改成簡體，實際文字無法確認。
+   --------------------------------------------------------------------------- */
+const S = { step:0, proj:null, sub:'GUIDED_RESPONSE', gen:false, done:false, warn:false, fail:false, edit:false, py:false, regen:false,
+  audio:false, sc:false, voice:false, assigned:false, open:null, editing:null, edited:false, snack:null,
+  projects:[], points:[], custom:[], count:8, questions:[],
+  practiceName:'', pinyin:'STUDENT_CHOICE', translation:'STUDENT_CHOICE', speed:'0.8', voiceName:'Xiaorou (Female)', attempts:3 };
+
+const PROJECTS = [
+  ['我的一天','zh-CN','HSK 2', 7],
+  ['环境保护与可持续发展','zh-CN','HSK 4', 12],
+  ['餐厅点餐（对话）','zh-CN','HSK 3', 0],
+];
+const POINTS = {
+  '我的一天':['起床','早饭','上课','图书馆','运动','睡觉','一……就'],
+  '环境保护与可持续发展':['环境','保护','污染','垃圾','回收','节约','能源','气候','植树','减少','影响','越……越'],   // 只對數量，沒有題目
+  '餐厅点餐（对话）':[],
+};
+
+const BLANK = '＿＿＿';   // BLANK_PLACEHOLDER（src/config/practices.js）
+const c = (text, pinyin, highlight) => ({ text, pinyin, highlight: Boolean(highlight) });
+const QUESTIONS = [
+  { idx:0, point:'起床', q:'你每天几点起床？', qtr:'What time do you get up every day?',
+    qc:[c('你','nǐ'),c('每天','měi tiān'),c('几点','jǐ diǎn'),c('起床','qǐ chuáng',1),c('？','')],
+    a:'我每天七点起床。', atr:'I get up at seven every day.',
+    ac:[c('我','wǒ'),c('每天','měi tiān'),c('七点','qī diǎn'),c('起床','qǐ chuáng',1),c('。','')],
+    p:'我每天＿＿＿起床。', ptr:'I get up at ___ every day.',
+    pc:[c('我','wǒ'),c('每天','měi tiān'),c(BLANK,''),c('起床','qǐ chuáng',1),c('。','')],
+    sb:'请用「起床」造句。', sbtr:'Make a sentence with “起床”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('起床','qǐ chuáng',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:1, point:'早饭', q:'你早饭吃什么？', qtr:'What do you eat for breakfast?',
+    qc:[c('你','nǐ'),c('早饭','zǎo fàn',1),c('吃','chī'),c('什么','shén me'),c('？','')],
+    a:'我早饭吃面包。', atr:'I eat bread for breakfast.',
+    ac:[c('我','wǒ'),c('早饭','zǎo fàn',1),c('吃','chī'),c('面包','miàn bāo'),c('。','')],
+    p:'我早饭吃＿＿＿。', ptr:'I eat ___ for breakfast.',
+    pc:[c('我','wǒ'),c('早饭','zǎo fàn',1),c('吃','chī'),c(BLANK,''),c('。','')],
+    sb:'请用「早饭」造句。', sbtr:'Make a sentence with “早饭”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('早饭','zǎo fàn',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:2, point:'上课', q:'你几点上课？', qtr:'What time do you have class?',
+    qc:[c('你','nǐ'),c('几点','jǐ diǎn'),c('上课','shàng kè',1),c('？','')],
+    a:'我八点上课。', atr:'I have class at eight.',
+    ac:[c('我','wǒ'),c('八点','bā diǎn'),c('上课','shàng kè',1),c('。','')],
+    p:'我＿＿＿上课。', ptr:'I have class at ___.',
+    pc:[c('我','wǒ'),c(BLANK,''),c('上课','shàng kè',1),c('。','')],
+    sb:'请用「上课」造句。', sbtr:'Make a sentence with “上课”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('上课','shàng kè',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:3, point:'图书馆', q:'下午你去图书馆做什么？', qtr:'What do you do at the library in the afternoon?',
+    qc:[c('下午','xià wǔ'),c('你','nǐ'),c('去','qù'),c('图书馆','tú shū guǎn',1),c('做','zuò'),c('什么','shén me'),c('？','')],
+    a:'下午我去图书馆看书。', atr:'In the afternoon I go to the library to read.',
+    ac:[c('下午','xià wǔ'),c('我','wǒ'),c('去','qù'),c('图书馆','tú shū guǎn',1),c('看书','kàn shū'),c('。','')],
+    p:'下午我去图书馆＿＿＿。', ptr:'In the afternoon I go to the library to ___.',
+    pc:[c('下午','xià wǔ'),c('我','wǒ'),c('去','qù'),c('图书馆','tú shū guǎn',1),c(BLANK,''),c('。','')],
+    sb:'请用「图书馆」造句。', sbtr:'Make a sentence with “图书馆”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('图书馆','tú shū guǎn',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:4, point:'运动', q:'你喜欢什么时候运动？', qtr:'When do you like to exercise?',
+    qc:[c('你','nǐ'),c('喜欢','xǐ huan'),c('什么时候','shén me shí hou'),c('运动','yùn dòng',1),c('？','')],
+    a:'我喜欢晚上运动。', atr:'I like to exercise in the evening.',
+    ac:[c('我','wǒ'),c('喜欢','xǐ huan'),c('晚上','wǎn shang'),c('运动','yùn dòng',1),c('。','')],
+    p:'我喜欢＿＿＿运动。', ptr:'I like to exercise ___.',
+    pc:[c('我','wǒ'),c('喜欢','xǐ huan'),c(BLANK,''),c('运动','yùn dòng',1),c('。','')],
+    sb:'请用「运动」造句。', sbtr:'Make a sentence with “运动”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('运动','yùn dòng',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:5, point:'睡觉', q:'你几点睡觉？', qtr:'What time do you go to sleep?',
+    qc:[c('你','nǐ'),c('几点','jǐ diǎn'),c('睡觉','shuì jiào',1),c('？','')],
+    a:'我十一点睡觉。', atr:'I go to sleep at eleven.',
+    ac:[c('我','wǒ'),c('十一点','shí yī diǎn'),c('睡觉','shuì jiào',1),c('。','')],
+    p:'我＿＿＿睡觉。', ptr:'I go to sleep at ___.',
+    pc:[c('我','wǒ'),c(BLANK,''),c('睡觉','shuì jiào',1),c('。','')],
+    sb:'请用「睡觉」造句。', sbtr:'Make a sentence with “睡觉”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('睡觉','shuì jiào',1),c('」',''),c('造句','zào jù'),c('。','')] },
+  { idx:6, point:'一……就', q:'你一起床就做什么？', qtr:'What do you do as soon as you get up?',
+    qc:[c('你','nǐ'),c('一','yì',1),c('起床','qǐ chuáng'),c('就','jiù',1),c('做','zuò'),c('什么','shén me'),c('？','')],
+    a:'我一起床就喝水。', atr:'I drink water as soon as I get up.',
+    ac:[c('我','wǒ'),c('一','yì',1),c('起床','qǐ chuáng'),c('就','jiù',1),c('喝水','hē shuǐ'),c('。','')],
+    p:'我一＿＿＿就＿＿＿。', ptr:'As soon as I ___, I ___.',
+    pc:[c('我','wǒ'),c('一','yì',1),c(BLANK,''),c('就','jiù',1),c(BLANK,''),c('。','')],
+    sb:'请用「一……就」造句。', sbtr:'Make a sentence with “一……就”.',
+    sbc:[c('请用','qǐng yòng'),c('「',''),c('一……就','yì … jiù',1),c('」',''),c('造句','zào jù'),c('。','')] },
+];
+
+const STEPS = ['Teaching Points','Question Review','Settings','Assign Practice'];   // STEPS_BY_TYPE[FOLLOW_PATTERN]
+const SUB_LABEL = { GUIDED_RESPONSE:'Sentence Response', SENTENCE_BUILDING:'Sentence Building' };   // practice-type-labels.js 的 label
+const SPEEDS = [['STUDENT_CHOICE','Student choice'],['1','Fast'],['0.8','Normal'],['0.6','Slow']];
+const VOICES = ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'];   // getVoiceList('zh-CN')
+const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];            // Object.entries(PINYIN_PREFERENCES)：老師看到的就是 enum 原字
+const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];              // Object.entries(TRANSLATION_PREFERENCES)：同上
+
+/* ---------- 讀網址 ---------- */
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(3, Math.max(0, parseInt(qs.get('step') ?? '0', 10) || 0));
+['gen','done','warn','fail','edit','py','regen','audio','sc','voice','assigned'].forEach(k => { S[k] = qs.get(k) === '1'; });
+if (qs.get('sub') === 'SENTENCE_BUILDING') S.sub = 'SENTENCE_BUILDING';   // DEFAULT_SUB_TYPES[FOLLOW_PATTERN] = GUIDED_RESPONSE
+const projRaw = qs.get('proj') ?? (qs.get('sel') === '1' ? '0' : null);
+if (projRaw !== null && PROJECTS[+projRaw]) S.proj = +projRaw;
+if (S.proj === null && (S.gen || S.done || S.fail || S.warn || S.step > 0)) S.proj = 0;
+if (S.proj !== null) {
+  S.projects = [PROJECTS[S.proj][0]];
+  S.points = [...POINTS[S.projects[0]]];
+  S.count = Math.min(20, S.points.length) || 8;
+  S.practiceName = S.projects[0];   // ensurePracticeCreated：名稱空白時填第一個專案名
+}
+if (S.warn) S.count = 4;
+if (S.sc) S.speed = 'STUDENT_CHOICE';
+S.questions = QUESTIONS.map(q => ({ ...q }));
+if (S.edit) { S.editing = 0; S.edited = true; }
+const generated = () => S.done || S.step > 0;   // practice.status === 'COMPLETE' && updatedArticleArray.length > 0
+const isGuided = () => S.sub !== 'SENTENCE_BUILDING';
+
+const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const el = (id) => document.getElementById(id);
+
+/* ---------- Stepper ---------- */
+function renderStepper(){
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const dot = i < S.step ? '<span class="mi" style="font-size:16px">check</span>' : (i + 1);
+    return (i ? '<div class="step-line"></div>' : '') +
+      `<div class="step ${cls}"><div class="step-dot">${dot}</div><div class="step-label">${label}</div></div>`;
+  }).join('');
+}
+
+/* ---------- 共用：select（AudioPreviewOption 的耳機鈕） ---------- */
+function select({ id, label, value, options, disabled, width, helper, small }){
+  const cur = options.find(o => (Array.isArray(o) ? o[0] : o) === value);
+  const text = Array.isArray(cur) ? cur[1] : (cur ?? value);
+  return `<div class="field ${disabled ? 'dis' : ''} ${small ? 'sm' : ''}" style="${width ? 'width:' + width : ''}">
+    <label>${label}</label>
+    <div class="ctrl" ${disabled ? '' : `data-menu="${id}"`}>
+      <span>${esc(text)}</span><span class="mi caret">arrow_drop_down</span>
+    </div>
+    ${helper ? `<div class="helper">${helper}</div>` : ''}
+    ${S.open === id ? `<div class="menu">${options.map(o => {
+      const v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
+      const play = (id === 'speed' && v !== 'STUDENT_CHOICE') || id === 'voice'
+        ? `<button class="play"><span class="mi" style="font-size:18px">headphones</span></button>` : '';
+      return `<div class="opt ${v === value ? 'sel' : ''}" data-pick="${id}" data-val="${esc(v)}"><span>${esc(t)}</span>${play ? `<span style="margin-left:auto">${play}</span>` : ''}</div>`;
+    }).join('')}</div>` : ''}
+  </div>`;
+}
+
+/* ---------- 一行 chunk 對齊拼音（follow-pattern-preview.js 的 renderLine：老師端不高亮教學點，高亮只在學生端 FollowPatternChunks） ---------- */
+function fline(chunks, tr, trColor, clickable){
+  return `<div class="fline">${chunks.map(ch => `<span class="u ${clickable ? 'ed' : ''}" ${clickable ? `data-py="${esc(ch.text)}|${esc(ch.pinyin)}"` : ''}><span class="py">${esc(ch.pinyin || '')}</span><span class="tx">${esc(ch.text)}</span></span>`).join('')}</div>${tr ? `<span class="ftr" style="color:${trColor}">${esc(tr)}</span>` : ''}`;
+}
+const pinyinOf = (chunks) => chunks.map(ch => ch.pinyin).filter(Boolean).join(' ');
+
+/* =====================================================================
+   Step 1 · Teaching Points（step-one-follow-pattern.js）
+   Select Projects → Teaching Points Preview（逐專案分組 ＋ Custom）→ Number of questions → 頁腳 Generate。
+   生成時第一步不開 ProcessingDialog，整步換成 skeleton、Generate 鈕轉圈；完成後自動跳到第二步（Question Review）。
+   生成完回到這一步：欄位照舊可改、鈕變 Next；沒有「已生成題目」的清單（跟 Scramble 不同）。
+   ===================================================================== */
+function renderAutocomplete(){
+  const dis = S.gen;
+  const tags = S.projects.map(p => `<span class="tagchip">${esc(p)}${dis ? '' : '<span class="mi">cancel</span>'}</span>`).join('');
+  return `<div class="field ac ${dis ? 'dis' : ''}" style="margin-bottom:24px">
+    <label>Pick projects to source teaching points from</label>
+    <div class="ctrl" ${dis ? '' : 'data-menu="project"'}>
+      ${tags}${S.projects.length ? '' : '<span class="ph">&nbsp;</span>'}
+      <span class="caret2">${S.projects.length && !dis ? '<span class="mi">close</span>' : ''}<span class="mi">arrow_drop_down</span></span>
+    </div>
+    ${S.open === 'project' ? `<div class="menu">${PROJECTS.map(p => `<div class="opt ${S.projects.includes(p[0]) ? 'sel' : ''}" data-pick="project" data-val="${esc(p[0])}">
+        <span>${esc(p[0])}</span><span class="chip-lang">${p[1]}</span><span class="chip-lvl">${p[2]}</span></div>`).join('')}</div>` : ''}
+  </div>`;
+}
+function tpChip(p, on){ return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(p)}"><span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(p)}</button>`; }
+function renderStep0(){
+  const ac = renderAutocomplete();
+  if (S.gen) return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}
+    <div class="skels"><div class="skel" style="height:48px"></div><div class="skel" style="height:120px"></div><div class="skel" style="height:80px"></div></div>`;
+  if (!S.projects.length) return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}`;
+  const pool = S.projects.flatMap(p => POINTS[p] || []);
+  const total = pool.length + S.custom.length, selected = S.points.length;
+  const all = selected === total && total > 0, some = selected > 0 && !all;
+  return `<div class="sub1" style="margin-bottom:8px">Select Projects</div>${ac}
+    ${S.fail ? '<div class="alert err"><span class="mi">error_outline</span>Generation did not complete successfully. Adjust the teaching points or the question count, then continue to retry.</div>' : ''}
+    <div class="sub1" style="font-weight:700; margin-bottom:4px">Teaching Points Preview</div>
+    <div class="body2" style="color:var(--text2); margin-bottom:12px">Questions are generated from the selected teaching points once you pick a practice type and continue.</div>
+    <div class="selall" data-selall="1"><span class="cb ${selected ? 'on' : ''}"><span class="mi">${all ? 'check_box' : some ? 'indeterminate_check_box' : 'check_box_outline_blank'}</span></span><span class="sub2">Select All (${selected}/${total})</span></div>
+    ${total ? `${S.projects.map(name => { const pts = POINTS[name] || []; return `<div class="tp-card">
+      <div class="hd"><span class="mi">folder</span><span class="sub2">${esc(name)}</span><span class="chip sm success">${pts.length} teaching points</span></div>
+      <div class="bd">${pts.length ? pts.map(p => tpChip(p, S.points.includes(p))).join('') : '<span class="body2" style="color:var(--text2)">No teaching points found in this project.</span>'}</div>
+    </div>`; }).join('')}
+    <div class="tp-card">
+      <div class="hd"><span class="mi">edit_note</span><span class="sub2">Custom Teaching Points</span>${S.custom.length ? `<span class="chip sm success">${S.custom.length} teaching point${S.custom.length > 1 ? 's' : ''}</span>` : ''}</div>
+      <div class="bd" style="display:block">
+        ${S.custom.length ? `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px">${S.custom.map(p => tpChip(p, S.points.includes(p))).join('')}</div>` : ''}
+        <div class="addrow"><div class="field sm"><label>Add teaching point</label><div class="ctrl"><input type="text" id="tpin" placeholder=""></div></div><button class="btn outlined" id="tpadd" style="height:40px">Add</button></div>
+      </div>
+    </div>` : '<div class="body2" style="color:var(--text3); margin-bottom:16px">No teaching points found in the selected projects — add some below.</div>'}
+    <div class="field full numfld" style="margin-top:24px"><label>Number of questions</label><div class="ctrl"><input type="number" min="1" max="20" value="${S.count}" id="cnt"></div></div>
+    ${S.warn ? `<div class="alert warn" style="max-width:600px; margin-bottom:24px"><span class="mi">warning_amber</span>You selected ${selected} teaching points but only ${S.count} questions will be generated — some teaching points may not be covered. Consider increasing the question count.</div>` : ''}`;
+}
+
+/* =====================================================================
+   Step 2 · Question Review（follow-pattern-preview.js）
+   Practice Name → 標頭（Guided Response ／ Sentence Building）＋ 一句說明 → TeachingPointsHeader（每點幾題 chip、選一個點 Generate 一題）
+   → 每題一張卡：上下移、Q 號（#10B981）、教學點 chip（#D1FAE5／#065F46）、Edit／Delete；
+     Question 框（白底灰框）→ Pattern 框（#FEF3C7，只有 Guided）→ Suggested answer 框（#F0FDF4）；每框一行 chunk 對齊拼音 ＋ 翻譯小字。
+   Sentence Building：沒有 Pattern 框，Question 是後端從教學點寫的（唯讀，Edit 模式也不能改）。
+   ===================================================================== */
+function renderEditor(q, i){
+  const g = isGuided();
+  const changed = S.edited;                                  // isTextChanged：改過中文 → 翻譯欄鎖住、出 Auto-update on save
+  const hint = changed ? '' : 'Pinyin and translation auto-generated on save.';
+  const fld = (v, ph, dis) => `<div class="field sm full ${dis ? 'dis' : ''}"><div class="ctrl"><input type="text" value="${esc(v)}" placeholder="${ph}" ${dis ? 'disabled' : ''}></div></div>`;
+  const answer = changed ? q.a.replace('七点', '六点') : q.a;
+  return `<div class="qcard fedit" id="fp-card-idx-${q.idx}"><div class="qedit">
+    <div class="l" style="display:flex; align-items:center; gap:8px"><span class="qno fp">Q${i + 1}</span><span class="tpc">${esc(q.point)}</span></div>
+    ${hint ? `<div class="hint">${hint}</div>` : ''}
+    ${g ? `<div class="fbox q"><span class="lbl">Question</span><div class="fields">${fld(q.q, 'Chinese')}${fld(q.qtr, 'Translation', changed)}</div></div>
+    <div class="fbox p"><span class="lbl" style="display:flex; align-items:center; gap:4px">Pattern <span class="mi" style="font-size:16px; color:#D97706; cursor:pointer" title="The suggested answer with one or more fragments replaced by ＿＿＿. A two-slot teaching point takes one blank per slot.">info</span></span><div class="fields">${fld(q.p, 'Chinese')}${fld(q.ptr, 'Translation', changed)}</div></div>`
+    : `<div class="fbox q ro"><span class="lbl">Question</span>${fline(q.sbc, q.sbtr, '#94A3B8', false)}</div>`}
+    <div class="fbox a"><span class="lbl">Suggested answer</span><div class="fields">${fld(answer, 'Chinese')}${fld(q.atr, 'Translation', changed)}</div></div>
+    ${changed ? '<div class="autonote"><span class="mi">autorenew</span><b>Auto-update on save</b><i></i><span>After saving, pinyin and translation will be updated to match your edited Chinese.</span></div>' : ''}
+    <div class="ft"><button class="btn outlined sm" data-cancel="1">Cancel</button><button class="btn contained sm" data-save="1">Save</button></div>
+  </div></div>`;
+}
+function renderQCard(q, i){
+  if (S.editing === i) return renderEditor(q, i);
+  const g = isGuided(), last = S.questions.length - 1;
+  return `<div class="qcard" id="fp-card-idx-${q.idx}">
+    <div class="qrow" style="margin-bottom:12px">
+      <div class="l">
+        <span class="updown"><button class="ib ${i === 0 ? 'dis' : ''}" data-move="${i}:-1"><span class="mi">keyboard_arrow_up</span></button><button class="ib ${i === last ? 'dis' : ''}" data-move="${i}:1"><span class="mi">keyboard_arrow_down</span></button></span>
+        <span class="qno fp">Q${i + 1}</span><span class="tpc">${esc(q.point)}</span>
+      </div>
+      <div class="l" style="gap:4px">
+        <button class="ib fpedit" title="Edit" data-edit="${i}"><span class="mi">edit</span></button>
+        <button class="ib del" title="Delete" data-del="${i}"><span class="mi">delete_outline</span></button>
+      </div>
+    </div>
+    <div class="fbox q"><span class="lbl">Question</span>${fline(g ? q.qc : q.sbc, g ? q.qtr : q.sbtr, '#94A3B8', true)}</div>
+    ${g ? `<div class="fbox p"><span class="lbl">Pattern</span>${fline(q.pc, q.ptr, '#9CA3AF', true)}</div>` : ''}
+    <div class="fbox a"><span class="lbl">Suggested answer</span>${fline(q.ac, q.atr, '#9CA3AF', true)}</div>
+  </div>`;
+}
+function renderStep1(){
+  const g = isGuided();
+  const counts = {}; S.questions.forEach(q => { counts[q.point] = (counts[q.point] || 0) + 1; });
+  const pts = Object.entries(counts);
+  const blocked = S.editing !== null && S.edited;   // dirty → header 鎖住
+  return `
+    <div class="field" style="max-width:600px; margin-bottom:24px"><label>Practice Name</label><div class="ctrl"><input type="text" value="${esc(S.practiceName)}"></div></div>
+    <div class="scr-hd fp-hd"><span class="ic ${g ? 'g' : 'b'}"><span class="mi">${g ? 'question_answer' : 'construction'}</span></span><span class="h6">${g ? 'Guided Response' : 'Sentence Building'}</span></div>
+    <div class="body2" style="color:var(--text2); margin-bottom:16px; padding-left:48px">${g ? 'Answer questions following the given sentence pattern. Click pinyin to adjust tones.' : 'Create original sentences using the target teaching point. Click pinyin to adjust tones.'}</div>
+    <div class="tph">
+      <div class="t"><span class="mi">dashboard_customize</span><span class="sub2">Teaching Points (${pts.length}) · Questions (${S.questions.length})</span></div>
+      <div class="chips">${pts.length ? pts.map(([p, n]) => `<span class="fpchip">${esc(p)} (${n})</span>`).join('') : '<span class="body2" style="color:var(--text3)">No teaching points yet.</span>'}</div>
+      <div class="cap" style="display:block; margin-bottom:12px">${blocked ? 'Save your changes first — a new question is appended to the saved set, so unsaved edits would be lost.' : 'Select a teaching point to generate a question.'}</div>
+      <div class="gen"><div class="field sm ${blocked ? 'dis' : ''}"><div class="ctrl"><input type="text" placeholder="Select a teaching point" ${blocked ? 'disabled' : ''}><span class="mi caret">arrow_drop_down</span></div></div><button class="btn contained dis" style="height:40px">Generate</button></div>
+    </div>
+    ${S.questions.map(renderQCard).join('')}
+    ${S.py ? `<div class="scrim2"><div class="dlg2">
+      <div class="t">Edit Pinyin</div>
+      <div class="bd">
+        <div class="big">${esc(S.pyText)}</div>
+        <div class="body2" style="color:var(--text2); text-align:center; margin-bottom:16px">${esc(S.pySyls.map(s => s[2]).join(' '))}</div>
+        <div class="syls">${S.pySyls.map(([b, t]) => `<div class="syl"><input class="in" value="${b}" placeholder="pinyin"><span class="tone">${t}<span class="mi" style="font-size:20px; color:var(--text2)">arrow_drop_down</span></span></div>`).join('')}</div>
+      </div>
+      <div class="ft"><button class="btn text">Cancel</button><button class="btn contained">Save</button></div>
+    </div></div>` : ''}`;
+}
+S.pyText = '起床'; S.pySyls = [['qi','3rd ˇ','qǐ'],['chuang','2nd ˊ','chuáng']];
+
+/* =====================================================================
+   Step 3 · Settings（follow-pattern-settings.js）
+   Audio Mode 卡（開了 primary.lighter 底、primary 框）→ AudioSettingsPanel（Speed／Voice）→ Student Settings
+   （Pinyin 下拉、Translation 下拉都是 enum 原字；Attempts per question ＋ ⓘ）→ Questions (n)：每題 Question ＋ Suggested answer 各一顆播放。
+   沒有 Practice Name（Scramble 第三步有）。
+   ===================================================================== */
+function renderStep2(){
+  const g = isGuided();
+  const helper = S.speed === 'STUDENT_CHOICE' ? 'Students pick their own speed and start at Normal.' : '';
+  return `
+    <div class="ampaper ${S.audio ? 'on' : ''}">
+      <div class="row">
+        <div class="row-l"><span class="sub2">Audio Mode</span><span class="mi" style="font-size:18px; color:var(--text3); cursor:pointer" title="Students hear the question instead of reading it. The pattern, the teaching point and the suggested answer are still shown.">info</span></div>
+        <span class="sw ${S.audio ? 'on' : ''}" data-am="1"><span class="track"></span><span class="lab">${S.audio ? 'On' : 'Off'}</span></span>
+      </div>
+      <div class="cap" style="margin-top:12px">${S.audio ? 'Students answer from the recording alone — the written question is never sent.' : 'Students read the question as well as hearing it.'}</div>
+    </div>
+    <div class="paper" style="margin-top:24px">
+      <div class="ph"><div class="sub2">Audio Settings</div><div class="cap">Controls audio playback speed, pronunciation precision, and voice.</div></div>
+      <div class="frow">
+        ${select({ id:'speed', label:'Speed', value:S.speed, options:SPEEDS, disabled:S.voice, helper })}
+        ${select({ id:'voice', label:'Voice', value:S.voiceName, options:VOICES, disabled:S.voice })}
+      </div>
+    </div>
+    <div class="paper" style="margin-top:24px">
+      <div class="sub2" style="margin-bottom:16px">Student Settings</div>
+      <div class="frow" style="margin-bottom:16px">
+        <div style="width:calc(50% - 8px); min-width:220px">${select({ id:'pinyin', label:'Pinyin', value:S.pinyin, options:PINYINS })}</div>
+        <div style="width:calc(50% - 8px); min-width:220px">${select({ id:'translation', label:'Translation', value:S.translation, options:TRANSLATIONS })}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:4px">
+        <div class="field" style="width:220px"><label>Attempts per question</label><div class="ctrl"><input type="number" min="1" max="10" value="${S.attempts}"></div></div>
+        <span class="mi" style="font-size:20px; color:var(--text3); cursor:pointer" title="How many times a student may re-record one question (default 3).">info</span>
+      </div>
+    </div>
+    <div style="margin-top:24px">
+      <div class="sub1" style="margin-bottom:4px">Questions (${S.questions.length})</div>
+      <div class="cap" style="display:block; margin-bottom:12px">Play a question or its suggested answer to hear the selected voice and speed.</div>
+      <div class="qlist">${S.questions.map((q, i) => `<div class="qi">
+        <div class="qrow1"><span class="n">${i + 1}.</span><div class="col"><span class="lbl">Question</span><span class="zh">${esc(g ? q.q : q.sb)}</span><span class="py">${esc(pinyinOf(g ? q.qc : q.sbc))}</span></div><button class="play xs" title="Play question audio"><span class="mi">play_arrow</span></button></div>
+        <div class="qrow2"><div class="col"><span class="lbl">Suggested answer</span><span class="zh">${esc(q.a)}</span><span class="py">${esc(q.ac.map(ch => ch.pinyin || ch.text).join(' '))}</span></div><button class="play xs" title="Play answer audio"><span class="mi">play_arrow</span></button></div>
+      </div>`).join('')}</div>
+    </div>`;
+}
+
+/* =====================================================================
+   Step 4 · Assign Practice（step-three.js，八種共用，照 v7 基準原封不動）
+   ===================================================================== */
+function renderStep3(){
+  const list = S.assigned ? `
+    <div class="card clsrow done" data-cls="3b">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+        <div style="min-width:0">
+          <div style="display:flex; align-items:center; gap:8px"><span class="sub2">Chinese 3B</span><span class="opt-chip">Mandatory</span></div>
+          <div class="cap dis" style="margin-top:2px">12 students · assigned 2026-10-19 09:12</div>
+          <div class="cap" style="margin-top:4px">陳小明, 林佳蓉, 王大衛, 張怡君, 李承恩, 吳宜庭, 黃柏翰, 劉映彤, 蔡宗翰, 鄭雅文, 許博涵, 楊子萱</div>
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:8px">
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px"><span class="cap">Start</span><input class="dt" type="datetime-local" value="2026-10-19T00:00"></div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px"><span class="cap">Due</span><input class="dt" type="datetime-local" value="2026-10-26T23:59"></div>
+          <button class="btn contained sm">Edit</button><button class="btn outerr sm">Cancel</button>
+        </div>
+      </div>
+    </div>` : `<div class="card empty">No classes assigned yet.</div>`;
+  return `<div class="row" style="margin-bottom:16px"><span class="sub1">Assigned students</span><button class="btn contained"><span class="mi" style="font-size:20px">add_circle_outline</span>Assign Practice</button></div>${list}`;
+}
+
+/* ---------- render ---------- */
+const LINK_IDS = ['l0','l0s','l0w','l0g','l0d','l0f','l1','l1e','l1p','l1r','l2','l2a','l2s','l2v','l3','l3a'];
+function render(){
+  el('title').textContent = `New ${SUB_LABEL[S.sub]}`;
+  document.title = `New ${SUB_LABEL[S.sub]} — v12 基準（現行產品）`;
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2, renderStep3][S.step]();
+  const back = el('back'), next = el('next');
+  back.classList.toggle('dis', S.step === 0);
+  // resolvePrimaryActionLabel：showFollowPatternGenerateCta（CREATE、第一步、還沒生成好）→ Generate；倒數第二步 Save；其餘 Next；最後一步 Done
+  const lbl = S.step === 3 ? 'Done' : S.step === 2 ? 'Save' : S.step === 1 ? 'Next' : (generated() && !S.fail ? 'Next' : 'Generate');
+  next.innerHTML = S.gen ? '<span class="lb-spin"></span>Generate' : lbl;
+  next.classList.toggle('dis', S.gen);
+  // ProcessingDialog：activeStep > 0 才開。換 Speed／Voice 重生音檔時 copy 走 follow pattern 分支（「Generating questions...」），不是 audio 分支
+  const pd = (S.step === 1 && S.regen) || (S.step === 2 && S.voice);
+  el('scrim').style.display = pd ? 'flex' : 'none';
+  if (pd) { const re = S.step === 1;
+    el('pd-title').textContent = re ? 'Updating pinyin & translation...' : 'Generating questions...';
+    el('pd-icon').textContent = re ? 'translate' : 'route';
+    el('pd-t2').textContent = re ? 'Regenerating pinyin, translation & audio' : 'Creating sentence pattern questions';
+    el('pd-d2').textContent = re ? 'Your edits are being processed. Pinyin, translation and audio will be updated.' : 'We’re generating practice questions based on your teaching points.'; }
+  LINK_IDS.forEach(id => el(id).classList.remove('cur'));
+  const key = S.step === 0 ? (S.gen ? 'l0g' : S.done ? 'l0d' : S.fail ? 'l0f' : S.warn ? 'l0w' : S.projects.length ? 'l0s' : 'l0')
+    : S.step === 1 ? (S.edit ? 'l1e' : S.py ? 'l1p' : S.regen ? 'l1r' : 'l1')
+    : S.step === 2 ? (S.audio ? 'l2a' : S.sc ? 'l2s' : S.voice ? 'l2v' : 'l2') : (S.assigned ? 'l3a' : 'l3');
+  el(key).classList.add('cur');
+  el('lsg').classList.toggle('cur', S.sub === 'GUIDED_RESPONSE'); el('lsb').classList.toggle('cur', S.sub === 'SENTENCE_BUILDING');
+  const old = document.querySelector('.snack'); if (old) old.remove();
+  if (S.snack) document.body.insertAdjacentHTML('beforeend', `<div class="snack"><span class="mi">warning_amber</span>${esc(S.snack)}</div>`);
+}
+// 底欄連結帶著 sub（SENTENCE_BUILDING 時每條後面補 &sub=）
+if (S.sub === 'SENTENCE_BUILDING') LINK_IDS.forEach(id => { el(id).href += '&sub=SENTENCE_BUILDING'; });
+
+/* ---------- 互動 ---------- */
+let snackTimer = null;
+function snack(msg){ S.snack = msg; render(); clearTimeout(snackTimer); snackTimer = setTimeout(() => { S.snack = null; render(); }, 3000); }
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.play')) { e.stopPropagation(); return; }
+  const tp = e.target.closest('[data-tp]');
+  if (tp){ const p = tp.dataset.tp; S.points = S.points.includes(p) ? S.points.filter(x => x !== p) : [...S.points, p]; S.count = Math.min(20, S.points.length) || S.count; render(); return; }
+  if (e.target.closest('[data-selall]')){ const pool = [...S.projects.flatMap(p => POINTS[p] || []), ...S.custom]; S.points = S.points.length === pool.length ? [] : pool; S.count = Math.min(20, S.points.length) || S.count; render(); return; }
+  if (e.target.closest('#tpadd')){ const v = (el('tpin')?.value || '').trim(); if (v && !S.custom.includes(v)) { S.custom.push(v); S.points.push(v); S.count = Math.min(20, S.points.length); render(); } return; }
+  if (e.target.closest('[data-am]')){ S.audio = !S.audio; render(); return; }
+  const mv = e.target.closest('[data-move]');
+  if (mv && !mv.classList.contains('dis')){ const [i, d] = mv.dataset.move.split(':').map(Number); const j = i + d; [S.questions[i], S.questions[j]] = [S.questions[j], S.questions[i]]; render(); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed){ S.editing = +ed.dataset.edit; S.edited = false; render(); return; }
+  const dl = e.target.closest('[data-del]');
+  if (dl){ S.questions.splice(+dl.dataset.del, 1); S.editing = null;
+    // handleDelete 不擋；刪掉後自動存檔，kept.length === 0 時 handleSave 才用 snackbar 擋「Keep at least one question.」——卡已經不見了
+    if (S.questions.length === 0) { snack('Keep at least one question.'); return; } render(); return; }
+  if (e.target.closest('[data-cancel]') || e.target.closest('[data-save]')){ S.editing = null; S.edited = false; S.edit = false; render(); return; }
+  const py = e.target.closest('[data-py]');
+  if (py){ const [t, p] = py.dataset.py.split('|'); S.pyText = t; S.pySyls = p ? p.split(' ').map(s => [s.normalize('NFD').replace(/[̀-ͯ]/g, ''), toneOf(s), s]) : [['', 'neutral', '']]; S.py = true; render(); return; }
+  if (e.target.closest('.scrim2') && !e.target.closest('.dlg2')){ S.py = false; render(); return; }
+  if (e.target.closest('.dlg2 .btn')){ S.py = false; render(); return; }
+  const pick = e.target.closest('[data-pick]'), menu = e.target.closest('[data-menu]');
+  if (pick){
+    const id = pick.dataset.pick, val = pick.dataset.val;
+    if (id === 'project'){ S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+      S.points = S.projects.flatMap(p => POINTS[p] || []); S.count = Math.min(20, S.points.length) || 8; if (S.projects.length && !S.practiceName) S.practiceName = S.projects[0]; render(); return; }
+    if (id === 'pinyin') S.pinyin = val; if (id === 'translation') S.translation = val; if (id === 'speed') S.speed = val; if (id === 'voice') { S.voiceName = val; S.voice = true; }
+    S.open = null; render(); return;
+  }
+  if (menu){ S.open = S.open === menu.dataset.menu ? null : menu.dataset.menu; render(); return; }
+  if (S.open !== null){ S.open = null; render(); }
+});
+function toneOf(s){ const m = { '̄':'1st ˉ', '́':'2nd ˊ', '̌':'3rd ˇ', '̀':'4th ˋ' }; const d = s.normalize('NFD').match(/[̀-ͯ]/); return d ? (m[d[0]] || 'neutral') : 'neutral'; }
+document.addEventListener('input', (e) => { if (e.target.id === 'cnt') S.count = Math.min(20, Math.max(1, parseInt(e.target.value, 10) || 1)); });
+el('back').addEventListener('click', () => { if (S.step > 0){ S.step -= 1; S.open = null; S.editing = null; render(); } });
+el('next').addEventListener('click', () => {
+  if (S.step === 0 && !generated()){ if (!S.projects.length || !S.points.length) return; S.gen = true; render(); setTimeout(() => { S.gen = false; S.done = true; S.fail = false; S.step = 1; render(); }, 1600); return; }   // 生成完自動跳 Question Review
+  if (S.step === 1 && S.questions.length === 0){ snack(isGuided() ? 'Every question needs a question and a suggested answer.' : 'Every question needs a teaching point and a suggested answer.'); return; }   // pending.isComplete === false
+  if (S.step < 3){ S.step += 1; S.open = null; S.editing = null; render(); }
+});
+el('scrim').addEventListener('click', () => { S.regen = false; S.voice = false; render(); });
+render();
+</script>
+</body>
+</html>

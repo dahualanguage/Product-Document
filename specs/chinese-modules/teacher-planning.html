@@ -15,7 +15,8 @@
      Dahua.ai 字標、CONTENT／PRACTICE／OVERVIEW 三組、Report Issue）。teacher-nav.js 不再注入，標記寫死在這頁；
      側欄比產品多一項 Planning（Dashboard 正下方，使用者 2026-10-05 定：Planning mode 有自己的頁面）、選中它；Spec 連結從側欄拿掉（versions 頁有）。字體用產品的 Public Sans，只套在側邊欄。
      v14 方向 C（2026-10-05）：對話收決定 → 草稿卡 → Preview as a student（全畫面走查，2026-10-06 使用者選 B）→ Assign 直接開產品建立頁第四步；Edit 才回第二步。
-     右側面板關掉（prevWanted 回 false、toggle 藏起來）；tail() 改走 cNext()；舊的面板流程程式留著沒刪。 ---- */
+     右側面板關掉（prevWanted 回 false、toggle 藏起來）；tail() 改走 cNext()；舊的面板流程程式留著沒刪。
+     四張灰卡開起來（2026-10-19，使用者「補四張灰卡」）：C_FOCUS 八種全開。Sentence Response／Building 走 cpts → cfpn_⟨ep⟩（幾題，每個各一題）；Open-ended Questions 走 cqapick、Comprehension Quiz 走 cmcpick（「哪些題」：預設全部、Pick 才展開清單，跟 Which sentences? 同形；舊的 qcount 不再走）。內容 mock：C_FP（食物 12 點各一題：題目／句型挖空／建議答案）、C_QA（5 Content Base＋3 Extension）、C_MC（4 TF＋6 MC 含四個 category）。草稿卡：QA／Quiz 的 meta 寫題型數、Quiz 多 Test mode off；Settings 鈕只給有獨立設定步的型別（cHasSettings）。Edit／Settings 接管 v12／v13／v14 基準檔（cSettingsUrl：基準 step=2、提案 step=3），pmPoll 讀 .step 也讀 .stp-item、最後一步索引照 PM_HELP.steps.length、三步型別只留第 2 步。走查 renderBankFpStudentPreview：Follow Pattern 有 Reference 框（.fp-ref，產品 teal）、QA 一問一卡、Quiz 選項 A–D 不錄音。示範入口 ?at=c-sr|c-sb|c-qa|c-mc|c-eight。cdp 跑過三條單一與八種一起，零錯誤。 ---- */
   /* 統一 UI（2026-10-06）：跟提案一同一套——產品綠取代翡翠漸層（shell 的 --emerald 整組改接產品綠）、藍＝對話、老師泡泡中性、Public Sans */
   :root{ --emerald:#00CB61; --emerald-d:#00A749; --emerald-dd:#00754A; --emerald-l:#EFFBF4; --emerald-l2:#BBF1D0; --emerald-ring:#7FE3AE;
     /* 第三版 token（planning-tokens.html，2026-10-07）：中性色照產品 palette；沒有第二色相；選中＝綠細框白底（使用者選 B） */
@@ -870,6 +871,11 @@
   .stu-s .bd{ flex:1; min-width:0; }
   .stu-q{ font-size:15px; font-weight:700; color:var(--ink); text-align:center; line-height:1.55; }
   .stu-o{ display:flex; flex-direction:column; gap:7px; margin-top:13px; }
+  /* Follow Pattern 走查的參考框（產品 question-card Reference：teal #14B8A6 6% 底、20% 框） */
+  .fp-ref{ margin-top:16px; padding:10px 12px; border-radius:10px; background:rgba(20,184,166,.06); border:1px solid rgba(20,184,166,.2); display:flex; flex-direction:column; gap:2px; text-align:left; }
+  .fp-ref .l{ font-size:11px; font-weight:700; color:#14B8A6; }
+  .fp-ref .p{ font-size:12px; font-style:italic; color:#64748B; }
+  .fp-ref .z{ font-size:18px; font-weight:700; color:#1E293B; }
   .stu-o span{ font-size:13px; font-weight:600; color:var(--slate); border:1px solid var(--line);
     border-radius:9px; padding:9px 13px; background:#fff; }
   .stu-w{ display:flex; justify-content:center; gap:7px; flex-wrap:wrap; }
@@ -3032,7 +3038,7 @@
   }
 
   /* 提案比較（2026-10-06）：先以 Content Mirroring ＋ Vocabulary Mirroring 為主，其餘的卡先灰掉；要全開就把這個陣列設成 null */
-  var C_FOCUS=['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE'];   /* 2026-10-12 使用者：Quiz／Scramble 也開（跟提案一一樣四種） */
+  var C_FOCUS=['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING','QA','MULTIPLE_CHOICE'];   /* 2026-10-12 使用者：Quiz／Scramble 也開（跟提案一一樣四種）；2026-10-19 剩下四張也開（使用者「補四張灰卡」） */
   function epCard(k){
     var on=pick.indexOf(k)>-1, c=TRACKS[EP_TRACK[k]], off=!!(C_FOCUS && C_FOCUS.indexOf(k)<0);
     /* the card carries its own track colour, not the row's —— Handout and Slide
@@ -3099,7 +3105,7 @@
      右側面板不再用。對話只問決定；每個練習在它自己的問題答完時就開始生（邊問邊生）；
      收尾是一張摘要卡，Open to review 開產品的建立頁面（iterations 定案的四步）、停在第二步。
      Assign 交給產品第四步，草稿不帶班級。 */
-  var C_STEPS=['cpts','cmirsel','cscrn','cscrsrc','cquizn','cquizpick','cquizmust','csettings','cdraft'];
+  var C_STEPS=['cpts','cmirsel','cscrn','cscrsrc','cquizn','cquizpick','cquizmust','csettings','cdraft','cfpn_SENTENCE_RESPONSE','cfpn_SENTENCE_BUILDING','cqapick','cmcpick'];
   var C_QTYPES=[
     ['CN_TO_EN','Chinese → Translation','translate',false],
     ['IMAGE_TO_CN','Image → Chinese','image',false],
@@ -3124,12 +3130,74 @@
   function cQuizMax(){ return cTicked().length*C_QTYPES.length; }
   function cQuizN(){ return S.c.quizAsk==='all' ? cQuizMax() : (S.c.quizN||Math.min(20,cQuizMax())); }
   function cShares(total,n){ if(!n) return ''; var lo=Math.floor(total/n), hi=Math.ceil(total/n); return lo===hi ? lo+' each' : lo+'–'+hi+' each'; }
+  /* ================= 2026-10-19 四張新卡的內容 =================
+     Sentence Response／Building（產品 FOLLOW_PATTERN）：每個教學點一題；題目、句型、建議答案照 follow-pattern-preview 的欄位。只有「食物」寫了真的題，別的主題退回「請用 X 說一句話」＋ 課文裡含 X 的那句當建議答案（跟 scrSentenceFor 同一個誠實留白）。
+     Open-ended Questions／Comprehension Quiz：來自 Project 的題庫（mock：一個 Project 一個題庫）。QA 題分 Content Base／Extension（產品 qa.shortAnswer／extension）；Quiz 題分 True/False／Multi-Choice 與四個 category（MC_CAT）。 */
+  var C_FP={ '食物':{
+    '米饭':{q:'你喜欢吃什么？', qpy:'nǐ xǐhuan chī shénme?', pat:'我喜欢吃____。', patpy:'wǒ xǐhuan chī ____.', a:'我喜欢吃米饭。', apy:'wǒ xǐhuan chī mǐfàn.', t:'What do you like to eat?'},
+    '面条':{q:'你喜欢吃面条吗？', qpy:'nǐ xǐhuan chī miàntiáo ma?', pat:'我不喜欢吃____。', patpy:'wǒ bù xǐhuan chī ____.', a:'我不喜欢吃面条。', apy:'wǒ bù xǐhuan chī miàntiáo.', t:'Do you like eating noodles?'},
+    '鸡蛋':{q:'早饭你吃什么？', qpy:'zǎofàn nǐ chī shénme?', pat:'早饭我吃____。', patpy:'zǎofàn wǒ chī ____.', a:'早饭我吃鸡蛋。', apy:'zǎofàn wǒ chī jīdàn.', t:'What do you eat for breakfast?'},
+    '牛奶':{q:'你想喝什么？', qpy:'nǐ xiǎng hē shénme?', pat:'我想喝一碗____。', patpy:'wǒ xiǎng hē yì wǎn ____.', a:'我想喝一碗牛奶。', apy:'wǒ xiǎng hē yì wǎn niúnǎi.', t:'What do you want to drink?'},
+    '苹果':{q:'这个苹果怎么样？', qpy:'zhège píngguǒ zěnmeyàng?', pat:'这个____很好吃。', patpy:'zhège ____ hěn hǎochī.', a:'这个苹果很好吃。', apy:'zhège píngguǒ hěn hǎochī.', t:'How is this apple?'},
+    '好吃':{q:'妈妈做的面条好吃吗？', qpy:'māma zuò de miàntiáo hǎochī ma?', pat:'____很好吃。', patpy:'____ hěn hǎochī.', a:'妈妈做的面条很好吃。', apy:'māma zuò de miàntiáo hěn hǎochī.', t:'Are the noodles mom makes tasty?'},
+    '早饭':{q:'早饭你喝什么？', qpy:'zǎofàn nǐ hē shénme?', pat:'早饭我喝____。', patpy:'zǎofàn wǒ hē ____.', a:'早饭我喝一碗牛奶。', apy:'zǎofàn wǒ hē yì wǎn niúnǎi.', t:'What do you drink for breakfast?'},
+    '饿':{q:'你饿了吗？', qpy:'nǐ è le ma?', pat:'我____了。', patpy:'wǒ ____ le.', a:'我饿了。', apy:'wǒ è le.', t:'Are you hungry?'},
+    '喝':{q:'你喝了什么？', qpy:'nǐ hē le shénme?', pat:'我____了一碗牛奶。', patpy:'wǒ ____ le yì wǎn niúnǎi.', a:'我喝了一碗牛奶。', apy:'wǒ hē le yì wǎn niúnǎi.', t:'What did you drink?'},
+    '吃':{q:'中午你们做什么？', qpy:'zhōngwǔ nǐmen zuò shénme?', pat:'中午我们一起____饭。', patpy:'zhōngwǔ wǒmen yìqǐ ____ fàn.', a:'中午我们一起吃饭。', apy:'zhōngwǔ wǒmen yìqǐ chī fàn.', t:'What do you do at noon?'},
+    '了':{q:'你吃了几个鸡蛋？', qpy:'nǐ chī le jǐ gè jīdàn?', pat:'我吃____两个鸡蛋。', patpy:'wǒ chī ____ liǎng gè jīdàn.', a:'我吃了两个鸡蛋。', apy:'wǒ chī le liǎng gè jīdàn.', t:'How many eggs did you eat?'},
+    '碗':{q:'你想喝几碗牛奶？', qpy:'nǐ xiǎng hē jǐ wǎn niúnǎi?', pat:'我想喝一____牛奶。', patpy:'wǒ xiǎng hē yì ____ niúnǎi.', a:'我想喝一碗牛奶。', apy:'wǒ xiǎng hē yì wǎn niúnǎi.', t:'How many bowls of milk do you want?'}
+  } };
+  var C_QA={ '食物':[
+    {type:'shortAnswer', q:'他喜欢吃什么？', py:'tā xǐhuan chī shénme?', a:'他喜欢吃米饭。'},
+    {type:'shortAnswer', q:'这个苹果怎么样？', py:'zhège píngguǒ zěnmeyàng?', a:'这个苹果很好吃。'},
+    {type:'shortAnswer', q:'他想喝什么？', py:'tā xiǎng hē shénme?', a:'他想喝一碗牛奶。'},
+    {type:'shortAnswer', q:'妈妈做的面条好吃吗？', py:'māma zuò de miàntiáo hǎochī ma?', a:'很好吃。'},
+    {type:'shortAnswer', q:'他吃了几个鸡蛋？', py:'tā chī le jǐ gè jīdàn?', a:'他吃了两个鸡蛋。'},
+    {type:'extension', q:'你早饭吃什么？', py:'nǐ zǎofàn chī shénme?', a:'我早饭吃面包。'},
+    {type:'extension', q:'你最喜欢吃什么水果？', py:'nǐ zuì xǐhuan chī shénme shuǐguǒ?', a:'我最喜欢吃苹果。'},
+    {type:'extension', q:'你饿的时候吃什么？', py:'nǐ è de shíhou chī shénme?', a:'我饿的时候吃面条。'}
+  ] };
+  var C_MC={ '食物':[
+    {type:'true_or_false', cat:'comprehension', q:'他喜欢吃面条。', o:['True','False'], a:1},
+    {type:'true_or_false', cat:'comprehension', q:'这个苹果很好吃。', o:['True','False'], a:0},
+    {type:'true_or_false', cat:'comprehension', q:'他早饭喝一碗牛奶。', o:['True','False'], a:0},
+    {type:'true_or_false', cat:'comprehension', q:'他吃了三个鸡蛋。', o:['True','False'], a:1},
+    {type:'multi_choice', cat:'comprehension', q:'他喜欢吃什么？', o:['米饭','面条','苹果','鸡蛋'], a:0},
+    {type:'multi_choice', cat:'comprehension', q:'他想喝什么？', o:['水','茶','牛奶','汤'], a:2},
+    {type:'multi_choice', cat:'comprehension', q:'妈妈做的什么很好吃？', o:['米饭','面条','鸡蛋','苹果'], a:1},
+    {type:'multi_choice', cat:'meaning', q:'“好吃”是什么意思？', o:['hungry','delicious','breakfast','bowl'], a:1},
+    {type:'multi_choice', cat:'usage', q:'“我想喝一___牛奶。”', o:['个','碗','只','本'], a:1},
+    {type:'multi_choice', cat:'pinyin', q:'“鸡蛋”的拼音是？', o:['jīdàn','jìdān','qīdàn','jīdān'], a:0}
+  ] };
+  function isFp(k){ return k==='SENTENCE_RESPONSE'||k==='SENTENCE_BUILDING'; }
+  function cTopic(){ return (S.proj&&S.proj.topic)||S.topic||'食物'; }
+  function cWordPy(w){ var raw=TEXTS[cTopic()]||TEXTS['食物'], hit=raw.cards ? raw.cards.filter(function(c){return c[0]===w;})[0] : null; return hit?hit[1]:''; }
+  function cFpQs(ep){
+    var n=cCount(ep), tps=cTicked(), out=[], tb=C_FP[cTopic()]||C_FP['食物'];
+    for(var i=0;i<n;i++){
+      var w=tps[i%Math.max(1,tps.length)]||'—', row=tb[w], o;
+      if(row) o={tp:w, q:row.q, qpy:row.qpy, pat:row.pat, patpy:row.patpy, a:row.a, apy:row.apy, t:row.t};
+      else { var sx=scrSentenceFor(w), zh=sx.w.map(function(p){return p[0];}).join(''), py=sx.w.filter(function(p){return /[\u4e00-\u9fff]/.test(p[0]);}).map(function(p){return p[1];}).join(' ');
+             o={tp:w, q:'请用“'+w+'”说一句话。', qpy:'qǐng yòng “'+(cWordPy(w)||w)+'” shuō yí jù huà.', pat:'', patpy:'', a:zh, apy:py, t:sx.t}; }
+      if(ep==='SENTENCE_BUILDING'){ o.q='用“'+w+'”造一个句子。'; o.qpy='yòng “'+(cWordPy(w)||w)+'” zào yí gè jùzi.'; o.pat=''; o.patpy=''; }
+      out.push(o);
+    }
+    return out;
+  }
+  function cQaQs(){ return C_QA[cTopic()]||C_QA['食物']; }
+  function cMcQs(){ return C_MC[cTopic()]||C_MC['食物']; }
+  function cQaSel(){ var qs=cQaQs(); return (S.c&&S.c.qaSel ? S.c.qaSel : qs.map(function(_,i){return i;})).map(function(i){ return qs[i]; }).filter(Boolean); }
+  function cMcSel(){ var qs=cMcQs(); return (S.c&&S.c.mcSel ? S.c.mcSel : qs.map(function(_,i){return i;})).map(function(i){ return qs[i]; }).filter(Boolean); }
+  function cHasSettings(ep){ return ep!=='VOCABULARY_MC' && ep!=='MULTIPLE_CHOICE' && ep!=='QA'; }   /* Quiz 沒有設定；QA 與 Comprehension Quiz 的設定跟題目同一步（Edit 就是那一頁） */
   /* 這個練習的輸入都齊了嗎 —— 齊了就開始生 */
   function cReady(ep){
     if(EP[ep].needs==='tp' && !S.c.ptsDone) return false;
     if(ep==='MIRRORING') return !!S.c.mirDone;
     if(ep==='SENTENCE_SCRAMBLE') return S.c.scrN!==null && S.c.scrSrc!==null;
     if(ep==='VOCABULARY_MC') return S.c.quizAsk==='all' || S.c.quizMode==='random' || (S.c.quizMode==='must' && !!S.c.quizMustDone);
+    if(isFp(ep)) return !!(S.c.fpN && S.c.fpN[ep]);
+    if(ep==='QA') return !!S.c.qaDone;
+    if(ep==='MULTIPLE_CHOICE') return !!S.c.mcDone;
     if(EP[ep].needs==='bank') return !!S.c.qnDone;
     return true;
   }
@@ -3138,6 +3206,9 @@
     if(ep==='SENTENCE_SCRAMBLE') return S.c.scrN||cTicked().length;
     if(ep==='VOCABULARY') return cTicked().length;
     if(ep==='VOCABULARY_MC') return cQuizN();
+    if(isFp(ep)) return (S.c.fpN&&S.c.fpN[ep])||cTicked().length;
+    if(ep==='QA') return cQaSel().length;
+    if(ep==='MULTIPLE_CHOICE') return cMcSel().length;
     if(EP[ep].needs==='bank') return S.qn||0;
     return cTicked().length;
   }
@@ -3179,7 +3250,10 @@
       if(S.c.quizAsk==='set' && !S.c.quizMode) return 'cquizpick';
       if(S.c.quizMode==='must' && !S.c.quizMustDone) return 'cquizmust';
     }
-    if(makesQuestions(ep) && !S.c.qnDone) return 'qcount';
+    /* 2026-10-19 四張新卡：Sentence Response／Building 各問一題「幾題」；QA／Comprehension Quiz 問用題庫裡哪些題（預設全部）。舊的 qcount 不再走 */
+    for(var fi=0; fi<ep.length; fi++){ if(isFp(ep[fi]) && !(S.c.fpN && S.c.fpN[ep[fi]])) return 'cfpn_'+ep[fi]; }
+    if(ep.indexOf('QA')>-1 && !S.c.qaDone) return 'cqapick';
+    if(ep.indexOf('MULTIPLE_CHOICE')>-1 && !S.c.mcDone) return 'cmcpick';
     cStartGen();
     /* 設定不問（使用者 2026-10-12「直接先出現 draft」）：預設全開，草稿卡上一行摘要，要改 → Settings 開建立頁第三步 */
     /* 指派在對話裡問（使用者 2026-10-12 選乙）：給誰、何時到期、怎麼算，三題問完 All set；產品頁只在 Edit／Settings 時接管主區 */
@@ -3193,7 +3267,9 @@
     if(ep.indexOf('MIRRORING')>-1) st.push('cmirsel');
     if(ep.indexOf('SENTENCE_SCRAMBLE')>-1) st.push('cscrn','cscrsrc');
     if(ep.indexOf('VOCABULARY_MC')>-1){ st.push('cquizn'); if(c.quizAsk==='set') st.push('cquizpick'); if(c.quizMode==='must') st.push('cquizmust'); }
-    if(makesQuestions(ep)) st.push('qcount');
+    ep.forEach(function(k){ if(isFp(k)) st.push('cfpn_'+k); });
+    if(ep.indexOf('QA')>-1) st.push('cqapick');
+    if(ep.indexOf('MULTIPLE_CHOICE')>-1) st.push('cmcpick');
     st.push('cdraft');
     if(hasPractice(ep)) st.push('cassign','cdone');
     return st;
@@ -3284,6 +3360,9 @@
     var d={pinyin:'Shown', speed:'Normal', voice:VOICES[0][0], tries:3};
     if(ep==='MIRRORING'){ d.mode='Say it back'; d.translation='Shown'; }
     if(ep==='VOCABULARY'){ d.translation='Shown'; d.image='Shown'; }
+    /* 2026-10-19：照產品預設——Follow Pattern 的 Pinyin／Translation 預設 STUDENT_CHOICE；QA 有 Guide phrase language、沒有 tries */
+    if(isFp(ep)){ d.pinyin='Choice by student'; d.translation='Choice by student'; }
+    if(ep==='QA'){ d.guide='Chinese'; }
     return d;
   }
   function cSet(ep){ if(!S.c.settings[ep]) S.c.settings[ep]=cDefaults(ep); return S.c.settings[ep]; }
@@ -3293,7 +3372,8 @@
     parts.push('Pinyin '+st.pinyin.toLowerCase());
     if(st.translation) parts.push('Translation '+st.translation.toLowerCase());
     if(st.image) parts.push('Images '+st.image.toLowerCase());
-    if(ep!=='VOCABULARY_MC'){ parts.push(st.speed+' speed'); parts.push(st.voice); parts.push(st.tries+' tries'); }
+    if(ep!=='VOCABULARY_MC'){ parts.push(st.speed+' speed'); parts.push(st.voice); if(ep!=='QA') parts.push(st.tries+' tries'); }
+    if(st.guide) parts.push('Guide phrase '+st.guide);
     return parts.join(' · ');
   }
   function cSeg(ep,key,opts){ var st=cSet(ep);
@@ -3329,8 +3409,14 @@
     if(ep==='VOCABULARY') return 'iterations/v4-vocabulary-mirroring/proposal.html?step=2';
     if(ep==='VOCABULARY_MC'){ var u='iterations/v6-vocabulary-quiz/proposal.html?step=3'; if(S.c.quizAsk==='set') u+='&fewer='+cQuizN(); if(S.c.quizMode==='must' && (S.c.quizMust||[]).length) u+='&must='+S.c.quizMust.join(','); return u; }
     if(ep==='SENTENCE_SCRAMBLE') return 'iterations/v7-sentence-scramble/proposal.html?step=2&n='+(S.c.scrN||pts.length);
+    /* 2026-10-19：四張新卡嵌 v12／v13／v14 的 proposal（下午起；上午是基準檔，使用者「基礎的 UI 不一致」）。?step= 從 1 數、Edit 停第 2 步；&proj=0＝「我的一天」，mock 跟對話的 Project 對不上，跟 v3–v7 一樣的已知落差 */
+    if(isFp(ep)) return 'iterations/v12-follow-pattern/proposal.html?step=2&proj=0&sub='+(ep==='SENTENCE_BUILDING'?'SENTENCE_BUILDING':'GUIDED_RESPONSE');
+    if(ep==='QA') return 'iterations/v13-open-ended-questions/proposal.html?step=2&proj=0';
+    if(ep==='MULTIPLE_CHOICE') return 'iterations/v14-comprehension-quiz/proposal.html?step=2&proj=0';
     return 'teacher-practice.html';
   }
+  function cSettingsUrl(ep){ var u=cOpenUrl(ep); return /\/create-[a-z-]+\.html/.test(u) ? u.replace(/step=\d/,'step=2') : u.replace(/step=\d/,'step=3'); }   /* 基準檔從 0 數、提案從 1 數 */
+  function pmSettingsIdx(ep){ var h=pmHelp(ep); return h.settings===undefined ? 2 : h.settings; }
   /* Assign ＝ 產品建立頁的第四步（八種共用），不經過第二、三步 */
   function cAssignUrl(ep){
     /* 2026-10-07：第四步嵌 v8（指派歷史＋逾期扣分，八種共用），Vocabulary 帶 &as= 換標題 */
@@ -3346,13 +3432,15 @@
       var meta=[proj, n+' '+cUnit(ep)+(n===1?'':'s')];
       if(ep==='SENTENCE_SCRAMBLE') meta.push(S.c.scrSrc==='ex'?'from examples':'generated');
       if(ep==='VOCABULARY_MC') meta.push(S.c.quizAsk==='all'?'all question types':(S.c.quizMode==='must'?'must cover '+(S.c.quizMust||[]).length+' types':'random'));
-      if(ep!=='VOCABULARY_MC') meta.push(cSetLine(ep));   /* 設定不再問（2026-10-12）：卡上這一行就是預設的摘要，Settings 才開建立頁第三步 */
+      if(ep==='QA'){ var qq=cQaSel(); meta.push(qq.filter(function(q){return q.type==='shortAnswer';}).length+' Content Base · '+qq.filter(function(q){return q.type!=='shortAnswer';}).length+' Extension'); }
+      if(ep==='MULTIPLE_CHOICE'){ var mq=cMcSel(); meta.push(mq.filter(function(q){return q.type==='true_or_false';}).length+' True/False · '+mq.filter(function(q){return q.type!=='true_or_false';}).length+' Multi-Choice'); meta.push('Test mode off'); }
+      if(ep!=='VOCABULARY_MC' && ep!=='MULTIPLE_CHOICE') meta.push(cSetLine(ep));   /* 設定不再問（2026-10-12）：卡上這一行就是預設的摘要，Settings 才開建立頁第三步 */
       return '<div class="cdraft" style="--tk:'+(c.ink||'#059669')+'">'+(THUMB[ep]||'')+'<div class="cd-tx"><b>'+esc(EP[ep].t)+'</b><span>'+esc(meta.join(' · '))+'</span>'+
         '<span class="cd-st '+(done?'ok':'run')+'"><span class="material-icons-round">'+(done?'check_circle':'autorenew')+'</span>'+(done?'Ready':'Generating…')+'</span></div>'+
         (live ? '<div class="cd-acts">'+
           '<button class="btnp sm-act'+(done?'':' dis')+'" data-cprev="'+ep+'"'+(done?'':' disabled')+'><span class="material-icons-round" style="font-size:16px;margin-right:5px;vertical-align:-3px">visibility</span>Preview as a student</button>'+
           '<button class="cd-edit" data-cedit="'+ep+'" style="border:0;background:transparent;cursor:pointer;font:inherit">Edit on the create page</button>'+
-          (ep!=='VOCABULARY_MC' ? '<button class="cd-edit" data-csettings="'+ep+'" style="border:0;background:transparent;cursor:pointer;font:inherit">Settings</button>' : '')+'</div>' : '')+'</div>';
+          (cHasSettings(ep) ? '<button class="cd-edit" data-csettings="'+ep+'" style="border:0;background:transparent;cursor:pointer;font:inherit">Settings</button>' : '')+'</div>' : '')+'</div>';
     }).join('')+'</div>';
     if(!live) return head+cards;
     /* 指派在下一步（2026-10-12）：全部 Ready 才放行 */
@@ -3376,6 +3464,31 @@
     if(!live) return head+rows;
     return head+rows+(left.length ? '' : '<div class="turn-acts"><button class="qopt" data-go="again">Plan another</button></div>');
   }
+  /* ---- 2026-10-19：四張新卡的回合 ---- */
+  function cfpnBodyFor(ep){ return function(live){
+    var pts=cTicked().length, cur=(S.c.fpN||{})[ep], n=cur||Math.min(C_MAX_SENT,pts);
+    var head='How many questions for <b>'+esc(EP[ep].t)+'</b>?<span class="qhint">Up to '+C_MAX_SENT+' · one per teaching point by default · '+pts+' point'+(pts===1?'':'s')+' ticked</span>';
+    if(!live) return head;
+    var quick=[pts, pts*2, 15, 20].filter(function(v,i,a){ return v>=pts && v<=C_MAX_SENT && a.indexOf(v)===i; });
+    return head+'<span class="qopts">'+quick.map(function(v){ return '<button class="qopt" data-cfpn="'+ep+':'+v+'">'+v+(v===pts?'<span class="sub">one per point</span>':'')+'</button>'; }).join('')+'</span>'+
+      '<span class="qopts"><span class="numfield"><input id="cFpN" type="number" min="'+pts+'" max="'+C_MAX_SENT+'" value="'+n+'" aria-label="Number of questions"><span class="unit">questions</span></span>'+
+      '<button class="qopt" data-cfpngo="'+ep+'">Use this</button></span>';
+  }; }
+  function cPickBody(o){   /* QA 與 Comprehension Quiz 共用：預設全部、Pick 才展開清單（跟 Which sentences? 同一個形） */
+    return function(live){
+      var qs=o.qs(), sel=o.sel()||qs.map(function(_,i){return i;}), nA=qs.filter(function(q){return q.type===o.typeA;}).length, nB=qs.length-nA;
+      var head='Which questions?<span class="qhint">'+(o.pick() ? 'Untick any you don’t want asked.' : 'The question bank for '+esc(S.proj&&S.proj.name?S.proj.name:S.topic)+' —— '+nA+' '+o.labelA+' · '+nB+' '+o.labelB+'.')+'</span>';
+      if(!live) return head+'<div class="cbox done-box"><b style="font-size:13.5px">'+(sel.length===qs.length?'All '+qs.length:sel.length+' of '+qs.length)+' questions</b></div>';
+      if(!o.pick()) return head+'<div class="qopts"><button class="qopt go" data-'+o.key+'all="1">Use all '+qs.length+' questions</button><button class="qopt" data-'+o.key+'pick="1">Pick questions</button></div>';
+      var body='<div class="cbox">'+qs.map(function(q,i){ var on=sel.indexOf(i)>-1;
+        return '<div class="srow2 stu'+(on?' on':'')+'" data-'+o.key+'="'+i+'"><span class="material-icons-round tick">'+(on?'check_box':'check_box_outline_blank')+'</span>'+
+          '<span class="stx">'+esc(q.q)+'<span class="qhint">'+esc(q.type===o.typeA?o.labelA:o.labelB)+' · '+esc(o.sub(q))+'</span></span></div>'; }).join('')+'</div>';
+      return head+body+'<div class="qopts mid"><button class="qopt go" data-'+o.key+'go="1"'+(sel.length?'':' disabled style="opacity:.5"')+'>Use '+sel.length+' question'+(sel.length===1?'':'s')+'</button></div>';
+    };
+  }
+  var cqapickBody=cPickBody({ key:'cqa', qs:cQaQs, sel:function(){ return S.c.qaSel; }, pick:function(){ return !!S.c.qaPick; }, typeA:'shortAnswer', labelA:'Content Base', labelB:'Extension', sub:function(q){ return q.a; } });
+  var cmcpickBody=cPickBody({ key:'cmc', qs:cMcQs, sel:function(){ return S.c.mcSel; }, pick:function(){ return !!S.c.mcPick; }, typeA:'true_or_false', labelA:'True/False', labelB:'Multi-Choice', sub:function(q){ return (MC_CAT[q.cat]?MC_CAT[q.cat].l:q.cat)+' · '+q.o[q.a]; } });
+  BODY.cfpn_SENTENCE_RESPONSE=cfpnBodyFor('SENTENCE_RESPONSE'); BODY.cfpn_SENTENCE_BUILDING=cfpnBodyFor('SENTENCE_BUILDING'); BODY.cqapick=cqapickBody; BODY.cmcpick=cmcpickBody;
   BODY.cpts=cptsBody; BODY.cmirsel=cmirselBody; BODY.cscrn=cscrnBody; BODY.cscrsrc=cscrsrcBody;
   BODY.cquizn=cquiznBody; BODY.cquizpick=cquizpickBody; BODY.cquizmust=cquizmustBody;   BODY.csettings=csettingsBody; BODY.cdraft=cdraftBody;
   /* ---- 指派三題（乙，2026-10-12）：對話收決定，不開產品頁 ---- */
@@ -3507,6 +3620,17 @@
     if((t=e.target.closest('[data-cscrn]'))){ S.c.scrN=+t.dataset.cscrn; you(S.c.scrN+' sentences'); tail(); renderChat(); return true; }
     if((t=e.target.closest('[data-cscrngo]'))){ var pts=cTicked().length, inp2=$('#cScrN'); var v2=Math.max(pts, Math.min(C_MAX_SENT, (+(inp2&&inp2.value))||pts)); S.c.scrN=v2; you(v2+' sentences'); tail(); renderChat(); return true; }
     if((t=e.target.closest('[data-cscrsrc]'))){ S.c.scrSrc=t.dataset.cscrsrc; you(S.c.scrSrc==='ex'?'Example sentences from teaching points':'Generate new sentences'); tail(); renderChat(); return true; }
+    /* 2026-10-19 四張新卡 */
+    if((t=e.target.closest('[data-cfpn]'))){ var fp=t.dataset.cfpn.split(':'); S.c.fpN=S.c.fpN||{}; S.c.fpN[fp[0]]=+fp[1]; you(fp[1]+' questions'); tail(); renderChat(); return true; }
+    if((t=e.target.closest('[data-cfpngo]'))){ var ep5=t.dataset.cfpngo, pts5=cTicked().length, in5=$('#cFpN'), v5=Math.max(pts5, Math.min(C_MAX_SENT, (+(in5&&in5.value))||pts5)); S.c.fpN=S.c.fpN||{}; S.c.fpN[ep5]=v5; you(v5+' questions'); tail(); renderChat(); return true; }
+    if(e.target.closest('[data-cqaall]')){ S.c.qaSel=cQaQs().map(function(_,i){return i;}); S.c.qaDone=true; you('All '+S.c.qaSel.length+' questions'); tail(); renderChat(); return true; }
+    if(e.target.closest('[data-cqapick]')){ S.c.qaPick=true; if(!S.c.qaSel) S.c.qaSel=cQaQs().map(function(_,i){return i;}); keep(); renderChat(); return true; }
+    if((t=e.target.closest('[data-cqa]'))){ var qi=+t.dataset.cqa, qa=(S.c.qaSel||cQaQs().map(function(_,i){return i;})).slice(), qk=qa.indexOf(qi); if(qk>-1) qa.splice(qk,1); else qa.push(qi); qa.sort(function(a,b){return a-b;}); S.c.qaSel=qa; keep(); renderChat(); return true; }
+    if(e.target.closest('[data-cqago]')){ if(!(S.c.qaSel||[]).length) return true; S.c.qaDone=true; you(S.c.qaSel.length+' of '+cQaQs().length+' questions'); tail(); renderChat(); return true; }
+    if(e.target.closest('[data-cmcall]')){ S.c.mcSel=cMcQs().map(function(_,i){return i;}); S.c.mcDone=true; you('All '+S.c.mcSel.length+' questions'); tail(); renderChat(); return true; }
+    if(e.target.closest('[data-cmcpick]')){ S.c.mcPick=true; if(!S.c.mcSel) S.c.mcSel=cMcQs().map(function(_,i){return i;}); keep(); renderChat(); return true; }
+    if((t=e.target.closest('[data-cmc]'))){ var mi=+t.dataset.cmc, ma=(S.c.mcSel||cMcQs().map(function(_,i){return i;})).slice(), mk=ma.indexOf(mi); if(mk>-1) ma.splice(mk,1); else ma.push(mi); ma.sort(function(a,b){return a-b;}); S.c.mcSel=ma; keep(); renderChat(); return true; }
+    if(e.target.closest('[data-cmcgo]')){ if(!(S.c.mcSel||[]).length) return true; S.c.mcDone=true; you(S.c.mcSel.length+' of '+cMcQs().length+' questions'); tail(); renderChat(); return true; }
     if((t=e.target.closest('[data-cquizn]'))){ if(t.dataset.cquizn==='set'){ S.c.quizAsk='set'; keep(); renderChat(); return true; } S.c.quizAsk='all'; you('Use all question types · '+cQuizMax()); tail(); renderChat(); return true; }
     if((t=e.target.closest('[data-cquizngo]'))){ var inp3=$('#cQuizN'), v3=Math.max(1, Math.min(cQuizMax(), (+(inp3&&inp3.value))||1)); S.c.quizN=v3; you(v3+' questions'); tail(); renderChat(); return true; }
     if((t=e.target.closest('[data-cquizpick]'))){ S.c.quizMode=t.dataset.cquizpick; you(S.c.quizMode==='must'?'Must cover question types':'Random'); tail(); renderChat(); return true; }
@@ -4737,7 +4861,7 @@
       return (i?'<span class="ln'+(i<=idx?' done':'')+'"></span>':'')+'<span class="st '+cls+'"><i>'+(i<idx?'<span class="material-icons-round">check</span>':(i+1))+'</i>'+(i===idx?'<b>'+esc(STEP_LABEL[k]||k)+'</b>':'')+'</span>'; }).join('');
   }
   /* 進度條上每一步的名字（現在這一步才寫） */
-  var STEP_LABEL={ cpts:'Teaching Points', cmirsel:'Sentences', cscrn:'How many', cscrsrc:'Where from', cquizn:'Questions', cquizpick:'Question types', cquizmust:'Must cover', qcount:'Questions', csettings:'Settings', cdraft:'Drafts', cassign:'Assign', cwho:'Who', cdue:'Due', ckind:'How it counts', cdone:'All set' };
+  var STEP_LABEL={ cpts:'Teaching Points', cmirsel:'Sentences', cscrn:'How many', cscrsrc:'Where from', cfpn_SENTENCE_RESPONSE:'How many', cfpn_SENTENCE_BUILDING:'How many', cqapick:'Questions', cmcpick:'Questions', cquizn:'Questions', cquizpick:'Question types', cquizmust:'Must cover', qcount:'Questions', csettings:'Settings', cdraft:'Drafts', cassign:'Assign', cwho:'Who', cdue:'Due', ckind:'How it counts', cdone:'All set' };
 
   /* ---------------- clicks anywhere in the thread ---------------- */
   $('#fnBody').addEventListener('click',function(e){
@@ -5109,6 +5233,7 @@
     if(e.target.id==='vocQnIn'&&e.key==='Enter'){ e.preventDefault(); click$('[data-vocqngo]'); }
     if(e.target.id==='cScrN'&&e.key==='Enter'){ e.preventDefault(); click$('[data-cscrngo]'); }
     if(e.target.id==='cQuizN'&&e.key==='Enter'){ e.preventDefault(); click$('[data-cquizngo]'); }
+    if(e.target.id==='cFpN'&&e.key==='Enter'){ e.preventDefault(); click$('[data-cfpngo]'); }
     if(e.target.id==='cCustom'&&e.key==='Enter'){ e.preventDefault(); click$('[data-ccustomadd]'); }
   });
 
@@ -5655,6 +5780,9 @@
   function spListLength(){
     var eps=spEps();
     if(isVocEp(eps)) return eps.indexOf('VOCABULARY_MC')>-1 ? S.voc.mcqs.length : spVocab().length*VOC_CARDS_PER_WORD;
+    if(spEp && isFp(spEp)) return cFpQs(spEp).length;
+    if(spEp==='QA') return cQaSel().length;
+    if(spEp==='MULTIPLE_CHOICE') return cMcSel().length;
     return spSents().length;
   }
   function openStudentPreview(ep){
@@ -5735,9 +5863,37 @@
       '<div class="stu-cols">'+left+'<div class="stu-main"><div class="stu-hd"><span class="ttl">'+esc(o.name)+'</span><span class="gear"><span class="material-icons-round">settings</span></span></div>'+
       '<div class="stu-mb"><div class="pcard"><div class="in"><div class="lbl"><span class="l"><span class="ic"><span class="material-icons-round">'+(o.card.icon||'chat')+'</span></span><span><span class="t">'+esc(o.card.label)+'</span>'+(o.card.helper?'<span class="h">'+esc(o.card.helper)+'</span>':'')+'</span></span><span class="rp"><span class="material-icons-round">volume_up</span></span></div><div>'+o.card.inner+'</div></div></div>'+(o.card.rec!==false?stuRec():'')+'</div></div></div></div>';
   }
+  /* 2026-10-19 四張新卡的走查：同一個學生頁骨架（stuFrame）。Follow Pattern 照產品 question-card 的 Reference 框（Use this pattern to answer: / 教學點）；
+     QA 照 QAPracticeStartCard 之後的一問一答（產品是對話式，這裡先用同一張卡）；Comprehension Quiz 一題一卡、選項 A–D、不錄音 */
+  function renderBankFpStudentPreview(){
+    var ep=spEp, name=(S.proj&&S.proj.name?S.proj.name:S.topic), sh=spShow();
+    var list = isFp(ep) ? cFpQs(ep) : (ep==='QA' ? cQaSel() : cMcSel());
+    var total=list.length, x=list[Math.min(spIndex,total-1)];
+    $('#spTitle').textContent=EP[ep].t;
+    $('#spCount').textContent='Question '+(spIndex+1)+' of '+total;
+    $('#spPrev').disabled=(spIndex===0); $('#spNext').disabled=(spIndex===total-1);
+    var card, rows=null;
+    if(isFp(ep)){
+      var ref = ep==='SENTENCE_BUILDING'
+        ? '<div class="fp-ref"><span class="l">Use this teaching point:</span>'+(sh.py&&cWordPy(x.tp)?'<span class="p">'+esc(cWordPy(x.tp))+'</span>':'')+'<span class="z">'+esc(x.tp)+'</span></div>'
+        : (x.pat ? '<div class="fp-ref"><span class="l">Use this pattern to answer:</span>'+(sh.py&&x.patpy?'<span class="p">'+esc(x.patpy)+'</span>':'')+'<span class="z">'+esc(x.pat)+'</span></div>' : '');
+      rows=list.map(function(q){ return {py:sh.py?q.qpy:'', zh:q.q, tr:sh.tr?q.t:''}; });
+      card={ icon:'route', label:'Question '+(spIndex+1), helper: ep==='SENTENCE_BUILDING'?'Listen, then build a sentence of your own':'Listen, then answer using the pattern',
+             inner:(sh.py&&x.qpy?'<div class="py">'+esc(x.qpy)+'</div>':'')+'<div class="zh" style="font-size:30px">'+esc(x.q)+'</div>'+(sh.tr&&x.t?'<div class="tr">'+esc(x.t)+'</div>':'')+ref };
+    } else if(ep==='QA'){
+      rows=list.map(function(q){ return {py:sh.py?q.py:'', zh:q.q, tr:''}; });
+      card={ icon:'chat', label:(x.type==='shortAnswer'?'Content Base':'Extension'), helper:'Listen, then answer in your own words',
+             inner:(sh.py&&x.py?'<div class="py">'+esc(x.py)+'</div>':'')+'<div class="zh" style="font-size:30px">'+esc(x.q)+'</div>' };
+    } else {
+      card={ icon:'quiz', label:(x.type==='true_or_false'?'True / False':'Multi-Choice')+' · '+(MC_CAT[x.cat]?MC_CAT[x.cat].l:x.cat), helper:'Pick one answer', rec:false,
+             inner:'<div class="zh" style="font-size:24px">'+esc(x.q)+'</div><div class="stu-o">'+x.o.map(function(o,j){ return '<span>'+String.fromCharCode(65+j)+'. '+esc(o)+'</span>'; }).join('')+'</div>' };
+    }
+    $('#spBody').innerHTML=stuFrame({ name:name, idx:spIndex, total:total, rows:rows, card:card });
+  }
   function renderStudentPreview(){
     var eps=spEps();
     if(isVocEp(eps)){ renderVocStudentPreview(); return; }
+    if(spEp && (isFp(spEp)||spEp==='QA'||spEp==='MULTIPLE_CHOICE')){ renderBankFpStudentPreview(); return; }
     var isScramble=eps.indexOf('SENTENCE_SCRAMBLE')>-1, sents=spSents();
     var x=sents[spIndex];
     $('#spTitle').textContent=(EP[eps[0]]?EP[eps[0]].t:'Preview');
@@ -5806,14 +5962,57 @@
         image:['Image','Whether the word card shows its picture —— the one picked or uploaded in step 2. Shown or Hidden only.'],
         speed:['Speed','How fast the sample audio plays —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
         voice:['Voice','Which voice reads the sample audio —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a name to hear it before picking.'],
-        tries:['Max tries','How many times a student may retry one card before it is let through. After that the card counts as passed (auto pass). Default 3.'] } }
+        tries:['Max tries','How many times a student may retry one card before it is let through. After that the card counts as passed (auto pass). Default 3.'] } },
+    /* 2026-10-19：四張新卡（文案跟提案一的 CFG 同一份） */
+    SENTENCE_RESPONSE:{ steps:['Teaching Points','Question Review','Settings','Assign Practice'],
+      text:[ function(){ return 'Step 1 is filled in from the plan —— the teaching points you ticked, and how many questions.'; },
+             function(){ return 'One card per question —— the <b>pattern</b> to answer with, the <b>teaching point</b> it drills, and a <b>suggested answer</b>. Edit or delete any; pick a point to add one more.'; },
+             function(){ return 'Tap a setting to see what it does. <b>Save</b> takes you back to the plan.'; },
+             function(){ return 'Tick the classes —— open a class to pick only some students. Set the due date; <b>Mandatory</b> sends reminder emails and the late stages apply after the due date.'; } ],
+      explain:{
+        mode:['Audio Mode','Students hear the question instead of reading it —— the pattern, the teaching point and the suggested answer are still shown.'],
+        pinyin:['Pinyin','Whether the question and the pattern show pinyin above the characters. <b>Student choice</b> puts a toggle in the student’s own settings panel. Default: student choice.'],
+        translation:['Translation','Whether the English shows under the question and the pattern. Same three choices as pinyin. Default: student choice.'],
+        speed:['Speed','How fast the question is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the question and the suggested answer —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        tries:['Attempts per question','How many times a student may re-record one question. Default 3.'] } },
+    SENTENCE_BUILDING:{ steps:['Teaching Points','Question Review','Settings','Assign Practice'],
+      text:[ function(){ return 'Step 1 is filled in from the plan —— the teaching points you ticked, and how many questions.'; },
+             function(){ return 'One card per question —— the <b>teaching point</b> students build a sentence with, and a <b>suggested answer</b> to score against. Edit or delete any; pick a point to add one more.'; },
+             function(){ return 'Tap a setting to see what it does. <b>Save</b> takes you back to the plan.'; },
+             function(){ return 'Tick the classes —— open a class to pick only some students. Set the due date; <b>Mandatory</b> sends reminder emails and the late stages apply after the due date.'; } ],
+      explain:{
+        mode:['Audio Mode','Students hear the prompt instead of reading it —— the teaching point and the suggested answer are still shown.'],
+        pinyin:['Pinyin','Whether the prompt and the teaching point show pinyin above the characters. <b>Student choice</b> puts a toggle in the student’s own settings panel. Default: student choice.'],
+        translation:['Translation','Whether the English shows under the prompt and the teaching point. Same three choices as pinyin. Default: student choice.'],
+        speed:['Speed','How fast the prompt is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the prompt and the suggested answer —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        tries:['Attempts per question','How many times a student may re-record one question. Default 3.'] } },
+    QA:{ steps:['Content','Settings & Preview','Assign Practice'], settings:1,
+      text:[ function(){ return 'Step 1 is filled in from the plan —— the question bank for this Project.'; },
+             function(){ return 'Tap a setting to see what it does. The questions are listed under the settings —— remove any you don’t want. <b>Save</b> takes you back to the plan.'; },
+             function(){ return 'Tick the classes —— open a class to pick only some students. Set the due date; <b>Mandatory</b> sends reminder emails and the late stages apply after the due date.'; } ],
+      explain:{
+        mode:['Audio Mode','Students hear each question instead of reading it. Pinyin is locked to <b>Student choice</b> while it is on.'],
+        pinyin:['Pinyin','Whether the questions show pinyin. <b>Student choice</b> puts a toggle on the student’s start screen. Default: shown.'],
+        speed:['Speed','How fast each question is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the questions —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        guide:['Guide phrase language','The spoken instructions students hear before they start —— English or Chinese. Default: Chinese.'] } },
+    MULTIPLE_CHOICE:{ steps:['Question Bank','Edit & Preview','Assign Practice'], settings:1,
+      text:[ function(){ return 'Step 1 is filled in from the plan —— the question bank for this Project.'; },
+             function(){ return 'Drag to <b>reorder</b>, remove a question, or expand one to check the answer. <b>Save</b> takes you back to the plan.'; },
+             function(){ return 'Tick the classes —— open a class to pick only some students. Set the due date; <b>Mandatory</b> sends reminder emails and the late stages apply after the due date.'; } ],
+      explain:{
+        exam:['Test Mode','Adds a time limit for the whole quiz —— the slider suggests about 30 seconds per question. Off by default.'],
+        order:['Order','Students get the questions in the order shown here —— drag a card to move it.'],
+        bank:['Edit in Question Bank','Changing a question’s wording or answer happens in the Question Bank, not here —— this step only picks and orders.'] } }
   };
   var PM={ep:null, what:null, step:0, exp:null, picked:[], done:false, timer:null};
   function pmHelp(ep){ return PM_HELP[ep]||PM_HELP.MIRRORING; }
   function renderPmRail(){
     var h=pmHelp(PM.ep), i=PM.step, html='<div class="pr-h"><span class="material-icons-round">auto_awesome</span>Planning assistant</div>';
     html+='<div class="pr-card"><span class="stag">'+(i+1)+' · '+esc(h.steps[i]||'')+'</span>'+(h.text[i]?h.text[i]():'');
-    if(i===2 && h.explain){
+    if(i===(h.settings===undefined?2:h.settings) && h.explain){
       html+='<div class="chips">'+Object.keys(h.explain).map(function(k){ return '<button class="chip'+(PM.exp===k?' on':'')+'" data-pmexp="'+k+'">'+esc(h.explain[k][0])+'</button>'; }).join('')+'</div>';
       if(PM.exp && h.explain[PM.exp]) html+='<div class="explain"><b>'+esc(h.explain[PM.exp][0])+'</b> —— '+h.explain[PM.exp][1]+'</div>';
     }
@@ -5839,18 +6038,18 @@
         }
         return;
       }
-      var items=[].slice.call(d.querySelectorAll('#stepper .stp-item')); if(!items.length) return;
+      var items=[].slice.call(d.querySelectorAll('#stepper .stp-item, #stepper .step')); if(!items.length) return;   /* 提案的步驟條是 .stp-item、基準檔（v12–v14）的是 .step */
       var st=items.findIndex(function(x){ return x.classList.contains('active'); });
-      if(st===3){ closePageModal(); return; }   /* 第三步按 Save → 第四步是指派，不在這裡做：直接回對話 */
+      if(st===pmHelp(PM.ep).steps.length-1){ closePageModal(); return; }   /* 最後一步按 Save → 下一步是指派，不在這裡做：直接回對話（三步的型別是第 2 步） */
       var bk=d.querySelector('#back'); if(bk) bk.style.display = st<=1 ? 'none' : '';
       if(st>-1 && st!==PM.step){ PM.step=st; PM.exp=null; renderPmRail(); }
     }catch(e){}
   }
   function openPageModal(ep, what){
     if(what!=='assign') TRK.edit++;
-    var url = what==='assign' ? cAssignUrl(ep) : (what==='settings' ? cOpenUrl(ep).replace(/step=\d/,'step=3') : cOpenUrl(ep));
+    var url = what==='assign' ? cAssignUrl(ep) : (what==='settings' ? cSettingsUrl(ep) : cOpenUrl(ep));
     $('#pmTitle').innerHTML=(what==='assign'?'Assign':(what==='settings'?'Settings':'Edit'))+'<b>'+esc(EP[ep].t)+'</b>';
-    PM={ep:ep, what:what, step:(what==='assign'?3:(what==='settings'?2:1)), exp:null, picked:[], done:false, timer:null};
+    PM={ep:ep, what:what, step:(what==='assign'?pmHelp(ep).steps.length-1:(what==='settings'?pmSettingsIdx(ep):1)), exp:null, picked:[], done:false, timer:null};
     renderPmRail();
     $('#pmFrame').src=url;
     $('#pmOverlay').classList.remove('off'); pmPlace();
@@ -5866,7 +6065,7 @@
     try{ var d=this.contentDocument; if(!d || !d.head) return; var st=d.createElement('style');
       st.textContent='.side,.baseline,.hdr{display:none!important}.mainwrap{margin-left:0!important}.main{padding:24px 32px 96px!important}'+
         /* 彈窗左邊多了助手欄（2026-10-12），頁面只剩 ~840px：設定工具列的群組一群一列（跟提案一同一條） */
-        (PM.what!=='assign' ? '#stepper>:nth-child(1),#stepper>:nth-child(2),#stepper>:nth-child(6),#stepper>:nth-child(7){display:none!important}' : '')+   /* 只留 2、3 步：Content 與 Assign 都不是這裡的事 */
+        (PM.what!=='assign' ? (pmHelp(PM.ep).steps.length===3 ? '#stepper>:nth-child(1),#stepper>:nth-child(2),#stepper>:nth-child(4),#stepper>:nth-child(5){display:none!important}' : '#stepper>:nth-child(1),#stepper>:nth-child(2),#stepper>:nth-child(6),#stepper>:nth-child(7){display:none!important}') : '')+   /* 只留中間的步：Content 與 Assign 都不是這裡的事（三步的型別只留第 2 步） */
         '@media (max-width:1180px){.tb-row{flex-wrap:wrap!important}.tb-row>.tb-grp{width:100%!important;align-items:flex-start!important;border-left:0!important;padding-left:0!important;padding-top:10px!important;border-top:1px dashed rgba(145,158,171,.2)!important}.tb-row>.tb-grp:first-child{border-top:0!important;padding-top:4px!important}}';
       d.head.appendChild(st); }catch(e){}
   });
@@ -5919,7 +6118,13 @@
     'c-sentences': {ep:['MIRRORING','VOCABULARY'], c:'cmirsel'},
     'c-scr':       {ep:['SENTENCE_SCRAMBLE'], c:'cpts'},
     'c-quiz':      {ep:['VOCABULARY_MC'], c:'cpts'},
-    'c-four':      {ep:['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE'], c:'cpts'}
+    'c-four':      {ep:['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE'], c:'cpts'},
+    /* 2026-10-19 四張新卡 */
+    'c-sr':        {ep:['SENTENCE_RESPONSE'], c:'cpts'},
+    'c-sb':        {ep:['SENTENCE_BUILDING'], c:'cpts'},
+    'c-qa':        {ep:['QA'], c:'cqapick'},
+    'c-mc':        {ep:['MULTIPLE_CHOICE'], c:'cmcpick'},
+    'c-eight':     {ep:['MIRRORING','VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING','QA','MULTIPLE_CHOICE'], c:'cpts'}
   };
   (function(){
     var key=(new URLSearchParams(location.search)).get('at');
@@ -5952,6 +6157,7 @@
       S.vocProjSks=[proj.sk]; S.scrProjSks=[proj.sk];
       S.c=JSON.parse(JSON.stringify(BLANK.c)); cInit();
       if(cfg.c==='cpts'){ land('cpts'); S.turns=turns; renderChat(); renderPreview(); return; }   /* 從教學點那題開始走（Scramble／Quiz 示範） */
+      if(cfg.c==='cqapick'||cfg.c==='cmcpick'){ land(cfg.c); S.turns=turns; renderChat(); renderPreview(); return; }   /* 2026-10-19 題庫類：沒有教學點那題，直接落在「哪些題」 */
       S.c.ptsDone=true; answered('cpts', cTicked().length+' teaching points');
       if(cfg.c==='cmirsel'){ land('cmirsel'); S.turns=turns; renderChat(); renderPreview(); return; }
       S.c.mirDone=true; answered('cmirsel', 'All '+S.sents.length+' sentences');

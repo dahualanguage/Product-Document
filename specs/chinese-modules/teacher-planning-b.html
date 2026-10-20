@@ -38,6 +38,7 @@
      每個 plan 是 S 的一份快照（PLANS），點開就把那段對話與完成頁整個還原；完成的寫 Created · assigned to 3B, 4A，沒完成的寫 n answers。restart()＝開新 plan（舊的留在 Today）。示範 ?hist=1。
      標題列的 Start over（refresh）鈕拿掉（使用者 2026-10-12）：跟 New plan 做同一件事；重來＝面板的 New plan 或完成頁後的 Plan another。
      Header 統一成 C 的（使用者 2026-10-12「統一 BC 版本的 header，用 C 的」）：助手欄自己的標題列拿掉，改成殼的 .pagebar 橫跨主區（圓底 auto_awesome、Planning、右邊 history 鈕＋頭像），
+     四張灰卡開起來（2026-10-19，使用者「補四張灰卡」）：Sentence Response／Sentence Building（嵌 iterations/v12-follow-pattern 基準檔、&sub=）、Open-ended Questions（v13）、Comprehension Quiz（v14）——三個基準檔是現行產品複刻、沒有提案，?step= 從 0 數（CFG.zero）、&proj= 照 PROJECTS 順序（key 'b'）。三步的型別（QA／Quiz）指派在第 2 步：ASG()＝steps.length-1 取代寫死的 3，回合依索引派工（stepBody：最後一步＝Who is it for、cfg.settings 那一步＝設定解釋）、finishAll／示範入口／navNext／navBack 都改用 ASG()；輪詢同時讀 .stp-item 與 .step（基準檔的步驟條）、Back 的 .dis 也算停用。v8 多四組 as= 標題、步驟條在三步型別時把最後一格當 active。完成頁 SUMMARY 四條照基準假資料。cdp 跑過 QA 三步指派、Sentence Response 四步、Quiz→Sentence Building 佇列，零錯誤。
      格線改成 側欄｜.main（.pagebar ＋ .body 三欄：歷史｜助手欄｜建立頁）；三欄高度 calc(100vh - 76px)、sticky top 76px，跟 C 的 .hist／.prev 一樣。
      2026-10-07：Vocabulary Quiz（v6）、Sentence Scramble（v7）也接進來——CFG 多兩筆，v6／v7 加了 &proj=；第四步 v8 的 &as= 跟著帶。
      第四步（2026-10-07）：嵌 v8-assign-history 的 proposal（指派歷史＋逾期扣分，八種共用；Vocabulary 帶 &as=VOCABULARY），頁面自己 Next 到第四步時助手欄把 iframe 換成 v8，Back 再換回 v3／v4 的第三步。
@@ -375,16 +376,16 @@
     ['VOCABULARY','Vocabulary Mirroring','Say the words back, one by one', true],
     ['VOCABULARY_MC','Vocabulary Quiz','Word meaning & usage, in MC form', true],
     ['SENTENCE_SCRAMBLE','Sentence Scramble','Listen & rearrange words', true],
-    ['SENTENCE_RESPONSE','Sentence Response','Answer questions using a pattern', false],
-    ['SENTENCE_BUILDING','Sentence Building','Build sentences from teaching points', false],
-    ['MULTIPLE_CHOICE','Comprehension Quiz','Did they understand the passage?', false],
-    ['QA','Open-ended Questions','Answer in their own words', false]
+    ['SENTENCE_RESPONSE','Sentence Response','Answer questions using a pattern', true],
+    ['SENTENCE_BUILDING','Sentence Building','Build sentences from teaching points', true],
+    ['MULTIPLE_CHOICE','Comprehension Quiz','Did they understand the passage?', true],
+    ['QA','Open-ended Questions','Answer in their own words', true]
   ];
   /* 三個專案在 v3／v4 兩份提案裡的順序不同，各記各的 &proj= 索引；vocab＝v4 的 mock 有沒有真的字（只有「我的一天」有） */
   var PROJECTS=[
-    {v3:1, v4:0, v6:0, v7:0, vocab:true,  name:'我的一天',            level:'HSK 2', sents:5, kind:'Passage'},
-    {v3:0, v4:1, v6:1, v7:1, vocab:false, name:'环境保护与可持续发展', level:'HSK 4', sents:6, kind:'Passage'},
-    {v3:2, v4:2, v6:2, v7:2, vocab:false, name:'餐厅点餐（对话）',     level:'HSK 3', sents:5, kind:'Conversation'}
+    {v3:1, v4:0, v6:0, v7:0, b:0, vocab:true,  name:'我的一天',            level:'HSK 2', sents:5, kind:'Passage'},
+    {v3:0, v4:1, v6:1, v7:1, b:1, vocab:false, name:'环境保护与可持续发展', level:'HSK 4', sents:6, kind:'Passage'},
+    {v3:2, v4:2, v6:2, v7:2, b:2, vocab:false, name:'餐厅点餐（对话）',     level:'HSK 3', sents:5, kind:'Conversation'}
   ];
   var CLASSES=[['3b','Chinese 3B',8],['4a','Chinese 4A',6],['5c','Chinese 5C',5]];
   /* 每種練習：嵌哪一頁、四步叫什麼、第三步有哪些設定 */
@@ -439,9 +440,63 @@
         voice:['Voice','Which voice reads the sentence —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a name to hear it.'],
         tries:['Max tries','How many times a student may check one sentence before the answer is shown. Default 3.']
       }
+    },
+    /* 2026-10-19：剩下四張灰卡開起來（使用者「補四張灰卡」）。上午先嵌 v12／v13／v14 的基準檔（`zero:true`，?step= 從 0 數）；使用者「基礎的 UI 不一致」→
+       下午改嵌各自的 proposal.html（套了 S1–S11／R11，跟 v3–v7 同一套，?step= 從 1 數，zero 拿掉）。`key:'b'`＝&proj= 照 PROJECTS 的順序；三步的型別用 `settings:1` 指出哪一步出設定解釋。文案照產品 origin/develop @ c8179072 的欄位與預設值 */
+    SENTENCE_RESPONSE:{
+      page:'iterations/v12-follow-pattern/proposal.html', key:'b', sub:'GUIDED_RESPONSE',
+      steps:['Teaching Points','Question Review','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any point and set <b>how many</b> questions. <b>Generate</b> writes one question per point.'; },
+      step1:function(){ return 'One card per question —— the <b>pattern</b> to answer with, the <b>teaching point</b> it drills, and a <b>suggested answer</b>. Edit or delete any; pick a point to add one more.'; },
+      explain:{
+        mode:['Audio Mode','Students hear the question instead of reading it —— the pattern, the teaching point and the suggested answer are still shown.'],
+        pinyin:['Pinyin','Whether the question and the pattern show pinyin above the characters. <b>Student choice</b> puts a toggle in the student’s own settings panel. Default: student choice.'],
+        translation:['Translation','Whether the English shows under the question and the pattern. Same three choices as pinyin. Default: student choice.'],
+        speed:['Speed','How fast the question is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the question and the suggested answer —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        tries:['Attempts per question','How many times a student may re-record one question. Default 3.']
+      }
+    },
+    SENTENCE_BUILDING:{
+      page:'iterations/v12-follow-pattern/proposal.html', key:'b', sub:'SENTENCE_BUILDING',
+      steps:['Teaching Points','Question Review','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any point and set <b>how many</b> questions. <b>Generate</b> writes one prompt per point.'; },
+      step1:function(){ return 'One card per question —— the <b>teaching point</b> students build a sentence with, and a <b>suggested answer</b> to score against. Edit or delete any; pick a point to add one more.'; },
+      explain:{
+        mode:['Audio Mode','Students hear the prompt instead of reading it —— the teaching point and the suggested answer are still shown.'],
+        pinyin:['Pinyin','Whether the prompt and the teaching point show pinyin above the characters. <b>Student choice</b> puts a toggle in the student’s own settings panel. Default: student choice.'],
+        translation:['Translation','Whether the English shows under the prompt and the teaching point. Same three choices as pinyin. Default: student choice.'],
+        speed:['Speed','How fast the prompt is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the prompt and the suggested answer —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        tries:['Attempts per question','How many times a student may re-record one question. Default 3.']
+      }
+    },
+    QA:{
+      page:'iterations/v13-open-ended-questions/proposal.html', key:'b', settings:1,
+      steps:['Content','Settings & Preview','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project —— step 1 picks its question bank' : 'Step 1 is filled in: the question bank for <b>'+esc(p.name)+'</b>')+' —— every question in it, Content Base and Extension, with the passage underneath.'; },
+      settingsHead:'Tap a setting to see what it does. The questions are listed under the settings —— remove any you don’t want.',
+      explain:{
+        mode:['Audio Mode','Students hear each question instead of reading it. Pinyin is locked to <b>Student choice</b> while it is on.'],
+        pinyin:['Pinyin','Whether the questions show pinyin. <b>Student choice</b> puts a toggle on the student’s start screen. Default: shown.'],
+        speed:['Speed','How fast each question is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the questions —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
+        guide:['Guide phrase language','The spoken instructions students hear before they start —— English or Chinese. Default: Chinese.']
+      }
+    },
+    MULTIPLE_CHOICE:{
+      page:'iterations/v14-comprehension-quiz/proposal.html', key:'b', settings:1,
+      steps:['Question Bank','Edit & Preview','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project —— step 1 picks its question bank' : 'Step 1 is filled in: the question bank for <b>'+esc(p.name)+'</b>')+' —— its True/False and Multiple Choice questions, with the passage underneath.'; },
+      settingsHead:'Drag to <b>reorder</b>, remove a question, or expand one to check the answer.',
+      explain:{
+        exam:['Test Mode','Adds a time limit for the whole quiz —— the slider suggests about 30 seconds per question. Off by default.'],
+        order:['Order','Students get the questions in the order shown here —— drag a card to move it.'],
+        bank:['Edit in Question Bank','Changing a question’s wording or answer happens in the Question Bank, not here —— this step only picks and orders.']
+      }
     }
   };
-  var NEEDS_WORDS=['VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE'];   /* 這三種的 mock 只有「我的一天」有真的字 */
+  var NEEDS_WORDS=['VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING','QA','MULTIPLE_CHOICE'];   /* 這幾種的 mock 只有「我的一天」有真的字／題庫 */
   /* 軌道（跟 v14 C 同一套色）：卡的顏色跟著它的軌道，列標題由列裡的軌道算出來 */
   var TRACKS={
     material: {ink:'#64748b', tint:'#e2e8f0', wash:'#f8fafc', label:'#7C8BA1', rule:'#dfe6ee'},
@@ -576,6 +631,8 @@
   };
   function cfg(){ return CFG[S.ep]||CFG.MIRRORING; }
   function STEPSOF(){ return cfg().steps; }
+  function ASG(){ return STEPSOF().length-1; }   /* 指派那一步的索引：四步的型別是 3、三步的（QA／Comprehension Quiz）是 2（2026-10-19） */
+  function SETT(){ return cfg().settings===undefined ? 2 : cfg().settings; }
   function EXPL(){ return cfg().explain; }
 
   /* ---------- 狀態 ---------- */
@@ -617,13 +674,14 @@
     if(S.cp) return CP.page+'?step='+(S.cp.step+1)+(S.cp.q||'');
     if(!S.ep || S.proj===null) return null;
     /* 第四步嵌 v8（Assign 歷史＋逾期扣分，使用者 2026-10-07「planning 第四步還沒有這個機制」）：八種共用，Vocabulary 用 &as= 換標題 */
-    if(S.step===3){
+    if(S.step===ASG()){
       var q4=['step=4']; if(S.ep!=='MIRRORING') q4.push('as='+S.ep);
       if(S.picked.length){ q4.push('pick='+S.picked.join(',')); q4.push('roster='+S.picked[0]); } if(S.review) q4.push('review=1'); if(S.assigned) q4.push('assigned=1');
       return 'iterations/v8-assign-history/proposal.html?'+q4.join('&');
     }
-    var q=['step='+(S.step+1)];
+    var q=['step='+(cfg().zero ? S.step : S.step+1)];   /* 提案（v3–v7）從 1 數、基準檔（v12–v14）從 0 數 */
     if(S.proj!==null) q.push('proj='+projOf()[cfg().key]);
+    if(cfg().sub) q.push('sub='+cfg().sub);
     return cfg().page+'?'+q.join('&');
   }
   var lastUrl=null;
@@ -684,7 +742,7 @@
         return;
       }
       if(S.proj===null) return;
-      var items=[].slice.call(d.querySelectorAll('#stepper .stp-item')); if(!items.length) return;
+      var items=[].slice.call(d.querySelectorAll('#stepper .stp-item, #stepper .step')); if(!items.length) return;   /* 提案的步驟條是 .stp-item、基準檔的是 .step */
       var step=items.findIndex(function(x){ return x.classList.contains('active'); });
       var changed=false;
       if(step>-1 && step!==S.step){
@@ -693,11 +751,11 @@
         S.turns=S.turns.filter(function(t){ if(t.ep!==S.ep) return true; var mm=/^step(\d)$/.exec(t.kind||''); return !(mm && +mm[1]>step) && !(t.kind==='done' && !S.assigned); });
         if(!hasTurn('step'+step)) ai('step'+step);
         changed=true;
-        if(step===3 && !/v8-assign-history/.test($('#page').src)){ lastUrl=null; render(); return; }   /* 第四步換嵌 v8 */
+        if(step===ASG() && !/v8-assign-history/.test($('#page').src)){ lastUrl=null; render(); return; }   /* 第四步換嵌 v8 */
       }
       /* 佇列裡的第二個練習走到第四步：不自動帶班級，回合裡多一顆「Same as ⟨上一個⟩」（使用者 2026-10-06「多一個選項是同上步」） */
-      if(step===3 && S.prefill){ S.prefill=false; }
-      if(step===3){
+      if(step===ASG() && S.prefill){ S.prefill=false; }
+      if(step===ASG()){
         /* 送出後頁面會把勾選清掉，所以先判「已送出」、把勾的班級留下來，再同步勾選 */
         /* 送出了：v3／v4 把整班的列標 .done；v8 把那一輪收進 HISTORY，看頁腳鈕變成 Assigned ✓ */
         var nx=d.querySelector('#next');
@@ -755,7 +813,7 @@
     if(!live) return head;
     return head+'<div class="qopts">'+PROJECTS.map(function(p,i){
       var ok = NEEDS_WORDS.indexOf(S.ep)<0 || p.vocab;
-      return '<button class="qopt rich"'+(ok?' data-proj="'+i+'"':' disabled title="No vocabulary in this mock yet"')+'><span class="material-icons-round">'+(p.kind==='Conversation'?'forum':'article')+'</span><span><b>'+esc(p.name)+'</b><small>'+esc(p.level)+' · '+p.sents+' sentences · '+esc(p.kind)+'</small></span></button>'; }).join('')+'</div>';
+      return '<button class="qopt rich"'+(ok?' data-proj="'+i+'"':' disabled title="Only 我的一天 has content in this mock"')+'><span class="material-icons-round">'+(p.kind==='Conversation'?'forum':'article')+'</span><span><b>'+esc(p.name)+'</b><small>'+esc(p.level)+' · '+p.sents+' sentences · '+esc(p.kind)+'</small></span></button>'; }).join('')+'</div>';
   };
   BODY.cp0=function(live){ return CP.body[0](); };
   function spinIco(){ return '<span class="material-icons-round spin" style="font-size:16px;vertical-align:-3px;margin-right:6px;color:var(--pg)">autorenew</span>'; }
@@ -777,18 +835,27 @@
     if(sub==='saved') return 'Saved —— the practices start from '+(n?'these <b>'+n+' words</b>':'these words')+'. Edit a card and Save again, or go <b>Back</b> to change the passage.';
     return CP.body[3]();
   };
-  BODY.step0=function(live,t){ return cfgOf(t).step0(projOf()); };
-  BODY.step1=function(live,t){ return cfgOf(t).step1(projOf()); };
-  BODY.step2=function(live,t){
-    if(cfgOf(t).step2) return cfgOf(t).step2();
+  /* 回合依步驟索引派工（2026-10-19，四步與三步的型別共用）：最後一步＝指派、cfg.settings 那一步＝設定解釋、其餘用 cfg.stepN 的文案 */
+  function stepBody(n,live,t){
+    var c=cfgOf(t), asg=c.steps.length-1, sett=c.settings===undefined?2:c.settings;
+    if(n===asg) return assignBody(live);
+    if(c['step'+n]) return c['step'+n](projOf());
+    if(n===sett) return settingsBody(live,t);
+    return '';
+  }
+  BODY.step0=function(live,t){ return stepBody(0,live,t); };
+  BODY.step1=function(live,t){ return stepBody(1,live,t); };
+  BODY.step2=function(live,t){ return stepBody(2,live,t); };
+  BODY.step3=function(live,t){ return stepBody(3,live,t); };
+  function settingsBody(live,t){
     /* 第三步：只說明設定是什麼，點 chip 出解釋；預設值與改法都在右邊頁面（使用者 2026-10-06） */
-    var head='Tap a setting to see what it does.';
+    var head=cfgOf(t).settingsHead||'Tap a setting to see what it does.';
     var EX=cfgOf(t).explain;
     var chips='<div class="chips">'+Object.keys(EX).map(function(k){ return '<button class="chip'+(S.exp===k?' on':'')+'" data-exp="'+k+'">'+esc(EX[k][0])+'</button>'; }).join('')+'</div>'+
       (S.exp ? '<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>' : '');
     if(!live) return head+(S.exp?'<div class="explain"><b>'+esc(EX[S.exp][0])+'</b> —— '+EX[S.exp][1]+'</div>':'');
     return head+chips;
-  };
+  }
   BODY.done=function(live,t){
     var to=(t&&t.to)||S.assignedTo||S.picked;
     var n=to.reduce(function(a,id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; return a+(c?c[2]:0); },0);
@@ -797,23 +864,28 @@
       (live && !next && !S.fin ? '<div class="qopts"><button class="qopt" data-again="1">Plan another</button></div>' : '')+'</div>';
   };
   function sameAsLast(){ return !!(S.lastClasses && S.lastClasses.length) && S.lastClasses.slice().sort().join()===S.picked.slice().sort().join(); }
-  BODY.step3=function(live){
+  function assignBody(live){
     var head='Who is it for?';
     if(!live) return head;
     var prev=(S.qi>0 && S.lastClasses && S.lastClasses.length) ? S.queue[S.qi-1] : null;
     var same=prev ? '<div class="qopts"><button class="qopt multi'+(sameAsLast()?' on':'')+'" data-same="1"><span class="material-icons-round">'+(sameAsLast()?'check_box':'check_box_outline_blank')+'</span>Same as '+esc(epName(prev))+' <span class="sub">'+esc(S.lastClasses.map(function(id){ var c=CLASSES.filter(function(x){return x[0]===id;})[0]; return c?c[1]:id; }).join(', '))+'</span></button></div>' : '';
     return head+same+'<div class="qopts">'+CLASSES.map(function(c){ var on=S.picked.indexOf(c[0])>-1;
       return '<button class="qopt multi'+(on?' on':'')+'" data-cls="'+c[0]+'"><span class="material-icons-round">'+(on?'check_box':'check_box_outline_blank')+'</span>'+esc(c[1])+'</button>'; }).join('')+'</div>';
-  };
+  }
   /* 新寫的內容：mock 沒有頁可嵌，用「我的一天」那一筆在每一頁的索引（v6／v7 之前漏了 → Quiz／Scramble 的 Projects 空白，2026-10-08） */
-  function projOf(){ if(S.newProj) return {v3:1, v4:0, v6:0, v7:0, vocab:true, name:S.topic, level:S.lvl, sents:5, kind:'Passage'}; return PROJECTS[S.proj]||PROJECTS[0]; }
+  function projOf(){ if(S.newProj) return {v3:1, v4:0, v6:0, v7:0, b:0, vocab:true, name:S.topic, level:S.lvl, sents:5, kind:'Passage'}; return PROJECTS[S.proj]||PROJECTS[0]; }
 
   /* ---------- 完成頁（2026-10-12） ---------- */
   var SUMMARY={
     MIRRORING:function(){ return (S.audio?'Audio only':'Text visible')+' · Pinyin shown · Translation shown · 3 tries'+(S.hide?' · last '+S.hide+' hidden':''); },
     VOCABULARY:function(){ return '12 words · 36 cards · Pinyin shown · 3 tries'; },
     VOCABULARY_MC:function(){ return '10 questions · all question types'; },
-    SENTENCE_SCRAMBLE:function(){ return '8 sentences · Pinyin shown · Normal speed · 3 tries'; }
+    SENTENCE_SCRAMBLE:function(){ return '8 sentences · Pinyin shown · Normal speed · 3 tries'; },
+    /* 2026-10-19：四張新卡，數字照 v12／v13／v14 基準檔的假資料、預設照產品 */
+    SENTENCE_RESPONSE:function(){ return '7 questions · Pinyin student choice · Translation student choice · 3 tries'; },
+    SENTENCE_BUILDING:function(){ return '7 questions · Pinyin student choice · Translation student choice · 3 tries'; },
+    QA:function(){ return '8 questions · 5 Content Base · 3 Extension · Pinyin shown · Guide phrase Chinese'; },
+    MULTIPLE_CHOICE:function(){ return '10 questions · 4 True/False · 6 Multi-Choice · Test mode off'; }
   };
   function logPractice(){ S.log.push({ ep:S.ep, to:(S.assignedTo||S.picked).slice(), due:S.due, kind:S.kind, set:(SUMMARY[S.ep]||function(){return '';})() }); }
   function fmtDue(v){ var m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(v||''); if(!m) return ''; return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2]-1]+' '+(+m[3])+', '+m[4]; }
@@ -833,7 +905,7 @@
   /* 把佇列裡每個練習都走完、都指派給 to（示範入口與歷史的種子共用） */
   function finishAll(to, due, kind){
     if(due) S.due=due; if(kind) S.kind=kind;
-    S.queue.forEach(function(ep,i){ if(i){ S.qi=i; S.ep=ep; S.step=0; you('Next: '+epName(ep)); go(0); } you(STEPSOF()[1]); go(1); you('Settings'); go(2); you('Assign'); go(3); S.picked=to.slice(); S.assignedTo=to.slice(); ai('done',{to:to.slice()}); logPractice(); });
+    S.queue.forEach(function(ep,i){ if(i){ S.qi=i; S.ep=ep; S.step=0; you('Next: '+epName(ep)); go(0); } for(var k=1;k<=ASG();k++){ you(k===ASG()?'Assign':STEPSOF()[k]); go(k); } S.picked=to.slice(); S.assignedTo=to.slice(); ai('done',{to:to.slice()}); logPractice(); });
     S.assigned=true; S.fin=true; ai('fin');
   }
   BODY.fin=function(live){ var np=S.log.length; return 'All set —— '+(S.newProj?'a new Project and ':'')+np+' practice'+(np===1?'':'s')+' assigned. The summary is on the right; open anything from there.'+
@@ -855,7 +927,7 @@
       else if(S.cp && S.cp.step===1 && d.querySelector('.acts [data-act="gen"]')){ var g=d.querySelector('.acts [data-act="gen"]'); $('#navNext').textContent='Generate Content'; $('#navNext').classList.toggle('dis', g.classList.contains('dis')); }
       else if(pn){ $('#navNext').textContent=pn.textContent.trim()||'Next'; $('#navNext').classList.toggle('dis', pn.classList.contains('dis')); }
       var step0Back = !S.cp && S.step===0 && S.qi===0;   /* 第一個練習的第一步：Back 退回上一個決定（Project 的 Teaching Points／Which Project?） */
-      $('#navBack').disabled = step0Back ? false : ((S.cp ? S.cp.step===0 : S.step===0) || !!(pb && pb.disabled));
+      $('#navBack').disabled = step0Back ? false : ((S.cp ? S.cp.step===0 : S.step===0) || !!(pb && (pb.disabled || pb.classList.contains('dis'))));
     }catch(e){}
   }
   $('#navNext').addEventListener('click', function(){
@@ -864,13 +936,13 @@
     if(S.cp){ if(S.cp.sub==='saved'){ cpDone($('#page').contentDocument); return; } try{ var cd=$('#page').contentDocument, cb=(S.cp.step===1 && cd.querySelector('.acts [data-act="gen"]'))||cd.querySelector('#next'); if(cb && !cb.classList.contains('dis')) cb.click(); }catch(e){} return; }
     if(S.assigned){ if(S.queue[S.qi+1]) nextPractice(); else restart(); return; }   /* 指派完：接下一個練習，或結束 */
     /* 第三步 → 第四步：不讓 v3／v4 自己先畫它的第四步再被換掉（使用者 2026-10-07「閃一下舊版」）——直接換嵌 v8 */
-    if(S.step===2){ S.step=3; S.exp=null; if(!hasTurn('step3')) ai('step3'); lastUrl=null; render(); return; }
+    if(S.step===ASG()-1){ S.step=ASG(); S.exp=null; if(!hasTurn('step'+ASG())) ai('step'+ASG()); lastUrl=null; render(); return; }
     try{ var b=$('#page').contentDocument.querySelector('#next'); if(b && !b.classList.contains('dis')) b.click(); }catch(e){} });
   $('#navBack').addEventListener('click', function(){
     TRK.back++;
     if(S.cp){ try{ var cbk=$('#page').contentDocument.querySelector('#back'); if(cbk) cbk.click(); }catch(e){} return; }
     if(S.step===0 && S.qi===0){ if(S.newProj) cpReturn(); else projReturn(); return; }
-    if(S.step===3){ S.step=2; S.turns=S.turns.filter(function(t){ return !(t.ep===S.ep && (t.kind==='step3' || (t.kind==='done' && !S.assigned))); }); lastUrl=null; render(); return; }   /* v8 只有第四步，回上一步＝重載 v3／v4 的第三步 */
+    if(S.step===ASG()){ var ak='step'+ASG(); S.step=ASG()-1; S.turns=S.turns.filter(function(t){ return !(t.ep===S.ep && (t.kind===ak || (t.kind==='done' && !S.assigned))); }); lastUrl=null; render(); return; }   /* v8 只有第四步，回上一步＝重載 v3／v4 的第三步 */
     try{ var b=$('#page').contentDocument.querySelector('#back'); if(b) b.click(); }catch(e){} });
   function render(sync){
     if(curId){ syncPlan(); renderHist(); }
@@ -980,7 +1052,7 @@
     var EX=EXPL();
     var k=Object.keys(EX).filter(function(k){ return new RegExp(EX[k][0].split(' ')[0],'i').test(v) || new RegExp(k,'i').test(v); })[0];
     snap(); you(v);
-    if(k){ S.exp=k; if(S.step!==2 || !hasTurn('step2')){ ai('exp'); } }
+    if(k){ S.exp=k; if(S.step!==SETT() || !hasTurn('step'+SETT())){ ai('exp'); } }
     else ai('dunno');
     render(false);
   }
@@ -1003,9 +1075,9 @@
     if(/^cp\d$/.test(at)){ /* 下面那行會把 proj 那兩個回合換成 New content */ }
     if(/^cp\d$/.test(at)){ S.turns.pop(); S.turns.pop(); S.src='new'; you('New content'); S.cp={step:+at[2]}; for(var ci=0;ci<=+at[2];ci++) ai('cp'+ci); render(); }
     else if(at!=='proj'){ S.proj=0; you('我的一天'); go(0); }
-    if(at==='step1'||at==='step2'||at==='step3'||at==='done'){ you(STEPSOF()[1]); go(1); }
-    if(at==='step2'||at==='step3'||at==='done'){ you('Settings'); go(2); }
-    if(at==='step3'||at==='done'){ you('Assign'); go(3); }
+    /* 三步的型別：step2 就是指派（2026-10-19） */
+    var tgt={step1:1, step2:Math.min(2,ASG()), step3:ASG(), done:ASG()}[at];
+    for(var di=1; tgt && di<=tgt; di++){ you(di===ASG()?'Assign':STEPSOF()[di]); go(di); }
     if(at==='done'){ S.picked=['3b','4a']; S.assigned=true; ai('done'); }
     if(at==='fin'){   /* 完成頁：佇列裡每個練習都走完、都指派給 3B＋4A */
       if(qs0.get('new')==='1'){ S.newProj=true; S.src='new'; S.topic='我的一天'; }   /* &new=1：Project 那塊寫成剛建的 */

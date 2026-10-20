@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v12 — Sentence Response ／ Sentence Building 基準 · Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .muted { color: #64748b; font-size: 13px; font-weight: 600; }
+    .topbar .current { color: #059669; font-weight: 700; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #8b5cf6; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; margin: 0; padding: 0; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .sidebar a.active { color: #059669; border-left-color: #059669; font-weight: 700; background: #f0fdf4; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 16px 0; } .main-content { padding: 24px 20px 60px; } }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #059669; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 8px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #059669; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card h4 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 10px 14px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; letter-spacing: .3px; }
+    td { color: #475569; background: #fff; }
+    tbody tr:hover td { background: #fafbfc; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 10px 0 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; line-height: 1.8; color: #334155; white-space: pre-wrap; }
+    .stat { display:inline-block; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .st-todo { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .cap { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    .sw { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; border:1px solid rgba(0,0,0,.08); }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+  </style></head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a>
+    <span class="sep">/</span>
+    <span class="muted">Chinese Modules</span>
+    <span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a>
+    <span class="sep">/</span>
+    <span class="current">v12 · Sentence Response ／ Sentence Building 基準</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <ol>
+        <li><a href="#flow" class="active">1 · 步驟形狀與每步內容</a></li>
+        <li><a href="#settings">2 · 設定項與選項值</a></li>
+        <li><a href="#student">3 · 學生端畫面</a></li>
+        <li><a href="#issues">4 · 查到的問題與要問工程的</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>v12 — Sentence Response ／ Sentence Building 基準</h1>
+        <p class="subtitle">產品型別 <code>FOLLOW_PATTERN</code>，兩個子型別走同一條四步流程：Teaching Points → Question Review → Settings → Assign Practice。
+        <code>GUIDED_RESPONSE</code>＝Sentence Response（預設）、<code>SENTENCE_BUILDING</code>＝Sentence Building，從 Choose Practice Type 對話框選、以 <code>?type=FOLLOW_PATTERN&amp;subType=…</code> 帶進來。
+        第一步跟 Sentence Scramble 共用教學點元件，第四步八種共用。<strong>為 Planning mode 四張灰卡而開，只有基準、沒有提案。</strong></p>
+        <div class="meta">
+          <span>2026-10-19</span>
+          <span>外殼與第四步從 v7 基準分岔</span>
+          <span>程式碼基準 origin/develop @ c8179072</span>
+          <span>狀態：已登記（只有基準）</span>
+        </div>
+      </div>
+
+      <!-- ===================== 1 ===================== -->
+      <h2 id="flow"><span class="num">1</span> 步驟形狀與每步內容</h2>
+      <p><code>STEPS_BY_TYPE[FOLLOW_PATTERN]</code>（<code>src/utils/practice-stepper-config.js</code>）。基準檔 <a class="inline" href="create-follow-pattern.html?step=0&amp;proj=0">create-follow-pattern.html</a>，網址表在 ITERATION.md。</p>
+      <table>
+        <thead><tr><th style="width:170px">步驟</th><th>畫面上有什麼</th><th style="width:270px">按鈕、按下去發生什麼</th></tr></thead>
+        <tbody>
+          <tr><td><b>1 Teaching Points</b><br><span class="cap">step-one-follow-pattern.js<br>＋ shared/use-teaching-point-pool.js、teaching-point-picker.js</span></td>
+            <td>Select Projects（Autocomplete 多選，選項列 <code>zh-CN</code>／<code>HSK 2</code> tag）→ Teaching Points Preview：說明句「Questions are generated from the selected teaching points once you pick a practice type and continue.」、Select All (n/m) checkbox、逐專案一張卡（每點一顆 chip，勾了綠底白字）、Custom Teaching Points（小輸入框 ＋ Add）→ Number of questions（1–20，預設 8，<b>每次勾選變動自動＝min(20, 點數)</b>）。點數 &gt; 題數出黃色警告。失敗出紅色 Alert。<b>生成完回到這一步沒有清單</b>（Scramble 有 Generated Sentences）。</td>
+            <td>鈕叫 <b>Generate</b>（<code>showFollowPatternGenerateCta</code>：CREATE、第一步、還沒生成好）：<code>createPractice</code> 帶 teaching points、題數、<code>practiceSubType</code>、<code>pinyinPreference</code>／<code>translationPreference</code>＝STUDENT_CHOICE；第一步不開 ProcessingDialog，整步換 skeleton；完成<b>自動跳 Question Review</b>。生成後鈕變 Next；改了點、題數或子型別再按又叫 Generate，整份重生。EDIT 模式只能加點（append）。</td></tr>
+          <tr><td><b>2 Question Review</b><br><span class="cap">follow-pattern-preview.js</span></td>
+            <td>Practice Name（max 600）→ 標頭 36px 圓角方塊 icon ＋ h6「<b>Guided Response</b>」（primary.lighter／primary，icon question_answer）或「<b>Sentence Building</b>」（info.lighter／info，icon construction）＋ 一句說明 → Teaching Points header（#FAFBFC 卡：「Teaching Points (7) · Questions (7)」、每點幾題的 chip #D1FAE5／#065F46、Autocomplete「Select a teaching point」＋ Generate 再生一題 append）→ 每題一張 outlined Card（p 20）：上下移（#94A3B8）、<b>Q1</b>（#10B981）、教學點 chip（#D1FAE5／#065F46 700 .85rem h30）、Edit（#94A3B8）／Delete（#EF4444）；<b>Question</b> 框（白底 #E2E8F0 框，眉標 #64748B）→ <b>Pattern</b> 框（#FEF3C7，眉標 #D97706，只有 Guided）→ <b>Suggested answer</b> 框（#F0FDF4，眉標 #059669）；每框一行 chunk（拼音 12px text.secondary 在上、字 18px 700 在下，點了開 Edit Pinyin）＋ 翻譯 caption（Question #94A3B8、其餘 #9CA3AF）。<b>老師端不畫教學點高亮。</b><br>Edit 模式：每框兩個 small TextField（Chinese／Translation）；Pattern 眉標旁 ⓘ「The suggested answer with one or more fragments replaced by ＿＿＿. A two-slot teaching point takes one blank per slot.」；中文改過 → 翻譯欄鎖住 ＋「Auto-update on save」；Sentence Building 的 Question 唯讀（後端從教學點寫）。</td>
+            <td>Next。每個動作（移、刪、存編輯、改聲調）當下就存；改了中文會重生 chunk／拼音／翻譯／音檔，開 ProcessingDialog「Updating pinyin &amp; translation...」。存前前端先跑 <code>findQuestionFailure</code>（缺中文、缺答案、答案沒含教學點、pattern 沒空格、pattern 跟答案對不上、空格把教學點挖掉），錯了編輯器不關、錯誤寫在欄位下、卡框變紅。Delete 不擋最後一題（存檔才 snackbar「Keep at least one question.」）。有沒存的編輯時 header 鎖住「Save your changes first — a new question is appended to the saved set, so unsaved edits would be lost.」；Back／Next／點 stepper 都會先把沒存的存掉，不完整就 snackbar 擋。</td></tr>
+          <tr><td><b>3 Settings</b><br><span class="cap">follow-pattern-settings.js<br>＋ components/audio-settings-panel.js</span></td>
+            <td>Audio Mode 卡（自己畫的 Paper：開了 primary.lighter 底、primary 框；Switch ＋ On／Off；caption 兩句）→ Audio Settings（Speed 含 Student choice、Voice）→ Student Settings（Pinyin 下拉、Translation 下拉、Attempts per question ＋ ⓘ）→ Questions (n)：Paper 內逐題兩列，Question（字 ＋ contentPinyin）一顆播放、Suggested answer（字 ＋ answerChunks 拼音）一顆播放。<b>沒有 Practice Name。</b></td>
+            <td>鈕叫 <b>Save</b>：flush 待存欄位，失敗不前進。Speed／Voice 改了重生音檔，ProcessingDialog 文案是「Generating questions...／Creating sentence pattern questions」（follow pattern 分支先於 audio 分支）。</td></tr>
+          <tr><td><b>4 Assign Practice</b><br><span class="cap">step-three.js</span></td><td>八種共用（基準檔照 v7 抄；<code>step-three.js</code> 自 7e2afa52 起改了 260 行，現況看 v8）。</td><td>Done → 回練習列表。</td></tr>
+        </tbody>
+      </table>
+      <p class="cap">ProcessingDialog 的三段是 <code>FOLLOW_PATTERN_STEPS</code>：Analyzing（auto_awesome）／Building（route）／Finalizing（check_circle），每 10 秒走一格。第一步生成不開對話框（<code>activeStep &gt; 0</code> 才開）。</p>
+
+      <!-- ===================== 2 ===================== -->
+      <h2 id="settings"><span class="num">2</span> 設定項與選項值（哪個學生端有讀）</h2>
+      <table>
+        <thead><tr><th style="width:190px">老師設定</th><th style="width:300px">選項值（老師看到的字）</th><th>存到哪 → 學生端有沒有讀（<code>assignments/content/follow-pattern/index.js</code>）</th></tr></thead>
+        <tbody>
+          <tr><td>Audio Mode</td><td>Switch Off（預設）／On。tooltip：「Students hear the question instead of reading it. The pattern, the teaching point and the suggested answer are still shown.」</td><td><code>audioMode</code>。<b>有讀</b>：On 時題卡不顯示題目字，只寫「Listen to the question」；Pattern 框照常。</td></tr>
+          <tr><td>Speed</td><td>Student choice ／ Fast 1.0 ／ Normal 0.8（預設）／ Slow 0.6；選項列有耳機試聽鈕。選 Student choice 出 helper「Students pick their own speed and start at Normal.」</td><td><code>speedPreference</code>＋<code>changeSpeed</code> → 重生音檔。<b>有讀</b>：STUDENT_CHOICE 且有音檔才在齒輪面板出 Speed；否則照老師烤好的檔播。</td></tr>
+          <tr><td>Voice</td><td>zh-CN 四個：Xiaorou (Female)／Xiaoyi (Female)／Yunxiao (Male)／Yunxia (Male)</td><td><code>audioOption</code> → 重生音檔。畫面不知道，只烤進音檔。</td></tr>
+          <tr><td>Pinyin</td><td><code>PINYIN</code>／<code>NO_PINYIN</code>／<code>STUDENT_CHOICE</code>——<b>enum 原字</b>。FOLLOW_PATTERN 建立時強制 STUDENT_CHOICE（蓋掉表單預設 PINYIN）</td><td><code>pinyinPreference</code>。<b>有讀</b>：<code>showsPinyin</code>（非 NO_PINYIN 就先開）；STUDENT_CHOICE 才有齒輪面板的 Show Pinyin 開關。</td></tr>
+          <tr><td>Translation</td><td><code>SHOW</code>／<code>HIDE</code>／<code>STUDENT_CHOICE</code>——<b>enum 原字</b>。建立時強制 STUDENT_CHOICE</td><td><code>translationPreference</code>。<b>有讀</b>：HIDE 關、其餘開；STUDENT_CHOICE 才有開關。（Scramble 沒讀，這裡有。）</td></tr>
+          <tr><td>Attempts per question</td><td>1–10，預設 3。ⓘ「How many times a student may re-record one question (default 3).」</td><td><code>maxAttempts</code>。<b>有讀</b>：「x / y tries」、Try Again (n left)、用完揭曉 suggested answer（server 決定送不送，前端不自己算）。</td></tr>
+          <tr><td>Number of questions（第一步）</td><td>1–20，預設 8、勾點時＝點數</td><td><code>followPatternQuestionCount</code>，只在生成用。</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===================== 3 ===================== -->
+      <h2 id="student"><span class="num">3</span> 學生端畫面</h2>
+      <p>出處 <code>src/sections/assignments/content/follow-pattern/{index,intro-screen,question-card,constants}.js</code>。主色 <code>COLOR = #14B8A6</code>（<span class="sw" style="background:#14B8A6"></span>teal，跟型別 tag 一樣：wash #CCFBF1／label #14B8A6），底 <code>#E8EEF4</code>（＋ vocab-practice-bg.svg）。</p>
+      <div class="formula">// intro-screen.js（Card maxWidth 440、radius 32、白 .96）
+練習名（h5 700 #14B8A6）
+→ 「Sentence Patterns」（22px 800 #0F172A，父型別的 label，不分子型別）
+→ 副標（14px 500 #64748B）：GUIDED_RESPONSE「Listen, then answer using the pattern」
+                              SENTENCE_BUILDING「Listen, then build a sentence of your own」
+→ 小卡：QUESTIONS n ／ MIN ~max(3, ceil(n×0.8))（h4 800 #14B8A6、label 11px #64748B）
+→ Start Practice（漸層 #5EEAD4 → #14B8A6，hover #2DD4BF → #0D9488）
+
+// 練習頁 index.js：PracticeHeader（型別 chip ＋ 名稱 ＋ 進度 n / total）；齒輪 SettingsPanel 只在 pinyin／translation／speed 任一是 STUDENT_CHOICE 時出現
+// question-card.js（Card radius 24，p 24）
+標題列：「Listen and answer using the pattern.」／「Listen and build your own sentence.」（body1 600 #14B8A6）＋（上限 &gt; 1 才有）「x / y tries」
+題目框（p 24，#14B8A6 6% 底、15% 框）：FollowPatternChunks——拼音 13px（高亮 #065F46、其餘 #374151）在上，
+   字 18px 700，教學點那幾塊 #D1FAE5 底 #065F46 字；翻譯斜體；右邊 volume_up 28px。Audio Mode：只寫「Listen to the question」
+Reference 框（<b>只有 Guided</b>；#14B8A6 6% 底、20% 框）：「Use this pattern to answer:」＋ pattern chunk（空格處沒拼音）＋ 翻譯斜體
+   → Sentence Building 的題卡<b>沒有</b>教學點框
+錄音：左右各 15 條 wave bar ＋ RecordButton（進到這題自動播一次題目）→ 錄完 AudioPlayer（重錄／送出）
+結果：綠（過）或 #F59E0B（沒過）框「Well done!」／「Not quite yet.」＋ 星星 ＋ You said: 逐字稿
+   criteria 逐條淡入：PATTERN／TEACHING_POINT／CONTENT／GRAMMAR，PASS #16A34A、FAIL #D97706、PENDING #94A3B8
+   （Great pattern usage! ／ Missing teaching point ／ Content not accurate ／ Grammar needs fixing …）
+   correction「Try saying it like this:」（#D97706 框，chunk ＋ 播放）；沒過又沒 correction 時揭曉 suggested answer（#14B8A6 框，chunk ＋ 翻譯 ＋ 播放）
+   有 correction／揭曉就要「Now repeat after me」再錄一次才能 Next
+   Try Again (n left)（outlined teal）／ Next 或 Finish（contained teal）
+完成頁 completion-dialog.js：平均星、逐題列表、Back</div>
+      <p class="cap">老師端第二步的 chunk 列（拼音 12px、字 18px、沒有高亮）跟學生看到的（拼音 13px、教學點高亮）不是同一支元件；<code>FollowPatternChunks</code> 放在 practice/unified/components 底下但只有學生端 import。</p>
+
+      <!-- ===================== 4 ===================== -->
+      <h2 id="issues"><span class="num">4</span> 查到的問題與要問工程的</h2>
+      <div class="card"><h4>1 · 同一個東西三個名字</h4><p>型別 label「Sentence Response」（標題、Choose Practice Type 卡、列表 chip）、第二步標頭「Guided Response」（<code>follow-pattern-preview.js</code> 寫死）、學生端 intro「Sentence Patterns」（父型別）。Sentence Building 三處一致。</p></div>
+      <div class="card"><h4>2 · 第一步說明句是舊文案、生成完沒有清單</h4><p>「…once you pick a practice type and continue」——子型別早在對話框選好。生成完回第一步只有鈕變 Next，看不到生成了什麼（Scramble 有 Generated Sentences (n)）。</p></div>
+      <div class="card"><h4>3 · 老師端看不到教學點在句子裡的位置</h4><p>chunk 的 <code>highlight</code> 只有學生端畫；老師只看到左上 chip。Pattern 的定義（答案挖空、教學點要留著）老師只能從 ⓘ tooltip 與存檔時的錯誤訊息得知。</p></div>
+      <div class="card"><h4>4 · Delete 不擋最後一題</h4><p>卡先拿掉、自動存檔才 snackbar「Keep at least one question.」——畫面零張卡，Next 再被「Every question needs a question and a suggested answer.」擋。</p></div>
+      <div class="card"><h4>5 · Sentence Building：老師不能改題目、學生看不到教學點</h4><p>題目由後端從教學點寫（<code>hasDerivedQuestion</code>），Edit 模式也唯讀；學生題卡沒有 Reference 框，只靠題目句子本身帶出教學點。但第三步 Audio Mode 的 tooltip 說 teaching point 仍會顯示——Audio Mode 開、Sentence Building 時學生只剩一顆播放鈕。</p></div>
+      <div class="card"><h4>6 · 第三步的小事</h4><p>Pinyin／Translation 下拉是 enum 原字（S4 的 Shown｜Hidden｜Choice by student 直接套）；沒有 Practice Name（Scramble 有，八種不一致）；換 Speed／Voice 的等待文案走 follow pattern 分支「Generating questions...」；Suggested answer 的拼音把標點混進去。</p></div>
+      <h3>要問工程的</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th style="width:300px">題目</th><th>為什麼</th></tr></thead>
+        <tbody>
+          <tr><td><span class="stat st-todo">E1</span></td><td>Sentence Building 的題目後端實際寫成什麼？</td><td>前端只有 fixture「請用「是」造句。」（<code>generation-draft-overlay.test.js</code>），簡繁、句式都無法確認；基準檔用「请用「起床」造句。」示意。</td></tr>
+          <tr><td><span class="stat st-todo">E2</span></td><td>第一步生成完能不能回傳清單給第一步看？</td><td>現在第一步沒有清單；資料（<code>updatedArticleArray</code>）其實已經在，只是沒畫。</td></tr>
+          <tr><td><span class="stat st-todo">E3</span></td><td>Audio Mode ＋ Sentence Building 學生看什麼？</td><td>題目字不送、又沒有教學點框，學生只有一段錄音。tooltip 的承諾跟畫面對不上。</td></tr>
+          <tr><td><span class="stat st-todo">E4</span></td><td>改一題中文重生，是只重生那一題還是整份？</td><td>畫面上是整步遮住（ProcessingDialog ＋ skeleton）；跟 v7 E2 同題。</td></tr>
+          <tr><td><span class="stat st-todo">E5</span></td><td>換 Speed／Voice 的等待文案</td><td><code>resolveProcessingCopy</code> 的 follow pattern 分支先於 audio 分支，一行的事。</td></tr>
+        </tbody>
+      </table>
+      <p class="cap"><strong>下一步。</strong>這一版只登記基準，提案在 Planning mode 的 <code>teacher-planning-b.html</code>／<code>teacher-planning.html</code> 開灰卡時嵌這一頁。實機截圖使用者尚未提供，之後拿截圖對一次。</p>
+
+      <footer>v12 · Sentence Response ／ Sentence Building 基準 — Chinese Modules · 2.4 Versions &amp; Iteration</footer>
+    </main>
+  </div>
+</body>
+</html>
