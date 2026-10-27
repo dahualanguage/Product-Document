@@ -13,6 +13,7 @@
 3. **寄之前查兩層**：寄給學生的信先看「那個作業的老師」的設定，再看學生的總開關。
 4. **自動提醒是新的每日排程**，靠一張寄信紀錄表做 24 小時去重；老師手動按的 Remind 也寫進同一張表。
 5. **模板不動**，只有模板 48 多一個 MESSAGE 參數。
+6. **Mail Box 是一張 Notification 表**，寄 Teacher feedback 和兩種提醒的地方同時寫一筆；學生端讀列表、未讀數、標已讀。
 
 ---
 
@@ -179,24 +180,55 @@ ReminderLog { id, studentId, assignmentId（或 wordGameAssignmentId）, kind: A
 
 ---
 
-## 6. Mail Box 的資料（第三期）
+## 6. Mail Box（Notification）
+
+### 現在
+
+沒有站內通知，沒有這張表。
+
+### 要變成
+
+**一張表**
 
 ```
 Notification {
-  id, studentId,
-  type: FEEDBACK | REMINDER | ANNOUNCEMENT,
-  fromTeacherId,
-  title,        # 例：Feedback on Unit 3 Speaking Practice
-  preview,      # 列表上那一行
-  body,         # 點開的全文；REMINDER 的 body 就是老師的 Message
-  link,         # FEEDBACK → History 那一筆；REMINDER → 那個作業或 Word Game
-  readAt, createdAt
+  id
+  studentId
+  type:        FEEDBACK | REMINDER | ANNOUNCEMENT
+  fromKind:    TEACHER | DAHUA
+  fromUserId   # TEACHER 時是老師的 id；前端用它顯示寄件人名字
+  assignmentId            # FEEDBACK、REMINDER（作業）
+  wordGameAssignmentId    # REMINDER（Word Game）
+  classId                 # 顯示班級名
+  body         # FEEDBACK：老師的回饋文字；REMINDER：老師的 Message（當次送的那段）；ANNOUNCEMENT：公告全文
+  readAt       # null ＝ 未讀
+  createdAt
 }
 ```
 
-- 寫入時機：寄 Teacher feedback 時一筆 FEEDBACK；自動或手動提醒時一筆 REMINDER（不管 email 有沒有寄）。
-- 要一個 query 回列表＋未讀數，一個 mutation 標已讀。
-- Daily summary、New assignment 不寫 Notification。
+- 標題、預覽、按鈕要去哪，前端照 type 和關聯的作業自己組（HANDOFF 第 4 節的表），不存文字。
+- **寫入時機**（跟寄 email 同一個地方，不管 email 有沒有寄）：
+  - 留回饋的 mutation 存成功 → 一筆 FEEDBACK（老師的 Teacher feedback 開關關著就不寫，因為根本沒有「通知」這件事發生）。
+  - 自動提醒排程寄一封 → 一筆 REMINDER；`sendStudentAssignmentReminder`／`sendWordGame2AssignmentReminder` 手動寄一封 → 一筆 REMINDER。24 小時去重擋掉的不寫。
+  - ANNOUNCEMENT 的來源待 PM 定；表先留這一型。
+- 學生的 `student.emails` 只管 email，不影響寫 Notification。
+
+**三個 API**
+
+```graphql
+# 列表（新的在前）；type 不給＝全部
+myNotifications(type: NotificationType, limit: Int = 50, before: DateTime): [Notification!]!
+
+# 未讀數：側欄徽章 ＋ 四顆 chip 的數字（一次回四個，免得打四次）
+myNotificationCounts: { all: Int!, feedback: Int!, reminder: Int!, announcement: Int! }
+
+# 標已讀（點開那一則時打）
+markNotificationRead(id: ID!): Notification!
+```
+
+- `limit`／`before` 先放著，第一版前端不做載入更多。
+- 徽章的數字在學生端 layout 載入時打一次 `myNotificationCounts`，標已讀之後前端自己減一，不重打。
+- 關聯的作業被刪了：Notification 留著，按鈕灰掉（前端查不到作業就灰）。
 
 ---
 
@@ -206,6 +238,7 @@ Notification {
 - 派作業與留回饋的 mutation 簽名。
 - 模板 14、15、17（PER_ASSIGNMENT 時）、22、49、59 的內容。
 - 管理員編別人帳號的 `updateUser` 呼叫（不帶 `notificationPreferences`）。
+- History、作業頁、Word Game 頁本身不動，Mail Box 只是跳過去。
 
 ---
 

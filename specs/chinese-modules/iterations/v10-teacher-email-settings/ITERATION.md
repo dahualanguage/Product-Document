@@ -101,6 +101,7 @@ dahua-dash 這邊：
 
 | 日期 | 誰 | 改了什麼 |
 |---|---|---|
+| 2026-10-27 | 文件 | 使用者「Mail Box 一起」→ 交接包第 4 節從「第三期參考」改成完整規格（側欄徽章、Type 篩選、一列一則、未讀／讀過、展開、三型表、改哪裡）；API-CONTRACT §6 補 Notification 表、寫入時機、三個 API；index 卡與狀態列拿掉「第三期」字樣 |
 | 2026-10-27 | 文件 | 第二十三輪定案並交接：handoff/teacher-notifications（三個原型複本＋emails、HANDOFF.md、API-CONTRACT.md、index.html）；iterations index 卡片改 done、按鈕收成交接包／提案／基準三顆；程式碼基準更新到 9b19074a |
 | 2026-10-27 | 老師 | 第二十三輪（使用者）：「老師端顯示學生的 Daily summary 控制權這段直接拿掉」→ proposal.html 59 那列（Set by student）整列拿掉，Emails your students receive 剩 14／15／48／49；spec 第 3 節表、故事、第 5 節表、第 14 節同步 |
 | 2026-10-26 | 老師 | 第二十二輪（使用者）：Daily summary 的 Send 從兩選項 Select 改成一個 Checkbox「Only when someone hasn't submitted」，預設不勾＝今天的行為；spec 第 5 節表同步 |

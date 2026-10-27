@@ -3,13 +3,14 @@
 > **先看這個：[DAHUA AI Email Templates](https://claude.ai/code/artifact/dce51479-50bc-47b7-9309-4eedd21ff9d7)**
 > 九封通知信現在長什麼樣、什麼時候寄、帶哪些參數，全部整理在這一份（來源是 commerce-api `src/email/brevo/templates/`，用 README 的測試參數渲染）。這一包所有的「模板 14、15、17、22、48、49、59」都是指它裡面的那幾封；設定頁的 Preview 放的也是它渲染出來的信（`emails/` 那七個檔）。讀下面之前先把它開著對照。
 
-DAHUA AI 會寄九種通知信，現在全部由系統固定觸發，沒有人能設定。這一包做三件事：
+DAHUA AI 會寄九種通知信，現在全部由系統固定觸發，沒有人能設定。這一包做四件事：
 
 1. **老師的 Settings 頁**：老師決定「我收哪些信」「我的學生收哪些信」，並且可以設自動提醒（到期前幾天、逾期後幾天各寄一封，附一段留言）。預設值等於今天的行為，老師不動設定，一切照舊。
 2. **學生的 Settings 頁**：學生一個總開關，決定要不要收 DAHUA 寄來的 email。
 3. **寄信規則**：每封信寄之前先看老師的設定，再看學生的總開關。
+4. **學生的 Mail Box**：學生端側欄新項目，站內收老師的回饋、提醒和公告。email 關了站內也一定有。
 
-**有後端**：設定要存在 User 上、兩個每日排程要讀設定、自動提醒是新的排程、要有一張寄信紀錄表做 24 小時去重、Assignment reminder 那封信要多一段老師留言。契約在 [`API-CONTRACT.md`](API-CONTRACT.md)。
+**有後端**：設定要存在 User 上、兩個每日排程要讀設定、自動提醒是新的排程、要有一張寄信紀錄表做 24 小時去重、Assignment reminder 那封信要多一段老師留言、Mail Box 要一張 Notification 表。契約在 [`API-CONTRACT.md`](API-CONTRACT.md)。
 
 程式碼基準：`dahua-dash` `origin/develop` @ `9b19074a`（2026-10-27）。這一天的程式：Account 選單只有 Home／Profile；`updateUser` 的 input 沒有任何偏好欄位；整個 repo 沒有 `notificationPreferences`。也就是從零開始，不是改既有的設定頁。
 
@@ -33,7 +34,8 @@ DAHUA AI 會寄九種通知信，現在全部由系統固定觸發，沒有人�
 | **end date** | Word Game 目標的結束日。產品用詞，不叫 goal date |
 | **due date** | 作業的到期日 |
 | **總開關** | 學生 Settings 頁唯一的開關，管 DAHUA 寄給這個學生的所有 email |
-| **Mail Box** | 學生端側欄的站內通知收件匣。產品還沒有，是第三期的事，規格在 [student-redesign 那一包](../student-redesign/) |
+| **Mail Box** | 學生端側欄的站內通知收件匣。產品還沒有。規格在這一包第 4 節；版面的來源是 [student-redesign 那一包](../student-redesign/student-redesign.html#mail) |
+| **Notification** | Mail Box 裡的一則訊息（後端的一筆資料）。三型：Feedback、Reminder、Announcement |
 | **編自己** | 老師從 Account 選單進 users/edit 編自己的帳號。管理員也會用同一頁編別人，那時候不叫「編自己」 |
 
 ---
@@ -44,7 +46,7 @@ DAHUA AI 會寄九種通知信，現在全部由系統固定觸發，沒有人�
 |---|---|---|
 | [`teacher-settings.html`](teacher-settings.html) | 老師的 Settings 頁原型 | `?open=48,49` 把兩個提醒的開關打開看規則小表 · `?preview=17` 直接開那封信的 Preview · `?changed=1` Save 變成可按 · `?saved=1` 存成功的 snackbar · `?menu=1` 右上 Account 選單 |
 | [`student-settings.html`](student-settings.html) | 學生的 Settings 頁原型（學生端 UI） | `?off=1` 總開關關著 · `?changed=1` · `?saved=1` |
-| [`student-mailbox.html`](student-mailbox.html) | 學生的 Mail Box 原型（第三期，參考） | `?open=1` 第一則展開 · `?type=reminder` · `?empty=1` |
+| [`student-mailbox.html`](student-mailbox.html) | 學生的 Mail Box 原型 | `?open=1` 第一則展開 · `?type=feedback｜reminder｜announcement` 篩選 · `?empty=1` 沒有訊息 |
 | `emails/` | 七封信渲染好的樣子，給 Preview 對話框的 iframe 用 | — |
 | [`API-CONTRACT.md`](API-CONTRACT.md) | 資料形狀、排程、mutation 要改什麼 | — |
 
@@ -75,6 +77,10 @@ DAHUA AI 會寄九種通知信，現在全部由系統固定觸發，沒有人�
 | 學生的設定 | 一個總開關 **Emails from DAHUA AI**，不分信的種類。關掉＝ DAHUA 寄給這個學生的 email 一封都不寄 |
 | 學生的總開關是最後一關 | 寄給學生的每一封都先看它。老師開、學生關 → 不寄。老師關 → 什麼都沒有 |
 | Preview | 點每列的 Preview 開對話框，裡面放那封信渲染好的樣子。固定顯示預設版，不跟設定連動 |
+| Mail Box 收什麼 | 三型：**Feedback**（老師留回饋）、**Reminder**（兩種提醒，手動或自動）、**Announcement**（老師或 Dahua 的公告）。Daily summary、New assignment 不進 Mail Box |
+| Mail Box 跟 email 的關係 | 寄信的同時寫一則 Notification，不管 email 有沒有寄出去。學生關了 email，Mail Box 照樣有 |
+| Mail Box 只通知 | 內容本體住在原本的地方：回饋在 History、作業在 Assignment List。每則一顆按鈕跳過去 |
+| 讀過 | 點開一則＝讀過，側欄徽章減一。沒有「全部標已讀」、沒有刪除 |
 | 信的文案 | Brevo 模板不動。唯一例外：模板 48（Assignment reminders）要照模板 49 加「A Note From Your Teacher」一段放老師的 Message |
 | 信的名字 | 設定頁、Preview 對話框標題、之後的 Mail Box 三處一致，用上面名詞對照的名字 |
 | 不在這一包 | Teacher Dashboard 的 Send reminder 按鈕不動；派作業對話框不加勾選；班級層級覆寫、學校預設不做 |
@@ -220,11 +226,72 @@ EMAILS YOU RECEIVE
 
 ---
 
-## 4 · 學生的 Mail Box（第三期，這一包只放原型當參考）
+## 4 · 學生的 Mail Box
 
-側欄新項目，帶未讀數。三型：Feedback（對應 Teacher feedback）、Reminder（對應兩種提醒，內容就是老師設的 Message）、Announcement（還沒有信）。點開一則＝讀過，徽章減一；每則一顆按鈕跳去原本的地方（Open in History／Go to assignment／Play Word Game）。Daily summary 不進 Mail Box。
+```
+側欄：Home ／ Leaderboard ／ Assignment List ／ History ／ Word Game ／ Mail Box (2)
 
-版面照 [student-redesign 那一包](../student-redesign/student-redesign.html#mail)。資料形狀在契約第 6 節。做第一、二期時不用動它，只要記得：**寄 Teacher feedback 和兩種提醒的時候要同時寫一筆 Notification**，第三期才有東西可以顯示。
+Mail Box                                              [⚙ Email settings]
+Messages from your teacher & Dahua
+
+Type  [All 2] [Feedback 1] [Reminders 1] [Announcements]
+
+┌ ● Joey Tsai  FEEDBACK                                        2h  › ┐   ← 未讀：綠粗框、紅點、粗字
+│   Feedback on Unit 3 Speaking Practice                               │
+│   Great tones! Work on the question words 吗 / 呢.                    │
+└──────────────────────────────────────────────────────────────────────┘
+┌ ● Joey Tsai  REMINDER                                        1d  ˅ ┐   ← 點開：原地展開
+│   A reminder about Unit 3 Speaking Practice                           │
+│   Due tomorrow · Chinese 3B                                           │
+│   ─────────────────────────────────────────────────────────────────   │
+│   Unit 3 Speaking Practice · Chinese 3B · due 2026-10-22              │
+│   ┌ From Joey Tsai ─────────────────────────────────────────────┐    │
+│   │ You have not submitted this assignment yet. Please finish…  │    │   ← 老師在 Settings 設的 Message
+│   └─────────────────────────────────────────────────────────────┘    │
+│                                              [ ✎ Go to assignment ]  │
+└──────────────────────────────────────────────────────────────────────┘
+┌   Dahua  ANNOUNCEMENT                                        3d  › ┐   ← 讀過：細框、沒有紅點、灰字
+│   New unit unlocked: Family & Home                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**現在怎樣**：學生端沒有站內通知。老師留了回饋、作業快到期，學生只能靠 email 知道。
+
+**改成怎樣**：
+
+- 側欄第六項 **Mail Box**，右邊一個徽章放未讀數（珊瑚紅底），0 的時候徽章不顯示。
+- 頁頭：標題 Mail Box、一句 lead「Messages from your teacher & Dahua」、右邊一顆淡色按鈕 **Email settings** 連到學生的 Settings 頁。
+- **Type 篩選**：四顆 chip All／Feedback／Reminders／Announcements，選中的綠底白字，每顆右邊帶那一型的未讀數（0 不顯示）。預設 All。
+- **一列一則**，新的在上。每列：左邊 46px 圖塊（型別色）、第一行「紅點＋寄件人＋型別小標籤＋多久前」、第二行標題、第三行一行預覽、右邊一個 › 箭頭。
+- **未讀**：綠色粗框（2px，#CFE9D6）、紅點、寄件人與標題粗體。**讀過**：細框、沒有紅點、寄件人與標題灰字。
+- **點一列**：原地展開（箭頭轉 90 度），下面出現全文；Reminder 多一個「From 老師名」的留言框放老師的 Message；最後一顆按鈕（下面的表）。再點一次收起。**點開＝讀過**，徽章和 chip 上的數字立刻減一。
+- **沒有訊息**（整個或篩選後）：一張空狀態卡，綠色信封圖示、標題 All caught up、一句 No messages here.。
+- 沒有刪除、沒有全部標已讀、沒有分頁；超過一頁就往下捲（之後量大了再談載入更多）。
+
+**三型**
+
+| 型 | 誰發 | 什麼時候寫一則 | 圖塊色 | 全文裡有什麼 | 按鈕 | 按了去哪 |
+|---|---|---|---|---|---|---|
+| Feedback | 老師 | 老師留回饋時（跟寄 Teacher feedback 同時） | 綠底 `#DCF7E6`／字 `#0B7A3B` | 老師的回饋文字 | **Open in History** | History 裡那一筆作業的回饋 |
+| Reminder | 老師（手動或自動） | 自動提醒排程寄的時候、老師手動按 Remind 的時候 | 黃底 `#FFF1CF`／字 `#B77A00` | 作業名、班級、到期日（Word Game：目標、end date、目前進度）＋ 留言框放老師的 Message | **Go to assignment**／**Play Word Game** | 那個作業的練習頁／Word Game |
+| Announcement | 老師或 Dahua | 還沒有來源（PM 待定誰能發） | 藍底 `#E6F0FF`／字 `#2D5BD1` | 公告全文 | 沒有 | — |
+
+- 寫 Notification 的時機跟寄 email 同一個地方，**不管 email 有沒有寄出去**（老師關了那封信就不寫；學生關了 email 照樣寫）。
+- Reminder 的留言框內容就是老師在 Settings 設的 Message；老師手動按 Remind 時（Word Game 可改字）用當次送的那段。
+- Daily summary、New assignment 不寫 Notification。Daily summary 是 email 專用的彙整；New assignment 學生在 Assignment List 本來就看得到。
+- 標題的文字：Feedback「Feedback on 作業名」；Reminder「A reminder about 作業名」／「Your Word Game goal for 班級名」。這些是前端組的，不存在資料裡。
+
+**改哪裡（dahua-dash）**
+
+| 要改什麼 | 檔案 |
+|---|---|
+| 側欄項目＋徽章 | `src/layouts/` 學生端的 nav 設定（`nav-items.js`／`menu-by-role.js` 那一組，照 Word Game 那項加的方式） |
+| 新 route | `src/app/student/mailbox/page.js` |
+| 頁面：篩選、列表、展開、空狀態 | `src/sections/student/mailbox/` |
+| 讀列表、未讀數、標已讀 | `src/api/graphql/queries/`、`mutations/` 新增三個（契約第 6 節） |
+| 跳轉 | Open in History → 現有 History 頁那一筆；Go to assignment → 現有作業頁；Play Word Game → 現有 Word Game 頁 |
+
+**卡住的**：Announcement 誰能發、從哪裡發（PM）。沒定之前這一型只做顯示，chip 照放。
 
 ---
 
@@ -244,7 +311,7 @@ EMAILS YOU RECEIVE
 |---|---|---|
 | **1** | 老師 Settings 頁：改名、三張卡、四個開關（Daily summary 的 Time／Send／Format、Question bank ready、New assignment、Teacher feedback）、Preview 對話框。學生 Settings 頁：Profile ＋ 總開關。後端：`notificationPreferences` 存取（契約第 1 節）、老師 Daily summary 排程讀設定（第 2 節）、New assignment／Teacher feedback 寄前讀開關（第 3 節）、學生 Daily summary 排程讀總開關（第 5 節） | 可。老師可以關信、改彙整時間；學生可以關 email |
 | **2** | 自動提醒：兩個提醒的開關＋ Reminders 清單＋ Message；後端新排程、寄信紀錄表、24 小時上限、模板 48 加 Message 段、手動 Remind 寫紀錄（第 4 節） | 可。階段 1 的頁面上先不顯示這兩列也行 |
-| **3** | Mail Box：Notification 資料、側欄項目與徽章、三型列表（第 6 節） | 可 |
+| **3** | Mail Box：Notification 表與三個 API、側欄項目與徽章、Type 篩選、一列一則與展開、三個跳轉、空狀態（第 4 節、契約第 6 節）。第一、二期寄信的地方就要開始寫 Notification，第三期上線時才有歷史 | 可。Announcement 來源沒定也能上，先只有兩型 |
 | 之後 | 班級層級覆寫、學校層級預設、Remind 按鈕旁的「Reminded n ago」 | — |
 
 階段 2 沒好之前，老師頁不要出現 Assignment reminders、Word Game goal reminders 兩列，免得老師開了沒反應。
@@ -271,4 +338,4 @@ EMAILS YOU RECEIVE
 **要問 PM 的（不擋工程）**
 
 - 自動提醒的預設天數 2 before／1 after 可以嗎？
-- Announcements 要不要有 email、誰能發？第三期才用到。
+- Announcement 誰能發、從哪裡發（老師端要不要有發公告的入口）？要不要同時寄 email？沒定之前 Mail Box 這一型只做顯示。
