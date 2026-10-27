@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail Box — 學生的 Mail Box · 交接包</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@700&family=Material+Icons+Round&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   v10 學生端提案 —— Mail Box（第二十輪，2026-10-21，使用者：「mail box 點進去的畫面也一起做」）。
+   殼跟 student-proposal.html 同一套（/student/practice 的複刻）。側欄 Mail Box 是 active。
+   版面照 student-redesign 交接的 #mail（handoff/student-redesign/student-redesign.html：.mrow 一列一則、三型圖塊色、未讀粗框）：
+     h1 Mail Box ＋ lead → TYPE 篩選（All｜Feedback｜Reminders｜Announcements，照 practice-controls.js 的 chip）→ 一列一則。
+     三型對到信：feedback ＝ 15 Teacher feedback；reminder ＝ 48 Assignment reminder／49 Word Game goal reminder（老師在 Settings 設的 Message 就是這則的內容）；
+     announcement ＝ 新型（老師或 Dahua 的公告，還沒有信）。Daily summary（59）只寄 email、不進 Mail Box。
+     點一則：原地展開全文 ＋ 一顆 CTA（feedback → Open in History；reminder → Go to assignment／Play Word Game；announcement 沒有 CTA），讀過的列變淡、側欄徽章減一。
+     Mail Box 只通知；回饋內容住在 History（submit-flow.html §8 的規則）。
+   網址參數：?type=feedback|reminder|announcement 篩選 · &open=1 第一則展開 · &empty=1 沒有訊息
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#12A150; --green-d:#0B7A3B; --green-l:#DCF7E6; --green-ink:#0B5B30;
+  --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF;
+  --gold:#FFC219; --coral:#FF5A6E; --coral-l:#FFE1E5;
+  --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7; --paper:#fff; --shell:#EAF3EC;
+  --r-card:20px; --r-row:16px; --r-chip:8px;
+  --font-d:'Fredoka', system-ui, sans-serif; --font-b:'Nunito', system-ui, sans-serif;
+}
+html,body{ height:100%; }
+body{ font-family:var(--font-b); color:var(--ink); -webkit-font-smoothing:antialiased; overflow:hidden;
+  background: radial-gradient(1200px 600px at 80% -10%, #DDEBFF 0%, transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, #E7F7EC 0%, transparent 55%),
+              linear-gradient(160deg,#EFF5FB 0%, #EAF4EE 100%); }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; }
+button,input{ font-family:inherit; }
+
+/* ---------- shell ---------- */
+.app{ display:grid; grid-template-columns:262px 1fr; height:100vh; padding:16px; gap:16px; }
+.side{ background:var(--paper); border-radius:var(--r-card); box-shadow:0 12px 26px -14px rgba(11,91,48,.45); display:flex; flex-direction:column; padding:20px 16px 16px; position:relative; overflow:hidden; }
+.side::before{ content:""; position:absolute; inset:0 0 auto 0; height:120px; background:radial-gradient(120% 90% at 20% 0%, rgba(18,161,80,.10), transparent 70%); pointer-events:none; }
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 22px; position:relative; }
+.brand .logo{ width:40px; height:40px; border-radius:13px; flex:none; background:#fff; display:grid; place-items:center; box-shadow:0 6px 14px -4px rgba(18,161,80,.35), inset 0 0 0 1.5px var(--line); }
+.brand .logo img{ width:30px; height:30px; object-fit:contain; display:block; }
+.brand b{ font-family:var(--font-d); font-weight:700; font-size:21px; letter-spacing:.3px; background:linear-gradient(90deg,var(--green-d),#2CB763); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.nav{ display:flex; flex-direction:column; gap:4px; position:relative; }
+.nav a{ display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:var(--r-row); color:var(--ink-soft); font-weight:800; font-size:14.5px; text-decoration:none; position:relative; transition:.18s; }
+.nav a .ic{ width:24px; display:flex; justify-content:center; filter:grayscale(.4); }
+.nav a .ic .mi{ font-size:20px; color:var(--green); }
+.nav a:hover{ background:#F1F7F2; color:var(--ink); }
+.nav a.on{ background:linear-gradient(100deg,var(--green-l),#EAF9EF); color:var(--green-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.nav a.on .ic{ filter:none; }
+.nav a.on::before{ content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:5px; height:22px; border-radius:0 6px 6px 0; background:var(--green); }
+.nav .badge{ margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:8px; display:grid; place-items:center; font-family:var(--font-d); font-weight:600; font-size:13px; background:var(--coral-l); color:#B23146; }
+.nav .badge:empty{ display:none; }
+.side .grow{ flex:1; min-height:14px; }
+.stats{ display:flex; flex-direction:column; gap:9px; }
+.stat{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:var(--r-row); font-weight:900; }
+.stat .mi{ font-size:23px; }
+.stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; }
+.stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+.stat .col{ display:flex; flex-direction:column; gap:2px; }
+.stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; } .stat.gold .mi{ color:var(--gold); }
+.stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#B23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; } .stat.coral .mi{ color:var(--coral); }
+.report{ margin-top:12px; text-align:center; font-size:12px; font-weight:800; color:#C0576A; text-decoration:none; }
+.stage{ position:relative; border-radius:var(--r-card); overflow:hidden; box-shadow:0 26px 60px -24px rgba(11,60,35,.55); display:flex; flex-direction:column;
+  background: radial-gradient(900px 500px at 90% -20%, #E6EEFF 0%, transparent 55%), linear-gradient(165deg,#F4F8FD 0%, #EEF5F0 100%); }
+.scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; display:flex; flex-direction:column; }
+.scroll::-webkit-scrollbar{ width:10px; } .scroll::-webkit-scrollbar-thumb{ background:rgba(11,91,48,.18); border-radius:20px; border:3px solid transparent; background-clip:content-box; }
+.acct{ position:absolute; top:16px; right:16px; z-index:10; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(145,158,171,.08); }
+.acct .av{ width:36px; height:36px; border-radius:50%; background:#C8FAD6; color:#007B55; font-family:'Public Sans',sans-serif; font-weight:700; font-size:15px; display:grid; place-items:center; }
+
+/* ---------- canvas ---------- */
+.canvas{ position:relative; width:min(1000px,100%); margin:0 auto; padding:40px 28px 60px; }
+.head{ display:flex; align-items:flex-end; gap:16px; }
+.head .t{ flex:1; }
+.canvas h1{ font-family:var(--font-d); font-weight:700; font-size:38px; letter-spacing:.2px; color:var(--ink); }
+.canvas .lead{ margin-top:2px; font-weight:700; font-size:15.5px; color:var(--ink-soft); }
+/* 右上一顆小入口到 Settings（email 要不要寄在那裡設） */
+.ghost{ display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 14px; border-radius:12px; background:#fff; box-shadow:inset 0 0 0 1.5px var(--line); font-weight:800; font-size:13.5px; color:var(--ink-soft); text-decoration:none; flex:none; }
+.ghost .mi{ font-size:18px; color:var(--green); }
+.ghost:hover{ color:var(--ink); box-shadow:inset 0 0 0 1.5px #CFE3D6; }
+
+/* TYPE 篩選：照 practice-controls.js 的 TypeFilterChips */
+.filter{ margin-top:22px; padding:12px 14px; border-radius:20px; background:#fff; display:flex; align-items:center; gap:8px; flex-wrap:wrap; box-shadow:inset 0 0 0 1.5px var(--line); }
+.filter .lbl{ font-size:11px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); margin:0 6px 0 4px; }
+.fchip{ border:0; background:transparent; cursor:pointer; padding:8px 16px; border-radius:12px; font-weight:800; font-size:14px; color:var(--ink-soft); box-shadow:inset 0 0 0 1.5px var(--line); transition:.15s; display:inline-flex; align-items:center; gap:8px; }
+.fchip:hover{ color:var(--ink); }
+.fchip.on{ background:linear-gradient(150deg,var(--green),#37C46E); color:#fff; box-shadow:0 6px 14px -8px rgba(18,161,80,.7), inset 0 -2px 0 rgba(0,0,0,.14); }
+.fchip .n{ min-width:20px; height:20px; padding:0 6px; border-radius:7px; display:grid; place-items:center; font-family:var(--font-d); font-weight:600; font-size:12.5px; background:var(--coral-l); color:#B23146; }
+.fchip.on .n{ background:rgba(255,255,255,.25); color:#fff; }
+
+/* ---------- 一列一則（redesign 的 .mrow）---------- */
+.mail-list{ display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+.mrow{ border-radius:16px; background:#fff; box-shadow:inset 0 0 0 1.5px var(--line), 0 8px 20px -16px rgba(11,60,35,.6); transition:.15s; }
+.mrow.unread{ box-shadow:inset 0 0 0 2px #CFE9D6, 0 8px 20px -16px rgba(11,60,35,.6); }
+.mhead{ display:flex; align-items:center; gap:14px; padding:13px 16px; cursor:pointer; border-radius:16px; }
+.mhead:hover{ background:#FAFCFB; }
+.mico{ width:46px; height:46px; border-radius:14px; display:grid; place-items:center; flex:none; }
+.mico .mi{ font-size:24px; }
+.mico.feedback{ background:var(--green-l); color:var(--green-d); } .mico.reminder{ background:#FFF1CF; color:#B77A00; } .mico.announcement{ background:#E6F0FF; color:#2D5BD1; }
+.mbody{ flex:1; min-width:0; }
+.mtop{ display:flex; align-items:center; gap:8px; }
+.mfrom{ font-family:var(--font-d); font-weight:600; font-size:15px; color:var(--ink); }
+.mtag{ padding:2px 8px; border-radius:var(--r-chip); font-weight:900; font-size:10.5px; letter-spacing:.3px; text-transform:uppercase; }
+.mtag.feedback{ background:var(--green-l); color:var(--green-d); } .mtag.reminder{ background:#FFF1CF; color:#B77A00; } .mtag.announcement{ background:#E6F0FF; color:#2D5BD1; }
+.mtime{ margin-left:auto; font-size:12px; font-weight:700; color:var(--ink-soft); }
+.mtitle{ font-weight:800; font-size:14px; color:var(--ink); margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mprev{ font-size:13px; font-weight:600; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mrow.read .mfrom, .mrow.read .mtitle{ font-weight:600; color:var(--ink-soft); }
+.mdot{ width:9px; height:9px; border-radius:50%; background:var(--coral); flex:none; }
+.mrow.read .mdot{ visibility:hidden; }
+.mgo{ font-size:22px; color:#9FB0A6; flex:none; transition:.18s; }
+.mrow.open .mgo{ transform:rotate(90deg); }
+/* 展開：全文 ＋ CTA */
+.mfull{ display:none; padding:4px 16px 16px 76px; }
+.mrow.open .mfull{ display:block; }
+.mfull p{ font-weight:700; font-size:14.5px; line-height:1.6; color:var(--ink); white-space:pre-line; }
+.mfull .note{ margin-top:10px; padding:12px 14px; border-radius:14px; background:var(--green-l); font-weight:700; font-size:14px; color:#1a5c2e; }
+.mfull .note b{ display:block; font-size:11px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; color:var(--green-d); margin-bottom:3px; }
+.mfull .acts{ display:flex; gap:10px; margin-top:12px; }
+.cta{ border:0; cursor:pointer; height:40px; padding:0 18px; border-radius:13px; font-family:var(--font-d); font-weight:600; font-size:15px; color:#fff; display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+  background:linear-gradient(150deg,var(--green),#37C46E); box-shadow:0 10px 18px -10px rgba(18,161,80,.8), inset 0 -2px 0 rgba(0,0,0,.14); transition:.16s; }
+.cta:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+.cta .mi{ font-size:18px; }
+.empty{ margin-top:24px; padding:38px; border-radius:20px; text-align:center; background:#fff; box-shadow:inset 0 0 0 1.5px var(--line); }
+.empty .mi{ font-size:44px; color:var(--green); }
+.empty h3{ font-family:var(--font-d); font-weight:600; font-size:22px; margin-top:8px; }
+.empty p{ font-weight:700; color:var(--ink-soft); margin-top:2px; }
+@keyframes slide{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+.mrow{ animation:slide .35s ease both; }
+
+/* ---------- 底部狀態列 ---------- */
+.bl{ position:fixed; left:0; right:0; bottom:0; z-index:50; height:30px; padding:0 14px; display:flex; align-items:center; gap:14px; background:#111827; color:#9CA3AF; font-family:'Public Sans',sans-serif; font-size:11px; }
+.bl b{ color:#fff; } .bl a{ color:#D1D5DB; text-decoration:underline; } .bl a.cur{ color:#00CB61; font-weight:700; }
+.bl .bl-home{ display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border:1px solid #4B5563; border-radius:6px; text-decoration:none; color:#E5E7EB; }
+.bl .bl-home .mi{ font-size:13px; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="https://project-logeg.vercel.app/specs/chinese-modules/assets/dh_single.png" alt="Dahua.ai" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+      <a href="student-mailbox.html" class="on"><span class="ic"><span class="mi">mail</span></span>Mail Box<span class="badge" id="badge"></span></a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <main class="stage">
+    <div class="acct"><span class="av">A</span></div>
+    <div class="scroll"><div class="canvas">
+      <div class="head">
+        <div class="t"><h1>Mail Box</h1><p class="lead">Messages from your teacher &amp; Dahua</p></div>
+        <a class="ghost" href="student-settings.html"><span class="mi">settings</span>Email settings</a>
+      </div>
+      <div class="filter" id="filter"><span class="lbl">Type</span></div>
+      <div class="mail-list" id="list"></div>
+    </div></div>
+  </main>
+</div>
+
+<div class="bl">
+  <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/index.html" class="bl-home"><span class="mi">arrow_back</span>Index</a><b>交接包</b>　Notification settings · 學生的 Mail Box（第三期）· <a href="index.html">交接包首頁 ↗</a> · <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/v10-teacher-email-settings/spec.html">Spec ↗</a> · <a href="student-settings.html">學生的 Settings ↗</a> · <a href="teacher-settings.html">老師的 Settings ↗</a> · 版面照 <a href="../student-redesign/student-redesign.html#mail">student-redesign #mail ↗</a>
+  <span style="margin-left:auto"></span>
+  <a href="student-mailbox.html" id="s0">預設</a> · <a href="?open=1" id="s1">第一則展開</a> · <a href="?type=reminder" id="s2">Reminders</a> · <a href="?type=announcement" id="s3">Announcements</a> · <a href="?empty=1" id="s4">沒有訊息</a>
+</div>
+
+<script>
+/* 訊息＝三型對到信。老師 Joey Tsai（跟老師頁同一人）；reminder 的內容就是老師在 Settings 設的 Message */
+const MAIL = [
+  { id:'fb1', type:'feedback', from:'Joey Tsai', title:'Feedback on Unit 3 Speaking Practice', preview:'Great tones! Work on the question words 吗 / 呢.', time:'2h', unread:true,
+    body:'Great tones! Work on the question words 吗 / 呢 — listen to the sample once more before you redo.', cta:['history','Open in History'] },
+  { id:'rm1', type:'reminder', from:'Joey Tsai', title:'A reminder about Unit 3 Speaking Practice', preview:'Due tomorrow · Chinese 3B', time:'1d', unread:true,
+    body:'Unit 3 Speaking Practice · Chinese 3B · due 2026-10-22', note:'You have not submitted this assignment yet. Please finish and submit it when you can.', cta:['assignment','Go to assignment'] },
+  { id:'rm2', type:'reminder', from:'Joey Tsai', title:'Your Word Game goal for Chinese 3B', preview:'Complete 10 stages · ends 2026-10-30', time:'2d', unread:false,
+    body:'Goal: Complete 10 stages · Ends 2026-10-30 · You are at stage 6.', note:'You have not reached this Word Game goal yet. Jump back in when you can — keep it up!', cta:['wordgame','Play Word Game'] },
+  { id:'an1', type:'announcement', from:'Dahua', title:'New unit unlocked: Family & Home', preview:'HSK 1 · 12 new words to explore.', time:'3d', unread:false,
+    body:'HSK 1 · Unit 4 “Family & Home” is open in Word Game: 12 new words, 6 stages, one Boss.' },
+];
+const TYPES = [['all','All'],['feedback','Feedback'],['reminder','Reminders'],['announcement','Announcements']];
+const Q = new URLSearchParams(location.search);
+const S = { type: TYPES.some(t => t[0] === Q.get('type')) ? Q.get('type') : 'all', open: new Set(), empty: Q.get('empty') === '1' };
+if (Q.get('open') === '1') { S.open.add(MAIL[0].id); MAIL[0].unread = false; }   /* 打開＝讀過 */
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CTA_ICON = { history:'history', assignment:'edit_note', wordgame:'sports_esports' };
+
+function render(){
+  const items = S.empty ? [] : MAIL;
+  const unread = items.filter(m => m.unread).length;
+  document.getElementById('badge').textContent = unread || '';
+  document.getElementById('filter').innerHTML = '<span class="lbl">Type</span>' + TYPES.map(([k, l]) => {
+    const n = items.filter(m => (k === 'all' || m.type === k) && m.unread).length;
+    return `<button class="fchip ${S.type === k ? 'on' : ''}" data-type="${k}">${l}${n ? `<span class="n">${n}</span>` : ''}</button>`; }).join('');
+  const list = items.filter(m => S.type === 'all' || m.type === S.type);
+  document.getElementById('list').innerHTML = list.length ? list.map((m, i) => `
+    <div class="mrow ${m.unread ? 'unread' : 'read'} ${S.open.has(m.id) ? 'open' : ''}" data-id="${m.id}" style="animation-delay:${i * 45}ms">
+      <div class="mhead" data-act="toggle">
+        <span class="mico ${m.type}"><span class="mi">${{feedback:'rate_review', reminder:'notifications_active', announcement:'campaign'}[m.type]}</span></span>
+        <div class="mbody">
+          <div class="mtop"><span class="mdot"></span><span class="mfrom">${esc(m.from)}</span><span class="mtag ${m.type}">${m.type}</span><span class="mtime">${m.time}</span></div>
+          <div class="mtitle">${esc(m.title)}</div>
+          <div class="mprev">${esc(m.preview)}</div>
+        </div>
+        <span class="mi mgo">chevron_right</span>
+      </div>
+      <div class="mfull">
+        <p>${esc(m.body)}</p>
+        ${m.note ? `<div class="note"><b>From ${esc(m.from)}</b>${esc(m.note)}</div>` : ''}
+        ${m.cta ? `<div class="acts"><a class="cta" href="#"><span class="mi">${CTA_ICON[m.cta[0]]}</span>${m.cta[1]}</a></div>` : ''}
+      </div>
+    </div>`).join('')
+    : `<div class="empty"><span class="mi">mark_email_read</span><h3>All caught up</h3><p>No messages here.</p></div>`;
+}
+document.getElementById('filter').addEventListener('click', (e) => { const b = e.target.closest('.fchip'); if (!b) return; S.type = b.dataset.type; render(); });
+document.getElementById('list').addEventListener('click', (e) => {
+  const h = e.target.closest('[data-act="toggle"]'); if (!h) return;
+  const id = h.closest('.mrow').dataset.id; const m = MAIL.find(x => x.id === id);
+  if (S.open.has(id)) S.open.delete(id); else { S.open.add(id); m.unread = false; }   /* 打開＝讀過 */
+  render();
+});
+render();
+document.querySelectorAll('.bl a[id]').forEach((a) => { const q = a.getAttribute('href').replace(/^student-mailbox\.html/, ''); if (q === location.search || (!q && !location.search)) a.classList.add('cur'); });
+</script>
+</body>
+</html>

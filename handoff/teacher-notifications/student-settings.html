@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — 學生的 Settings · 交接包</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@700&family=Material+Icons+Round&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   v10 學生端提案 —— 學生的 Settings 頁（第十八輪，2026-10-20，使用者：「學生端的直接套學生的 UI」）。
+   殼照 /student/practice/ 的複刻（v8-assign-history/student-practice.html）：側欄 262 ＋ 舞台、Fredoka／Nunito、
+   student-game-tokens 的色票與圓角（r-card 20／r-row 16／r-chip 8）、Stars／Hearts、右上頭像。
+   內容：h1 Settings → 兩段 sec-title（Profile／Emails you receive）→ 白底卡。
+     Profile：First／Last name、Email／School／User ID（唯讀）、Native／Target language（user-new-edit-form.js 學生才有）＋ Save changes。
+     Emails you receive：一列 Daily summary（59）＝ 46px 圖塊 ＋ 標題 ＋ Preview ＋ 開關（學生自己設定，2026-10-20 定案）＋ Save。
+     老師觸發的 14／15／48／49 不在這裡：學生不能關。
+   Preview：跟老師頁同一個 Dialog（emails/59-….html 的 iframe），圓角改 20。
+   第十九輪（2026-10-21）：側欄照實機截圖（Home／Leaderboard／Assignment List／History／Word Game，沒有 Submitted）＋ 加上 student-redesign 規劃的 Mail Box（未讀徽章）。
+     Emails you receive 擴成四列＝ Mail Box 三型 ＋ Daily summary：Daily summary（59）／Teacher feedback（15）／Reminders（48、49）／Announcements（新型，還沒有模板）。
+     規則：站內 Mail Box 一律有，email 學生自己選。New assignment（14）要不要算一型，待問。
+   第二十一輪（2026-10-23，使用者定）：「學生端改成統一要不要收到 DAHUA 的提醒 email，不用分那麼多開關」→ 四列收成一列總開關 Emails from DAHUA AI；
+     Preview 跟著拿掉（一個開關管所有信，沒有單一封可預覽）。
+     標題底下一句列出是哪些信：Daily summary, new assignments, teacher feedback and reminders（使用者要的，Announcements 還沒有信先不列）。
+   網址參數：&changed=1 Save 可按 · &saved=1 存成功 toast · &off=1 總開關關著
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#12A150; --green-d:#0B7A3B; --green-l:#DCF7E6; --green-ink:#0B5B30;
+  --purple:#7C3AED; --purple-d:#5B21B6; --purple-l:#EDE4FF;
+  --gold:#FFC219; --coral:#FF5A6E; --coral-l:#FFE1E5;
+  --ink:#243B2E; --ink-soft:#5B7266; --line:#E4EDE7; --paper:#fff; --shell:#EAF3EC;
+  --r-card:20px; --r-row:16px; --r-chip:8px;
+  --font-d:'Fredoka', system-ui, sans-serif; --font-b:'Nunito', system-ui, sans-serif;
+}
+html,body{ height:100%; }
+body{ font-family:var(--font-b); color:var(--ink); -webkit-font-smoothing:antialiased; overflow:hidden;
+  background: radial-gradient(1200px 600px at 80% -10%, #DDEBFF 0%, transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, #E7F7EC 0%, transparent 55%),
+              linear-gradient(160deg,#EFF5FB 0%, #EAF4EE 100%); }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; }
+.mo{ font-family:'Material Icons Outlined'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; }
+button,input{ font-family:inherit; }
+
+/* ---------- shell：側欄 262 ＋ 舞台（抄 student-practice.html） ---------- */
+.app{ display:grid; grid-template-columns:262px 1fr; height:100vh; padding:16px; gap:16px; }
+.side{ background:var(--paper); border-radius:var(--r-card); box-shadow:0 12px 26px -14px rgba(11,91,48,.45); display:flex; flex-direction:column; padding:20px 16px 16px; position:relative; overflow:hidden; }
+.side::before{ content:""; position:absolute; inset:0 0 auto 0; height:120px; background:radial-gradient(120% 90% at 20% 0%, rgba(18,161,80,.10), transparent 70%); pointer-events:none; }
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 22px; position:relative; }
+.brand .logo{ width:40px; height:40px; border-radius:13px; flex:none; background:#fff; display:grid; place-items:center; box-shadow:0 6px 14px -4px rgba(18,161,80,.35), inset 0 0 0 1.5px var(--line); }
+.brand .logo img{ width:30px; height:30px; object-fit:contain; display:block; }
+.brand b{ font-family:var(--font-d); font-weight:700; font-size:21px; letter-spacing:.3px; background:linear-gradient(90deg,var(--green-d),#2CB763); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.nav{ display:flex; flex-direction:column; gap:4px; position:relative; }
+.nav a{ display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:var(--r-row); color:var(--ink-soft); font-weight:800; font-size:14.5px; text-decoration:none; position:relative; transition:.18s; }
+.nav a .ic{ width:24px; display:flex; justify-content:center; filter:grayscale(.4); }
+.nav a .ic .mi{ font-size:20px; color:var(--green); }
+.nav a:hover{ background:#F1F7F2; color:var(--ink); }
+.nav .badge{ margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:8px; display:grid; place-items:center; font-family:var(--font-d); font-weight:600; font-size:13px; background:var(--coral-l); color:#B23146; }
+.side .grow{ flex:1; min-height:14px; }
+.stats{ display:flex; flex-direction:column; gap:9px; }
+.stat{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:var(--r-row); font-weight:900; }
+.stat .mi{ font-size:23px; }
+.stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; }
+.stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+.stat .col{ display:flex; flex-direction:column; gap:2px; }
+.stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; } .stat.gold .mi{ color:var(--gold); }
+.stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#B23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; } .stat.coral .mi{ color:var(--coral); }
+.report{ margin-top:12px; text-align:center; font-size:12px; font-weight:800; color:#C0576A; text-decoration:none; }
+
+.stage{ position:relative; border-radius:var(--r-card); overflow:hidden; box-shadow:0 26px 60px -24px rgba(11,60,35,.55); display:flex; flex-direction:column;
+  background: radial-gradient(900px 500px at 90% -20%, #E6EEFF 0%, transparent 55%), linear-gradient(165deg,#F4F8FD 0%, #EEF5F0 100%); }
+.scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; display:flex; flex-direction:column; }
+.scroll::-webkit-scrollbar{ width:10px; } .scroll::-webkit-scrollbar-thumb{ background:rgba(11,91,48,.18); border-radius:20px; border:3px solid transparent; background-clip:content-box; }
+.acct{ position:absolute; top:16px; right:16px; z-index:10; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:rgba(145,158,171,.08); }
+.acct .av{ width:36px; height:36px; border-radius:50%; background:#C8FAD6; color:#007B55; font-family:'Public Sans',sans-serif; font-weight:700; font-size:15px; display:grid; place-items:center; }
+
+/* ---------- canvas：1000px 設計寬 ---------- */
+.canvas{ position:relative; width:min(1000px,100%); margin:0 auto; padding:40px 28px 60px; }
+.canvas h1{ font-family:var(--font-d); font-weight:700; font-size:38px; letter-spacing:.2px; color:var(--ink); }
+.canvas .lead{ margin-top:2px; font-weight:700; font-size:15.5px; color:var(--ink-soft); }
+/* 段標題：照 assignment-section.js（19px Fredoka） */
+.sec-title{ display:flex; align-items:center; gap:9px; margin:26px 2px 12px; }
+.sec-title b{ font-family:var(--font-d); font-weight:600; font-size:19px; }
+
+/* ---------- 卡：白底、r-card、listRowSx 的陰影 ---------- */
+.card{ background:#fff; border-radius:var(--r-card); box-shadow:0 10px 24px -18px rgba(11,60,35,.5), inset 0 0 0 1.5px var(--line); padding:22px 24px; }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 18px; }
+.grid .full{ grid-column:1 / -1; }
+/* 欄位：標籤小寫大寫（跟 Stars／Hearts 的 .k 同一種），輸入框 46 高、r-row、1.5px line */
+.fld{ display:flex; flex-direction:column; gap:7px; }
+.fld label{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--ink-soft); }
+.inp{ height:46px; width:100%; border:0; border-radius:12px; background:#fff; box-shadow:inset 0 0 0 1.5px var(--line); padding:0 14px;
+  font-size:15px; font-weight:700; color:var(--ink); }
+.inp:hover{ box-shadow:inset 0 0 0 1.5px #CFE3D6; }
+.inp:focus{ outline:0; box-shadow:inset 0 0 0 2px var(--green), 0 0 0 4px rgba(18,161,80,.14); }
+.inp:disabled{ background:#F4F8F5; color:var(--ink-soft); -webkit-text-fill-color:var(--ink-soft); }
+.role{ display:flex; align-items:center; gap:10px; margin-top:4px; font-weight:800; color:var(--ink-soft); font-size:14px; }
+.chip{ padding:3px 9px; border-radius:var(--r-chip); font-weight:900; font-size:11px; line-height:1.4; letter-spacing:.3px; text-transform:uppercase; background:var(--green-l); color:var(--green-d); }
+.actions{ display:flex; justify-content:flex-end; align-items:center; gap:14px; margin-top:20px; }
+/* CTA：照 practice-row.js 的漸層鈕（綠）；文字鈕給 Cancel */
+.cta{ border:0; cursor:pointer; height:44px; padding:0 22px; border-radius:14px; font-family:var(--font-d); font-weight:600; font-size:16px; color:#fff;
+  background:linear-gradient(150deg,var(--green),#37C46E); box-shadow:0 10px 18px -10px rgba(18,161,80,.8), inset 0 -2px 0 rgba(0,0,0,.14); transition:.16s; }
+.cta:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+.cta:disabled{ background:#DCE6DF; color:#8EA296; box-shadow:none; cursor:default; transform:none; filter:none; }
+.ghost{ border:0; background:transparent; cursor:pointer; font-weight:800; font-size:15px; color:var(--ink-soft); padding:8px 10px; border-radius:12px; }
+.ghost:hover{ background:#F1F7F2; color:var(--ink); }
+
+/* ---------- Emails you receive：一列＝ practice-row.js 的列（46px 圖塊、標題、右邊控制） ---------- */
+.list{ display:flex; flex-direction:column; gap:12px; }
+.row{ display:flex; align-items:center; gap:15px; padding:15px 16px; border-radius:var(--r-row); background:#fff; box-shadow:0 10px 24px -18px rgba(11,60,35,.5), inset 0 0 0 1.5px var(--line); }
+.row .tile{ width:46px; height:46px; border-radius:14px; display:grid; place-items:center; flex:none; background:var(--green-l); color:var(--green-d); }
+.row .tile .mi{ font-size:24px; }
+.row .meta{ flex:1; min-width:0; }
+.row h5{ font-family:var(--font-d); font-weight:600; font-size:17px; color:var(--ink); }
+.row .prev{ display:inline-flex; align-items:center; gap:4px; margin-top:2px; font-size:13px; font-weight:800; color:var(--ink-soft); text-decoration:none; }
+.row .prev .mo{ font-size:16px; }
+.row .prev:hover{ color:var(--green-d); }
+.row .desc{ margin-top:2px; font-size:13px; font-weight:700; color:var(--ink-soft); }
+/* 開關：學生端的綠（跟 practice-row 的 CTA 同一組），48×28 */
+.sw{ position:relative; width:52px; height:30px; border:0; border-radius:999px; background:#D5E0D9; cursor:pointer; transition:.18s; flex:none; }
+.sw::after{ content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.18); transition:.18s; }
+.sw[aria-checked="true"]{ background:linear-gradient(150deg,var(--green),#37C46E); }
+.sw[aria-checked="true"]::after{ transform:translateX(22px); }
+.sw:focus-visible{ outline:3px solid rgba(18,161,80,.35); outline-offset:2px; }
+.row-actions{ display:flex; justify-content:flex-end; margin-top:14px; }
+
+/* ---------- Preview Dialog（學生版圓角 20） ---------- */
+.dlg-bg{ position:fixed; inset:0; background:rgba(11,60,35,.45); backdrop-filter:blur(2px); z-index:1300; display:none; align-items:center; justify-content:center; padding:32px; }
+.dlg-bg.on{ display:flex; }
+.dlg{ width:720px; max-width:100%; max-height:calc(100vh - 64px); background:#fff; border-radius:var(--r-card); display:flex; flex-direction:column; box-shadow:0 30px 70px -20px rgba(11,60,35,.6); }
+.dlg .dt{ display:flex; align-items:flex-start; gap:16px; padding:22px 24px 14px; }
+.dlg .dt .h{ font-family:var(--font-d); font-weight:600; font-size:22px; }
+.dlg .dt .subj{ font-size:13px; font-weight:700; color:var(--ink-soft); margin-top:2px; }
+.dlg .dt .x{ margin-left:auto; flex:none; width:36px; height:36px; border:0; border-radius:50%; background:#F1F7F2; cursor:pointer; color:var(--ink-soft); display:grid; place-items:center; }
+.dlg .dt .x:hover{ background:#E4EDE7; color:var(--ink); }
+.dlg .dc{ padding:0 24px 24px; overflow:auto; }
+.dlg .dc iframe{ display:block; width:100%; height:70vh; border:0; border-radius:14px; background:#f4f4f4; box-shadow:inset 0 0 0 1.5px var(--line); }
+
+/* ---------- Toast（學生端的存成功）---------- */
+.toast{ position:fixed; top:28px; left:50%; transform:translateX(-50%) translateY(-8px); z-index:1400; display:none; align-items:center; gap:10px;
+  padding:10px 16px 10px 12px; border-radius:14px; background:#fff; box-shadow:0 14px 30px -12px rgba(11,60,35,.5), inset 0 0 0 1.5px var(--line); font-weight:800; font-size:14px; }
+.toast.show{ display:flex; transform:translateX(-50%); }
+.toast .mi{ color:var(--green); font-size:22px; }
+
+/* ---------- 底部狀態列 ---------- */
+.bl{ position:fixed; left:0; right:0; bottom:0; z-index:50; height:30px; padding:0 14px; display:flex; align-items:center; gap:14px; background:#111827; color:#9CA3AF; font-family:'Public Sans',sans-serif; font-size:11px; }
+.bl b{ color:#fff; } .bl a{ color:#D1D5DB; text-decoration:underline; } .bl a.cur{ color:#00CB61; font-weight:700; }
+.bl .bl-home{ display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border:1px solid #4B5563; border-radius:6px; text-decoration:none; color:#E5E7EB; }
+.bl .bl-home .mi{ font-size:13px; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="https://project-logeg.vercel.app/specs/chinese-modules/assets/dh_single.png" alt="Dahua.ai" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+      <!-- Mail Box：student-redesign 交接（2026-08-13）規劃的第六項，現行產品還沒有；未讀徽章 -->
+      <a href="student-mailbox.html"><span class="ic"><span class="mi">mail</span></span>Mail Box<span class="badge">2</span></a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <main class="stage">
+    <div class="acct"><span class="av">A</span></div>
+    <div class="scroll"><div class="canvas">
+      <h1>Settings</h1>
+      <p class="lead">Your profile and the emails you get.</p>
+
+      <div class="sec-title"><b>Profile</b></div>
+      <div class="card" id="profile">
+        <div class="grid">
+          <div class="fld"><label for="fn">First name</label><input class="inp" id="fn" value="Amy" data-dirty></div>
+          <div class="fld"><label for="ln">Last name</label><input class="inp" id="ln" value="Chen" data-dirty></div>
+          <div class="fld full"><label for="em">Email</label><input class="inp" id="em" value="amy.chen@dahua-demo.school" disabled></div>
+          <div class="fld"><label for="sc">School</label><input class="inp" id="sc" value="Dahua Demo School" disabled></div>
+          <div class="fld"><label for="uid">User ID</label><input class="inp" id="uid" value="8b21d4e0-5a7c-4f31-9e62-0c3d7a1b6f54" disabled></div>
+          <div class="fld"><label for="nl">Native language</label><input class="inp" id="nl" value="English" data-dirty></div>
+          <div class="fld"><label for="tl">Target language</label><input class="inp" id="tl" value="Chinese (Simplified)" data-dirty></div>
+          <div class="fld full"><label>Class</label><div class="role"><span class="chip">Student</span>Dahua Chinese Program · Chinese 3B</div></div>
+        </div>
+        <div class="actions">
+          <button class="ghost">Cancel</button>
+          <button class="cta save" disabled>Save changes</button>
+        </div>
+      </div>
+
+      <div class="sec-title"><b>Emails you receive</b></div>
+      <div id="emails">
+        <!-- 一個總開關（2026-10-23 使用者定：「統一要不要收到 DAHUA 的提醒 email，不用分那麼多開關」）。
+             關掉＝ DAHUA 寄給學生的所有 email 都不寄（Daily summary、Teacher feedback、Reminders、New assignment、之後的 Announcements）；站內 Mail Box 照樣有。 -->
+        <div class="list">
+          <div class="row" data-row="all">
+            <span class="tile"><span class="mi">mark_email_unread</span></span>
+            <div class="meta"><h5>Emails from DAHUA AI</h5><p class="desc">Daily summary, new assignments, teacher feedback and reminders</p></div>
+            <button class="sw" role="switch" aria-checked="true" aria-label="Emails from DAHUA AI"></button>
+          </div>
+        </div>
+        <div class="row-actions"><button class="cta save" disabled>Save</button></div>
+      </div>
+    </div></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"><span class="mi">check_circle</span>Settings saved</div>
+
+<div class="bl">
+  <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/index.html" class="bl-home"><span class="mi">arrow_back</span>Index</a><b>交接包</b>　Notification settings · 學生的 Settings · <a href="index.html">交接包首頁 ↗</a> · <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/v10-teacher-email-settings/spec.html">Spec ↗</a> · <a href="teacher-settings.html">老師的 Settings ↗</a> · <a href="student-mailbox.html">Mail Box ↗</a> · 殼照 <a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/v8-assign-history/student-practice.html">學生端 /student/practice ↗</a>
+  <span style="margin-left:auto"></span>
+  <a href="student-settings.html" id="s0">預設</a> · <a href="?off=1" id="s1">關掉</a> · <a href="?changed=1" id="s2">改過・可存</a> · <a href="?saved=1" id="s3">存成功</a>
+</div>
+
+<script>
+const Q = new URLSearchParams(location.search);
+const saves = [...document.querySelectorAll('.save')];
+const markDirty = (el) => { const box = el.closest('#profile, #emails'); box.querySelector('.save').disabled = false; };
+document.querySelectorAll('[data-dirty]').forEach((el) => el.addEventListener('input', () => markDirty(el)));
+
+document.querySelectorAll('.sw').forEach((sw) => sw.addEventListener('click', () => { sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); markDirty(sw); }));
+/* &off=1：總開關關著 */
+if (Q.get('off') === '1') document.querySelector('.row[data-row="all"] .sw').setAttribute('aria-checked', 'false');
+
+let t;
+const toast = (msg) => { const el = document.getElementById('toast'); el.lastChild.textContent = msg; el.classList.add('show'); clearTimeout(t); t = setTimeout(() => el.classList.remove('show'), 3000); };
+saves.forEach((b) => b.addEventListener('click', () => { b.disabled = true; toast('Settings saved'); }));
+
+
+if (Q.get('changed') === '1') saves.forEach((b) => { b.disabled = false; });
+if (Q.get('saved') === '1') toast('Settings saved');
+document.querySelectorAll('.bl a[id]').forEach((a) => { const q = a.getAttribute('href').replace(/^student-settings\.html/, ''); if (q === location.search || (!q && !location.search)) a.classList.add('cur'); });
+</script>
+</body>
+</html>

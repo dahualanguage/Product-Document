@@ -4,16 +4,19 @@
 - **網址**：產品裡還沒有這一頁。提案掛在 `/dashboard/users/edit/:id`（Account 選單那一項，第五輪從 Profile 改名 **Settings**）；派作業對話框有一個當次覆寫的勾選。**範圍：只討論設定頁**（2026-09-30 使用者）
 - **截圖**：無（使用者未給；基準檔照程式碼畫）
 - **日期**：2026-09-30（登記＋提案第一輪）
+- **Spec（PM 視角，老師＋學生＋Mail Box 一份）**：`spec.html`（2026-10-21）
 - **設計檔**：
   - `teacher-dashboard.html`（**參考，不在卡片上**：現行 /school/teacher-dashboard 的 Send reminder，從 v2 基準分岔；`?open=1`、`?remind=1`。畫了之後使用者問「為什麼要畫」，收斂成只討論設定頁，留著給之後開 Dashboard 那一版用）
   - `profile.html`（**基準**：現行 /dashboard/users/edit?id=<自己>，Edit User 表單；`?menu=1` 打開右上 Account 選單）
   - `proposal.html`（**提案**，從 profile.html 分岔：Edit User 下面疊第二張 Card「Notifications」；`&changed=1` Save 可按、`&saved=1` 顯示 snackbar）
   - `emails/`（7 封信渲染好的 HTML，從 Email Templates artifact 抽出，給 Preview Dialog 的 iframe 用）
+  - `student-proposal.html`（**學生的 Settings 頁**，第十七～十八輪：**學生端 UI**（殼抄 v8 `student-practice.html`：側欄 262＋舞台、Fredoka／Nunito、Stars／Hearts）；Profile ＋ Emails you receive 一列 Daily summary 開關；`&off=1`、`&changed=1`、`&saved=1`、`&preview=59`）
+  - `student-mailbox.html`（**學生的 Mail Box**，第二十輪：版面照 student-redesign 的 #mail；三型 feedback／reminder／announcement 對到信 15／48・49／新型；TYPE 篩選、點開全文＋CTA、讀過徽章減一；`?type=`、`&open=1`、`&empty=1`）
   - `digest-discussion.html`（2026-10-20 會議用：Daily digest 老師關不掉、跟 14／48 的重疊、四個選項、要定的兩件事）
   - `discussion.html`（討論稿：三個方案、每封信開放什麼、規則、資料接點、分期、待確認。不是照基準畫的）
 - **基準**：九封信現在怎麼寄，收在 [DAHUA AI Email Templates](https://claude.ai/code/artifact/dce51479-50bc-47b7-9309-4eedd21ff9d7)（commerce-api `src/email/brevo/templates/`，用 README 的測試參數渲染）
 - **程式碼基準**：dahua-dash `origin/develop` @ `96d64382`（2026-09-30 fetch）。**本機 `~/Downloads/dahua-dash-develop` 過期**，第一稿照它寫「Remind 找不到」是錯的，fetch 後更正。2026-10-19 再對 `c8179072`：產品仍沒有任何通知設定（account-popover 只有 Home／Profile；updateUser input 沒有 preferences）
-- **狀態**：**進行中 · 沙盒**（2026-10-19 第二輪自我檢查，等回饋）。第一輪已隨 2026-10-12 commit `9782ded` 部署到 project-logeg.vercel.app；第二輪未 commit
+- **狀態**：**2026-10-27 定案並交接（第二十三輪）**。交接包 `handoff/teacher-notifications/`（原型複本 teacher-settings／student-settings／student-mailbox ＋ emails、HANDOFF.md、API-CONTRACT.md、index.html）。程式碼基準 dahua-dash `origin/develop` @ `9b19074a`（2026-10-27：Account 選單仍只有 Home／Profile、updateUser 沒有偏好欄位、repo 沒有 notificationPreferences）。後端 B1–B6 待回。第一輪曾隨 2026-10-12 commit `9782ded` 部署；第二輪之後與交接包尚未 commit
 
 ## 現況（照程式碼與九封信）
 
@@ -51,7 +54,7 @@ dahua-dash 這邊：
 - **59 不開放給老師**：每位學生一封、橫跨所有班級和老師，單一老師關掉會蓋到別人的作業。設定頁列出但鎖定，開關屬於學生本人或學校層級
 - 12／13 不出現在設定頁
 
-**規則**：優先順序 系統上限 ＞ 當次覆寫 ＞ 班級覆寫（第二期）＞ 老師預設 ＞ 系統預設。寄給學生的信以「那個作業的老師」的設定為準。系統上限：同一學生同一作業 24 小時最多一封提醒（手動＋自動合併）、自動提醒每作業最多 4 封、已繳交立即退出序列、學校時區。
+**規則**：優先順序 系統上限 ＞ 當次覆寫 ＞ 班級覆寫（第二期）＞ 老師預設 ＞ 系統預設。寄給學生的信以「那個作業的老師」的設定為準。系統上限：同一學生同一作業 24 小時最多一封提醒（手動＋自動合併）、同一天的兩列只寄一封、已繳交立即退出序列、學校時區。（原本的「每作業最多 4 封」2026-10-21 拿掉。）
 
 **畫面**：設定頁（綠帶＝老師收、藍帶＝學生收、灰帶＝鎖定；每列 Preview 開 Brevo 模板）、派作業對話框底列 Email students now 勾選（從設定帶入）。Teacher Dashboard 作業列的 Set up／Reminded n ago 原本有畫，範圍收斂後拿掉。
 
@@ -69,9 +72,9 @@ dahua-dash 這邊：
 - **名詞**（第十三輪，使用者定）：17 和 59 都叫 **Daily summary**（同一類：每日 cron 彙整，老師一封、學生一封，兩張卡各一個）；Word Game 的期限叫 **end date**（跟產品錯誤訊息、信裡的 Ends 一致）；作業一律 assignment、提醒一律 reminder（按鈕維持 Remind）、Teacher feedback 不動。側欄 Practice List 要不要改名是別的版本的事。
 - 列：Daily summary（Switch）、Question bank ready（Switch）／New assignment（Switch，第十四輪從 Select 改）、Teacher feedback（Switch，同）、Assignment reminders（Switch）、Word Game goal reminders（Switch）、Daily summary（Chip Managed by school）。**沒有 Ask me each time**（使用者 2026-10-19：「改成開關就好」），派作業對話框不需要當次覆寫的勾選。
 - **規則＝灰底標籤／值小表**（background.neutral），只在 Switch 開著時出現，關掉整塊收起（Collapse，不再淡掉）。48／49 預設關 → 頁面預設很短。
-- Daily summary（老師收的那封）的小表：Time [07:30]／Send（Select：Every day something is due｜Only when someone hasn't submitted，第四輪從 Checkbox 改 Select）／Format（Select：One email per assignment｜One email for all assignments）。**沒有 Deferred start 設定**（第三輪拿掉＝維持現況：延後開始的作業在開始日寄）。
-- **Assignment reminders 的小表**（第十輪）：**Reminders 清單**，一列＝一封：[n] days [before the due date｜after the due date] ＋ ×，底下 **Add reminder**，最多 4 列（滿了 Add 變灰），只剩一列時 × 藏起來。預設兩列（2 days before／1 day after）＝今天的行為。老師要「7 天前＋2 天前」就加一列。固定時間點、不是區間（使用者問「選 2 天前是寄兩封還是一封」→ 一封）。沒有 then every 和 Limit（第八輪，使用者：多餘）；上限 4 由 Add 變灰表達，不寫字。**Message**（第十一輪，使用者「48 也加可以輸入，先給一句預設文字」）：多行、上限 1000，預設 You have not submitted this assignment yet. Please finish and submit it when you can.；進信裡「A Note From Your Teacher」那段（模板 48 要照 49 加這段）。小表底下虛線隔開**全頁唯一的解釋句**：One reminder per student per assignment every 24 hours, including the ones you send yourself.（改掉現在按兩次寄兩封的行為，所以要讓老師看得到）。天數的 day／days 跟數字走。
-- **Word Game goal reminders 的小表**（第十二輪，使用者：模組要跟 Assignment reminders 一樣）：同一個 Reminders 清單模組，[n] days [before｜after the end date]（第十三輪 goal date → end date）、Add reminder 最多 4 列，預設一列 3 days before／Message 多行（上限 1000 字，跟 Word Game 的 Remind 對話框一樣），預設照產品 remindMessage() 的口吻去掉代入：You have not reached this Word Game goal yet. Jump back in when you can — keep it up!24 小時那句不重複寫。
+- Daily summary（老師收的那封）的小表：Time [07:30]／Send（Checkbox：Only when someone hasn't submitted，預設不勾；第四輪曾改 Select、第二十二輪 10/26 使用者改回單一勾選）／Format（Select：One email per assignment｜One email for all assignments）。**沒有 Deferred start 設定**（第三輪拿掉＝維持現況：延後開始的作業在開始日寄）。
+- **Assignment reminders 的小表**（第十輪）：**Reminders 清單**，一列＝一封：[n] days [before the due date｜after the due date] ＋ ×，底下 **Add reminder**，沒有列數上限（第二十一輪拿掉四列上限），只剩一列時 × 藏起來。預設兩列（2 days before／1 day after）＝今天的行為。老師要「7 天前＋2 天前」就加一列。固定時間點、不是區間（使用者問「選 2 天前是寄兩封還是一封」→ 一封）。沒有 then every 和 Limit（第八輪，使用者：多餘）；也沒有列數上限（第二十一輪，使用者「為什麼有最多四列的情境」——它是我第十輪自己加的、沒有理由）。同一天的兩列只寄一封是去重規則。**Message**（第十一輪，使用者「48 也加可以輸入，先給一句預設文字」）：多行、上限 1000，預設 You have not submitted this assignment yet. Please finish and submit it when you can.；進信裡「A Note From Your Teacher」那段（模板 48 要照 49 加這段）。小表底下虛線隔開**全頁唯一的解釋句**：One reminder per student per assignment every 24 hours, including the ones you send yourself.（改掉現在按兩次寄兩封的行為，所以要讓老師看得到）。天數的 day／days 跟數字走。
+- **Word Game goal reminders 的小表**（第十二輪，使用者：模組要跟 Assignment reminders 一樣）：同一個 Reminders 清單模組，[n] days [before｜after the end date]（第十三輪 goal date → end date）、Add reminder 沒有上限，預設一列 3 days before／Message 多行（上限 1000 字，跟 Word Game 的 Remind 對話框一樣），預設照產品 remindMessage() 的口吻去掉代入：You have not reached this Word Game goal yet. Jump back in when you can — keep it up!24 小時那句不重複寫。
 - **Preview**（第七輪）：點每列的 Preview 開 MUI Dialog（720 寬，標題＝信的名字、副標 Subject: …、右上 X），裡面一個 iframe 放那封信渲染好的樣子；渲染檔 `emails/<模板>.html` 從 Email Templates artifact 抽出（7 封，README 測試參數）。固定顯示預設版，不跟設定連動（第一期不做）。
 - 底部狀態列（跟 v6／v8 同款）：← Index 回 Versions & Iteration、現行複刻、討論稿；右邊各狀態入口（預設／提醒規則打開／改過・可存／存成功／Preview 17／Preview 59／Account 選單）。
 - 網址參數：`&open=48,49` 把那幾列的 Switch 打開看小表；`&preview=17` 直接打開那封信的 Preview；`&changed=1` 兩顆 Save 可按；`&saved=1` snackbar。
@@ -82,8 +85,10 @@ dahua-dash 這邊：
 
 ## 要問 PM／工程的
 
-1. **PM** 59 digest 真的不給老師關？學校端若要「老師能關」，就得改成班級層級才不會互相蓋掉。**2026-10-20 會議討論**：老師把 14／48 全關，學生仍每天收到 digest 且內容就是這位老師的作業；選項與建議見 `digest-discussion.html`（建議 v10 先加一句 Sent even if the emails above are off，「Include my assignments in the daily digest」等 PM 定）。
+1. ~~**PM** 59 digest 真的不給老師關？~~ **2026-10-20 使用者定：Daily summary 給學生自己設定**（討論稿選項 3）。老師頁那列標籤 Managed by school → Set by student（2026-10-27 使用者：這列整個拿掉，老師頁不再列 59）；學生的 Settings 頁 `student-proposal.html` 一個開關。老師仍不能關。原題：學校端若要「老師能關」，就得改成班級層級才不會互相蓋掉。**2026-10-20 會議討論**：老師把 14／48 全關，學生仍每天收到 digest 且內容就是這位老師的作業；選項與建議見 `digest-discussion.html`（建議 v10 先加一句 Sent even if the emails above are off，「Include my assignments in the daily digest」等 PM 定）。
 2. ~~**PM** 14 的 Ask each time 值不值得做？多數老師只選 Always／Never 的話這個選項可以砍。~~ **2026-10-19 使用者定：不做，14／15 就是開關。** 原本的補充留著當背景：現在前後端都沒有這個選項，assignAssignment 一派就寄 14；做的話派作業對話框要多一個勾選、mutation 多一個參數。派作業對話框現有的唯一寄信槓桿是 TYPE 的 Mandatory（*Sends reminder emails*）｜Optional：Optional 不寄「提醒信」。
+10. **PM** 學生 Settings 的 Announcements 是 Mail Box 的第三型（student-redesign），還沒有對應的信；要不要有 email、誰能發？
+11. ~~**PM** New assignment（14）要不要算 Mail Box 的一型？沒算的話學生關不掉它。~~ **2026-10-23 使用者定：學生只有一個 email 總開關，14 也在裡面。**要不要進 Mail Box 另外算，跟開關無關。
 9. **Backend** Optional 作業「不寄提醒信」到底涵蓋哪幾封？14 New assignment 寄不寄？17／59 Daily summary 會不會列它？48 手動 Remind 按得到嗎？答案決定 v10 的規則要不要寫「Optional 作業不進自動提醒、不進 Daily summary」。
 3. **Backend** School／Program 有沒有時區欄位？17 的 sendAt 和自動提醒的「n 天」都靠它。
 4. **Backend** 手動 Remind 今天刻意不去重（按兩次寄兩封）。24 小時上限會改掉這個行為，要不要？要的話 ReminderLog 得在後端，前端 3 秒 cooldown 不夠。
@@ -96,6 +101,11 @@ dahua-dash 這邊：
 
 | 日期 | 誰 | 改了什麼 |
 |---|---|---|
+| 2026-10-27 | 文件 | 第二十三輪定案並交接：handoff/teacher-notifications（三個原型複本＋emails、HANDOFF.md、API-CONTRACT.md、index.html）；iterations index 卡片改 done、按鈕收成交接包／提案／基準三顆；程式碼基準更新到 9b19074a |
+| 2026-10-27 | 老師 | 第二十三輪（使用者）：「老師端顯示學生的 Daily summary 控制權這段直接拿掉」→ proposal.html 59 那列（Set by student）整列拿掉，Emails your students receive 剩 14／15／48／49；spec 第 3 節表、故事、第 5 節表、第 14 節同步 |
+| 2026-10-26 | 老師 | 第二十二輪（使用者）：Daily summary 的 Send 從兩選項 Select 改成一個 Checkbox「Only when someone hasn't submitted」，預設不勾＝今天的行為；spec 第 5 節表同步 |
+| 2026-10-23 | 學生 | 第二十一輪（使用者定）：「學生端改成統一要不要收到 DAHUA 的提醒 email，不用分那麼多開關」→ student-proposal.html 四列收成一列總開關 **Emails from DAHUA AI**（關＝ DAHUA 寄給學生的 email 全不寄，Mail Box 照樣有）；Preview 與 Dialog 拿掉；spec.html 範圍句、第 6 節表、第 8 節規則、分期表、第 11 節同步；待問 11 結案 |
+| 2026-10-20 | 兩端 | 第十五～十七輪：①UI 跟其他提案頁統整（外殼、.h4 圖示、眉標＋列表、標籤在上的欄位、控制項 hover／focus）；②24 小時那句拿掉，整頁沒有解釋句；③**Daily summary 給學生自己設定**（使用者定）：老師頁 59 標籤改 Set by student，新開 student-proposal.html 學生的 Settings（Profile ＋ Daily summary 開關）；第十八輪使用者「學生端的直接套學生的 UI」→ 整頁改用 /student/practice 的殼與元件；**第十九輪（10/21）**：側欄照實機（五項、沒有 Submitted）＋ 加 student-redesign 規劃的 Mail Box；Emails you receive 擴成 Daily summary／Teacher feedback／Reminders／Announcements 四列＝ Mail Box 三型＋彙整——站內一律有、email 自己選（待問 10、11）；**第二十輪（10/21）**：Mail Box 點進去的畫面（student-mailbox.html）：一列一則、三型圖塊色、未讀粗框＋紅點、點開原地展開全文＋一顆 CTA（feedback → Open in History、reminder → Go to assignment／Play Word Game、announcement 沒有），reminder 的內容就是老師在 Settings 設的 Message；右上 Email settings 回學生的 Settings |
 | 2026-10-19 | 老師 | 第十四輪：使用者「改成開關就好，不用 Ask me each time」→ 14／15 從 Select 改 Switch，預設開；待問 2 結案；派作業對話框不再需要當次覆寫勾選 |
 | 2026-10-19 | 老師 | 第十三輪：統一名詞（使用者定）：17 Due today summary、59 Daily digest 都改 **Daily summary**；Word Game 的 goal date → **end date**；assignment／reminder／Teacher feedback 維持。digest-discussion.html 同步改名 |
 | 2026-10-19 | 老師 | 第十二輪：使用者「Word Game goal reminders 的天數模組應該也要跟 Assignment reminders 一樣」→ 49 改用同一個 Reminders 清單（before／after the goal date、Add reminder 最多 4 列），預設一列 3 days before |

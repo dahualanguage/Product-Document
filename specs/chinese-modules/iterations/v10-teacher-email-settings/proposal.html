@@ -9,6 +9,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
 <style>
 /* ===========================================================================
+   v10 提案 第二十一輪（2026-10-21）—— 使用者「為什麼有最多四列的情境」→ 四列上限是第十輪自己加的、沒有理由，拿掉：
+     Add reminder 永遠可按、只剩一列時不能刪照舊；規則改成「兩列落在同一天只寄一封」（去重），不是數量上限。
+   -------------------------------------------------------------------------
+   v10 提案 第十五輪（2026-10-20）—— 使用者：「這頁的 UI 跟其他頁有些不一樣，先統整」→ 對齊 v12／v13／v14 提案頁的語彙：
+     - 外殼：Dahua.ai 字標＋淡藍底（#f4f7fb）＋綠色頭像，跟其他提案頁同一套；Annotation、navtoggle 拿掉。容器 1200。
+     - 頁標題：.h4 ＋ 40px 圖示方塊（settings，中性灰），跟「New Open-ended Questions」那種標題同一個形狀。
+     - 三張卡 → 三段「眉標（11px 大寫灰）＋ 一張白底 1px 框的列表」（v13 的 .eyebrow ＋ .rows），不再是 MUI 陰影卡＋h6。
+     - Profile 的欄位：MUI 浮標籤 TextField（56 高）→ 標籤在上的 .fld ＋ .inp（40 高，ReUI c-input-2），跟第一步 Practice name 同款。
+     - 小控制項（時間、下拉、數字）統一 40 高、radius 8、hover 灰底、focus 綠環；Cancel 改 text 按鈕；Chip 改 .pill 樣式。
+     每段各自一顆 Save 維持（第六輪使用者定）。
+     第十六輪（2026-10-20）：使用者問「24 小時那句是不是多餘」→ 拿掉。一列一封的清單已經解掉它要防的歧義；
+     24 小時上限是後端的保護、老師改不了，而且手動 Remind 去不去重還沒定（待問 4）。整頁現在沒有任何解釋句；規則留在 ITERATION.md 給工程。
+   第十七輪（2026-10-20）：使用者定「Daily summary 給學生自己設定」→ 老師頁 59 那列的標籤 Managed by school → Set by student；
+   第二十三輪（2026-10-27，使用者）：「老師端顯示學生的 Daily summary 控制權這段直接拿掉」→ 59 那列整個拿掉，Emails your students receive 只剩 14／15／48／49；&preview=59 跟著拿掉。
+     學生的 Settings 頁另存 student-proposal.html（同版型：Profile ＋ Emails you receive 一列 Daily summary 開關）。
+     討論稿選項 3 定案、待問 1 結案。
+   -------------------------------------------------------------------------
    v10 提案 第十四輪（2026-10-19）—— 使用者：「改成開關就好，不用 Ask me each time」。
      14 New assignment、15 Teacher feedback 從 Select（Always｜Ask me each time｜Never）改成 Switch，預設開＝今天的行為。
      學生那張卡現在每列都是 Switch，只有 Daily summary 是 Chip。派作業對話框不再需要當次覆寫的勾選。
@@ -74,6 +91,7 @@
      - 規則收進灰底（background.neutral #F9FAFB、radius 8）的標籤／值小表：Time／Send／Format、Before due／After due／Limit、Before goal／Message。
        Switch 關掉整塊收起（Collapse），不再淡掉；48／49 預設關 → 頁面預設很短。
      - 17 的「Only when someone hasn't submitted」從 Checkbox 改成 Send 的 Select（Every day something is due｜Only when someone hasn't submitted），
+       → 第二十二輪（2026-10-26，使用者）：Send 改回一個 Checkbox「Only when someone hasn't submitted」，不給兩個選項；預設不勾＝今天天天寄。
        跟 Format 的 Select 同一種控制；Format 第二個選項改 One email for all assignments。
      - Preview 改灰色 13px 小連結＋ visibility 圖示，hover 才底線。
      - 每段最後一列補底線，段落收口。
@@ -157,8 +175,10 @@ button, input, select{ font-family:inherit; }
 .side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
   border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
 /* Logo：public/logo/dh_aI.webp，mt 3 / ml 4 / mb 1，高 37 */
-.side .logo{ margin:24px 0 8px 32px; height:37px; display:flex; align-items:center; }
-.side .logo img{ height:37px; width:auto; display:block; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
 .nav{ flex:1; overflow-y:auto; }
 .nav .grp{ padding:0 16px; margin-top:16px; }
 /* ListSubheader：fontSize 11 / overline / grey.700 / p 16px 8px 8px 12px / mb 4 */
@@ -189,25 +209,31 @@ button, input, select{ font-family:inherit; }
 .hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
   background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
 /* AccountPopover 的 Avatar：36、2px 白邊、alt 首字 T → colorByName → warning（main 底、grey800 字） */
-.hdr .acct .av{ width:36px; height:36px; border-radius:50%; border:2px solid #fff; background:var(--warning);
-  color:var(--text); font-weight:600; font-size:20px; display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
 
 /* Main：pt 88（80+8）· px 40 · pb 88 · 沒有 Container */
 .main{ padding:88px 40px 88px; }
 
 
-/* /dashboard/users/edit 不是 tinted 頁：底色白，Header 也是白的 blur */
-body{ background:#fff; }
-.hdr{ background:rgba(255,255,255,.8); }
+/* 第十五輪：底色跟其他提案頁一樣用淡藍（#f4f7fb），不再照 users/edit 的白底 */
 .hdr .acct.open{ background:linear-gradient(135deg,#49DE91 0%,#00CB61 100%); }
 .main{ padding:88px 40px 88px; }
 
 /* ---------- Container maxWidth xl：1536、px 24 ---------- */
-.container{ max-width:1536px; margin:0 auto; padding:0 24px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
 
 /* ---------- CustomBreadcrumbs：h4 gutterBottom ＋ Breadcrumbs body2；mb 5 ---------- */
-.crumbs{ margin-bottom:40px; }
-.crumbs .h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:.35em; }
+/* 頁標題：跟其他提案頁的 .h4 同形（24/700 ＋ 40px 圖示方塊）；Settings 不是練習型別，方塊用中性灰 */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none; background:var(--grey200); color:var(--text2);
+  display:flex; align-items:center; justify-content:center; }
+.h4 .tico .mi{ font-size:22px; }
+/* 段落眉標（v13 .eyebrow） */
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:32px 0 12px; }
+.eyebrow:first-of-type{ margin-top:0; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); }
 .crumbs .row{ display:flex; align-items:center; font-size:14px; line-height:22px; }
 .crumbs .row a{ color:var(--text); text-decoration:none; }
 .crumbs .row a:hover{ text-decoration:underline; }
@@ -215,8 +241,17 @@ body{ background:#fff; }
 .crumbs .sep{ width:4px; height:4px; border-radius:50%; background:var(--text3); margin:0 16px; }
 
 /* ---------- Card p:3 ---------- */
-.card{ background:#fff; border-radius:16px; box-shadow:var(--shadow-card); padding:24px; }
-.form{ display:grid; grid-template-columns:repeat(2,1fr); column-gap:16px; row-gap:24px; }
+/* 列表容器（v13 .rows）：白底、1px 框、radius 16、沒有陰影 */
+.card{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:0 20px; }
+.form{ display:grid; grid-template-columns:repeat(2,1fr); column-gap:16px; row-gap:20px; padding:20px 0 4px; }
+/* 欄位：標籤在上（ReUI c-input-2，跟其他提案頁第一步的 Practice name 同款） */
+.fld{ display:flex; flex-direction:column; gap:8px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.inp{ height:40px; width:100%; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); }
+.inp:hover{ background:var(--grey100); }
+.inp:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); background:#fff; }
+.inp:disabled{ background:var(--grey100); color:var(--text3); -webkit-text-fill-color:var(--text3); }
 .form .full{ grid-column:1 / -1; }
 
 /* ---------- TextField outlined medium（textfield.js）：高 56、邊 alpha(grey500,.2)、radius 8 ---------- */
@@ -231,24 +266,24 @@ body{ background:#fff; }
 .tf.disabled input:hover{ border-color:rgba(145,158,171,.24); }
 .tf.disabled label{ color:var(--text3); }
 
-.divider{ border:0; border-top:1px solid var(--divider); margin:24px 0; }
-.sub1{ font-size:16px; font-weight:600; line-height:1.5; margin-bottom:16px; }
+.divider{ border:0; border-top:1px solid var(--divider); margin:20px 0; }
+.sub1{ font-size:14px; font-weight:600; line-height:1.5; margin-bottom:8px; }
 
 /* ---------- RolesDisplay：每個角色一個框 p 1.5、radius 8、divider 邊 ---------- */
 .role{ padding:12px; border-radius:8px; border:1px solid var(--divider); display:flex; flex-direction:column; gap:8px; }
 .role .line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-/* Chip soft small：高 24、bg alpha(grey500,.16)、字 text.primary 13px */
-.chip{ height:24px; padding:0 8px; border-radius:16px; background:rgba(145,158,171,.16); color:var(--text);
-  font-size:13px; font-weight:500; display:inline-flex; align-items:center; }
+/* 標籤：跟其他提案頁的 .pill 同款（11/700、radius 6、#F1F5F9） */
+.chip{ height:22px; padding:0 9px; border-radius:6px; background:#F1F5F9; color:#475569;
+  font-size:11px; font-weight:700; display:inline-flex; align-items:center; }
 
 /* ---------- 底列：mt 3、靠右、spacing 2 ---------- */
-.actions{ display:flex; justify-content:flex-end; align-items:flex-end; gap:16px; margin-top:24px; }
-.btn{ height:36px; padding:0 12px; border-radius:8px; font:inherit; font-size:14px; font-weight:700; line-height:24px; cursor:pointer;
+.actions{ display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:16px 0; border-top:1px solid var(--divider); }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font:inherit; font-size:14px; font-weight:700; line-height:20px; cursor:pointer;
   display:inline-flex; align-items:center; }
-.btn.err-outlined{ background:#fff; color:#FF5630; border:1px solid rgba(255,86,48,.5); }
-.btn.err-outlined:hover{ border-color:currentColor; box-shadow:0 0 0 .5px currentColor; background:rgba(255,86,48,.08); }
-.btn.contained{ background:var(--primary); color:#fff; border:0; }
-.btn.contained:hover{ background:var(--primary-dark); box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
 
 /* ---------- AccountPopover：CustomPopover width 200、p 0、arrow top-right ---------- */
 .acct-pop{ position:fixed; top:74px; right:56px; width:200px; background:#fff; border-radius:12px; z-index:70;
@@ -268,15 +303,13 @@ body{ background:#fff; }
 .acct-pop .logout:hover{ background:rgba(145,158,171,.08); }
 
 /* ===================== 提案：第二張 Card「Notifications」 ===================== */
-.card + .card{ margin-top:24px; }          /* Grid spacing 3 */
-.nt-head .h6{ font-size:18px; font-weight:700; line-height:28px; }
-.nt-head + .form{ margin-top:24px; }   /* Profile 卡：標題跟表單之間 */
+.nt-head .h6{ font-size:18px; font-weight:700; line-height:28px; }   /* 只剩 Preview Dialog 的標題在用 */
 /* 段標題用 Edit User 卡的 Roles 同款 subtitle1（.sub1：16/600、mb 16）；段與段之間 32 */
-/* 第六輪：兩段拆成兩張卡，卡標題就是段標題（h6），.nt-sec 只是列的容器 */
-.nt-sec{ margin-top:12px; }
+/* 第六輪：兩段拆成兩張卡；第十五輪：卡標題改成卡外的眉標，.nt-sec 只是列的容器 */
+.nt-sec{ margin-top:0; }
 /* 列＝兩欄 grid：左名稱（＋收起的規則）、右狀態控制。所有狀態控制（Switch／Select／Chip）都在右欄同一直線上 */
 .nt-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:24px; align-items:start; padding:16px 0; border-top:1px solid var(--divider); }
-.nt-sec .nt-row:last-of-type{ border-bottom:1px solid var(--divider); }
+.nt-row:first-child{ border-top:0; }
 .nt-name{ display:flex; align-items:center; gap:12px; min-height:40px; font-size:14px; font-weight:600; line-height:22px; }
 /* Preview：灰色小連結＋ visibility 圖示，不跟名稱搶（Link color inherit、hover 才底線） */
 .nt-name .prev{ display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:500; color:var(--text2); text-decoration:none; }
@@ -291,7 +324,6 @@ body{ background:#fff; }
 .rules .v{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 10px; font-size:14px; line-height:22px; color:var(--text); }
 .rules .v .t2{ color:var(--text2); }
 .rules .v .tf.sm input, .rules .v .tf.sm select, .rules .tf.sm.msg textarea{ background:#fff; }
-.rules .note{ grid-column:1 / -1; font-size:12px; line-height:1.5; color:var(--text2); padding-top:12px; border-top:1px dashed var(--divider); }
 .rules .wide{ grid-column:1 / -1; }
 /* 提醒清單：一列一封（數字 ＋ before/after Select ＋ 移除），底下 Add reminder（MUI Button text small） */
 .rules .k.top{ align-self:start; padding-top:9px; }
@@ -321,8 +353,8 @@ body{ background:#fff; }
 /* TextField small（高 40）＋ Select icon（select.js：right 10、18px） */
 .tf.sm input, .tf.sm select{ height:40px; padding:8.5px 14px; font:inherit; font-size:14px; line-height:22px; color:var(--text);
   border:1px solid rgba(145,158,171,.2); border-radius:8px; background:#fff; outline:0; }
-.tf.sm input:hover, .tf.sm select:hover{ border-color:var(--text); }
-.tf.sm input:focus, .tf.sm select:focus{ border-color:var(--text); }
+.tf.sm input:hover, .tf.sm select:hover{ background:var(--grey100); }
+.tf.sm input:focus, .tf.sm select:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); background:#fff; }
 .tf.sm label{ top:-9px; }
 .tf.sm.sel{ position:relative; }
 .tf.sm.sel select{ appearance:none; -webkit-appearance:none; padding-right:34px; cursor:pointer; min-width:150px; }
@@ -332,7 +364,8 @@ body{ background:#fff; }
 /* 49 Default message：多行（Word Game remind-dialog.js 的 TextField multiline，上限 1000 字） */
 .tf.sm.msg textarea{ width:100%; max-width:560px; min-height:62px; padding:8.5px 14px; font:inherit; font-size:14px; line-height:22px; color:var(--text);
   border:1px solid rgba(145,158,171,.2); border-radius:8px; background:#fff; outline:0; resize:vertical; display:block; }
-.tf.sm.msg textarea:hover, .tf.sm.msg textarea:focus{ border-color:var(--text); }
+.tf.sm.msg textarea:hover{ background:var(--grey100); }
+.tf.sm.msg textarea:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); background:#fff; }
 .tf.sm.msg{ width:100%; }   /* 直排 flex／grid 裡不能用 flex-basis（會變高度） */
 .tf.sm.msg label{ background:var(--grey100); }   /* 浮動 label 蓋在灰底上 */
 
@@ -344,7 +377,7 @@ body{ background:#fff; }
 .fcl .cb input:checked::after{ content:''; position:absolute; left:4px; top:0px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
 
 .chip.soft-default{ background:rgba(145,158,171,.16); color:var(--text); }
-.btn.contained:disabled{ background:rgba(145,158,171,.24); color:rgba(145,158,171,.8); box-shadow:none; cursor:default; }
+.btn.contained:disabled{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
 
 /* ---------- Preview Dialog（MUI Dialog：Paper radius 16、maxWidth md；DialogTitle h6 p 24；content 裡一個 iframe 放渲染好的信） ---------- */
 .dlg-bg{ position:fixed; inset:0; background:rgba(22,28,36,.8); z-index:1300; display:none; align-items:center; justify-content:center; padding:32px; }
@@ -384,12 +417,11 @@ body{ background:#fff; }
 <body>
 
 <aside class="side">
-  <div class="logo"><img src="../../assets/dh_aI.webp" alt="DAHUA AI"></div>
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
   <nav class="nav">
     <div class="grp">
       <div class="sh blank">&nbsp;</div>
       <a href="#"><span class="mi">space_dashboard</span>Dashboard</a>
-      <a href="#"><span class="mi">rate_review</span>Annotation</a>
     </div>
     <div class="grp">
       <div class="sh">content</div>
@@ -411,7 +443,6 @@ body{ background:#fff; }
   </nav>
   <div class="report"><a href="#">Report Issue</a></div>
 </aside>
-<button class="navtoggle" aria-label="Collapse / Expand"><span class="mi">chevron_left</span></button>
 
 <div class="mainwrap">
   <div class="hdr"><button class="acct" id="acctBtn" aria-label="Account" style="border:0;cursor:pointer"><div class="av">J</div></button></div>
@@ -447,43 +478,38 @@ body{ background:#fff; }
   <div class="main">
     <div class="container">
 
-      <!-- CustomBreadcrumbs：user-create-and-edit-view.js。非 admin 沒有「User」那一節 -->
-      <div class="crumbs">
-        <h1 class="h4">Settings</h1>
-        <!-- 第五輪：使用者「不用 Dashboard · Settings 這個副標」→ breadcrumb 那一列拿掉，只留 h4 -->
-      </div>
+      <!-- 頁標題：.h4 ＋ 圖示方塊，跟其他提案頁同形（第十五輪）。第五輪拿掉 breadcrumb -->
+      <div class="h4"><span class="tico"><span class="mi">settings</span></span>Settings</div>
 
-      <!-- UserNewEditForm：Card p:3。第五輪加標題 Profile -->
+      <!-- 第一段 Profile：眉標 ＋ 列表（標籤在上的欄位） -->
+      <div class="eyebrow"><b>Profile</b><span class="rule"></span></div>
       <div class="card">
-        <div class="nt-head"><h2 class="h6">Profile</h2></div>
         <div class="form">
-          <div class="tf"><label>First Name</label><input value="Joey"></div>
-          <div class="tf"><label>Last Name</label><input value="Tsai"></div>
-          <div class="tf disabled full"><label>Email</label><input value="joey.tsai@dahua-demo.school" disabled></div>
-          <div class="tf disabled full"><label>School</label><input value="Dahua Demo School" disabled></div>
-          <div class="tf disabled full"><label>User ID</label><input value="3f9c2a71-6d0e-4b2a-9c1f-2a7d5e8b4c10" disabled></div>
+          <div class="fld"><label for="fn">First name</label><input class="inp" id="fn" value="Joey"></div>
+          <div class="fld"><label for="ln">Last name</label><input class="inp" id="ln" value="Tsai"></div>
+          <div class="fld full"><label for="em">Email</label><input class="inp" id="em" value="joey.tsai@dahua-demo.school" disabled></div>
+          <div class="fld full"><label for="sc">School</label><input class="inp" id="sc" value="Dahua Demo School" disabled></div>
+          <div class="fld full"><label for="uid">User ID</label><input class="inp" id="uid" value="3f9c2a71-6d0e-4b2a-9c1f-2a7d5e8b4c10" disabled></div>
         </div>
 
         <hr class="divider">
 
         <div class="sub1">Roles</div>
         <!-- RolesDisplay：老師沒有 Learning Profile，非 admin 沒有 permissions 表 -->
-        <div class="role">
+        <div class="role" style="margin-bottom:20px">
           <div class="line"><span class="chip">Class Teacher</span><span class="body2 t2">Dahua Chinese Program</span></div>
         </div>
 
         <div class="actions">
-          <button class="btn err-outlined">Cancel</button>
+          <button class="btn text">Cancel</button>
           <button class="btn contained">Save Changes</button>
         </div>
       </div>
 
-      <!-- ===================== 提案：第二張 Card「Emails you receive」（第六輪：兩段拆成兩張卡，各自一顆 Save） ===================== -->
+      <!-- ===================== 第二段「Emails you receive」（第六輪拆成兩段，各自一顆 Save） ===================== -->
       <!-- data-row 是 Brevo 模板編號，只給工程看，畫面上不顯示 -->
+      <div class="eyebrow"><b>Emails you receive</b><span class="rule"></span></div>
       <div class="card nt" id="ntTeacher">
-        <div class="nt-head">
-          <h2 class="h6">Emails you receive</h2>
-        </div>
         <div class="nt-sec">
 
           <div class="nt-row" data-row="17">
@@ -493,7 +519,7 @@ body{ background:#fff; }
               <div class="k">Time</div>
               <div class="v"><span class="tf sm time"><input type="time" value="07:30" aria-label="Time" data-dirty></span></div>
               <div class="k">Send</div>
-              <div class="v"><span class="tf sm sel"><select aria-label="When to send" data-dirty><option>Every day something is due</option><option>Only when someone hasn't submitted</option></select><span class="mi">arrow_drop_down</span></span></div>
+              <div class="v"><label class="fcl"><span class="cb"><input type="checkbox" aria-label="Only when someone hasn't submitted" data-dirty></span>Only when someone hasn't submitted</label></div>
               <div class="k">Format</div>
               <div class="v"><span class="tf sm sel"><select aria-label="Format" data-dirty><option>One email per assignment</option><option>One email for all assignments</option></select><span class="mi">arrow_drop_down</span></span></div>
             </div>
@@ -509,11 +535,9 @@ body{ background:#fff; }
         </div>
       </div>
 
-      <!-- ===================== 提案：第三張 Card「Emails your students receive」 ===================== -->
+      <!-- ===================== 第三段「Emails your students receive」 ===================== -->
+      <div class="eyebrow"><b>Emails your students receive</b><span class="rule"></span></div>
       <div class="card nt" id="ntStudents">
-        <div class="nt-head">
-          <h2 class="h6">Emails your students receive</h2>
-        </div>
         <div class="nt-sec">
 
           <div class="nt-row" data-row="14">
@@ -532,7 +556,7 @@ body{ background:#fff; }
             <div class="rules">
               <div class="k top">Reminders</div>
               <div class="v rem-list">
-                <!-- 一列＝一封。預設兩列＝今天的行為（到期前 2 天、逾期後 1 天）；Add reminder 最多 4 列 -->
+                <!-- 一列＝一封。預設兩列＝今天的行為（到期前 2 天、逾期後 1 天）；Add reminder 沒有上限 -->
                 <div class="rem">
                   <span class="tf sm num"><input type="number" value="2" min="0" max="30" aria-label="Days" data-dirty data-one="day" data-many="days"></span><span class="t2" data-unit>days</span>
                   <span class="tf sm sel"><select aria-label="Before or after the due date" data-dirty><option>before the due date</option><option>after the due date</option></select><span class="mi">arrow_drop_down</span></span>
@@ -547,7 +571,6 @@ body{ background:#fff; }
               </div>
               <div class="k top">Message</div>
               <div class="v"><span class="tf sm msg"><textarea rows="2" maxlength="1000" aria-label="Message" data-dirty>You have not submitted this assignment yet. Please finish and submit it when you can.</textarea></span></div>
-              <div class="note">One reminder per student per assignment every 24 hours, including the ones you send yourself.</div>
             </div>
           </div>
 
@@ -570,10 +593,6 @@ body{ background:#fff; }
             </div>
           </div>
 
-          <div class="nt-row" data-row="59">
-            <div class="nt-name">Daily summary <a class="prev" href="#"><span class="mo">visibility</span>Preview</a></div>
-            <div class="nt-ctl"><span class="chip soft-default">Managed by school</span></div>
-          </div>
         </div>
         <div class="actions">
           <button class="btn contained nt-save" disabled>Save</button>
@@ -585,14 +604,13 @@ body{ background:#fff; }
 </div>
 
 <div class="baseline">
-  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v10 · 第十四輪 · Settings 頁三張卡 · 對照組 <a href="profile.html?menu=1">現行複刻 ↗</a> · <a href="digest-discussion.html">Daily summary 討論稿 ↗</a></span>
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v10 · 老師的 Settings · <a href="spec.html">Spec ↗</a> · 對照組 <a href="profile.html?menu=1">現行複刻 ↗</a> · <a href="digest-discussion.html">Daily summary 討論稿 ↗</a> · <a href="student-proposal.html">學生的 Settings ↗</a></span>
   <span>
     <a href="proposal.html" id="s0">預設</a> ·
     <a href="?open=48,49" id="s1">提醒規則打開</a> ·
     <a href="?changed=1" id="s2">改過・可存</a> ·
     <a href="?saved=1" id="s3">存成功</a> ·
     <a href="?preview=17" id="s4">Preview 17</a> ·
-    <a href="?preview=59" id="s5">Preview 59</a> ·
     <a href="?menu=1" id="s6">Account 選單</a>
   </span>
 </div>
@@ -629,8 +647,8 @@ document.querySelectorAll('.card.nt input[data-one]').forEach((input) => {
   syncUnit(input);
   input.addEventListener('input', () => syncUnit(input));
 });
-/* 提醒清單模組（48、49 共用）：Add reminder 複製第一列（數字清成 1、before）、最多 4 列；X 移除、只剩一列時藏起來 */
-const REM_MAX = 4;
+/* 提醒清單模組（48、49 共用）：Add reminder 複製第一列（數字清成 1、before）、沒有列數上限；X 移除、只剩一列時藏起來 */
+const REM_MAX = Infinity;   /* 第二十一輪：拿掉四列上限（使用者問為什麼有，答案是沒有理由）；同一天的兩列只寄一封是去重的事 */
 document.querySelectorAll('.rem-list').forEach((list) => {
   const add = list.querySelector('.rem-add');
   const wireX = (rem) => rem.querySelector('.rem-x').addEventListener('click', () => { rem.remove(); add.disabled = false; markDirty(list); });
@@ -642,7 +660,6 @@ document.querySelectorAll('.rem-list').forEach((list) => {
     rem.querySelector('select').selectedIndex = 0;
     rem.querySelectorAll('[data-dirty]').forEach((el) => el.addEventListener('change', () => markDirty(el)));
     wireX(rem); list.insertBefore(rem, add); markDirty(list);
-    if (list.querySelectorAll('.rem').length >= REM_MAX) add.disabled = true;
   });
 });
 
@@ -654,7 +671,6 @@ const EMAILS = {
   15: { file: '15-teacher-feedback', subject: 'Your teacher left feedback on Unit 3 Speaking Practice' },
   48: { file: '48-student-outstanding-reminder', subject: 'A reminder about Unit 3 Speaking Practice' },
   49: { file: '49-wordgame-assignment-reminder', subject: 'Your Word Game goal for Class 5A' },
-  59: { file: '59-student-daily-assignment-digest', subject: 'Your assignments for today' },
 };
 const dlgBg = document.getElementById('dlgBg');
 const openPreview = (row) => {
