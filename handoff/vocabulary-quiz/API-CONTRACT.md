@@ -1,6 +1,6 @@
 # Vocabulary Quiz — API Contract
 
-搭配 [`HANDOFF.md`](HANDOFF.md)。程式碼基準：`dahua-dash` `origin/develop` @ `b130ab5b`（2026-10-05）。
+搭配 [`HANDOFF.md`](HANDOFF.md)。程式碼基準：`dahua-dash` `origin/develop` @ `e31b7a4a`（2026-10-28）。
 
 這一份是**草案**：欄位名稱照現有結構延伸，型別與放的位置由後端定。每一節開頭寫「現在怎樣」，接著寫「要變成怎樣」，最後是要問的。
 
@@ -31,12 +31,14 @@ mcQuestionTypeSelection: [{ projectConfigSk, vocabulary, questionTypes: [String]
 
 | 老師的決定 | 集合 |
 |---|---|
-| Use all question types | 每個字 × 八種（圖沒好的字去掉兩種圖片題型） |
+| Use all question types | 每個 teaching point × 八種（沒圖的去掉兩種圖片題型；文法／片語點永遠去掉那兩種） |
 | Set a number N · Random | 從全部可出的格子隨機挑 N 格 |
 | Set a number N · Must cover `[t1, t2…]` | 照勾的順序 `t1` 逐字、`t2` 逐字……填到 N 格；不夠從其餘可出的格子隨機補 |
 
 - 同字同題型兩題：集合裡仍是一格；第二題只存在 `multipleChoiceQuestions`（§3）。
-- 可出 ＝ 不是 pattern 類（`isPatternVocabEntry`）且圖片題型要 `isImageReadyForMc`。
+- 可出 ＝ 圖片題型要 `isImageReadyForMc`（AI 圖 ready 或有 `customImage.s3Key`）；其他六種題型**每個 teaching point 都可出，含文法／片語點**。
+- **後端要改**：現在 `isPatternVocabEntry` 把 GRAMMAR／PHRASE／OTHER 在生題前整個丟掉（前端 `vocab-mc-selection.js` 的 `buildWordRows` 鏡射它）。要改成只對 `IMAGE_STEM_MC_QUESTION_TYPES` 排除；文字／音檔題幹的六種照生，題幹用這個 teaching point 的中文／拼音／翻譯／音檔。
+- 老師在第二步給了圖（`importVocabularyImage` → `customImage`），那個字的兩種圖片題型立刻可出；集合的差額照 §3 處理。沒有新 API。
 
 ---
 
@@ -142,3 +144,4 @@ mcQuestionPlan { mode questionCount mustTypes }
 | E2 | 能不能只生新格子、保留其他題的順序與刪除 | §3 |
 | E3 | 圖片／音檔題幹的題前端本地拼可以嗎，還是要單題生成端點 | §4 |
 | E4 | `mcQuestionPlan` 放 practice 還是 draft | §2 |
+| E5 | 文法／片語點不丟掉、只擋兩種圖片題型（`isPatternVocabEntry` 改範圍） | §1 |
