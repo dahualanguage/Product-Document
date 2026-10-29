@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fill in blank — v19 基準（現行產品）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   基準檔 —— 這一頁是「現行產品」的複刻，不是提案。
+   Sentence Fill-in 還不存在；它要取代的是題庫（Question Bank）選擇題裡的「Fill in blank」
+   這一類（程式 key = usage）。所以基準是它今天出現的三個畫面：
+     ?view=generate   題庫精靈第二步 Generate Questions：Multi-Choice 區塊裡 Fill in blank 的題數格（0–10 的 −／+）
+     ?view=questions  題庫精靈第三步 View & Edit：Multi-Choice 區塊 → Fill in blank 分類 → 一題一張卡（題幹欄＋四個選項 Paper，正解藍框）
+     ?view=student    學生答題（Comprehension Quiz）：左課文面板、右題目卡；&picked=B 答對、&picked=C 答錯
+   出處：dahua-dash origin/develop @ 7528c30f（2026-10-27 fetch）
+     src/enum/questions-bank.js                       MULTI_CHOICE_CATEGORIES：Comprehension／Fill in blank（usage）／Pinyin／Meaning
+     src/sections/questionsBank/view/generate/questions-generate-wizard-view.js   Container maxWidth=false、Stepper 藏起來（display:none）
+     src/sections/questionsBank/view/generate/steps/step2-configure-generate.js   ② Generate Questions：Project 框、Questions Bank Name、課文預覽、Question Types 三個區塊、Generate
+     src/sections/questionsBank/view/generate/steps/step2/bulk-question-type-section.js   區塊頭（40px 圓 icon、+N new）＋ 每類一列（36px icon 方塊、名稱、說明、−／+ 30px、上限 10）
+                                                       CATEGORY_DESCRIPTIONS.usage = 'Select the correct word'；CATEGORY_ICONS.usage = edit_note
+     src/sections/questionsBank/view/generate/questions/multi-choice-questions.js   第三步：區塊頭（Generate More 藍鈕）、分類標題（28px quiz 方塊 + N questions）、題幹 TextField label Question n、選項 Grid 6/6 Paper
+     src/sections/questionsBank/view/generate/style.js                              getAnswerPaperStyles：正解 info 色 8% 底、1px info 邊、radius 8
+     src/sections/assignments/content/mc/index.js（QuestionScreen）                 頂列進度條 6px 綠漸層 + n / total；Container lg；Grid 5（Project Content）／7（題目卡）
+                                                       題目卡：型別 chip（alpha .12）＋ 分類 chip outlined；題幹框 grey500 6%；選項列 p 2、2px 邊、32px 圓字母；
+                                                       點了立刻判：正解綠邊 success 10% 底 ＋ check_circle；選錯紅邊 error 10% 底 ＋ cancel；其餘 opacity .5
+     src/theme/{palette,typography}.js
+   顏色、字級、圓角、間距逐項照 theme + sx，不做自由發揮。
+   無法確認：WizardStepHeader（icon quiz、標題 Questions Bank、副標 Generate questions in 3 simple steps.、三步可點）的實際樣式——照 props 畫；Questions Bank Name 旁 Save 鈕的尺寸。
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-dark:#2C62D3; --success:#22C55E; --error:#FF5630;
+  --tf:#10B981; --tf-bg:#F0FDF4; --tf-bd:#A7F3D0;
+  --mc:#3B82F6; --mc-bg:#EFF6FF; --mc-bd:#BFDBFE;
+  --qa:#8B5CF6; --qa-bg:#FAF5FF; --qa-bd:#E9D5FF;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; user-select:none; display:inline-block; }
+button{ font-family:inherit; }
+
+/* ---------- 老師端外殼：Sidebar 240 + Header 80 ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; } .side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; } .side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px 80px; }
+.container{ max-width:1200px; margin:0 auto; padding:24px 24px 32px; }
+
+/* ---------- MUI 字級 ---------- */
+.h6{ font-size:18px; font-weight:700; line-height:1.55; }
+.sub2{ font-size:14px; font-weight:600; line-height:1.57; }
+.body2{ font-size:14px; line-height:1.57; } .cap{ font-size:12px; line-height:1.5; color:var(--text2); }
+
+/* ---------- 第二步 Generate Questions ---------- */
+.stephd{ display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+.stephd .num{ width:32px; height:32px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+.lbl{ font-size:14px; font-weight:700; margin-bottom:6px; }
+.projbox{ padding:8px 14px; border-radius:8px; border:1px solid var(--divider); background:#fff; display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:24px; }
+.projbox .tag{ padding:1px 8px; font-size:11px; font-weight:600; border-radius:6px; }
+.projbox .tag.lang{ background:#EFF6FF; color:#1D4ED8; } .projbox .tag.lvl{ background:#F0FDF4; color:#065F46; }
+.namerow{ display:flex; gap:12px; align-items:center; margin-bottom:24px; }
+.tf{ position:relative; flex:1; height:40px; border:1px solid var(--divider); border-radius:8px; background:#fff; display:flex; align-items:center; padding:0 14px; font-size:14px; }
+.btn{ height:36px; padding:0 16px; border-radius:8px; border:0; font-weight:700; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px rgba(0,203,97,.24); }
+.btn.contained:disabled{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.outlined{ background:transparent; color:var(--primary); border:1px solid rgba(0,203,97,.48); }
+.btn.sm{ height:30px; padding:0 10px; font-size:12px; border-radius:6px; }
+.divr{ display:flex; align-items:center; gap:8px; color:var(--text2); font-size:14px; font-weight:600; margin:24px 0; }
+.divr::before, .divr::after{ content:''; flex:1; border-top:1px solid rgba(0,0,0,.06); }
+hr.plain{ border:0; border-top:1px solid rgba(0,0,0,.06); margin:24px 0; }
+.ctpaper{ padding:16px; border-radius:8px; background:rgba(0,203,97,.1); border:1px solid var(--primary); font-size:16px; line-height:1.75; margin-bottom:16px; }
+.wizhd{ display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+.wizhd .ic{ width:48px; height:48px; border-radius:12px; background:rgba(0,203,97,.12); color:var(--primary-dark); display:flex; align-items:center; justify-content:center; } .wizhd .ic .mi{ font-size:28px; }
+.wizhd .t{ font-size:24px; font-weight:700; line-height:1.3; } .wizhd .s{ font-size:14px; color:var(--text2); }
+.wizsteps{ display:flex; gap:8px; margin-bottom:24px; }
+.wizsteps span{ font-size:13px; font-weight:600; color:var(--text3); padding:6px 12px; border-radius:999px; background:#fff; border:1px solid var(--divider); }
+.wizsteps span.on{ color:var(--primary-dark); border-color:rgba(0,203,97,.48); background:rgba(0,203,97,.08); }
+
+/* BulkQuestionTypeSection */
+.sec{ border:1px solid var(--divider); border-radius:24px; overflow:hidden; background:#fff; margin-bottom:16px; }
+.sec.has{ border-color:var(--sbd); }
+.sec .shd{ padding:16px 20px; background:var(--sbg); display:flex; align-items:center; gap:12px; cursor:pointer; }
+.sec .shd .ic{ width:40px; height:40px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; color:var(--sc); } .sec .shd .ic .mi{ font-size:24px; }
+.sec .shd .t{ flex:1; font-size:16px; font-weight:700; }
+.sec .shd .new{ font-size:14px; font-weight:700; color:var(--sc); margin-right:8px; }
+.sec .shd .gen{ font-size:12px; color:var(--text2); margin-right:8px; }
+.sec .shd > .mi{ font-size:22px; color:var(--text2); }
+.sec .body{ padding:8px 20px; }
+.crow{ display:flex; align-items:center; padding:12px 0; border-bottom:1px solid rgba(0,0,0,.06); }
+.crow:last-child{ border-bottom:0; }
+.crow .cic{ width:36px; height:36px; border-radius:12px; background:color-mix(in srgb, var(--sc) 8%, transparent); display:flex; align-items:center; justify-content:center; color:var(--sc); margin-right:12px; flex:none; } .crow .cic .mi{ font-size:20px; }
+.crow .meta{ flex:1; } .crow .meta b{ display:block; font-size:14px; font-weight:600; } .crow .meta span{ font-size:12px; color:var(--text2); }
+.crow .ex{ font-size:12px; color:var(--text2); margin-right:16px; }
+.cnt{ display:flex; align-items:center; }
+.cnt button{ width:30px; height:30px; border:1px solid var(--divider); border-radius:8px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); }
+.cnt button:disabled{ color:rgba(145,158,171,.8); cursor:default; }
+.cnt button .mi{ font-size:16px; }
+.cnt b{ min-width:36px; text-align:center; font-size:14px; font-weight:700; }
+.actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:24px; }
+
+/* ---------- 第三步 Multi-Choice 區塊 ＋ 題卡 ---------- */
+.cathd{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.cathd .ic{ width:28px; height:28px; border-radius:8px; background:color-mix(in srgb, var(--mc) 8%, transparent); display:flex; align-items:center; justify-content:center; color:var(--mc); } .cathd .ic .mi{ font-size:16px; }
+.cathd b{ font-size:14px; font-weight:700; } .cathd span{ font-size:12px; color:var(--text2); }
+.qcard{ position:relative; padding:16px; margin-bottom:24px; padding-bottom:24px; }
+.qcard .acts{ position:absolute; top:8px; right:8px; opacity:0; transition:opacity .2s; background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,.1); }
+.qcard:hover .acts{ opacity:1; }
+.qcard .acts button{ width:28px; height:28px; border:0; background:none; color:var(--error); cursor:pointer; display:flex; align-items:center; justify-content:center; } .qcard .acts button .mi{ font-size:16px; }
+.qtf{ position:relative; border:1px solid var(--divider); border-radius:8px; background:#fff; padding:16px 14px; font-size:16px; font-weight:700; margin-bottom:16px; min-height:56px; }
+.qtf label{ position:absolute; top:-8px; left:10px; padding:0 4px; background:#fff; font-size:12px; font-weight:400; color:var(--text2); }
+.opts{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.opt{ position:relative; display:flex; align-items:center; padding:12px; border-radius:8px; border:1px solid var(--divider); background:#fff; font-size:14px; cursor:pointer; }
+.opt .k{ font-weight:600; margin-right:8px; min-width:20px; }
+.opt.ok{ background:rgba(80,138,252,.08); border-color:var(--info); } .opt.ok .k, .opt.ok .v{ color:var(--info-dark); font-weight:600; }
+.opt .chk{ position:absolute; right:8px; top:50%; transform:translateY(-50%); width:20px; height:20px; border-radius:50%; background:var(--info); color:#fff; display:flex; align-items:center; justify-content:center; } .opt .chk .mi{ font-size:14px; }
+
+/* ---------- 學生端 QuestionScreen ---------- */
+.stu{ position:fixed; inset:0; display:flex; flex-direction:column; background:#fff; }
+.stu .top{ display:flex; align-items:center; gap:12px; padding:0 24px 8px; border-bottom:1px solid var(--divider); }
+.stu .top .bar{ flex:1; height:6px; border-radius:999px; background:#E2E8F0; overflow:hidden; } .stu .top .bar i{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#77ED8B 0%,#22C55E 100%); }
+.stu .top .n{ font-size:14px; color:#64748B; } .stu .top .n b{ font-weight:800; font-size:18px; color:#22C55E; } .stu .top .n em{ font-style:normal; font-weight:700; color:#0F172A; }
+.stu .scroll{ flex:1; overflow:auto; }
+.stu .lg{ max-width:1200px; margin:0 auto; padding:24px 24px 40px; display:grid; grid-template-columns:5fr 7fr; gap:24px; align-items:flex-start; }
+.card{ background:#fff; border-radius:24px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+.card .in{ padding:24px; }
+.pc .ph{ display:flex; align-items:center; gap:8px; margin-bottom:12px; } .pc .ph .t{ font-size:16px; font-weight:700; flex:1; }
+.pc .ph .ib{ width:36px; height:36px; border-radius:50%; border:0; background:transparent; color:var(--text2); display:flex; align-items:center; justify-content:center; } .pc .ph .ib .mi{ font-size:22px; }
+.swrow{ display:flex; gap:16px; margin-bottom:12px; font-size:14px; }
+.sw{ display:inline-flex; align-items:center; gap:6px; } .sw .tr{ width:34px; height:14px; border-radius:7px; background:rgba(145,158,171,.48); position:relative; } .sw .tr::after{ content:''; position:absolute; top:-3px; left:-2px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2); }
+.sent{ font-size:18px; line-height:2; }
+.chips{ display:flex; gap:8px; align-items:center; margin-bottom:16px; }
+.chip{ height:24px; padding:0 8px; border-radius:12px; font-size:13px; display:inline-flex; align-items:center; font-weight:600; }
+.chip.type{ background:rgba(59,130,246,.12); color:var(--mc); } .chip.cat{ border:1px solid rgba(145,158,171,.32); font-weight:400; }
+.stem{ margin-bottom:24px; padding:24px; border-radius:16px; background:rgba(145,158,171,.06); border:1px solid rgba(145,158,171,.12); text-align:center; font-size:20px; font-weight:600; line-height:1.5; }
+.olist{ display:flex; flex-direction:column; gap:12px; }
+.orow{ display:flex; align-items:center; gap:12px; padding:16px; border-radius:16px; border:2px solid var(--divider); cursor:pointer; transition:.2s; }
+.orow .l{ width:32px; height:32px; border-radius:50%; background:rgba(145,158,171,.12); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex:none; }
+.orow .v{ flex:1; font-size:16px; font-weight:500; }
+.orow.right{ border-color:var(--success); background:rgba(34,197,94,.1); } .orow.right .mi{ color:var(--success); font-size:22px; }
+.orow.wrong{ border-color:var(--error); background:rgba(255,86,48,.1); } .orow.wrong .mi{ color:var(--error); font-size:22px; }
+.orow.dim{ opacity:.5; }
+.navrow{ display:flex; justify-content:space-between; margin-top:24px; }
+.btn.outl{ background:transparent; color:var(--text); border:1px solid rgba(145,158,171,.32); }
+
+/* ---------- 底部狀態列 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; z-index:100; background:#1E293B; color:#CBD5E1; font-size:12px; padding:8px 16px; display:flex; justify-content:space-between; gap:12px; font-family:'Public Sans',sans-serif; }
+.baseline a{ color:#fff; text-decoration:none; } .baseline a.cur{ text-decoration:underline; }
+.baseline b{ color:#fff; font-weight:700; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v19 · 題庫裡的 Fill in blank（現行） · <a href="../v14-comprehension-quiz/create-comprehension-quiz.html?step=1&proj=0">Comprehension Quiz 第二步 ↗</a> · <a href="../../../../handoff/choose-practice-type/choose-practice-type.html">Choose Practice Type ↗</a></span>
+  <span>
+    <a href="?view=generate" id="l0">題庫 · 生題格</a> ·
+    <a href="?view=questions" id="l1">題庫 · 題目卡</a> ·
+    <a href="?view=student" id="l2">學生答題</a> ·
+    <a href="?view=student&picked=B" id="l3">答對</a> ·
+    <a href="?view=student&picked=C" id="l4">答錯</a>
+  </span>
+</div>
+
+<script>
+/* 假資料：跟 v14 基準同一份。只有「我的一天」題庫有一題 usage */
+const ARTICLE = ['我每天七点起床。','我早饭吃面包。','我八点上课。','下午我去图书馆看书。','我十一点睡觉。'];
+const PINYIN  = ['wǒ měi tiān qī diǎn qǐ chuáng.','wǒ zǎo fàn chī miàn bāo.','wǒ bā diǎn shàng kè.','xià wǔ wǒ qù tú shū guǎn kàn shū.','wǒ shí yī diǎn shuì jiào.'];
+const Q = { category:'usage', question:'我八点＿＿＿。', choice:{ A:'起床', B:'上课', C:'睡觉', D:'看书' }, answer:'B' };
+const qs = new URLSearchParams(location.search);
+const view = ['generate','questions','student'].includes(qs.get('view')) ? qs.get('view') : 'generate';
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const SHELL = (inner) => `
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div><a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div><a href="#"><span class="mi">folder</span>Projects</a><a href="#" class="on"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div><a href="#"><span class="mi">assignment</span>Practice List</a><a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div><a href="#"><span class="mi">people</span>Students</a><a href="#"><span class="mi">school</span>Classes</a><a href="#"><span class="mi">emoji_events</span>Leaderboard</a><a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<div class="mainwrap"><div class="hdr"><div class="acct"><div class="av">L</div></div></div><div class="main"><div class="container">${inner}</div></div></div>`;
+
+/* BulkQuestionTypeSection：三個區塊；Multi-Choice 的 Fill in blank 填 2、其餘 0 */
+const SECTION = (title, c, cats, counts, existing) => {
+  const total = cats.reduce((s, k) => s + (counts[k.key] || 0), 0);
+  const ex = cats.reduce((s, k) => s + (existing[k.key] || 0), 0);
+  return `<div class="sec ${total ? 'has' : ''}" style="--sbg:${c.bg};--sbd:${c.bd};--sc:${c.c}">
+    <div class="shd"><span class="ic"><span class="mi">${c.icon}</span></span><span class="t">${title}</span>
+      ${ex ? `<span class="gen">${ex} generated</span>` : ''}${total ? `<span class="new">+${total} new</span>` : ''}<span class="mi">keyboard_arrow_up</span></div>
+    <div class="body">${cats.map(k => `<div class="crow">
+      <span class="cic"><span class="mi">${k.icon}</span></span>
+      <div class="meta"><b>${k.label}</b><span>${k.desc}</span></div>
+      ${existing[k.key] ? `<span class="ex">${existing[k.key]} generated</span>` : ''}
+      <div class="cnt"><button ${counts[k.key] ? '' : 'disabled'} aria-label="Decrease"><span class="mi">remove</span></button><b>${counts[k.key] || 0}</b><button ${counts[k.key] >= 10 ? 'disabled' : ''} aria-label="Increase"><span class="mi">add</span></button></div>
+    </div>`).join('')}</div></div>`;
+};
+const TF_CATS = [
+  { key:'comprehension', label:'Comprehension', desc:'Based on example sentences', icon:'chat_bubble_outline' },
+  { key:'pinyin', label:'Pinyin', desc:'Identify correct pinyin', icon:'translate' },
+  { key:'meaning', label:'Meaning', desc:'Match with correct meaning', icon:'swap_horiz' },
+];
+const MC_CATS = [
+  { key:'comprehension', label:'Comprehension', desc:'Based on example sentences', icon:'chat_bubble_outline' },
+  { key:'usage', label:'Fill in blank', desc:'Select the correct word', icon:'edit_note' },
+  { key:'pinyin', label:'Pinyin', desc:'Identify correct pinyin', icon:'translate' },
+  { key:'meaning', label:'Meaning', desc:'Match with correct meaning', icon:'swap_horiz' },
+];
+const QA_CATS = [
+  { key:'shortAnswer', label:'Content Base', desc:'Answer based on the content', icon:'question_answer' },
+  { key:'extension', label:'Extension', desc:'Higher-order thinking questions', icon:'psychology' },
+];
+const TF_C = { bg:'#F0FDF4', bd:'#A7F3D0', c:'#10B981', icon:'check_circle' };
+const MC_C = { bg:'#EFF6FF', bd:'#BFDBFE', c:'#3B82F6', icon:'list_alt' };
+const QA_C = { bg:'#FAF5FF', bd:'#E9D5FF', c:'#8B5CF6', icon:'help_outline' };
+
+const WIZ = (i) => `<div class="wizhd"><span class="ic"><span class="mi">quiz</span></span><div><div class="t">Questions Bank</div><div class="s">Generate questions in 3 simple steps.</div></div></div>
+  <div class="wizsteps">${['Create','Generate','View & Edit'].map((t, k) => `<span class="${k === i ? 'on' : ''}">${k + 1} · ${t}</span>`).join('')}</div>`;
+
+const GENERATE = () => `
+  ${WIZ(1)}
+  <div class="stephd"><span class="num">2</span><span class="h6">Generate Questions</span></div>
+  <div class="lbl">Project</div>
+  <div class="projbox">我的一天 <span class="tag lang">zh-CN</span><span class="tag lvl">HSK 2</span></div>
+  <div class="lbl">Questions Bank Name</div>
+  <div class="namerow"><div class="tf">我的一天</div><button class="btn contained" disabled>Save</button></div>
+  <hr class="plain">
+  <div class="divr" style="margin-bottom:16px">Project Content</div>
+  <div class="ctpaper">${ARTICLE.join('')}</div>
+  <hr class="plain">
+  <div class="lbl" style="margin-bottom:4px">Question Types</div>
+  <div class="body2" style="color:var(--text2);margin-bottom:16px">Select and set the number of questions for each type.</div>
+  ${SECTION('True & False', TF_C, TF_CATS, {}, { comprehension:4 })}
+  ${SECTION('Multi-Choice', MC_C, MC_CATS, { usage:2 }, { comprehension:3, usage:1, pinyin:1, meaning:1 })}
+  ${SECTION('Q&A', QA_C, QA_CATS, {}, {})}
+  <div class="actions"><button class="btn outlined">View Questions</button><button class="btn contained"><span class="mi" style="font-size:18px">auto_awesome</span>Generate</button></div>`;
+
+const QUESTIONS = () => `
+  ${WIZ(2)}
+  <div class="stephd"><span class="num">3</span><span class="h6">View &amp; Edit Questions</span></div>
+  <div class="sec" style="--sbg:#EFF6FF;--sbd:#BFDBFE;--sc:#3B82F6;border-color:#BFDBFE">
+    <div class="shd" style="cursor:default"><span class="ic"><span class="mi">list_alt</span></span><span class="t">Multi-Choice</span><button class="btn contained sm" style="background:#3B82F6;box-shadow:none"><span class="mi" style="font-size:14px">auto_awesome</span>Generate More</button></div>
+    <div class="body" style="padding:16px 20px">
+      <div class="cathd"><span class="ic"><span class="mi">quiz</span></span><b>Fill in blank</b><span>1 question</span></div>
+      <div class="qcard">
+        <div class="acts"><button aria-label="Delete Question"><span class="mi">delete</span></button></div>
+        <div class="qtf"><label>Question 1</label>${esc(Q.question)}</div>
+        <div class="opts">${Object.entries(Q.choice).map(([k, v]) => `<div class="opt ${k === Q.answer ? 'ok' : ''}"><span class="k">${k}:</span><span class="v">${esc(v)}</span>${k === Q.answer ? '<span class="chk"><span class="mi">check</span></span>' : ''}</div>`).join('')}</div>
+      </div>
+      <div class="cap" style="padding:0 16px">（這個題庫其他分類的題目省略；只畫 Fill in blank 這一類）</div>
+    </div>
+  </div>`;
+
+const STUDENT = () => {
+  const picked = qs.get('picked');
+  const cls = (k) => {
+    if (!picked) return '';
+    if (k === Q.answer) return 'right';
+    if (k === picked) return 'wrong';
+    return 'dim';
+  };
+  const icon = (k) => { if (!picked) return ''; if (k === Q.answer) return '<span class="mi">check_circle</span>'; if (k === picked) return '<span class="mi">cancel</span>'; return ''; };
+  return `<div class="stu">
+    <div class="top"><div class="bar"><i style="width:${Math.round(5 / 6 * 100)}%"></i></div><span class="n"><b>5</b> / <em>6</em></span></div>
+    <div class="scroll"><div class="lg">
+      <div class="card pc"><div class="in">
+        <div class="ph"><span class="t">Project Content</span><button class="ib" aria-label="Play"><span class="mi">volume_up</span></button></div>
+        <div class="swrow"><span class="sw"><span class="tr"></span>Pinyin</span><span class="sw"><span class="tr"></span>Translation</span></div>
+        <div class="sent">${ARTICLE.map(esc).join('')}</div>
+      </div></div>
+      <div>
+        <div class="card"><div class="in">
+          <div class="chips"><span class="chip type">Multi-Choice</span><span class="chip cat">Fill in blank</span></div>
+          <div class="stem">${esc(Q.question)}</div>
+          <div class="olist">${Object.entries(Q.choice).map(([k, v]) => `<div class="orow ${cls(k)}"><span class="l">${k}</span><span class="v">${esc(v)}</span>${icon(k)}</div>`).join('')}</div>
+        </div></div>
+        <div class="navrow"><button class="btn outl"><span class="mi" style="font-size:18px">arrow_back</span>Previous</button><button class="btn contained" ${picked ? '' : 'disabled'}>Next<span class="mi" style="font-size:18px">arrow_forward</span></button></div>
+      </div>
+    </div></div>
+  </div>`;
+};
+
+const app = document.getElementById('app');
+if (view === 'generate') app.innerHTML = SHELL(GENERATE());
+else if (view === 'questions') app.innerHTML = SHELL(QUESTIONS());
+else app.innerHTML = STUDENT();
+document.querySelectorAll('.baseline a[id]').forEach((a) => { if (a.getAttribute('href') === location.search) a.classList.add('cur'); });
+if (!location.search) document.getElementById('l0').classList.add('cur');
+</script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v16 — 拿掉題庫：題目改在練習裡生成 · Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; font-size: 13px; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 10px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #00A749; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 9px 12px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .tag { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+    .t-done { background:#dcfce7; color:#166534; } .t-open { background:#fef3c7; color:#92400e; } .t-new { background:#e0e7ff; color:#3730a3; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 14px 0 6px; background: #eef0f3; height: 560px; position: relative; }
+    .preview iframe { width: 1440px; height: 820px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #00A749; font-weight: 600; text-decoration: none; }
+    .story { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-bottom:10px; }
+    .story b { color:#0f172a; }
+    .story .who { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:6px; margin-right:8px; }
+    .who.t { background:#dcfce7; color:#166534; } .who.s { background:#ffedd5; color:#9a3412; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; } .main-content { padding: 24px; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a><span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a><span class="sep">/</span>
+    <span class="current">v16 · 拿掉題庫：題目改在練習裡生成</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">目錄</div>
+      <ol>
+        <li><a href="#why">1 為什麼做</a></li>
+        <li><a href="#goal">2 目標與範圍</a></li>
+        <li><a href="#terms">3 名詞對照</a></li>
+        <li><a href="#stories">4 使用情境</a></li>
+        <li><a href="#deps">5 題庫現在被誰用</a></li>
+        <li><a href="#now">6 現在的流程</a></li>
+        <li><a href="#flow">7 新的流程</a></li>
+        <li><a href="#diff">8 新舊對照</a></li>
+        <li><a href="#qb">9 題庫本身會怎樣</a></li>
+        <li><a href="#walk">10 走一遍</a></li>
+        <li><a href="#data">11 資料與接點</a></li>
+        <li><a href="#open">12 已定與待定</a></li>
+        <li><a href="#metrics">13 怎麼知道做對了</a></li>
+        <li><a href="#files">14 原型與檔案</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>拿掉題庫：題目改在練習裡生成</h1>
+        <p class="subtitle">Open-ended Questions 和 Comprehension Quiz 都不再要求老師先去題庫頁生成題目。老師在建練習的第一步選專案、填要幾題，系統當場生成；題目存在這張練習裡，第二步直接改。題庫這個東西從產品裡拿掉，所有依賴它的流程一起在這份提出。</p>
+        <div class="meta"><span>v16</span><span>2026-10-23</span><span>狀態：提案，等 PM／後端回待定</span><span>原型：Comprehension Quiz 在 v17、Open-ended 在 v18</span></div>
+      </div>
+
+      <h2 id="why"><span class="num">1</span> 為什麼做</h2>
+      <p>八種練習裡有兩種<strong>沒有自己的內容，只認題庫</strong>：Open-ended Questions 讀題庫的 Q&amp;A 題，Comprehension Quiz 讀題庫的 True/False 和 Multiple Choice 題。老師得先去題庫頁把題目生好，再回到 Practice 頁把題庫選進來。結果是四個問題：</p>
+      <ul>
+        <li><strong>兩個入口。</strong>老師要先知道「這兩張卡要題庫」才做得下去。Planning 訪談時我們已經把卡名改成 Question Bank QA、Question Bank Quiz 來提醒，但這是貼標籤不是解問題。</li>
+        <li><strong>題目兩邊各管一半。</strong>改在題庫、刪和排序在練習。題庫改完要按 Sync 推回練習，Sync 會讓學生重做；練習裡刪掉、換過順序的題 Sync 後會不會被蓋回去，現在沒人確定（v13 的 E3、v14 的 E4）。</li>
+        <li><strong>跟其他六張卡不一致。</strong>Sentence Scramble 和 Follow Pattern 都是進練習才生成、第二步逐題改；Vocabulary Quiz 的選擇題也是在練習裡選題型生成。只有這兩張要先去別的頁面準備內容。</li>
+        <li><strong>題庫是一個老師要多學的概念。</strong>側欄多一項、專案頁多一段、匯出對話框多一區、通知信多一封，全是為了一個中間產物。</li>
+      </ul>
+
+      <h2 id="goal"><span class="num">2</span> 目標與範圍</h2>
+      <h3>目標</h3>
+      <ol>
+        <li>老師從頭到尾都在 Practice 頁，<strong>產品裡不再有「題庫」這個詞</strong>。</li>
+        <li>題目只有一份，存在練習身上；改、刪、排序、追加，都在練習的第二步。</li>
+        <li>兩張卡的步驟形狀跟其他卡一致：Content → Edit → （Settings）→ Assign。</li>
+        <li>學生端完全不改。</li>
+      </ol>
+      <h3>這一版做</h3>
+      <ul>
+        <li>New Open-ended Questions 從三步改四步（第 7 節）。</li>
+        <li>New Comprehension Quiz 的第一步從「選題庫」改成「選專案、填題數、Generate」，第二步可以改題目文字和選項（第 7 節）。</li>
+        <li>兩張卡現有的「Select a Question Bank」入口刪除，不留替代入口（2026-10-22／23 定）。</li>
+        <li>題庫本身拿掉：側欄的 Question Banks、題庫頁、專案頁的題庫段、匯出對話框的題庫區、建專案完成頁的「Generate Question Banks」、Question bank ready 通知信、Insight 的題庫數（第 9 節，每一項的處置待 PM 定）。</li>
+      </ul>
+      <h3>這一版不做</h3>
+      <ul>
+        <li>學生端的題目卡、Content Base／Extension 標籤、追問、評分、選擇題的計分與完成頁，都不動。</li>
+        <li>已經建好、綁著題庫的舊練習不搬（傾向，待 PM 定）。</li>
+        <li>Open-ended 第三步 Settings &amp; Preview 的設定項不加不減；Comprehension Quiz 不新增顯示設定（v14 查到它本來就沒有）。</li>
+        <li>第四步 Assign 照八種共用。</li>
+      </ul>
+
+      <h2 id="terms"><span class="num">3</span> 名詞對照</h2>
+      <table>
+        <tr><th>這份文件的用詞</th><th>產品裡叫什麼</th><th>意思</th></tr>
+        <tr><td><strong>題庫</strong></td><td>Question Bank（<code>questionsBank</code>）</td><td>掛在一個專案底下的題目集合，同一個題庫可以同時裝 True/False、Multiple Choice、Q&amp;A 三種題。Open-ended 讀 Q&amp;A，Comprehension Quiz 讀另外兩種</td></tr>
+        <tr><td><strong>Content Base</strong></td><td>題庫頁叫 Content Base（<code>shortAnswer</code>）</td><td>Q&amp;A 題的一類：從課文內容出的題，答案在課文裡</td></tr>
+        <tr><td><strong>Extension</strong></td><td>題庫頁叫 Extension (Beta)（<code>extension</code>）</td><td>Q&amp;A 題的另一類：延伸思考題，課文沒有直接答案</td></tr>
+        <tr><td><strong>建議答案</strong></td><td>Suggested Answer</td><td>Q&amp;A 每題選填的一段文字，AI 檢查學生回答時拿它比對</td></tr>
+        <tr><td><strong>選擇題的四類</strong></td><td>Comprehension／Pinyin／Meaning／Fill in blank（<code>comprehension／pinyin／meaning／usage</code>）</td><td>題庫頁生選擇題時要分別填幾題。True/False 只有前三類，沒有 Fill in blank</td></tr>
+        <tr><td><strong>題</strong></td><td>Open-ended 第二步叫 Article；Comprehension Quiz 叫 Question</td><td>Open-ended 現在每一題叫一個 article，其實就是題庫裡的一題。新流程兩張卡統一叫 Question</td></tr>
+        <tr><td><strong>Sync</strong></td><td>Save &amp; Sync to Practices</td><td>題庫改完把新題目推回所有用這個題庫的練習，推之前會先列影響範圍</td></tr>
+        <tr><td><strong>Test Mode</strong></td><td>Test Mode（<code>examMode</code>、<code>timeLimit</code>）</td><td>Comprehension Quiz 第二步的計時開關，不動</td></tr>
+      </table>
+
+      <h2 id="stories"><span class="num">4</span> 使用情境</h2>
+      <div class="story"><span class="who t">老師</span><b>Joey 剛教完 Unit 3，想派一份口說問答。</b>她開 New Open-ended Questions，選 Unit 3，Content Base 填 5、Extension 填 2，按 Generate。七題和建議答案出來，她改短第 4 題的建議答案、刪掉第 6 題，設好語速，派出去。全程沒離開 Practice 頁。</div>
+      <div class="story"><span class="who t">老師</span><b>Joey 另外想派一份選擇題。</b>她開 New Comprehension Quiz，選 Unit 3，True/False 的 Comprehension 填 3，Multiple Choice 的 Comprehension 填 3、Fill in blank 填 2，按 Generate。八題出來，她把一題的錯誤選項改掉、拖曳換順序、開 Test Mode 10 分鐘，派出去。</div>
+      <div class="story"><span class="who t">老師</span><b>Joey 派出去三天後發現第 2 題問法太難。</b>她回到練習第二步改題目文字，存檔時系統照練習本身的版本規則問她要不要讓已開始的學生重做。她不用去任何題庫頁。</div>
+      <div class="story"><span class="who t">老師</span><b>Joey 想把 Unit 3 印成講義給學生。</b>專案頁按 Export，勾 Handout。講義裡的 Questions 區塊印的是這個專案底下兩張練習的題目（待定，見第 9 節）。</div>
+      <div class="story"><span class="who s">學生</span><b>Amy 打開作業。</b>口說問答的題目卡、Content Base 小標籤、追問、評分，選擇題的進度條、計分、完成頁，跟現在一模一樣。</div>
+
+      <h2 id="deps"><span class="num">5</span> 題庫現在被誰用</h2>
+      <p>把程式碼裡會讀題庫的地方全部列出來。這份提案每一項都要給一個處置。</p>
+      <table>
+        <tr><th>#</th><th>在哪裡</th><th>用題庫做什麼</th><th>提案之後</th></tr>
+        <tr><td>1</td><td>New Open-ended Questions 第一步</td><td>選題庫，把 Q&amp;A 題複製進練習、每題產音檔</td><td>改成選專案＋填題數＋Generate（第 7 節）</td></tr>
+        <tr><td>2</td><td>New Comprehension Quiz 第一步</td><td>選題庫，把 True/False 和 Multiple Choice 題快照進練習</td><td>改成選專案＋填題數＋Generate（第 7 節）</td></tr>
+        <tr><td>3</td><td>兩張卡第二步的「Edit Questions &amp; Answers in Question Bank」鈕</td><td>跳去題庫頁改題，改完 Sync 回來</td><td>拿掉；第二步直接改</td></tr>
+        <tr><td>4</td><td>側欄 Content 區的 <strong>Question Banks</strong>、題庫列表頁、題庫生成頁（三步：建題庫 → 設題數生成 → 看改題）</td><td>老師管理題庫的地方</td><td>整個拿掉（第 9 節）</td></tr>
+        <tr><td>5</td><td>專案頁的題庫段（列出這個專案的題庫、編輯、刪除）</td><td>從專案進題庫</td><td>拿掉；專案頁改列這個專案底下的練習（待 PM）</td></tr>
+        <tr><td>6</td><td>建專案完成頁的下一步「Generate Question Banks」</td><td>建完專案直接去生題庫</td><td>換成「Create Open-ended Questions」「Create Comprehension Quiz」兩顆，跟旁邊的 Create Content Mirroring 同一排</td></tr>
+        <tr><td>7</td><td>專案頁 Export 對話框的 Question Banks 勾選區、講義（Handout）的 Questions 區塊</td><td>把題庫的題印進講義</td><td>Questions 區塊改從這個專案底下的練習拿題；沒有練習就不印（待 PM）</td></tr>
+        <tr><td>8</td><td>Clone Project 對話框的 Question Banks 欄</td><td>複製專案時把題庫一起複製；勾了依賴題庫的練習會強制帶題庫</td><td>欄拿掉；練習帶著自己的題目被複製</td></tr>
+        <tr><td>9</td><td>編輯專案課文時的警告「有題庫連到這個專案」</td><td>提醒老師題庫的 Comprehension／Content Base 題是照舊課文出的</td><td>拿掉，跟 Sentence Scramble 改課文時一樣不警告；或改成「有 N 張練習的題目是從這篇課文生成的」（待 PM）</td></tr>
+        <tr><td>10</td><td>通知信 <strong>Question bank ready</strong>（Brevo 模板 22，v10 登記）</td><td>題庫生成完成時寄給老師</td><td>拿掉；v10 老師 Settings 那一列也拿掉</td></tr>
+        <tr><td>11</td><td>Insight 的 Total Question Banks 數字（平台／學校／Program 三處）</td><td>統計</td><td>拿掉，或換成練習數（待 PM）</td></tr>
+        <tr><td>12</td><td>學生端 Open-ended 作答頁</td><td>另外抓題庫，只為了查每題是 Content Base 還是 Extension</td><td>題目帶類別之後不用抓；畫面不變</td></tr>
+        <tr><td>13</td><td>學生端 Comprehension Quiz 作答頁</td><td>不讀題庫，讀練習裡的快照</td><td>不變</td></tr>
+      </table>
+      <div class="callout-info callout">Vocabulary Quiz 不在這張表裡：它的選擇題是在練習裡按題型生成，本來就不經過題庫。</div>
+
+      <h2 id="now"><span class="num">6</span> 現在的流程</h2>
+      <p>兩張卡都是三步，但第一步之前還有題庫頁的三步。</p>
+      <div class="preview"><iframe src="../v13-open-ended-questions/create-qa.html?step=0&proj=0" title="現在 Open-ended 的第一步：選題庫" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Open-ended 現在的第一步：Question bank 下拉、每筆右邊「N content · N extension」、選了之後列課文與題幹</span><a href="../v13-open-ended-questions/create-qa.html?step=0&proj=0" target="_blank">開 v13 基準 ↗</a></p>
+      <div class="preview"><iframe src="../v14-comprehension-quiz/create-comprehension-quiz.html?step=0&proj=0" title="現在 Comprehension Quiz 的第一步：選題庫" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Comprehension Quiz 現在的第一步：同一個下拉，每筆右邊 True/False N／Multiple Choice N</span><a href="../v14-comprehension-quiz/create-comprehension-quiz.html?step=0&proj=0" target="_blank">開 v14 基準 ↗</a></p>
+      <table>
+        <tr><th></th><th>Open-ended Questions</th><th>Comprehension Quiz</th></tr>
+        <tr><td>題庫頁</td><td colspan="2">進專案 → 開題庫（一個題庫綁一個專案）→ 三種題各類各填幾題 → 生成 → 看題改題</td></tr>
+        <tr><td>第一步</td><td>選題庫。選的那一刻 Practice name 被設成題庫名。按 Next 建練習，每題複製進來、產音檔</td><td>選題庫。同上。按 Next 建練習，題目快照進來</td></tr>
+        <tr><td>第二步</td><td>Settings &amp; Preview：Audio Mode、Pinyin、Speed／Voice、Guide Phrase；底下 Articles 清單只能刪</td><td>Edit &amp; Preview：Practice Name、Test Mode、題目卡拖曳換序、刪；不能改題目文字和選項</td></tr>
+        <tr><td>改題目</td><td colspan="2">按「Edit Questions &amp; Answers in Question Bank」跳回題庫頁，改完 Save &amp; Sync，確認影響範圍，跳回來</td></tr>
+        <tr><td>第三步</td><td colspan="2">Assign</td></tr>
+      </table>
+
+      <h2 id="flow"><span class="num">7</span> 新的流程</h2>
+      <p>老師從頭到尾都在 Practice 頁。Open-ended 多一步，Comprehension Quiz 步數不變。</p>
+      <div class="preview"><iframe src="../v7-sentence-scramble/proposal.html?step=2&sel=1&n=12" title="形狀的參考：Sentence Scramble 第二步" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>形狀的參考：Sentence Scramble 提案第二步 Edit Sentences。兩張卡的「選專案 → 填數量 → Generate → 逐題改」照這個做</span><a href="../v7-sentence-scramble/proposal.html?step=2&sel=1&n=12" target="_blank">開 v7 提案 ↗</a></p>
+
+      <h3>Open-ended Questions：Content → Edit Questions → Settings &amp; Preview → Assign</h3>
+      <table>
+        <tr><th>步</th><th>老師看到什麼</th><th>老師能做什麼</th><th>沿用誰</th></tr>
+        <tr><td><strong>1 Content</strong></td><td>專案下拉（跟 Content Mirroring 同一個）、選了顯示課文；Content Base 幾題、Extension 幾題，各帶一句說明；Practice name 預帶專案名</td><td>選專案、填題數、改名、按 <strong>Generate</strong>。沒選專案或兩類都 0：Generate 灰掉。按下去建練習、生成題目和建議答案、每題產音檔，等待時開「Processing content...」</td><td>專案下拉照 v3；題數欄照 v7 第一步；等待對話框照現在</td></tr>
+        <tr><td><strong>2 Edit Questions</strong></td><td>逐題一張卡：類別 chip、題目、建議答案、播放、刪除；底下 Generate more</td><td>題目和建議答案都可改；每題可刪，剩一題擋住；Generate more 再填兩類各幾題接在後面。改了題目文字那一題音檔重產</td><td>卡片照 v7 第二步；剩一題擋住照現在</td></tr>
+        <tr><td><strong>3 Settings &amp; Preview</strong></td><td>Audio Mode、Pinyin、Speed／Voice、Guide Phrase Language、學生視窗預覽</td><td>照現在第二步。<strong>拿掉</strong>「Edit in Question Bank」鈕和「Articles (N)」清單</td><td>v13 提案第二步</td></tr>
+        <tr><td><strong>4 Assign</strong></td><td>八種共用</td><td>不動</td><td>v8</td></tr>
+      </table>
+
+      <h3>Comprehension Quiz：Content → Edit &amp; Preview → Assign</h3>
+      <table>
+        <tr><th>步</th><th>老師看到什麼</th><th>老師能做什麼</th><th>沿用誰</th></tr>
+        <tr><td><strong>1 Content</strong></td><td>專案下拉、選了顯示課文；兩組題數欄：True/False 的 Comprehension／Pinyin／Meaning，Multiple Choice 的 Comprehension／Fill in blank／Pinyin／Meaning，各帶題庫頁現在那句說明；Practice name 預帶專案名</td><td>選專案、填題數、改名、按 <strong>Generate</strong>。沒選專案或全部 0：Generate 灰掉。按下去建練習、生成題目，等待時開對話框（文案要加 MC 分支，v14 的 E1）</td><td>題數欄照題庫頁的 Bulk generate 區塊，搬進來</td></tr>
+        <tr><td><strong>2 Edit &amp; Preview</strong></td><td>Practice Name、Test Mode、題目卡（型別 chip、題目、選項、正解）；底下 Generate more</td><td>照現在：拖曳換序、刪、剩一題擋。<strong>新增</strong>：題目文字、選項、正解都可改；Generate more。<strong>拿掉</strong>「Edit in Question Bank」鈕</td><td>v14 提案第二步；可改的題目卡照 v6 Vocabulary Quiz 第三步</td></tr>
+        <tr><td><strong>3 Assign</strong></td><td>八種共用</td><td>不動</td><td>v8</td></tr>
+      </table>
+      <div class="callout-info callout">Open-ended 多一步是故意的：生成完要有一個地方把題目看過、改過，再去設音檔。Comprehension Quiz 沒有音檔設定，所以看改題和 Test Mode 留在同一步，步數不變。</div>
+      <h3>學生端</h3>
+      <p>兩張卡都不改。Open-ended 的類別標籤改從練習自己的題目讀，不再回題庫查；Comprehension Quiz 本來就讀練習裡的快照。</p>
+
+      <h2 id="diff"><span class="num">8</span> 新舊對照</h2>
+      <table>
+        <tr><th></th><th>現在</th><th>提案</th></tr>
+        <tr><td>老師要去幾個頁面</td><td>題庫頁 → Practice 頁</td><td>Practice 頁</td></tr>
+        <tr><td>第一步選什麼</td><td>題庫</td><td>專案 ＋ 各類幾題</td></tr>
+        <tr><td>題目在哪裡生成</td><td>題庫頁</td><td>Practice 第一步按 Generate</td></tr>
+        <tr><td>題目存在哪</td><td>題庫，練習裡是複製品／快照</td><td>練習自己身上，只有一份</td></tr>
+        <tr><td>改題目文字、選項、建議答案</td><td>跳回題庫頁改，再按 Sync</td><td>第二步直接改</td></tr>
+        <tr><td>刪題、換序</td><td>第二步（Open-ended 只能刪；Quiz 能刪能拖）</td><td>第二步，不變</td></tr>
+        <tr><td>追加題目</td><td>回題庫頁 Generate More，再 Sync</td><td>第二步 Generate more</td></tr>
+        <tr><td>Sync 與影響範圍確認</td><td>有，改題庫波及所有用它的練習</td><td>沒有，改只影響這張練習，走練習本身的版本規則</td></tr>
+        <tr><td>Practice name</td><td>選題庫那一刻被設成題庫名</td><td>第一步就在，預帶專案名</td></tr>
+        <tr><td>側欄</td><td>Projects、Question Banks</td><td>Projects</td></tr>
+        <tr><td>學生端</td><td>—</td><td>完全一樣</td></tr>
+        <tr><td>步數</td><td>Open-ended 3、Quiz 3</td><td>Open-ended 4、Quiz 3</td></tr>
+      </table>
+
+      <h2 id="qb"><span class="num">9</span> 題庫本身會怎樣</h2>
+      <p>兩張卡都不用題庫之後，題庫剩下的用途只有講義和統計。建議整個拿掉，每一項的處置如下，打 <span class="tag t-open">待定</span> 的要 PM 點頭。</p>
+      <ul>
+        <li><strong>側欄 Question Banks、題庫列表頁、題庫生成頁：拿掉。</strong>生成頁的「各類填幾題」那塊搬進兩張卡的第一步。</li>
+        <li><strong>專案頁的題庫段：拿掉。</strong><span class="tag t-open">待定</span> 改列這個專案底下的練習（Open-ended、Comprehension Quiz 和其他），讓老師從專案能走到練習。</li>
+        <li><strong>建專案完成頁的「Generate Question Banks」：換掉。</strong>換成「Create Open-ended Questions」「Create Comprehension Quiz」，跟 Create Content Mirroring 同一排。</li>
+        <li><strong>Export 對話框的題庫勾選區、講義的 Questions 區塊。</strong><span class="tag t-open">待定</span> 建議講義的 Questions 改印這個專案底下兩張練習的題目，對話框改勾練習；專案沒有這兩種練習就不印那一段。</li>
+        <li><strong>Clone Project 的題庫欄：拿掉。</strong>練習帶著自己的題目被複製，不再有「勾了練習就強制帶題庫」的規則。</li>
+        <li><strong>編輯課文時的題庫警告。</strong><span class="tag t-open">待定</span> 拿掉（跟 Sentence Scramble 一致），或改成「有 N 張練習的題目是從這篇課文生成的，改了課文不會自動更新題目」。</li>
+        <li><strong>Question bank ready 通知信：拿掉。</strong>v10 老師 Settings 的那一列一起拿掉。</li>
+        <li><strong>Insight 的 Total Question Banks。</strong><span class="tag t-open">待定</span> 拿掉或換成練習數。</li>
+        <li><strong>已經建好、綁著題庫的舊練習照常跑。</strong>它們身上已經有題目複製品、快照和音檔，學生端不需要題庫。但老師打開舊練習時「Edit in Question Bank」會指向一個不存在的頁。<span class="tag t-open">待定</span> 兩條路：舊練習的那顆鈕拿掉、題目只能刪不能改，直到老師重建；或者工程做一次搬遷把舊練習的題目轉成練習自己的資料。傾向前者，舊練習已有學生作答紀錄，搬了會碰到版本。</li>
+        <li><strong>舊題庫的資料。</strong><span class="tag t-open">待定</span> 資料留著不刪，只是沒有頁面；要不要給一個匯出的最後機會。</li>
+      </ul>
+
+      <h2 id="walk"><span class="num">10</span> 走一遍</h2>
+      <p>用一個專案、兩張練習，看老師從建到改會碰到什麼。</p>
+      <h3>前提</h3>
+      <table>
+        <tr><th>誰</th><th>設定</th></tr>
+        <tr><td>專案</td><td>Unit 3「我的一天」，課文八句，已經有拼音和音檔。</td></tr>
+        <tr><td>老師 Joey</td><td>要一份口說問答（5 題 Content Base、2 題 Extension）和一份選擇題（True/False 3 題、Multiple Choice 5 題），都派給 Chinese 3B。</td></tr>
+      </table>
+      <h3>Joey 會經過什麼</h3>
+      <table>
+        <tr><th>步</th><th>Joey 做什麼</th><th>畫面發生什麼</th><th>資料發生什麼</th></tr>
+        <tr><td>Open-ended 1</td><td>選 Unit 3，Content Base 5、Extension 2，按 Generate</td><td>開「Processing content...」，跳到第二步先 skeleton</td><td>建練習；生成 7 題（題目、建議答案、類別）；每題產音檔</td></tr>
+        <tr><td>Open-ended 2</td><td>改短第 4 題的建議答案；刪掉第 6 題；Generate more 加 2 題 Content Base</td><td>第 6 題開「Remove this question?」確認後消失；新的兩題接在後面帶「Updating...」</td><td>題目改成 8 題；只產新 2 題的音檔</td></tr>
+        <tr><td>Open-ended 3</td><td>Speed 選 Slow</td><td>右邊學生視窗照新設定播</td><td>8 題音檔重產（跟現在換 Speed 一樣）</td></tr>
+        <tr><td>Open-ended 4</td><td>派給 Chinese 3B</td><td>照八種共用</td><td>—</td></tr>
+        <tr><td>Quiz 1</td><td>選 Unit 3，True/False Comprehension 3，Multiple Choice Comprehension 3、Fill in blank 2，按 Generate</td><td>開等待對話框，跳到第二步</td><td>建練習；生成 8 題（題目、選項、正解、類別）</td></tr>
+        <tr><td>Quiz 2</td><td>把第 5 題一個錯誤選項改掉；把 True/False 拖到最後；開 Test Mode 10 分鐘</td><td>選項欄即時存；順序即學生作答順序</td><td>練習身上的 8 題改好</td></tr>
+        <tr><td>Quiz 3</td><td>派給 Chinese 3B</td><td>照八種共用</td><td>—</td></tr>
+        <tr><td>三天後</td><td>回到口說問答第二步把第 2 題改簡單</td><td>存檔時系統問「有 12 個學生已開始，要讓他們重做嗎」（練習本身的版本規則）</td><td>第 2 題音檔重產；版本照練習的規則走</td></tr>
+        <tr><td>月底</td><td>專案頁 Export，勾 Handout</td><td>講義的 Questions 區塊印兩張練習的題目（待定）</td><td>—</td></tr>
+      </table>
+      <p>總計：Joey 沒有打開過題庫頁，側欄也沒有題庫這一項。</p>
+      <h3>跟現在差在哪</h3>
+      <table>
+        <tr><th>同一件事</th><th>現在要</th></tr>
+        <tr><td>生成兩份題目</td><td>先進專案開題庫、三種題各填題數、生成、回 Practice 兩張卡各選一次題庫</td></tr>
+        <tr><td>改第 4 題的建議答案、改第 5 題的選項</td><td>各按一次「Edit in Question Bank」跳走、改、Save &amp; Sync、確認影響範圍（會同時波及兩張練習）、跳回來</td></tr>
+        <tr><td>再加 2 題</td><td>跳題庫頁 Generate More、Sync、跳回來</td></tr>
+        <tr><td>三天後改第 2 題</td><td>跳題庫頁改、Sync，Sync 會波及用這個題庫的兩張練習，不只口說那一張</td></tr>
+      </table>
+
+      <h2 id="data"><span class="num">11</span> 資料與接點</h2>
+      <p>給工程的摘要。前端能自己答的都查過了，下面寫的是現況和要改的地方。</p>
+      <ul>
+        <li><strong>現況</strong>：兩張卡建練習時 <code>upsertPractice</code> 都收 <code>questionsBankSk</code>。Open-ended 由後端把題庫的 Q&amp;A 題複製成 <code>updatedArticleArray</code>（<code>content</code>＝題目、<code>questionSk</code> 對回題庫、<code>s3Path</code> 音檔），刪題走 <code>deleteUpdatedArticleArrayIdx</code>，題目和建議答案不存在練習上。Comprehension Quiz 把題目快照進 <code>mcQuestions</code>，刪、換序整組回寫。</li>
+        <li><strong>要改：建練習的輸入。</strong>兩張卡改收「專案 ID ＋ 各類幾題」，生成後把題目（和建議答案、選項、正解、類別、音檔）存在練習身上。Sentence Scramble（<code>scrambleTeachingPoints</code>、<code>scrambleSentenceCount</code>）和 Follow Pattern（<code>followPatternQuestionCount</code>）已經是這樣收，希望是同一套。題庫頁現在的 <code>bulkGenerateQuestions</code> 收的就是「專案 ID ＋ 各類幾題」，生成那段可以直接搬。</li>
+        <li><strong>要改：第二步的編輯。</strong>改題目、改建議答案、改選項和正解、刪、換序、追加生成，照 <code>scrambleSentences</code>（整組回寫）和 <code>scrambleAppendTeachingPoints</code>（追加）的形狀。Comprehension Quiz 的 <code>mcQuestions</code> 回寫已經有，差「可改文字」和追加。</li>
+        <li><strong>要改：Open-ended 學生答題的評分。</strong>現在前端 <code>callOpenAI</code> 只送 <code>questionSk</code> 和 <code>projectConfigSk</code>，建議答案由後端從題庫查。題目改存在練習上之後，這條改成從練習拿。</li>
+        <li><strong>要改：Open-ended 學生端的類別標籤。</strong><code>assignments/content/index.js</code> 另外抓題庫只為了查類別；題目帶類別之後拿掉這段。</li>
+        <li><strong>要拿掉</strong>：側欄與路由 <code>/dashboard/questions-bank</code>、題庫列表與生成頁、專案頁題庫段與對應的 mapping hooks、Clone 的 <code>questionsBankSks</code>、課文警告的 <code>use-project-qb-warning-check</code>、Question bank ready 信（模板 22）、Insight 的 <code>totalQuestionBanks</code>、<code>syncQuestionsBankEdit</code> 與 <code>getQuestionsBankSyncImpact</code>。</li>
+        <li><strong>要改：講義。</strong><code>use-handout-data.js</code> 的 Questions 區塊現在讀題庫的三種題；改讀專案底下練習的題目（待 PM 定要不要）。</li>
+        <li><strong>不改</strong>：Open-ended 第三步的設定項、Comprehension Quiz 的 Test Mode、第四步 Assign、學生端的對話、追問、評分引擎、選擇題計分。</li>
+      </ul>
+
+      <h2 id="open"><span class="num">12</span> 已定與待定</h2>
+      <h3>已定</h3>
+      <ul>
+        <li><span class="tag t-done">定</span> Open-ended Questions 現有「Select a Question Bank」入口刪除，不留替代入口（2026-10-22）。</li>
+        <li><span class="tag t-done">定</span> 建議答案跟題目一起生成，第二步可改（2026-10-22）。</li>
+        <li><span class="tag t-done">定</span> Comprehension Quiz 也拿掉題庫；所有依賴題庫的流程在這份一起提出（2026-10-23）。</li>
+        <li><span class="tag t-done">定</span> Open-ended 四步、Comprehension Quiz 三步；學生端不改。</li>
+      </ul>
+      <h3>待定</h3>
+      <table>
+        <tr><th>#</th><th>問誰</th><th>問題</th><th>影響</th></tr>
+        <tr><td>1</td><td>後端</td><td>練習自己存題目、不綁題庫，後端願不願意加這條路？希望跟 Sentence Scramble／Follow Pattern 收專案和數量是同一套，題庫頁現有的批次生成直接搬</td><td>整個提案成不成立</td></tr>
+        <tr><td>2</td><td>後端</td><td>Open-ended 學生答題時建議答案現在真的有進到評分嗎？題目改存在練習上之後，評分那條改成從練習拿</td><td>第 11 節第 4 條</td></tr>
+        <tr><td>3</td><td>後端</td><td>Open-ended 第二步改了題目文字，音檔逐題重產還是按 Next 一次重產？希望跟 Sentence Scramble 一致</td><td>第二步的等待狀態</td></tr>
+        <tr><td>4</td><td>後端</td><td>已指派的練習，老師回來改題、改選項或追加題，走練習本身的 draft 與發布影響確認就好？</td><td>第 10 節「三天後」</td></tr>
+        <tr><td>5</td><td>後端</td><td>各類最多幾題？題庫頁現在的上限沿用</td><td>第一步題數欄的上限</td></tr>
+        <tr><td>6</td><td>後端</td><td>Comprehension Quiz 建練習後 status 是不是直接 COMPLETE？等待對話框要不要出現、文案要加 MC 分支（v14 的 E1）</td><td>Quiz 第一步 Generate 之後</td></tr>
+        <tr><td>7</td><td>PM</td><td>專案頁的題庫段拿掉之後，要不要改列這個專案底下的練習？</td><td>第 9 節</td></tr>
+        <tr><td>8</td><td>PM</td><td>講義的 Questions 區塊：改印專案底下練習的題目，還是整段拿掉？</td><td>第 9 節、Export 對話框</td></tr>
+        <tr><td>9</td><td>PM</td><td>編輯課文的警告：拿掉，還是改成「有 N 張練習的題目是從這篇課文生成的」？</td><td>第 9 節</td></tr>
+        <tr><td>10</td><td>PM</td><td>Insight 的 Total Question Banks：拿掉還是換成練習數？</td><td>三個 Insight 頁</td></tr>
+        <tr><td>11</td><td>PM</td><td>舊練習：拿掉「Edit in Question Bank」鈕、題目只能刪，直到老師重建？還是工程搬？建議前者</td><td>第 9 節</td></tr>
+        <tr><td>12</td><td>PM</td><td>舊題庫資料留著不刪、沒有頁面；要不要給匯出的最後機會？</td><td>上線前的溝通</td></tr>
+        <tr><td>13</td><td>PM</td><td>Open-ended 第二步叫 Edit Questions。Sentence Scramble 叫 Edit Sentences、Follow Pattern 叫 Question Review、Quiz 叫 Edit &amp; Preview，要不要順便統一</td><td>Stepper 的字</td></tr>
+        <tr><td>14</td><td>PM</td><td>各類題數的預設值。建議照題庫頁現在的預設，不另外發明</td><td>第一步的預設</td></tr>
+      </table>
+
+      <h2 id="metrics"><span class="num">13</span> 怎麼知道做對了</h2>
+      <ul>
+        <li>新建的 Open-ended、Comprehension Quiz 從開始到派出去，老師中途離開 Practice 頁的次數是 0。</li>
+        <li>這兩種練習的建立完成率上升（現在不知道有多少老師卡在「要先建題庫」放棄，上線前先量一次）。</li>
+        <li>題庫 Sync 引發的學生重做歸零（功能不在了）。</li>
+        <li>客服收到「題目改了為什麼練習沒變」「刪掉的題怎麼又回來」「題庫在哪」的問題減少。</li>
+      </ul>
+
+      <h2 id="files"><span class="num">14</span> 原型與檔案</h2>
+      <table>
+        <tr><th>檔案</th><th>是什麼</th><th>看什麼</th></tr>
+        <tr><td><a class="inline" href="../v13-open-ended-questions/create-qa.html?step=0&proj=0">v13 create-qa.html</a></td><td>Open-ended 現行三步的複刻（基準），沿用不重做</td><td><code>?step=0</code> 選題庫、<code>?step=1</code> Settings 與 Articles 清單</td></tr>
+        <tr><td><a class="inline" href="../v14-comprehension-quiz/create-comprehension-quiz.html?step=0&proj=0">v14 create-comprehension-quiz.html</a></td><td>Comprehension Quiz 現行三步的複刻（基準），沿用不重做</td><td><code>?step=0</code> 選題庫、<code>?step=1</code> Edit &amp; Preview</td></tr>
+        <tr><td><a class="inline" href="../v13-open-ended-questions/proposal.html?step=2&proj=0">v13 proposal.html</a></td><td>Open-ended 第一輪提案，新流程第三步照它</td><td><code>?step=2</code></td></tr>
+        <tr><td><a class="inline" href="../v14-comprehension-quiz/proposal.html?step=2&proj=0">v14 proposal.html</a></td><td>Comprehension Quiz 第一輪提案，新流程第二步照它</td><td><code>?step=2</code></td></tr>
+        <tr><td><a class="inline" href="../v7-sentence-scramble/proposal.html?step=2&sel=1&n=12">v7 proposal.html</a></td><td>Sentence Scramble 提案，「填數量 → Generate → 逐題改」的形狀照它</td><td><code>?step=1</code>、<code>?step=2</code></td></tr>
+        <tr><td><a class="inline" href="https://claude.ai/artifact/Jx69TwwEjtVjy57vpu1bQv" target="_blank">PM 文件</a></td><td>給 PM 看的版本，內容同這份</td><td>PM 的留言在那裡</td></tr>
+        <tr><td><a class="inline" href="../v17-comprehension-quiz-generate/proposal.html?step=1&proj=0">v17 proposal.html</a></td><td>Comprehension Quiz 新流程的設計稿（第一輪）</td><td><code>?step=1&amp;proj=0</code> 第一步、<code>&amp;gen=1</code> 生成中、<code>?step=2&amp;open=1</code> 編輯一題、<code>&amp;more=1</code> Generate more</td></tr>
+        <tr><td><a class="inline" href="../v18-open-ended-generate/proposal.html?step=1&proj=0">v18 proposal.html</a></td><td>Open-ended Questions 新流程的設計稿（第一輪）</td><td><code>?step=1&amp;proj=0&amp;filled=1</code> 第一步、<code>?step=2&amp;open=1</code> 編輯一題、<code>?step=3</code> 工具列＋視窗</td></tr>
+        <tr><td><a class="inline" href="ITERATION.md">ITERATION.md</a></td><td>登記、來源、change log</td><td>要追來龍去脈時</td></tr>
+      </table>
+      <div class="callout-tip callout">兩張卡的設計稿都開了（2026-10-23）：Comprehension Quiz 在 <a class="inline" href="../v17-comprehension-quiz-generate/proposal.html?step=1&proj=0">v17</a>、Open-ended Questions 在 <a class="inline" href="../v18-open-ended-generate/proposal.html?step=1&proj=0">v18</a>。第一步都是選專案、勾教學點、填各類題數按 Generate，第二步可改可追加。題庫頁沒有基準檔，拿掉的東西不畫。</div>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · v16 · October 2026</footer>
+    </main>
+  </div>
+</body>
+</html>

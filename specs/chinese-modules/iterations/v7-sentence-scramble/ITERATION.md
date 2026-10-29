@@ -10,7 +10,7 @@
 - **範圍**：New Sentence Scramble 這條建立流程的四步。學生端不改，spec §6 抄出來了
 - **程式碼基準**：dahua-dash `origin/develop` @ `7e2afa52`（2026-09-18 fetch）
   - 從 v6 的基準 `3e821fa4` 之後動到的 scramble 檔：`scramble-segment-editor.js`（新）、`sentence-scramble-preview.js`、`utils/scramble-tokens.js`——剪刀切塊是新功能，基準檔照新的畫
-- **狀態**：**2026-10-05 定案（第二十七輪）並交接**——使用者說「好 儲存一樣打包」。交接包 `handoff/sentence-scramble/`：`sentence-scramble.html`（＝ proposal.html 的複本，路徑改成絕對）、`HANDOFF.md`、`API-CONTRACT.md`（每點份額 `scramblePointCounts`、例句來源 `scrambleSourceSentences`、第二步 +＝append 一句、CREATE 回頭只生新的）、`index.html`。第二十一～二十七輪（10/2–10/5）見 change log：第一步問總句數（上限 20）、分成「幾句」與「從哪來」兩部、照 v6 第二步版式；第二步接上第一步、每點一張小卡 −／+（總數 20、每點 5，卡內藍字提示）。上一個儲存點 2026-09-30 第二十輪（已部署）。程式碼基準交接時 fetch 到 `b130ab5b`：自 `7e2afa52` 起動到 scramble 的只有 #981／#990（第二步顯示新句的拼音、發音 sandbox），流程與欄位沒變。
+- **狀態**：**2026-10-28 併入 v20**（`../v20-sentence-practices/proposal.html?type=scramble`；這一版留著當紀錄不再更新，交接包 `handoff/sentence-scramble/` 不動）。**2026-10-05 定案（第二十七輪）並交接**——使用者說「好 儲存一樣打包」。交接包 `handoff/sentence-scramble/`：`sentence-scramble.html`（＝ proposal.html 的複本，路徑改成絕對）、`HANDOFF.md`、`API-CONTRACT.md`（每點份額 `scramblePointCounts`、例句來源 `scrambleSourceSentences`、第二步 +＝append 一句、CREATE 回頭只生新的）、`index.html`。第二十一～二十七輪（10/2–10/5）見 change log：第一步問總句數（上限 20）、分成「幾句」與「從哪來」兩部、照 v6 第二步版式；第二步接上第一步、每點一張小卡 −／+（總數 20、每點 5，卡內藍字提示）。上一個儲存點 2026-09-30 第二十輪（已部署）。程式碼基準交接時 fetch 到 `b130ab5b`：自 `7e2afa52` 起動到 scramble 的只有 #981／#990（第二步顯示新句的拼音、發音 sandbox），流程與欄位沒變。
 
 ## 登記時就查到的
 

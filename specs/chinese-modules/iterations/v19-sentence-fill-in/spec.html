@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v19 — Sentence Fill-in · Chinese Modules</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  :root{ --ink:#0f172a; --slate:#475569; --muted:#64748b; --line:#e6ebf1; --bg:#f4f7fb; --emerald:#059669; --pink:#BE185D; }
+  body{ font-family:'Public Sans',-apple-system,sans-serif; background:var(--bg); color:var(--slate); line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:48px 24px 80px; }
+  .crumb{ font-size:12px; color:var(--muted); margin-bottom:16px; } .crumb a{ color:var(--emerald); text-decoration:none; font-weight:700; }
+  h1{ font-size:28px; font-weight:800; color:var(--ink); letter-spacing:-.4px; margin-bottom:6px; }
+  .lead{ font-size:15px; color:var(--muted); margin-bottom:8px; }
+  .meta{ display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 36px; } .meta span{ font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--muted); }
+  h2{ font-size:18px; font-weight:800; color:var(--ink); margin:36px 0 12px; display:flex; gap:10px; align-items:center; }
+  h2 .num{ width:26px; height:26px; border-radius:8px; background:#FEF2F8; color:var(--pink); font-size:13px; display:grid; place-items:center; }
+  p, li{ font-size:14.5px; } ul, ol{ padding-left:22px; } li{ margin-bottom:6px; }
+  table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:13.5px; margin:12px 0 }
+  th, td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; } th{ background:#f8fafc; font-weight:700; color:var(--ink); font-size:12.5px; } tr:last-child td{ border-bottom:0; }
+  code{ background:#f1f5f9; padding:1px 5px; border-radius:3px; font-size:12px; font-family:'SF Mono',Menlo,monospace; }
+  .callout{ background:#fff; border:1px solid var(--line); border-left:4px solid var(--pink); border-radius:10px; padding:12px 16px; font-size:14px; margin:14px 0; }
+  a{ color:var(--emerald); font-weight:700; text-decoration:none; }
+  .tag{ display:inline-block; font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; background:#fffbeb; color:#92400e; margin-left:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb"><a href="../../../../index.html">Home</a> / Chinese Modules / <a href="../index.html">2.4 Versions &amp; Iteration</a> / v19</div>
+  <h1>Sentence Fill-in</h1>
+  <p class="lead">把題庫選擇題裡的「Fill in blank」拿出來，做成 Sentence 欄的第四個練習：老師勾教學點生句子、每句挖掉教學點，學生從詞塊裡挑一個填回去。</p>
+  <div class="meta"><span>v19</span><span>2026-10-27</span><span>狀態：提案第二輪（2026-10-28）</span><span>程式碼基準 7528c30f</span></div>
+
+  <h2><span class="num">1</span>現在的 Fill in blank 是什麼</h2>
+  <ul>
+    <li>不是練習，是題庫（Question Bank）選擇題的四類之一：Comprehension／<b>Fill in blank</b>／Pinyin／Meaning。程式裡的 key 是 <code>usage</code>，說明句是 <i>Select the correct word</i>。True/False 沒有這一類。</li>
+    <li>題目長相：一句話挖掉一個詞（＿＿＿）、四個選項、一個正解。字由後端從專案的教學點隨機抽，老師只填「要幾題」，不決定考哪些點。</li>
+    <li>學生在 Comprehension Quiz 裡答它，跟其他選擇題一樣：四列選項、點了立刻判、不能改。沒有音檔、沒有拼音。</li>
+    <li>基準檔三個畫面：<a href="baseline-fill-in-blank.html?view=generate">題庫生題格</a>、<a href="baseline-fill-in-blank.html?view=questions">題庫題目卡</a>、<a href="baseline-fill-in-blank.html?view=student&picked=B">學生答題</a>。</li>
+  </ul>
+
+  <h2><span class="num">2</span>定了什麼（2026-10-27）</h2>
+  <table>
+    <tr><th style="width:180px">題目</th><th>定案</th></tr>
+    <tr><td>放哪裡</td><td><b>全新的練習型別</b>。Choose Practice Type 變九張卡，Sentence 欄第四張（Scramble、Response、Building、<b>Fill-in</b>）。enum 要新增</td></tr>
+    <tr><td>怎麼建</td><td>跟 Sentence Scramble 同一條四步：Teaching Points → Edit Sentences → Settings → Assign Practice。第一步勾教學點、填總句數（上限 20、輪流分給點）；第二步 TEACHING POINTS 小卡 −／+（跟 v7／v12／v15 同一個元件）＋ 一句一張卡</td></tr>
+    <tr><td>挖空挖什麼</td><td><b>固定挖教學點本身</b>（生詞或語法點；兩槽的點每槽一個空格）。老師不能移動挖空位置</td></tr>
+    <tr><td>學生怎麼答</td><td><b>從詞塊裡挑一個填進空格</b>，像 Sentence Scramble 的 tiles。不是四選一、不是打字</td></tr>
+    <tr><td>Comprehension Quiz</td><td><b>拿掉 Fill in blank</b>。v17 的 4×2 格子變 3×2，True/False 跟 Multiple choice 兩列對齊</td></tr>
+    <tr><td>名字</td><td><b>Sentence Fill-in</b>（八張卡的命名規則：欄名＋動作）</td></tr>
+  </table>
+
+  <h2><span class="num">3</span>待決<span class="tag">提案時一起定</span></h2>
+  <ol>
+    <li>干擾詞<b>固定 3 個</b>（照現行題庫四選一；2026-10-28 定）、老師只能改字不能加減。從哪裡來（同專案的其他教學點、AI 生的近義詞）還沒定。</li>
+    <li>一句只挖一個空，還是兩槽的語法點（一……就）兩個空？學生填第二個空時詞塊池要不要變。</li>
+    <li>第三步 Settings 哪些跟 Scramble 一樣（Pinyin、Speed、Voice、Max tries）、要不要 Translation。</li>
+    <li>答錯之後：Try Again 幾次、用完揭曉正解（照 Scramble）。</li>
+  </ol>
+
+  <h2><span class="num">4</span>要問工程的</h2>
+  <ul>
+    <li><b>E1</b> 生成能不能沿用 Follow Pattern 的「每個教學點生一句＋教學點挖空成 ＿＿＿」，再多生干擾詞塊？</li>
+    <li><b>E2</b> 題數上限 20、每點 5 跟 v7／v12 同一個常數？</li>
+    <li><b>E3</b> 題庫拿掉 usage 之後，舊題庫裡已有的 Fill in blank 題怎麼辦？</li>
+  </ul>
+
+  <div class="callout">提案：<a href="proposal.html?step=2&n=12">第二步 Edit Sentences</a>、<a href="proposal.html?step=3">第三步 Settings</a>（從 v7 <code>proposal.html</code> 分岔）。第二步的小卡元件跟 v7／v12／v15 一次統一改，改法待定。</div>
+</div>
+</body>
+</html>

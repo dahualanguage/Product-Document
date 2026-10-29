@@ -1,4 +1,6 @@
-# v12 — Practice-Sentence Response ／ Sentence Building（FOLLOW_PATTERN）基準
+# v12 — Practice-Sentence Response（FOLLOW_PATTERN · GUIDED_RESPONSE）
+
+> 2026-10-22 拆版：使用者「直接開成兩個 v」。這份從此只管 **Sentence Response**；Sentence Building 在 `../v15-sentence-building/`（v12 第二輪的整份複製，各自往下走）。提案與基準的 `&sub=` 在提案已鎖死、不再讀。下面登記時的描述仍講兩個子型別，是拆版前的來歷。
 
 - **功能名稱**：Practice-Sentence Response ／ Sentence Building（建立流程）——產品型別 `FOLLOW_PATTERN`，兩個子型別 `GUIDED_RESPONSE`＝Sentence Response、`SENTENCE_BUILDING`＝Sentence Building，共用同一條建立流程
 - **網址**：https://dahua-dash-dev.web.app/dashboard/practice/create/?type=FOLLOW_PATTERN&subType=GUIDED_RESPONSE ／ `&subType=SENTENCE_BUILDING`（`AddNewPracticeDialog.buildCreateUrl` 帶 `subType`；`practice-unified-view.js` 讀 `searchParams.get('subType')`，沒帶就 `DEFAULT_SUB_TYPES[FOLLOW_PATTERN]` = `GUIDED_RESPONSE`）
@@ -10,7 +12,11 @@
 - **範圍**：New Sentence Response／New Sentence Building 這條建立流程的四步。學生端不改，spec §3 抄出來了
 - **程式碼基準**：dahua-dash `origin/develop` @ `c8179072`（2026-10-19 fetch）
   - 第一步跟 v7 共用的 `teaching-point-picker.js`、`use-teaching-point-pool.js` 自 `7e2afa52` 起沒動；`step-three.js`（Assign）動了 260 行，基準檔照契約仍抄 v7 的第四步、沒重畫（Assign 的現況在 v8）
-- **狀態**：**2026-10-19 第一輪提案**——為 Planning mode 四張灰卡而開；上午做基準、下午套共用設計成 `proposal.html`（未部署、未進 index）。對照組是基準檔，判準在 `../shared-practice-changes.html`、`../shared-settings-gallery.html`、`../practice-design-rules.html`
+- **狀態**：**2026-10-28 併入 v20**（`../v20-sentence-practices/proposal.html?type=response`；這份停在第二輪）。**2026-10-21 第二輪**——第一步沒勾點的原因收成一處（未 commit）。第一輪 2026-10-19 為 Planning mode 四張灰卡而開；上午做基準、下午套共用設計成 `proposal.html`（已隨 0e84b50 部署）。對照組是基準檔，判準在 `../shared-practice-changes.html`、`../shared-settings-gallery.html`、`../practice-design-rules.html`
+
+## 要問工程的
+
+- **E1 題數上限 20 是前端還是後端的？** 前端 `src/config/practices.js` 寫死 MIN 1／MAX 20（跟 Sentence Scramble 共用），`step-validators.js` 擋、數字欄夾回 20、預設題數＝點數跟 20 取小；送 API 的 `followPatternQuestionCount` 只是整數。GraphQL 後端的 repo 看不到，接真後端的 PR #776 沒提上限。要確認後端有沒有擋、能不能生超過 20（2026-10-22 使用者問）。
 
 ## 登記時就查到的
 
@@ -49,8 +55,9 @@
 
 | 網址 | 看到什麼 |
 |---|---|
-| `?step=1` / `&proj=0` / `&dd=1` / `&pool=1` | 第一步 Teaching Points：v7 的版面（Project 多選 `.dd`、Practice name、每專案一個 `.frame` 的 teaching point chip、Add teaching points）＋ frame 底下一列 **Number of questions**（數字欄 · up to 20 · across 7 teaching points · 1 each）。沒選專案／沒勾點時 Generate 灰、原因寫在內容區 |
+| `?step=1` / `&proj=0` / `&dd=1` / `&pool=1` | 第一步 Teaching Points：v7 的版面（Project 多選 `.dd`、Practice name、每專案一個 `.frame` 的 teaching point chip、Add teaching points）＋ 眉標 **HOW MANY QUESTIONS** 一張卡（數字欄 · questions · up to 20 · across 7 teaching points · 1 each，第二輪起在 frame 上面、照 v7）。沒選專案／沒勾點時 Generate 灰、原因寫在內容區 |
 | `?step=1&proj=0&n=12` / `&warn=1` | 問 12 題（1–2 each）／題數 4 少於點數：算式轉琥珀 *only 4 of 7 teaching points get a question · ask for 7 to cover them all* |
+| `?step=1&proj=2`（或把點全部取消勾選） | 沒勾點：How many questions 的欄位鎖住留空，同一列琥珀寫 *tick at least one teaching point below · questions are written from the points you tick*；Generate 灰。frame 裡只有「No teaching points. You can add some below.」 |
 | `?step=1&proj=0&gen=1` / `&back=1` | 生成中（Generate 轉圈、綠色 loading 卡）／生成後回到第一步（不鎖；frame 標頭寫「已生成，多勾的點按 Next 才生」） |
 | `?step=2` | 第二步 Question Review：TEACHING POINTS · 7 一排小卡（點名 ＋ n questions ＋ −／+；總數 20、每點 5）＋ QUESTIONS · 7 題卡（綠膠囊題號 ＋ 拖曳、教學點 chip、Edit／Delete；Question → Pattern（琥珀）→ Suggested answer（綠），拼音在字上、翻譯小字）。刪到剩一題擋、寫原因 |
 | `?step=2&sub=SENTENCE_BUILDING` | 同上，Sentence Building：沒有 Pattern 框、Question 是後端寫的造句指令、眉標寫 *students build a sentence with the teaching point* |
@@ -69,3 +76,5 @@
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
 | 老師 | **第一輪：套共用設計 S1–S9／R11** | 2026-10-19。使用者「現在基礎的 UI 不一致」——Planning 嵌的前四種是走過迭代的 proposal，四張新卡嵌的是原樣複刻；這一輪替 v12 做 `proposal.html`，從 v7 的 proposal 分岔。**第一步**：S1 Practice name 在第一步、S2 Project 多選 `.dd` ＋ 每專案一個 `.frame` 的 chip ＋ Add teaching points（v7 的），Number of questions 放 frame 底下同一列（預設＝勾的點數、上限 20；少於點數時說哪幾個點沒題，取代基準的黃色 Alert）；基準的舊說明句「once you pick a practice type」拿掉；Generate 後自動進第二步，回頭不鎖、只生新勾的點。**第二步**：照 v7 版式（眉標 ＋ 每點一張小卡 −／+ ＋ 題卡）；卡內 Question／Pattern／Suggested answer 三塊照基準；基準的 Practice Name、Guided Response 標頭（跟型別 label 不一致，見問題 1）、「Select a teaching point · Generate」那列、上下箭頭拿掉；刪到剩一題擋並寫原因（R9；基準是刪到零張再 snackbar，見問題 4）。**第三步**：R11 工具列 ＋ 視窗預覽，搬畫廊 `#p-fp`：Practice mode Text visible｜Audio only（S5）、Pinyin／Translation 分段控制項（S4，值仍是 enum）、Speed chip ＋ Voice 下拉（S7）、Max tries −／+ ⓘ（S6）；畫布＝學生的題卡；基準的 Audio Mode 卡、三個 enum 下拉、Questions (n) 唯讀清單拿掉。**第四步**：v7 的 Assign 原封不動（S8）。頁腳 Generate → Next → Save → Assign（S9）。 |
+| 老師 | **拆版：Sentence Building 分去 v15** | 2026-10-22。使用者「直接開成兩個 v」。proposal.html 鎖死 GUIDED_RESPONSE，底欄 sub 切換換成「另一張：Sentence Building ↗」；index 一張卡變兩張；Planning 兩案 Sentence Building 那張改嵌 v15。 |
+| 老師 | **第二輪：先問幾題、再勾點；沒勾點的原因只寫一處** | 2026-10-21。使用者「跟 Sentence Scramble 一樣先問要產出幾句」——Number of questions 從 teaching point frame 底下搬到上面，照 v7 的版式（眉標 HOW MANY QUESTIONS → 一張卡 → 灰底算式列），沒有 v7 的兩張來源卡（這裡只有生成）。同一輪：第一步沒勾任何教學點時，原本 frame 裡、題數列、底下一行琥珀警告三句話講同一件事，鎖住的題數欄還印著一個沒來由的 8。收成一處：原因只寫在 Number of questions 那一列（琥珀），欄位留空；frame 裡那句留著（它講的是 frame 自己）。R8 只講例外、R9 灰著要給原因——一個原因一個地方。 |

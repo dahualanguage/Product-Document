@@ -1,0 +1,2441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Sentence Fill-in — v19 提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================================
+   提案 —— v19 · Sentence Fill-in（第一輪，2026-10-27）。從 v7 Sentence Scramble 的 proposal.html 整份複製再改。
+   對照組：baseline-fill-in-blank.html（題庫裡的 Fill in blank 今天的樣子）。
+   跟 v7 的差別只在「句子怎麼考」：
+     第一步 Teaching Points：一樣（專案多選、名稱、總句數、句子從哪來、勾教學點）。
+     第二步 Edit Sentences：TEACHING POINTS 小卡 −／+ 一樣（跟 v7／v12／v15 同一個元件，之後一起改）；
+       句子卡沒有剪刀——教學點在句子裡的位置就是空格（粉紅虛線框，老師看得到答案），卡底一列選項詞塊（沒有標題，跟題庫一樣）：
+       答案詞塊（粉紅、打勾）＋ 干擾詞塊固定 3 個（照現行題庫四選一：三個干擾選項只能改字、不能加減）；編輯模式多一欄 Distractors 改字。
+       兩槽的語法點（一……就）兩個空格、答案兩個詞塊。
+     第三步 Settings：工具列跟 v7 一樣（PINYIN ‖ SPEED／VOICE ‖ MAX TRIES）；畫布＝學生的填空畫面：
+       句子照排、空格是虛線 slot，底下詞塊池＝答案＋干擾詞打散，點一個填進去，Check。
+     第四步 Assign：一樣。
+   網址參數同 v7（?step=1|2|3|4、&sel=1、&n=12、&ex=1、&open=…）。
+   使用者定（2026-10-27）：全新型別、學生從詞塊挑一個填空、固定挖教學點、Comprehension Quiz 拿掉 Fill in blank、名字 Sentence Fill-in。
+   ---------------------------------------------------------------------------
+   以下是 v7 的來歷（複製時保留）：
+   提案 —— v7 · 對照組是 create-scramble.html（現行複刻）。
+   從 v6 的 proposal.html 分岔（2026-09-18）：第一步 Teaching Points（v4 的版面：專案多選、名稱 A + B、勾 teaching point、
+   Add teaching points、Generate 生成、回頭不鎖只生新的）與第四步 Assign 原封不動；預覽對話框的殼留著。
+   第二步 Edit Sentences 與第三步 Settings 這一輪照基準檔抄（只拿掉 Practice Name——名稱已在第一步，S1）。
+
+   第二十五輪（2026-10-02）：使用者「看不懂膠囊裡的 2 是句子數量」——四個走法（A 單位寫進膠囊、B 上面一行小標、C 小卡＋數字放大、D 小表）選 C，再加「可以增加或刪減」：
+     每個教學點一張小卡 .tpc-card（點名 chip ＋「2 sentences」＋ −／+）。+ 把這個點的下一句接在它最後一句後面（demo 用 mock 第二句；到 20 總數或 demo 沒句了就灰）；− 拿掉這個點最後一句（整份剩一句擋）。
+     基準那列「Select a teaching point · Generate one more」拿掉——加減都在小卡上。眉標提示尾巴改成「−＋ changes a point」。
+   第二十七輪續：到 5 句時小卡裡多一行藍色小字「Up to 5 per point」（一度琥珀，使用者改藍字）（使用者「新增到五點的時候用小字在卡裡面提示」）；沒到不出現。
+   第二十七輪續：總數到 20 時每張小卡也寫一行藍字「Up to 20 in total」（使用者「滿 20 的理由也寫在小卡裡」）；同時到每點 5 句的卡優先寫 per point。
+   第二十七輪續：步進器 disabled 樣式加強——灰底＋淡四成＋not-allowed 游標，之前只是字色變淡、看起來還能按。
+   第二十七輪續：眉標提示只留「Up to 20 in total」——5 per point 拿掉（使用者「留下 20 就好」），每點上限由小卡到 5 時的藍字講。
+   第二十七輪續：眉標提示收成一句「Up to 20 in total · 5 per point」（使用者「太多資訊了」）——拿掉 You asked for N（改過就不是事實）、now N after edits（SENTENCES · N 已經在講）、add or remove per point below（−／+ 自己會說）。到 20 時 20 轉琥珀。asked 變數不再用在提示上。
+   第二十七輪（2026-10-05）：第二步每個教學點上限 5 句（使用者「設定一的 teaching point 上限 5 句」）——小卡到 5 句時 + 灰、tooltip Up to 5 sentences per teaching point；眉標提示尾巴補「up to 5 per point」。PER_MAX 從第二十輪起就是 5，這一輪把它接到第二步的 +。
+   第二十六輪續：眉標提示的「1–2 per point」拿掉（使用者：不用這個欄位）——每點幾句小卡上已經寫了。
+   第二十六輪續：第二步眉標提示尾巴加「up to 20」（使用者「提示上限 20」），到 20 轉琥珀，跟第一步備注欄同一個寫法。
+   第二十六輪（2026-10-02）：第二步每個點的 + 可以一路加到 20 總數（使用者「第二步新增單字的卡片，都可以加到 20 個」）——每個點再備三句 mock（idx 14–34）當生成結果，
+     用完就複製該點第一句充數（gen:true）；+ 只在總數 20 時灰。defaultOrder() 不受影響（第一步最多每點 3 句）。
+   第二十五輪續：第一步備注欄最前面的 ⓘ 拿掉（使用者「拿掉 icon」指的是這顆）。
+   第二十五輪續：眉標提示尾巴的 −／+ 小圖示拿掉（使用者「拿掉 icon」），改寫 add or remove per point below。
+   第二十四輪（2026-10-02）：第二步接上第一步——使用者「下一步沒有跟上一步的動作連結、讓 teaching point 的數量可以更好被理解」。
+     句子清單照第一步問到的總數與份額（defaultOrder() 用 shares()；mock 多了每點第二句 idx 7–13，WORDS.ex 同一句）；
+     TEACHING POINTS 眉標提示改「You asked for 12 sentences · 1–2 per point · pick one to generate one more」；點 chip 的 (1) 改成右邊一顆數字徽章。SENTENCES · N 跟著變 12。&n=12 在第二步也吃。
+   第二十三輪續：數字欄打不了字——每個字都重畫＋夾到點數以上＋全選，打 1 想接 2 就被蓋掉。改成打字中照打的顯示（S.nDraft），算式用夾過的數；低於點數時提示 at least 7 · one per teaching point；離開欄位才夾回。
+   第二十三輪（2026-10-02）：版式照 v6 第二步（使用者「參考這個 UI」）——眉標 HOW MANY SENTENCES → 一張 .canvas → 卡裡灰底備注欄（ⓘ 數字欄 · sentences · up to 20 · across 7 teaching points · 1–2 each）
+     → 底下直接兩張選項卡（沒有第二個小標）。.fld label 的兩段拿掉。
+   第二十二輪（2026-10-02）：分成兩部——使用者「問他幾句之後再問要用重新生成還是用 teaching point 內的句子」。第一部 HOW MANY SENTENCES 獨立一列（數字欄＋up to 20＋across 7 points · 1–2 each），
+     第二部 WHERE THE SENTENCES COME FROM 兩張選項卡（卡裡只剩一句說明，步進器與 1｜2 都拿掉）。總句數對兩種來源都算：例句模式照每點份額（shares()）先勾例句，不夠的生，
+     清單底下那條改寫「No examples for X · N sentences will be generated to reach 12」。S.exPer 只剩 &exmode=add 舊路徑在用。
+   第二十一輪（2026-10-02）：第一步直接問「總共要幾句」、告訴老師上限 20——生成卡裡的每點幾句步進器換成總句數數字欄（S.nTotal、&n=12）＋「sentences · up to 20」，
+     右邊一行寫怎麼分（across 7 teaching points · 1–2 each）；預設＝勾的點數、下限＝點數（每點至少一句）、打超過 20 夾回 20 且「up to 20」轉琥珀。例句卡的 1｜2 旁邊補 up to 20 in total。
+     這一輪把第二十輪「拿掉 20 上限」收回來：上限照產品 MAX_QUESTION_COUNT。&exmode=add 的舊路徑仍是步進器。
+   第二十輪（2026-09-30）：20 句總數的上限拿掉（步進器只留每點最多 5 句、例句的 2 不再灰）；例句模式改成「有例句的點用例句、沒有例句的點照每點幾句生」——
+     卡裡的算式寫 20 sentences · 7 from examples · 13 generated，例句清單底下一條 No examples for 睡觉、… · 1 sentence each will be generated。要問工程 E7：MAX_QUESTION_COUNT 能不能放寬。
+   第十九輪（2026-09-30）：第一步先問「句子從哪來」——Practice name 底下兩張選項卡 Generate new sentences｜Use example sentences（照 v6／v8 的 .qopt）。
+     生成卡裡是每點幾句的步進器＋算式；例句卡裡是每點 1｜2 ＋ 算式；選了例句，teaching point 框裡直接攤開例句清單（第十輪的開關那一列拿掉）。
+     沒有例句可用時例句卡淡掉。&ex=1 仍＝選例句卡；&exmode=add 仍是舊版。例句清單放在框的最下面、Add teaching points 之下。
+   第十八輪補：清單超過 15 列在清單裡捲（max-height 15 列）。
+   第十八輪（2026-09-29，畫廊回套）：第三步 Sentence x of N 展開的清單每列一顆小播放鍵（只聽那一句、不換預覽）；.mp-play 同步成實心主綠。跟 shared-settings-gallery.html 同一套。
+   第十七輪（2026-09-21）：第四步 Assign 確認是 v4 的提案（分岔時帶進來的）；修了分岔時切掉的三個 helper（fmt／assignedIn／conflictFor），之前這一步是空白的。&pick=3b,4a&roster=4a、&review=1、&assigned=1
+   第十六輪（2026-09-21）：第三步套共用設計（R11）——工具列 PINYIN ‖ SPEED／VOICE ‖ MAX TRIES ⓘ，畫布＝學生的拼句畫面（tiles ＋ slot、齒輪只在 Choice by student）；
+     基準的 Sentences (7) 唯讀清單拿掉。&voice=1 Voice 選單、&pyc=1&settings=1 Choice by student ＋ 齒輪打開、&all=1 換句清單。
+   第十五輪（2026-09-21）：右邊三顆鈕都能操作——剪刀（字與字之間點一下切／合、Split into characters、Save 重組詞塊）、編輯（改中文／翻譯，中文改了出 Auto-update on save）、刪除（剩一句擋）。&cut=1／&edit=1／&del=1
+   第十四輪（2026-09-21）：第二步題號統一成 v6 的綠膠囊 Q1 ＋ 拖曳把手（卡可以拖），上下箭頭拿掉；標頭順序對齊 v6：把手、Q 號、教學點 chip，右邊剪刀／編輯／刪除。
+   第十三輪（2026-09-21）：1｜2 搬到開關那句後面（同一列：開關 · 1｜2 per point · 右邊總數）；上面每點幾句那塊在開關開著時不出現。
+   第十二輪（2026-09-21）：取代版定案（預設）；開關開了多一個「每點一句｜兩句」切換，切了自動把每個勾的點的前 N 句勾起來，清單留著可以逐句微調；
+     手動改過就顯示「N sentences · adjusted below」。&ex=1&exper=2。附加版只留 &exmode=add 回看。
+   第十一輪（2026-09-21）：兩個版本並存——&exmode=replace「全部替換」：開關開了就只用勾的例句、一句不生，步進器與 checkbox 都不出現；
+     預設「附加」：例句算進每點目標、不夠才生（第八輪的公式）。狀態欄各一個入口。
+   第十輪（2026-09-21）：例句那段改成開關「Use example sentences from these teaching points」，開了才展開清單；關掉勾過的也不算、「只用例句」也一起關。
+   第九輪（2026-09-21）：每點幾句那塊副標太多——說明句拿掉，只留算式一行；「N 個點沒勾例句」併進算式那行（琥珀色）；上限只在 ＋ 的 tooltip。
+   第八輪（2026-09-21）：公式改成「N 是每點目標數、例句先算進去、不夠才生」（每點 max(N, 勾的例句)）；多一個選項 Use the picked examples only（一句不生）。&exonly=1
+   第六輪（2026-09-21）：每點幾句的區塊搬到第一步最上面（專案選單之前）。第七輪：改到 Practice name 底下、teaching point frame 之前。
+   第五輪（2026-09-21）：第二步照 v6 的版式——重複的標題拿掉，TEACHING POINTS · 7 與 SENTENCES · 7 各一條眉標，說明句收進眉標右邊。
+   第四輪（2026-09-21）：PM 需求「從 Teaching Points 選例句當題目」，方案 A——勾了的點底下多一段 Example sentences（摺疊，像 From Project），每句一個 checkbox；
+     勾的例句直接帶進去不生成；步進器變「每點再生幾句新的」、勾了例句可以到 0；總數＝例句 ＋ 點 × 每點 ≤ 20。&ex=1 展開、&expick=起床|0,早饭|0 預勾。
+   第三輪（2026-09-18）：每點幾句的上限跟著點數算（20 ÷ 點數），改成 − n ＋ 步進器。
+   第二輪（2026-09-18）：Number of questions 改問「每個點幾句」（方案 A）——1｜2｜3 sentences per point 的切換，總數算出來寫旁邊；每個點一定有句子；超過 20 的檔位灰掉。&per=2
+   第一輪（2026-09-18）：使用者「先套上 v4 的版面」——第一步照 v4，多一個 Number of questions（Scramble 自己的；
+     預設＝勾的點數，老師改過就不再跟著點數跑；說明句寫句子在勾的點之間輪流分）；生成鈕照產品叫 Generate，生成後叫 Next。
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --success:#22C55E;
+  /* Vocabulary 欄的色票（practice-type-labels.js PRACTICE_TYPE_COLUMNS.VOCABULARY）
+     ＋ VOCABULARY_MIRRORING 那一項的 tag。跟 v3 用 CONTENT 欄的 wash 是同一個道理。 */
+  --wash:#FFF8E7; --label:#8F6209; --tag-wash:#FEF3C7; --tag-label:#D97706;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --info:#508AFC; --info-lighter:#DCECFE;
+  --warning-lighter:#FFF5CC; --warning-dark:#B76E00;
+  --error:#FF5630;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼（跟基準檔同一套） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff;
+  border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; }
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+  color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px;
+  padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40;
+  background:rgba(244,247,251,.8); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px;
+  background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter);
+  color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* ---------- 共用①：標題前的型別圖示（v3，出處 PRACTICE_TYPE_ENTRIES.tag） ----------
+   VOCABULARY_MIRRORING: { wash:'#FEF3C7', label:'#D97706', icon:'ic:round-mic' } */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; margin-bottom:24px;
+  display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none;
+  background:var(--tag-wash); color:var(--tag-label); display:flex; align-items:center; justify-content:center; }
+.h4 .tico .mi{ font-size:22px; }
+.h5{ font-size:20px; font-weight:700; line-height:1.5; }
+.h6{ font-size:18px; font-weight:700; line-height:1.55; }
+
+/* ---------- 共用②：Stepper（v3 · ReUI c-stepper-2） ---------- */
+.stepper{ display:flex; align-items:center; width:100%; margin-bottom:32px; }
+.stp-item{ display:flex; align-items:center; gap:10px; }
+.stp-ind{ width:24px; height:24px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:600; background:var(--grey300); color:var(--text2);
+  transition:background .2s, box-shadow .2s; }
+.stp-item.done .stp-ind{ background:var(--primary); color:#fff; }
+.stp-item.active .stp-ind{ background:var(--primary); color:#fff; box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.stp-lbl{ font-size:14px; font-weight:400; color:var(--text3); white-space:nowrap; }
+.stp-item.done .stp-lbl{ color:var(--text); }
+.stp-item.active .stp-lbl{ color:var(--text); font-weight:600; }
+.stp-sep{ flex:1; min-width:24px; height:2px; border-radius:2px; margin:2px 10px;
+  background:var(--divider); transition:background .2s; }
+.stp-sep.done{ background:var(--primary); }
+
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- 基準檔沿用：通用 ---------- */
+.paper{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.sub2{ font-size:14px; font-weight:600; }
+.sub1{ font-size:16px; font-weight:600; }
+.body2{ font-size:14px; }
+.cap{ font-size:12px; color:var(--text2); line-height:1.5; }
+.cap.dis{ color:var(--text3); }
+
+/* ---------- 基準檔沿用：MUI TextField / Select ---------- */
+.field{ position:relative; }
+.field > label{ position:absolute; top:-8px; left:9px; padding:0 5px; background:#fff; z-index:1;
+  font-size:12px; color:var(--text2); line-height:1.2; }
+.field.dis > label{ color:var(--text3); background:linear-gradient(#fff 50%, var(--grey100) 50%); }
+.ctrl{ width:100%; height:56px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 14px; font-size:14px; color:var(--text); font-family:inherit;
+  display:flex; align-items:center; gap:8px; cursor:pointer; }
+.ctrl:hover{ border-color:var(--text); }
+.field.sm .ctrl{ height:40px; }
+.field.dis .ctrl{ background:var(--grey100); color:var(--text3); cursor:default; }
+.field.dis .ctrl:hover{ border-color:var(--divider); }
+.ctrl .caret{ margin-left:auto; font-size:22px; color:var(--text2); }
+.ctrl input{ border:0; outline:0; font:inherit; color:inherit; background:transparent; width:100%; }
+.menu{ position:absolute; top:60px; left:0; right:0; z-index:30; background:#fff; border-radius:8px;
+  box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:8px;
+  max-height:300px; overflow:auto; }
+.field.sm .menu{ top:44px; }
+.menu .opt{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:14px; cursor:pointer; }
+.menu .opt:hover{ background:var(--grey200); }
+.menu .opt.sel{ background:rgba(0,203,97,.08); }
+.chip-lang{ padding:1px 8px; background:#EFF6FF; color:#1D4ED8; font-size:11.2px; font-weight:600; border-radius:6px; }
+.chip-lvl{ padding:1px 8px; background:#F0FDF4; color:#065F46; font-size:11.2px; font-weight:600; border-radius:6px; }
+.opt .cnt{ margin-left:auto; font-size:12px; color:var(--text3); flex-shrink:0; }
+.opt .cnt.err{ color:var(--error); }
+
+/* ---------- 基準檔沿用：第一步（Autocomplete / Teaching Points / Loading / 生詞卡） ---------- */
+.ac .ctrl{ height:auto; min-height:56px; flex-wrap:wrap; padding:9px 14px; gap:6px; }
+.ac .tagchip{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 4px 0 12px;
+  border:1px solid rgba(145,158,171,.32); border-radius:16px; font-size:13px; font-weight:500; }
+.ac .tagchip .mi{ font-size:18px; color:rgba(145,158,171,.6); }
+.field.dis .tagchip{ color:var(--text3); }
+.ac .ph{ color:var(--text3); flex:1; }
+.ac .caret2{ margin-left:auto; display:flex; gap:4px; color:var(--text2); }
+.ac .caret2 .mi{ font-size:22px; }
+.tp-card{ border:1px solid var(--divider); border-radius:16px; overflow:hidden; background:#fff; }
+.tp-card + .tp-card{ margin-top:16px; }
+.tp-card .hd{ display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--divider); background:#FAFBFC; }
+.tp-card .hd .mi{ font-size:20px; color:var(--text2); }
+.tp-card .bd{ padding:20px; display:flex; flex-wrap:wrap; gap:6px; }
+.chip{ display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:16px;
+  border:1px solid rgba(145,158,171,.32); font-size:14px; font-weight:600; white-space:nowrap; }
+.chip.sm{ height:24px; padding:0 8px; font-size:12px; }
+.chip.primary{ border-color:rgba(0,203,97,.48); color:var(--primary); }
+.chip.info{ border-color:rgba(80,138,252,.48); color:var(--info); }
+.chip.secondary{ border-color:rgba(142,51,255,.48); color:#8E33FF; }
+.genbar{ display:flex; align-items:center; justify-content:space-between; padding:16px; border-radius:16px;
+  background:#F0FDF4; border:1px solid #D1FAE5; margin-top:16px; }
+.loading{ margin:32px 0; padding:48px 24px; border-radius:24px; text-align:center;
+  background:linear-gradient(135deg, rgba(187,241,208,.3) 0%, rgba(211,252,210,.3) 100%); }
+.loading .orb{ width:80px; height:80px; border-radius:50%; margin:0 auto 24px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--primary) 0%, var(--success) 100%); box-shadow:0 8px 24px rgba(0,203,97,.3); color:#fff; }
+.loading .orb .mi{ font-size:36px; animation:spin 1.2s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.loading .h6{ background:linear-gradient(90deg, var(--primary), var(--success)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+.loading .dots{ display:flex; gap:8px; justify-content:center; margin-top:24px; }
+.loading .dots i{ width:8px; height:8px; border-radius:50%; background:var(--primary); opacity:.35; }
+.loading .dots i:nth-child(2){ opacity:.7; } .loading .dots i:nth-child(3){ opacity:1; }
+.skel{ background:rgba(145,158,171,.16); border-radius:6px; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:.5;} }
+.skel-grid{ display:flex; gap:16px; flex-wrap:wrap; margin-top:32px; }
+.skel-card{ width:280px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; }
+.acc{ background:#fff; border-radius:16px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); margin-bottom:16px; overflow:hidden; }
+.acc .sum{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; background:var(--grey200); cursor:pointer; min-height:48px; }
+.acc .sum .l{ display:flex; align-items:center; gap:16px; }
+.acc .sum .l .mi{ font-size:24px; }
+.acc .sum .r{ display:flex; align-items:center; gap:16px; padding-right:16px; }
+.acc .sum .r > .mi{ font-size:24px; color:var(--text2); }
+.btn.success{ background:var(--success); color:#fff; box-shadow:0 8px 16px 0 rgba(34,197,94,.24); font-size:12px; padding:4px 12px; }
+.btn.success .mi{ font-size:16px; }
+.acc .det{ padding:8px 16px 16px; display:flex; flex-wrap:wrap; gap:16px; }
+.vcard{ min-width:280px; max-width:320px; border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; position:relative; transition:all .3s; }
+.vcard:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.vcard.hidden{ opacity:.45; }
+.vcard.hidden .word{ text-decoration:line-through; }
+.vcard .acts{ display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; }
+.vcard .ib{ width:36px; height:36px; border-radius:50%; border:0; background:rgba(0,0,0,.04); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.vcard .ib .mi{ font-size:20px; }
+.vcard .ib.edit{ color:var(--primary); } .vcard .ib.edit:hover{ background:var(--primary); color:#fff; }
+.vcard .ib.eye{ color:var(--text2); } .vcard .ib.eye:hover{ background:rgba(0,0,0,.08); color:var(--text); }
+.vcard .ib.eye.off{ color:var(--text3); } .vcard .ib.eye.off:hover{ background:#FFAB00; color:#fff; }
+.imgph{ width:100%; max-width:280px; height:160px; border-radius:8px; margin-bottom:8px;
+  background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.imgph .mi{ font-size:28px; }
+.thumbs{ display:flex; gap:6px; margin-bottom:16px; }
+.thumbs i{ width:48px; height:36px; border-radius:6px; background:#E9F5EE; border:2px solid transparent; display:block; }
+.thumbs i.sel{ border-color:var(--primary); }
+.vcard .word{ font-size:18px; font-weight:700; margin-bottom:5.6px; }
+.vcard .py{ font-size:14px; color:var(--text2); margin-bottom:5.6px; }
+.vcard .tr{ font-size:14px; color:var(--primary); margin-bottom:5.6px; }
+.vcard .tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+.vcard .ro{ margin-top:16px; padding:12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.vcard .ex{ margin-top:16px; padding:12px; background:var(--grey200); border-radius:8px; }
+.vcard .ex + .ex{ margin-top:12px; }
+.vcard .ex .c{ font-size:12px; display:block; margin-bottom:5.6px; }
+.vcard .ex .c.py{ color:var(--text2); margin-bottom:0; } .vcard .ex .c.tr{ color:var(--primary); margin:0; }
+.vcard .gram{ font-size:12px; color:var(--text3); font-style:italic; }
+.sw{ display:flex; align-items:center; gap:8px; }
+.sw .track{ width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; transition:background .2s; cursor:pointer; }
+.sw .track::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.sw.on .track{ background:var(--primary); }
+.sw.on .track::after{ transform:translateX(13px); }
+
+/* ---------- 基準檔沿用：第二步 Vocabulary 自己的部分 ---------- */
+.divlabel{ display:flex; align-items:center; gap:16px; margin:24px 0; }
+.divlabel::before, .divlabel::after{ content:''; flex:1; height:1px; background:var(--divider); }
+.divlabel span{ font-size:14px; font-weight:600; color:var(--text2); padding:0 8px; }
+.alert{ display:flex; gap:12px; align-items:center; border-radius:8px; padding:12px 16px; font-size:14px; margin-bottom:16px; }
+.alert.info{ background:var(--info-lighter); color:#193592; }
+.spin{ width:18px; height:18px; border-radius:50%; border:2px solid rgba(80,138,252,.3); border-top-color:var(--info); animation:spin 1s linear infinite; flex-shrink:0; }
+.proc{ display:flex; align-items:center; gap:16px; padding:16px; border-radius:8px; background:var(--warning-lighter); margin-bottom:24px; font-size:14px; color:var(--warning-dark); }
+.proc .spin{ width:24px; height:24px; border-width:3px; border-color:#FFD666; border-top-color:#FFAB00; }
+.dsacc{ border:1px solid var(--divider); border-radius:8px; background:#fff; }
+.dsacc .sum{ display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:8px 16px; cursor:pointer; }
+.dsacc .sum .l{ display:flex; align-items:center; gap:8px; }
+.dsacc .sum .l .mi{ font-size:20px; color:var(--primary); }
+.dsacc .sum > .mi{ font-size:24px; color:var(--text2); }
+.dsacc .det{ padding:0 16px 16px; display:flex; gap:16px; flex-wrap:wrap; }
+.dsacc .det .field{ flex:1; min-width:180px; }
+.pv-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:24px; margin-bottom:32px; }
+.pv{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:24px; transition:all .2s; }
+.pv:hover{ box-shadow:0 8px 16px 0 rgba(145,158,171,.16); transform:translateY(-2px); }
+.pv .hd{ margin-bottom:16px; }
+.pv .box{ display:flex; gap:24px; margin-bottom:24px; padding:16px; border-radius:16px; background:rgba(0,203,97,.05); border:2px solid rgba(0,203,97,.2); }
+.pv .box .col{ flex:1; min-width:0; }
+.pv .ov{ display:block; font-size:10.4px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--text2); line-height:1.5; }
+.pv .w{ font-size:20px; font-weight:700; }
+.pv .p{ font-size:18px; font-weight:700; color:var(--text2); }
+.pv .t{ font-size:18px; font-weight:700; color:var(--primary); }
+.pv .box .wcol{ display:flex; align-items:center; gap:8px; }
+.play{ border:0; background:transparent; border-radius:50%; color:var(--success); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.play.lg{ width:48px; height:48px; } .play.lg .mi{ font-size:32px; }
+.play.sm{ width:34px; height:34px; } .play.sm .mi{ font-size:24px; }
+.play:hover{ background:rgba(34,197,94,.08); }
+.pv .tags{ display:flex; flex-direction:column; gap:4px; }
+.pv .exs{ display:flex; gap:16px; }
+.pv .exs .ex{ flex:1; padding:16px; border-radius:8px; background:var(--grey200); border:1px solid var(--divider); }
+.pv .ex .lbl{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pv .ex .lbl .lt{ font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text2); }
+.pv .ex .s{ font-size:14px; font-weight:500; margin-bottom:4px; }
+.pv .ex .py{ font-size:12px; color:var(--text2); display:block; margin-bottom:4px; }
+.pv .ex .tr{ font-size:12px; color:var(--primary); display:block; }
+.pv .imgph{ max-width:280px; }
+
+/* ---------- 共用⑥：第一步的欄位（v3 · ReUI c-input-2 / c-dropdown-menu-18 / c-frame-6） ---------- */
+.fld{ display:flex; flex-direction:column; gap:8px; max-width:520px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.fld .help{ font-size:12px; color:var(--text2); }
+.inp{ height:40px; width:100%; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); }
+  .inp::placeholder{ color:var(--text3); }
+.inp:focus{ outline:0; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,203,97,.16); }
+.dd{ position:relative; }
+.dd-trig{ width:100%; min-height:40px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border:1px solid var(--divider); border-radius:8px; background:#fff; padding:6px 12px;
+  font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.dd-trig:hover{ background:var(--grey100); }
+.dd-trig .ph{ color:var(--text3); font-weight:400; flex:1; }
+.dd-trig .tok{ display:inline-flex; align-items:center; gap:8px; }
+.dd-trig .tok + .tok::before{ content:''; width:1px; height:16px; background:var(--divider); margin-right:2px; }
+.dd-trig .caret{ font-size:18px; color:var(--text2); flex:none; margin-left:auto; }
+.mark{ height:22px; padding:0 8px; border-radius:6px; flex:none; display:inline-flex;
+  align-items:center; font-size:11px; font-weight:700; letter-spacing:.2px; background:#EFF6FF; color:#1D4ED8; }
+.lvl{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:#F0FDF4; color:#065F46; flex:none; }
+.dd-menu{ position:absolute; top:46px; left:0; right:0; z-index:30; background:#fff;
+  border:1px solid var(--divider); border-radius:10px; padding:4px;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.dd-lbl{ font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 6px; }
+.dd-item{ display:flex; align-items:center; gap:10px; width:100%; padding:8px; border:0;
+  background:transparent; border-radius:6px; font-size:14px; color:var(--text); cursor:pointer; text-align:left; font-family:inherit; }
+.dd-item:hover{ background:var(--grey200); }
+.dd-item .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dd-item .cnt{ font-size:12px; color:var(--text3); flex:none; }
+.dd-item .cnt.err{ color:var(--error); }
+.dd-item .tick{ font-size:18px; color:var(--primary); flex:none; width:18px; }
+.dd-item .tick.off{ visibility:hidden; }
+/* c-frame-6 ghost：外框沒邊框、底色用 Vocabulary 欄的 wash，panel 圓角 = 14 − 3 = 11 */
+.frame{ --frame-radius:14px; --frame-px:3px; --frame-panel-radius:calc(var(--frame-radius) - var(--frame-px));
+  display:flex; flex-direction:column; gap:var(--frame-px); background:var(--wash);
+  border-radius:var(--frame-radius); padding:var(--frame-px); margin-top:24px; }
+.frame + .frame{ margin-top:12px; }
+.frame-hd{ display:flex; flex-direction:column; gap:0; padding:8px 16px; }
+.frame-ttl{ font-size:14px; font-weight:600; color:var(--text); }
+.frame-desc{ font-size:14px; color:var(--text2); }
+.frame-panel{ position:relative; overflow:hidden; background:#fff; border:1px solid var(--divider);
+  border-radius:var(--frame-panel-radius); box-shadow:0 1px 2px rgba(33,43,54,.05); padding:16px;
+  display:flex; flex-wrap:wrap; gap:6px; }
+
+/* ---------- 第二輪：可勾的 teaching point ＋ Add words（邏輯照 teacher-planning，樣式沿 v3） ---------- */
+.frame-hd.sel{ flex-direction:row; align-items:center; gap:10px; }
+.frame-hd.sel .cb{ border:0; background:transparent; padding:0; cursor:pointer; color:var(--primary); display:flex; }
+.frame-hd.sel .cb .mi{ font-size:22px; }
+.frame-hd.sel .cb.none{ color:var(--text3); }
+.frame-hd.sel .ttl{ flex:1; }
+.frame-hd.sel .cnt{ font-size:13px; font-weight:600; color:var(--text2); font-variant-numeric:tabular-nums; }
+.tpchip{ display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px 0 8px; border-radius:10px;
+  border:1px solid var(--divider); background:#fff; font-size:14px; font-weight:600; color:var(--text2);
+  cursor:pointer; font-family:inherit; }
+.tpchip .mi{ font-size:18px; color:var(--text3); }
+.tpchip:hover{ border-color:var(--text3); color:var(--text); }
+.tpchip.on{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); color:var(--text); }
+.tpchip.on .mi{ color:var(--primary); }
+.tpchip .ty{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--grey200); color:var(--text2); }
+.tpchip .ty.gram{ background:#F3E8FF; color:#7C3AED; }
+.tpchip .ty.added{ background:#DCECFE; color:#193592; }
+.tpchip.dim{ opacity:.5; cursor:default; }
+.tpchip.dim:hover{ border-color:var(--divider); color:var(--text2); }
+.addsep{ display:flex; align-items:center; gap:12px; margin:4px 0 8px; }
+.addsep b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.addsep .rule{ flex:1; height:1px; background:var(--divider); }
+.vp-head{ display:flex; align-items:center; gap:6px; width:100%; border:0; background:transparent; padding:6px 0;
+  font-family:inherit; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; text-align:left; }
+.vp-head .mi{ font-size:20px; color:var(--text2); }
+.vp-head .n{ margin-left:auto; font-size:12px; font-weight:600; color:var(--text3); }
+.pool{ display:flex; flex-wrap:wrap; gap:6px; padding:6px 0 10px; }
+.tp-add{ display:flex; gap:8px; margin-top:8px; }
+.tp-add .inp{ flex:1; }
+.tp-add .btn{ height:40px; }
+.tp-add .dd{ width:200px; flex:none; }
+.tp-add .dd-trig{ font-weight:500; }
+.tp-add .dd-menu{ left:auto; right:0; min-width:220px; }
+
+/* ---------- 第五輪：第二步的生詞卡（一個字＝三張卡） ---------- */
+.wcard{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:16px 20px; }
+.wcard + .wcard{ margin-top:12px; }
+.wcard.off{ background:var(--grey100); }
+.wcard.off .wc-bd{ opacity:.45; }
+.wc-hd{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.wc-hd .n{ font-size:12px; color:var(--text3); width:18px; font-variant-numeric:tabular-nums; }
+.wc-hd .w{ font-size:18px; font-weight:700; }
+.wcard.off .wc-hd .w{ text-decoration:line-through; color:var(--text2); }
+.wc-hd .cards{ font-size:12px; color:var(--text3); margin-left:4px; }
+.wc-hd .grow{ flex:1; }
+.wc-hd .ghost{ height:32px; padding:0 10px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.wc-hd .ghost .mi{ font-size:16px; }
+.wc-hd .ghost:hover{ border-color:var(--text3); color:var(--text); }
+.wc-bd{ display:flex; gap:24px; align-items:stretch; }
+/* 圖片區：大圖 ＋ 四張 AI 候選 ＋ 一格 Upload */
+.wc-img{ width:216px; flex:none; }
+.wc-img .big{ width:216px; height:144px; border-radius:10px; background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%);
+  display:flex; align-items:center; justify-content:center; color:#8AA69A; font-size:12px; gap:6px; position:relative; overflow:hidden; }
+.wc-img .big .mi{ font-size:28px; }
+.wc-img .big.mine{ background:linear-gradient(135deg,#FFF3D6 0%,#FFE7B3 100%); color:#8F6209; }
+.wc-img .big .eye{ position:absolute; top:6px; right:6px; width:28px; height:28px; border:0; border-radius:50%;
+  background:rgba(255,255,255,.92); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.wc-img .big .eye .mi{ font-size:16px; }
+.wc-img .big .eye:hover{ color:var(--text); }
+.wc-img .big.hid{ background:var(--grey200); color:var(--text3); }
+.wc-img .big .tag{ position:absolute; top:8px; left:8px; font-size:10px; font-weight:800; letter-spacing:.3px; padding:2px 7px; border-radius:6px;
+  background:rgba(255,255,255,.92); color:var(--label); }
+.thumbs2{ display:flex; gap:6px; margin-top:8px; }
+.thumbs2 button{ width:36px; height:28px; border-radius:6px; border:2px solid transparent; background:#E9F5EE; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center; color:#8AA69A; }
+.thumbs2 button.sel{ border-color:var(--primary); }
+.thumbs2 button.mine{ background:#FFF3D6; color:#8F6209; }
+.thumbs2 button.up{ background:#fff; border:1px dashed var(--text3); color:var(--text2); }
+.thumbs2 button.up:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.thumbs2 button .mi{ font-size:16px; }
+.wc-img .cap{ margin-top:6px; }
+/* 學生的三張卡：照 card-stack.js——拼音在字上面、字、翻譯在下面 */
+.cards3{ flex:1; display:grid; grid-template-columns:minmax(160px, max-content) 1fr; column-gap:28px; grid-auto-rows:auto; gap:12px; min-width:0; }   /* 例句可以到五句（第二十輪）：列數不固定，字那一塊用 inline grid-row 跨全部 */
+.scard.word{ grid-row:1 / span 2; }
+/* 字那一塊不是卡（照產品原本 vocabulary-display-section 的排法：字 h6、拼音 body2、翻譯 primary、chip） */
+.wblock{ display:flex; flex-direction:column; justify-content:flex-start; padding:10px 0 4px; min-width:0; max-width:260px; }   /* 第二十輪：例句可到五句，字那一塊貼齊上緣（置中會浮在半空） */
+.wblock .w{ font-size:18px; font-weight:700; margin-bottom:6px; }
+.wblock .py{ font-size:14px; color:var(--text2); margin-bottom:6px; }
+.wblock .tr{ font-size:14px; color:var(--primary); margin-bottom:14px; }
+.wblock .tags{ display:flex; gap:8px; flex-wrap:wrap; }
+.wblock .gram{ font-size:14px; color:var(--text3); font-style:italic; margin-bottom:12px; }
+.wblock .note{ font-size:12px; color:var(--text3); margin-bottom:12px; }
+.wblock .ro{ margin-top:12px; padding:10px 12px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text2); }
+.scard.ex{ min-height:0; }
+.scard{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:12px 14px; display:flex; flex-direction:column; min-height:144px;
+  box-shadow:0 4px 12px rgba(33,43,54,.06); position:relative; }
+.scard .lb{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.scard .lb .edit{ margin-left:auto; border:0; background:transparent; color:var(--text3); cursor:pointer; padding:2px; border-radius:6px; display:flex; }
+.scard .lb .edit:hover{ color:var(--primary-dark); background:rgba(0,203,97,.08); }
+.scard .lb .edit .mi{ font-size:16px; }
+.scard .mid{ flex:1; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; text-align:left; gap:2px; }   /* 第二十九輪：例句置左（第二十七輪的置右改回來，使用者 2026-09-15） */
+.scard .py{ font-size:13px; color:var(--text2); }
+/* 第二十八輪：逐詞拼音在上、字在下，整段靠右換行 */
+.rz{ display:flex; flex-wrap:wrap; justify-content:flex-start; column-gap:8px; row-gap:6px; }
+.tk{ display:inline-flex; flex-direction:column; align-items:center; }
+.tk .p{ font-size:11px; color:var(--text2); line-height:1.2; min-height:13px; white-space:nowrap; }
+.tk .z{ font-size:16px; font-weight:600; line-height:1.3; }
+.tk.pu{ margin-left:-6px; }
+.scard .zh{ font-size:22px; font-weight:600; line-height:1.3; }
+.scard.ex .zh{ font-size:16px; }
+.scard .tr{ font-size:12px; color:var(--text2); margin-top:6px; }
+.scard .note{ font-size:12px; color:var(--text3); font-style:italic; text-align:center; }
+.scard.skip{ background:var(--grey100); box-shadow:none; }
+.scard .ro{ margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text2); }
+.grp-hd{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }   /* 標題自己一行（第三十九輪） */
+.grp-hd .mi{ font-size:22px; color:var(--text2); }
+.grp-hd .cnt{ margin-left:auto; font-size:13px; color:var(--text2); }
+@media (max-width:1100px){ .wc-bd{ flex-direction:column; } .cards3{ grid-template-columns:1fr; grid-template-rows:auto; } .scard.word, .wblock{ grid-row:auto; } }
+
+/* ---------- 第三十輪：卡上的眼睛拿掉，「哪幾張卡要練」是標頭列的一組 chip ---------- */
+.wc-hd .cardchips{ display:inline-flex; gap:6px; margin-left:12px; flex-wrap:wrap; }
+.wc-hd .tpchip.cc{ height:28px; padding:0 10px 0 6px; font-size:12px; border-radius:8px; }
+.wc-hd .tpchip.cc .mi{ font-size:16px; }
+.wcard.off .cardchips{ display:none; }
+.skip{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:6px; background:var(--grey200); color:var(--text2); margin-left:8px; text-transform:uppercase; }
+.wblock .top{ justify-content:flex-start; align-items:center; }
+/* ---------- 第二十輪：Generate more examples ---------- */
+.scard .lb .new{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:6px; background:#DCECFE; color:#193592; margin-left:2px; }
+.genex{ grid-column:2; display:flex; align-items:center; gap:8px; height:40px; padding:0 14px; border:1px dashed var(--divider); border-radius:12px;
+  background:transparent; font-family:inherit; font-size:13px; font-weight:700; color:var(--text2); cursor:pointer; }
+.genex .mi{ font-size:18px; color:var(--primary-dark); }
+.genex .sub{ font-weight:500; color:var(--text3); margin-left:auto; font-size:12px; }
+.genex:hover{ border-color:var(--primary); color:var(--primary-dark); background:rgba(0,203,97,.04); }
+.genex.busy, .genex.done{ cursor:default; border-style:solid; }
+.genex.done{ color:var(--text3); font-weight:500; }
+.genex.done .mi{ color:var(--text3); }
+.genex .spin{ width:16px; height:16px; }
+
+/* 第二十一輪：群組標頭的組開關（跟 Hide 同一種 ghost 鈕，多一個 on of N 的計數） */
+.tpchip .ty.new{ background:#DCECFE; color:#193592; }   /* 第二十五輪：回頭多勾、還沒生的字 */
+/* 第三十七輪：三顆總開關做成一條小工具列（小標在上、控制項在下，跟第三步同一種語言），全開綠色、部分灰、全關紅字 */
+/* 第三十九輪（2026-09-16）：標題自己一行，總開關變成整寬的一條，跟底下的卡同一個左右邊界；
+   標題→工具列 12px、工具列→第一張卡 16px。標題 Apply to all words 在左、三格在右 */
+.gbar{ display:flex; align-items:center; gap:16px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:8px 8px 8px 16px; margin:0 0 16px; }
+.gbar .gtitle{ font-size:13px; font-weight:700; color:var(--text2); white-space:nowrap; margin-right:auto; }
+.gbar .gtogs{ display:inline-flex; gap:0; }
+.gbar .gcell{ display:flex; flex-direction:column; gap:3px; padding:0 12px; }
+.gbar .gcell + .gcell{ border-left:1px solid var(--divider); }
+.gbar .gl{ font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); line-height:1; }
+.gbar .gtog{ height:28px; padding:0 10px 0 6px; border-radius:8px; font-size:12px; font-weight:700; gap:4px; }
+.gbar .gtog .mi{ font-size:18px; color:var(--text3); }
+.gbar .gtog.allon{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); color:var(--primary-dark); }
+.gbar .gtog.allon .mi{ color:var(--primary); }
+.gbar .gtog.alloff{ color:var(--error); background:var(--grey100); }
+.gbar .gtog.alloff .mi{ color:var(--error); }
+.wc-hd .eyebtn{ width:32px; padding:0; justify-content:center; }
+.wc-hd .eyebtn .mi{ font-size:18px; }
+.gbar .ghost{ height:30px; padding:0 10px; border:1px solid var(--divider); border-radius:8px; background:#fff;
+  font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.gbar .ghost .mi{ font-size:16px; }
+.gbar .ghost:hover{ border-color:var(--text3); color:var(--text); }
+.gbar .ghost .n{ font-weight:500; color:var(--text3); font-variant-numeric:tabular-nums; }
+/* 第二十二輪：Examples 是下拉 */
+.gbar .gdd{ position:relative; display:inline-flex; }
+.gbar .ghost .caret{ font-size:18px; color:var(--text2); margin-left:-2px; }
+.gbar .gmenu{ top:34px; left:auto; right:0; min-width:240px; }
+.gbar .gmenu .cnt{ font-size:12px; color:var(--text3); flex:none; margin-left:auto; }
+.gbar .gmenu .tick{ margin-left:6px; }
+
+/* ---------- 第十一輪：第三步的 Vocabulary Preview 改用第二步的排版 ＋ 順序 ＋ 逐卡開關 ---------- */
+.wc-hd .mv{ display:inline-flex; gap:2px; margin-left:4px; }
+.wc-hd .mv button{ width:28px; height:28px; border:1px solid var(--divider); border-radius:6px; background:#fff; color:var(--text2);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.wc-hd .mv button:hover{ border-color:var(--text3); color:var(--text); }
+.wc-hd .mv button:disabled{ opacity:.35; cursor:default; }
+.wc-hd .mv button .mi{ font-size:18px; }
+.wc-hd .off-n{ font-size:12px; color:var(--text3); }
+.wblock .top{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.wblock .top .w{ margin:0; }
+.wblock .play.sm{ width:30px; height:30px; } .wblock .play.sm .mi{ font-size:22px; }
+.wblock .tog{ margin-top:12px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); }
+.scard .lb .tog{ margin-left:auto; display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0; font-weight:600; font-size:12px; color:var(--text2); }
+.scard .lb .edit + .tog{ margin-left:8px; }   /* 編輯鈕已經靠右了，開關跟在它後面 */
+.scard .lb .play.sm{ width:26px; height:26px; margin-left:2px; } .scard .lb .play.sm .mi{ font-size:20px; }
+.wblock.off, .scard.off{ opacity:.45; }
+.scard.off{ box-shadow:none; background:var(--grey100); }
+.sw.sm .track{ width:28px; height:16px; } .sw.sm .track::after{ width:12px; height:12px; }
+.sw.sm.on .track::after{ transform:translateX(12px); }
+.wc-img.ro .big{ height:120px; }
+
+/* ---------- 第十九輪（2026-09-15）：第三步照 R11 —— 工具列 ＋ 畫布，同一張卡 ----------
+   做法、尺寸全部照 v3 proposal.html 的第三步（參考實作），出處註解不重抄。
+   型別差異只有三處：第一行多一格 Image；第二行沒有 Translation first（Vocabulary 沒這個設定）；畫布上是學生的一疊字卡。 */
+.canvas{ background:#fff; border:1px solid var(--divider); border-radius:16px; overflow:visible; }
+.toolbar{ border-bottom:1px solid var(--divider); }
+.tb-row{ display:flex; align-items:stretch; padding:8px 8px 8px 16px; position:relative; }
+.tb-row + .tb-row{ border-top:1px solid var(--divider); }
+.tb-grp{ display:flex; align-items:flex-end; gap:20px; padding:4px 20px 4px 0; flex-wrap:wrap; row-gap:8px; }
+.tb-grp + .tb-grp{ border-left:1px solid var(--divider); padding-left:20px; }
+.tb-grp.dis{ opacity:.55; pointer-events:none; }   /* 音檔重產中：Speed／Voice 不能點（對應原本兩個下拉的 disabled） */
+.tb-ctl{ display:flex; flex-direction:column; gap:5px; }
+.tb-ctl .tl{ font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); line-height:1; display:flex; align-items:center; gap:4px; }
+.tip{ position:relative; border:0; background:transparent; padding:0; color:var(--text3); cursor:help; display:inline-flex; font-family:inherit; }
+.tip .mi{ font-size:14px; }
+.tip::after{ content:attr(data-tip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+  width:max-content; max-width:300px; background:#454F5B; color:#fff; font-size:12px; font-weight:500; line-height:1.5;
+  letter-spacing:0; text-transform:none; padding:6px 10px; border-radius:8px; white-space:normal; text-align:left;
+  opacity:0; pointer-events:none; transition:opacity .12s; z-index:50; box-shadow:0 8px 16px rgba(33,43,54,.16); }
+.tip::before{ content:''; position:absolute; left:50%; bottom:calc(100% + 3px); transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:#454F5B; opacity:0; transition:opacity .12s; z-index:50; }
+.tip:hover::after, .tip:focus-visible::after, .tip.on::after,
+.tip:hover::before, .tip:focus-visible::before, .tip.on::before{ opacity:1; }
+.tb-row .tip::after{ bottom:auto; left:calc(100% + 10px); top:-7px; transform:none; }
+.tb-row .tip::before{ bottom:auto; left:calc(100% + 1px); top:50%; transform:translateY(-50%);
+  border-top-color:transparent; border-right-color:#454F5B; }
+.toolbar .seg{ padding:2px; border-radius:8px; }
+.toolbar .seg button{ height:26px; padding:0 10px; font-size:12px; border-radius:6px; }
+.toolbar .vchip{ height:28px; padding:0 10px; font-size:12px; gap:4px; }
+.toolbar .vchip .mi{ font-size:15px; }
+.toolbar .vgrp{ gap:6px; justify-content:flex-start; }
+.toolbar .stp{ border-radius:8px; }
+.toolbar .stp button{ width:28px; height:28px; }
+.toolbar .stp .n{ width:40px; line-height:28px; font-size:13px; }
+/* Voice：面板裡唯一的下拉（帶 ▶）；打開每列一顆 ▶，點一列＝選它＋聽它 */
+.vdd{ position:relative; }
+.vdd-trig{ height:28px; display:inline-flex; align-items:center; gap:6px; padding:0 8px 0 10px; border:1px solid var(--divider);
+  border-radius:999px; background:#fff; font-family:inherit; font-size:12px; font-weight:600; color:var(--text); cursor:pointer; }
+.vdd-trig:hover{ border-color:var(--text3); }
+.vdd-trig .mi{ font-size:15px; color:var(--primary); }
+.vdd-trig .mi.caret{ color:var(--text2); font-size:18px; margin-left:2px; }
+.vdd-menu{ position:absolute; top:34px; left:0; z-index:40; min-width:220px; background:#fff; border:1px solid var(--divider);
+  border-radius:10px; padding:4px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.vdd-menu .vl{ font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text3); padding:8px 8px 4px; }
+.vdd-item{ display:flex; align-items:center; gap:8px; width:100%; padding:7px 8px; border:0; background:transparent; border-radius:6px;
+  font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; text-align:left; }
+.vdd-item:hover{ background:var(--grey200); }
+.vdd-item .vpl{ width:24px; height:24px; border-radius:50%; color:var(--primary); display:flex; align-items:center; justify-content:center; flex:none; }
+.vdd-item .vpl .mi{ font-size:16px; }
+.vdd-item .nm{ flex:1; }
+.vdd-item .tick{ font-size:18px; color:var(--primary); }
+.vdd-item.on .nm{ font-weight:700; }
+/* 工具列與畫布之間一條明顯的分隔帶（2026-09-15 使用者）：告訴老師底下是預覽，不是另一組設定 */
+/* 第三十六輪（2026-09-15，方案 A）：預覽做成一個視窗——灰色地板上一個有圓角、有陰影的框，框頂一條視窗列（三個點 ＋ Student view），
+   學生的卡在框裡。「視窗裡的視窗＝預覽」不用文字解釋，第三十四輪的帶子與深灰線拿掉。 */
+.vp{ background:#DFE5EC; padding:24px; }
+.winwrap{ max-width:900px; margin:0 auto; }
+/* 方案 B（2026-09-15）：視窗列留著，三個點換成一個小螢幕圖示——不綁平台 */
+.win-bar{ height:34px; display:flex; align-items:center; justify-content:center; position:relative; background:#fff; border-bottom:1px solid var(--divider);
+  font-size:12px; font-weight:700; color:var(--text2); letter-spacing:.2px; }
+.win-bar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.win{ border-radius:14px; overflow:hidden; background:#E8EEF4;
+  box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.canvas .stu-foot{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:12px; color:var(--text3);
+  border-top:1px solid var(--divider); }
+/* 學生畫面 ＝ 主欄（vocabulary/index.js）：（頂欄與進度條 2026-09-15 拿掉）
+   settings-panel.js 的齒輪（右上 top:12 right:16）、card-stack.js 的一疊卡。
+   左欄 Vocabulary List 與卡底下的星星／錄音鈕不畫——預覽只要主欄與那張卡（v3 同一個取捨）。 */
+/* 2026-09-15 使用者：畫布不要學生端的頂欄（型別 chip ＋ 名稱 ＋ 頭像）與進度條——預覽只要那張卡 */
+.vp-body{ position:relative; padding:28px 24px 24px; }   /* 視窗裡的內容：學生端底色 #E8EEF4 在 .win 上 */
+/* settings-panel.js：48px 齒輪卡 ＋ 220px 面板 */
+.sp{ position:absolute; top:12px; right:16px; z-index:10; }
+.sp .gear{ width:48px; height:48px; border:0; border-radius:12px; background:#fff; color:#64748B; cursor:pointer;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.sp .gear .mi{ font-size:20px; }
+.sp .panel{ position:absolute; top:56px; right:0; width:220px; background:#fff; border-radius:12px; z-index:20;
+  box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; }
+.sp .panel .ph{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7;
+  font-size:14px; font-weight:700; color:#334155; }
+.sp .panel .ph .mi{ font-size:18px; color:#94A3B8; }
+.sp .panel .pr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; font-size:14px; font-weight:600; color:#475569; }
+.sp .panel .pr + .pr{ border-top:1px solid #EEF2F7; }
+.sp .panel .pr .sel{ height:30px; padding:0 8px; border:1px solid var(--divider); border-radius:6px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.sp .panel .pr .sel .mi{ font-size:18px; color:var(--text2); }
+.sw2{ display:inline-block; width:33px; height:20px; border-radius:10px; background:var(--text3); position:relative; cursor:pointer; }
+.sw2::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.sw2.on{ background:var(--primary); } .sw2.on::after{ left:15px; }
+/* 學生的一疊卡：560×280，後面兩張各往右下偏 8px（CARD_STACK_CONFIG.layers） */
+.stk{ position:relative; width:100%; max-width:560px; height:296px; margin:0 auto; }
+.stk .c{ position:absolute; left:0; top:0; width:calc(100% - 16px); height:280px; background:#fff; border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.08); }
+.stk .c.b2{ transform:translate(16px,16px); z-index:1; } .stk .c.b1{ transform:translate(8px,8px); z-index:2; }
+.stk .c.f{ z-index:3; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; overflow:hidden; }
+.stk .c.f .img{ width:50%; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center;
+  color:#8AA69A; font-size:12px; gap:6px; }
+.stk .c.f .img.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.stk .c.f .img .mi{ font-size:28px; }
+.stk .c.f .txt{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; position:relative; min-width:0; }
+.stk .c.f .spk{ position:absolute; top:8px; right:8px; color:var(--text2); }
+.stk .c.f .spk.on{ color:var(--primary); }   /* 播放中：card-stack.js 的 isAutoPlaying → volume-up、primary */
+.stk .c.f .spk .mi{ font-size:24px; }
+.stk .py{ font-size:18px; color:var(--text2); line-height:1.25; text-align:center; }        /* h6 secondary */
+.stk .w{ font-size:36px; font-weight:600; line-height:1.3; text-align:center; }              /* h4 600, lg 36 */
+.stk .ex .py{ font-size:15px; } .stk .ex .w{ font-size:22px; }                               /* 例句卡 h6 */
+.stk .tr{ font-size:14px; color:var(--text2); text-align:center; margin-top:16px; line-height:1.35; min-height:24px; }
+.stk .tr.off{ visibility:hidden; }                                                            /* 關掉時位置留著（card-stack.js） */
+/* Play 鈕：字寫著會怎麼播（v3） */
+.mp-play{ display:flex; justify-content:center; margin-top:16px; }
+.mp-play button{ height:44px; padding:0 22px 0 16px; border:0; border-radius:999px; background:var(--primary); font-family:inherit; font-size:14px; box-shadow:0 6px 16px rgba(0,203,97,.28);
+  font-weight:700; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.mp-play button .mi{ font-size:24px; color:#fff; }
+.mp-play button:hover{ background:var(--primary-dark); }   /* 2026-09-29 畫廊回套：實心主綠 */
+.mp-play button:disabled{ cursor:default; }
+/* 「Card 1 of N ▾」：在容器裡原地展開全部卡片，點一列就換預覽（v3 的 .sdd） */
+.sdd{ margin:12px 0 0; display:flex; flex-direction:column; align-items:center; }
+.sdd-trig{ height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-family:inherit;
+  font-size:13px; font-weight:600; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.sdd-trig:hover{ border-color:var(--text3); }
+.sdd-trig .mi{ font-size:18px; color:var(--text2); }
+.sdd-menu{ width:100%; margin-top:12px; background:#fff; border:1px solid var(--divider); border-radius:12px; padding:4px; }
+.sdd-menu{ max-height:calc(15 * 46px + 8px); overflow-y:auto; overscroll-behavior:contain; }   /* 2026-09-29：超過 15 列就在清單裡捲，版面不再整個變長 */
+.sdd-item{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:0; background:transparent; border-radius:8px;
+  font-family:inherit; font-size:14px; color:var(--text); cursor:pointer; text-align:left; }
+.sdd-item:hover{ background:var(--grey200); }
+.sdd-item .n{ font-size:12px; color:var(--text3); width:18px; flex:none; font-variant-numeric:tabular-nums; }
+.sdd-item .pl{ width:26px; height:26px; border-radius:50%; background:rgba(0,203,97,.1); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }   /* 2026-09-29 畫廊回套：每列一顆小播放鍵 */
+.sdd-item .pl:hover{ background:rgba(0,203,97,.22); } .sdd-item .pl .mi{ font-size:16px; }
+.sdd-item .z{ flex:1; min-width:0; }
+.sdd-item .k{ font-size:11px; font-weight:700; color:var(--text3); flex:none; }
+.sdd-item.on .z{ font-weight:600; } .sdd-item.on .n{ color:var(--primary-dark); font-weight:700; }
+.sdd-item .mi{ font-size:18px; color:var(--primary); }
+
+/* ---------- 共用③：設定列／分段控制項／chip／次數（v3 的語彙） ---------- */
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:40px 0 12px; }
+.eyebrow:first-child{ margin-top:0; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); }
+.eyebrow .hint{ font-size:12px; color:var(--text3); }
+.rows{ background:#fff; border:1px solid var(--divider); border-radius:16px; padding:4px 20px; }
+.rw{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 0; }
+.rw + .rw{ border-top:1px solid var(--divider); }
+.rw .lb{ font-size:14px; font-weight:600; }
+.rw .hp{ font-size:12px; color:var(--text2); margin-top:2px; max-width:44ch; }
+.rw .ct{ flex:none; }
+.rows.dis{ opacity:.55; pointer-events:none; }
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px;
+  font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+/* v3 叫 .chip；這一頁 .chip 已經被 MUI outlined chip 用掉，聲音／速度 chip 改叫 .vchip */
+.voices{ display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.vgrp{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.vgrp .vl{ font-size:11px; font-weight:700; letter-spacing:.2px; color:var(--text3); margin-right:2px; }
+.vchip{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 12px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; }
+.vchip:hover{ border-color:var(--text3); color:var(--text); }
+.vchip .mi{ font-size:16px; }
+.vchip.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.vchip.playing .mi{ color:var(--primary); }
+.stp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; }
+.stp button{ width:38px; height:38px; border:0; background:#fff; color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.stp button:hover{ background:var(--grey200); color:var(--text); }
+.stp .n{ width:44px; text-align:center; font-size:15px; font-weight:700;
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); line-height:38px; }
+
+/* ---------- 共用④：Assign（v3 · 從對話框搬回頁面） ---------- */
+.clsrow{ display:flex; align-items:center; gap:12px; padding:14px 0; }
+.clsrow + .clsrow{ border-top:1px solid var(--divider); }
+.clsrow .box{ width:20px; height:20px; border-radius:5px; border:2px solid var(--text3);
+  flex:none; display:flex; align-items:center; justify-content:center; color:#fff; }
+.clsrow .box .mi{ font-size:15px; opacity:0; }
+.clsrow.on .box{ background:var(--primary); border-color:var(--primary); }
+.clsrow.on .box .mi{ opacity:1; }
+.clsrow .nm{ display:block; font-size:14px; font-weight:600; }
+.clsrow .sub{ display:block; font-size:12px; color:var(--text2); margin-top:1px; }
+.clsrow .grow{ flex:1; min-width:0; }
+.clsrow.done{ opacity:.55; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; }
+.pill.mand{ background:#F1F5F9; color:#475569; }
+.pill.opt{ background:#E0E7FF; color:#3730A3; }
+.linkbtn{ border:0; background:transparent; padding:0; font-family:inherit; font-size:12px;
+  font-weight:700; color:var(--primary-dark); cursor:pointer; text-decoration:underline; }
+.dtrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dtrow .lbl{ font-size:14px; font-weight:600; width:52px; flex:none; }
+.dt2{ height:40px; border:1px solid var(--divider); border-radius:8px; padding:0 12px;
+  font-family:inherit; font-size:14px; color:var(--text); background:#fff; width:220px; }
+.quick{ display:inline-flex; gap:4px; }
+.quick button{ height:30px; padding:0 11px; border-radius:8px; border:1px solid var(--divider);
+  background:#fff; font-family:inherit; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; }
+.quick button:hover{ border-color:var(--primary); color:var(--primary-dark); }
+.modeline{ display:flex; align-items:center; gap:12px; padding:14px 0 12px;
+  font-size:13px; color:var(--text2); border-bottom:1px solid var(--divider); margin-bottom:4px; }
+.perclass{ padding:14px 0; }
+.perclass + .perclass{ border-top:1px solid var(--divider); }
+.pc-name{ font-size:13px; font-weight:700; margin-bottom:10px; }
+.roster{ margin:2px 0 6px 32px; padding:12px 14px; background:var(--grey100);
+  border:1px solid var(--divider); border-radius:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.stu{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px;
+  border:1px solid var(--divider); background:#fff; font-size:13px; color:var(--text); cursor:pointer; }
+.stu .box{ width:15px; height:15px; border-radius:4px; border:2px solid var(--text3); flex:none; }
+.stu.on{ border-color:var(--primary); background:rgba(0,203,97,.08); }
+.stu.on .box{ background:var(--primary); border-color:var(--primary); }
+.stu.off{ opacity:.58; cursor:default; }
+.stu .tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; }
+.stu .tag.ok{ background:#D3FCD2; color:#118D57; }
+.stu .tag.new{ background:#DCECFE; color:#193592; }
+.stu .tag.bad{ background:#FFE9D5; color:#B71D18; }
+.stu .tag.warn{ background:#FFF5CC; color:#7A4100; }
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+
+/* 送出前的預覽 */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex;
+  align-items:center; justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:16px; width:100%; max-width:560px; overflow:hidden;
+  box-shadow:0 24px 48px rgba(33,43,54,.24); max-height:88vh; display:flex; flex-direction:column; }
+.dlg-hd{ padding:20px 24px 0; }
+.dlg-hd h3{ font-size:18px; font-weight:700; }
+.dlg-hd p{ font-size:13px; color:var(--text2); margin-top:4px; }
+.dlg-bd{ padding:16px 24px; overflow-y:auto; }
+.dlg-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px; border-top:1px solid var(--divider); }
+/* 第二十四輪：上傳圖片的對話框 */
+.dropzone{ width:100%; min-height:176px; border:1.5px dashed var(--text3); border-radius:12px; background:var(--grey100); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; font-family:inherit; color:var(--text2); padding:24px; }
+.dropzone:hover, .dropzone:focus-visible{ border-color:var(--primary); background:rgba(0,203,97,.04); color:var(--text); outline:none; }
+.dropzone .mi{ font-size:36px; color:var(--primary-dark); margin-bottom:4px; }
+.dropzone .t{ font-size:14px; font-weight:700; }
+.dropzone .c{ font-size:12px; color:var(--text3); }
+.up-prev .file{ display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--divider); border-radius:12px; }
+.up-prev .thumb{ width:56px; height:40px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex:none; }
+.up-prev .thumb.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.up-prev .thumb .mi{ font-size:22px; }
+.up-prev .meta{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; font-size:12px; color:var(--text2); }
+.up-prev .meta b{ font-size:14px; color:var(--text); }
+.up-prev .lbl{ font-size:11px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text3); margin:18px 0 8px; }
+/* 學生字卡的縮小版（card-stack.js 的比例 560×280 → 448×224） */
+.minicard{ width:448px; max-width:100%; height:224px; margin:0 auto; border-radius:12px; background:#fff; box-shadow:0 8px 32px rgba(0,0,0,.15);
+  display:flex; overflow:hidden; border:1px solid var(--divider); }
+.minicard .img{ width:50%; display:flex; align-items:center; justify-content:center; }
+.minicard .img.mine{ background:linear-gradient(135deg,#FFF3D6,#FFE7B3); color:#8F6209; }
+.minicard .img .mi{ font-size:40px; }
+.minicard .txt{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; min-width:0; }
+.minicard .py{ font-size:15px; color:var(--text2); }
+.minicard .w{ font-size:30px; font-weight:600; line-height:1.3; }
+.minicard .tr{ font-size:13px; color:var(--text2); margin-top:12px; min-height:20px; }
+.minicard .tr.off{ visibility:hidden; }
+.rvc{ padding:12px 0; }
+.rvc + .rvc{ border-top:1px solid var(--divider); }
+.rvc .top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
+.rvc .top .nm{ font-size:14px; font-weight:700; color:var(--label); }
+.rvc .top .cnt{ font-size:13px; color:var(--text2); flex:none; }
+.rvc .when{ font-size:12px; color:var(--text2); margin-top:2px; }
+.rvc .ex{ font-size:12px; color:#7A4100; margin-top:6px; line-height:1.6; }
+
+/* ---------- 共用⑤：頁腳按鈕 ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; font-family:inherit; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.contained.dis:hover{ background:var(--grey300); }
+.btn.text{ background:transparent; color:var(--text); }
+.btn.text:hover{ background:var(--grey200); }
+.btn.text.dis{ color:var(--text3); cursor:default; }
+.btn.text.dis:hover{ background:transparent; }
+.btn.sm{ padding:4px 10px; font-size:13px; }
+.btn.outerr{ border:1px solid rgba(255,86,48,.48); color:var(--error); background:transparent; }
+.btn .mi.spinning{ font-size:18px; animation:spin 1s linear infinite; }
+
+/* ---------- 提案說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-bottom-color:rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }   /* 回 Versions & Iteration index */
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:48px; }
+
+@media (max-width:1199.95px){
+  .side{ display:none; } .mainwrap{ margin-left:0; } .hdr{ left:0; } .main{ padding:88px 16px; }
+}
+@media (max-width:900px){ .pv-grid{ grid-template-columns:1fr; } }
+@media (max-width:820px){
+  .rw{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .voices{ align-items:flex-start; } .vgrp{ justify-content:flex-start; }
+  .stepper .stp-lbl{ display:none; }
+}
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+/* ---------- Quiz 自己的兩步（照 sx） ---------- */
+.btn.outlined{ background:transparent; border:1px solid var(--divider); color:var(--text); }
+.btn.outlined:hover{ background:var(--grey200); }
+.btn.sm{ padding:4px 12px; font-size:13px; border-radius:8px; }
+.btn.xs{ padding:2px 8px; font-size:12px; display:inline-flex; align-items:center; gap:4px; border-radius:8px; }
+.sw.sm .track{ width:28px; height:16px; } .sw.sm .track::after{ width:12px; height:12px; } .sw.sm.on .track::after{ transform:translateX(12px); }
+.qt-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.qt-card{ display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--divider); border-radius:8px; }
+.qt-ic{ width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex:none; } .qt-ic .mi{ font-size:20px; }
+.qt-tx{ flex:1; min-width:0; }
+.qt-lb{ font-size:.8rem; font-weight:700; display:flex; align-items:center; gap:6px; }
+.qt-adv{ height:18px; padding:0 6px; border-radius:9px; background:#FEF3C7; color:#92400E; font-size:.6rem; font-weight:700; display:inline-flex; align-items:center; }
+.qt-desc{ font-size:.65rem; color:var(--text3); }
+.mtbl-wrap{ border:1px solid var(--divider); border-radius:8px; overflow:auto; margin-bottom:16px; }
+.mtbl{ width:100%; border-collapse:collapse; font-size:13px; }
+.mtbl th, .mtbl td{ padding:6px 8px; border-bottom:1px solid var(--divider); text-align:center; vertical-align:middle; }
+.mtbl th{ font-weight:600; font-size:12px; }
+.mth{ display:flex; flex-direction:column; align-items:center; gap:2px; } .mth span:first-child{ font-size:11px; font-weight:600; }
+.mrow{ display:flex; align-items:center; gap:8px; text-align:left; } .mrow b{ display:block; font-size:14px; font-weight:600; } .mrow i{ display:block; font-style:normal; font-size:12px; color:var(--text2); }
+.cb{ display:inline-flex; color:var(--text3); cursor:pointer; } .cb .mi{ font-size:22px; } .cb.on{ color:var(--primary); } .cb.dis{ opacity:.35; cursor:default; }
+.cb.on.auto{ color:var(--info); }   /* 第十一輪：Must cover 不夠題數時自動隨機補的格子 */
+.qmx-h.lock{ cursor:default; border-color:transparent; background:transparent; color:var(--text2); }   /* 第十三輪：Use all 時鎖住；第十四輪：欄頭純標籤 */
+.qdot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary); vertical-align:middle; }   /* 第十四輪：Use all 的格子＝一顆點，不是勾 */
+/* 第十五輪：一扇窗 */
+.qlegend{ display:flex; align-items:center; gap:22px; padding:14px 16px; border-bottom:1px solid var(--divider); }
+.qlegend .qbig{ margin:0; gap:8px; flex:none; } .qlegend .qbig b{ font-size:30px; }
+.qleg-list{ display:grid; grid-template-columns:repeat(4, auto); gap:6px 22px; justify-content:start; }
+.qleg{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text2); white-space:nowrap; cursor:default; }
+.qleg-ic{ display:inline-flex; } .qleg-ic .mi{ font-size:17px; }
+.qleg .adot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:#D97706; margin-left:2px; }
+.qmx-pad{ padding:12px 16px 14px; }
+.tb-calc{ margin-left:auto; border-left:1px solid var(--divider); padding-left:20px; }   /* 第三十三輪：算式當工具列最右邊一格唯讀欄位（方案 A） */
+.calc{ font-size:13px; color:var(--text2); display:inline-flex; align-items:baseline; gap:4px; height:28px; }
+.calc b{ font-weight:800; color:var(--text); font-size:14px; }
+.calc b.sum{ font-size:18px; letter-spacing:-.3px; }
+.toolbar .qin{ gap:8px; } .toolbar .qin input{ height:28px; width:58px; font-size:13px; border-radius:6px; }
+.toolbar .qin .cap{ font-size:12px; }
+.cb.sm{ vertical-align:-4px; margin-right:2px; } .cb.sm .mi{ font-size:16px; }
+.qmx-g .gic{ width:auto; height:auto; background:transparent !important; } .qmx-g .gic .mi{ font-size:16px; }
+.alert.warn{ background:var(--warning-lighter); color:var(--warning-dark); }
+.mcq-list{ display:flex; flex-direction:column; gap:12px; }
+.tchip{ gap:5px; } .tchip .mi{ font-size:15px; }
+.swapt{ margin-right:4px; }   /* 第二十三輪：Raffle 改名 Swap type，搬到題型 chip 旁邊 */
+.inq-tag{ font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--primary); margin-left:2px; }   /* 第十九輪：題型 chip 帶第二步同一顆 icon */
+.autochip{ border-color:rgba(80,138,252,.45); color:var(--info); } .autochip .mi{ color:var(--info); }   /* 第十九輪：Must cover 自動補的題，跟第二步的藍勾同一個意思 */
+.mcq{ border:1px solid var(--divider); border-radius:12px; background:#fff; padding:12px 16px; cursor:grab; }
+.mcq-hd{ display:flex; align-items:center; gap:8px; } .mcq-hd .drag{ color:var(--text3); font-size:20px; }
+.chip.primary.filled{ background:var(--primary); color:#fff; border-color:var(--primary); }
+.iconbtn.err{ color:var(--error); }
+.mcq-bd{ margin-top:12px; padding-left:28px; display:flex; gap:16px; align-items:flex-start; }
+.mc-img{ width:120px; height:90px; border-radius:6px; background:linear-gradient(135deg,#E9F5EE,#DCEFE3); display:flex; align-items:center; justify-content:center; color:#8AA69A; flex:none; } .mc-img .mi{ font-size:28px; }
+.mc-audio{ width:48px; height:48px; border:0; border-radius:50%; background:transparent; color:#22C55E; cursor:pointer; flex:none; } .mc-audio .mi{ font-size:40px; }
+.mc-img.aud{ background:rgba(145,158,171,.08); }   /* 第二十輪：音檔題幹也在同一個框裡 */
+.mc-img.txt{ background:rgba(145,158,171,.08); color:var(--text); font-size:18px; font-weight:600; text-align:center; padding:0 8px; line-height:1.3; }
+.mc-opt{ min-height:36px; display:flex; align-items:center; gap:5px; }   /* flex 會吃掉 A. 後面的空白，用 gap 補 */
+.mcq-bd{ align-items:stretch; } .mc-opts{ grid-auto-rows:1fr; }   /* 選項兩列撐滿題幹框的 90px */
+.mc-opts{ flex:1; display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.mc-opt{ padding:6px 8px; border-radius:4px; border:1.5px solid var(--divider); font-size:14px; }
+.mc-opt.ok{ border-color:var(--success); background:rgba(34,197,94,.08); color:#118D57; font-weight:700; }
+.dashbtn{ margin-top:16px; width:100%; padding:12px; border:2px dashed var(--divider); border-radius:8px; background:transparent; font-family:inherit; font-size:15px; font-weight:600; color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+.dashbtn .mi{ font-size:20px; }
+.scrim2{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center; justify-content:center; z-index:60; }
+.dlg2{ background:#fff; border-radius:12px; width:100%; max-width:444px; padding:16px 24px 8px; }
+.dlg2-t{ font-size:18px; font-weight:700; padding:8px 0 16px; }
+
+.iconbtn{ width:34px; height:34px; border-radius:50%; border:0; background:transparent; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+
+/* ---------- v6 第二輪：Question Types 面板（照 Planning） ---------- */
+.qpaper{ padding:20px 24px; }
+.qhero{ display:flex; align-items:baseline; gap:16px; padding:4px 0 18px; border-bottom:1px solid var(--divider); margin-bottom:16px; }
+.qhero .qhero-cap{ color:var(--text3); font-size:13px; }
+.qhero-n{ display:flex; align-items:baseline; gap:8px; } .qhero-n b{ font-size:44px; font-weight:800; line-height:1; letter-spacing:-1px; } .qhero-n span{ font-size:14px; color:var(--text2); }
+.qhero-r{ flex:1; min-width:0; }
+.qhero-bar{ display:flex; height:10px; border-radius:5px; overflow:hidden; background:var(--grey200); gap:2px; } .qhero-bar i{ display:block; min-width:2px; }
+.qhero-leg{ display:flex; gap:16px; margin-top:8px; font-size:12px; color:var(--text2); align-items:center; flex-wrap:wrap; }
+.qhero-leg span{ display:inline-flex; align-items:center; gap:6px; } .qhero-leg i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+.qhero-cap{ margin-left:auto; color:var(--text3); }
+.qcard{ padding:12px 20px; }
+.qbig{ display:flex; align-items:baseline; gap:10px; margin:6px 0 12px; }
+.qbig b{ font-size:40px; font-weight:800; line-height:1; letter-spacing:-1px; color:var(--text); }
+.qbig span{ font-size:13px; color:var(--text2); }
+.qt-card.info{ background:#fff; cursor:pointer; position:relative; }
+.qt-card.info:hover{ border-color:var(--text3); } .qt-card.info:hover .qt-pv{ color:var(--text2); }
+.qt-pv{ font-size:18px; color:var(--grey300); flex:none; }
+/* 第十七輪：題型預覽對話框 */
+.pvdlg{ max-width:640px; } .pvdlg .dlg-hd h3{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; } .pvdlg .dlg-hd h3 .qt-ic{ width:30px; height:30px; } .pvdlg .dlg-hd h3 .qt-ic .mi{ font-size:18px; }
+.pvdlg .dlg-bd.vp{ padding:20px 24px; margin-top:16px; } .pvdlg .dlg-hd{ padding-bottom:0; }   /* 第二十七輪：不放假的 web 視窗；第二十八輪：中間還是灰底隔開，卡直接放在灰底上 */
+.pv-floor{ padding:20px; }
+.pv-card{ background:#fff; border-radius:12px; padding:24px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.pv-chip{ display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:12px; background:rgba(102,102,102,.12); color:#666; font-size:12px; font-weight:600; margin-bottom:16px; }
+.pv-box{ padding:24px; border-radius:8px; background:rgba(145,158,171,.06); border:1px solid rgba(145,158,171,.12); margin-bottom:24px; display:flex; justify-content:center; }
+.pv-stem{ font-size:1.25rem; font-weight:600; text-align:center; line-height:1.5; }
+.pv-img{ width:240px; height:160px; border-radius:8px; background:linear-gradient(135deg,#E9F5EE 0%,#DCEFE3 100%); color:#8AA69A; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12px; } .pv-img .mi{ font-size:32px; }
+.pv-audio{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.pv-play{ width:64px; height:64px; border-radius:50%; border:0; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 16px rgba(0,203,97,.24); } .pv-play .mi{ font-size:34px; }
+.pv-opts{ display:flex; flex-direction:column; gap:12px; }
+.pv-opt{ display:flex; align-items:center; gap:12px; padding:16px; border-radius:8px; border:2px solid var(--divider); font-size:15px; font-weight:500; }
+.pv-letter{ width:32px; height:32px; border-radius:50%; background:rgba(145,158,171,.12); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.875rem; flex:none; }
+.pv-nav{ display:flex; gap:4px; } .pv-nav .btn{ display:inline-flex; align-items:center; gap:2px; padding:8px 10px; font-size:13px; } .pv-nav .mi{ font-size:18px; }
+.qchoose{ padding:2px 0 12px; margin-bottom:0; }   /* 第七輪：怎麼選 ＋ 矩陣同一張卡；第八輪：欄頭就是必考，分隔線不用了 */
+.qcard .qrow:last-child{ margin-bottom:0; }
+.qcard .qt-grid{ margin:4px 0 4px; }
+.qrow{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+.qrow .ql{ width:110px; font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); }
+.qrow .seg button{ height:30px; font-size:13px; }
+.qin{ display:inline-flex; align-items:center; gap:8px; } .qin input{ width:72px; height:34px; border:1px solid var(--divider); border-radius:8px; padding:0 10px; font-family:inherit; font-size:14px; font-weight:700; text-align:center; }
+.qhint{ flex-basis:100%; margin-left:124px; }
+.qt-card{ text-align:left; font-family:inherit; cursor:pointer; } .qt-card .qt-ck{ font-size:22px; }
+.qt-card.on{ box-shadow:0 0 0 1px currentColor inset; }
+.qmx th, .qmx td{ padding:6px 6px; }
+.qmx-g th{ border-bottom:0; padding:8px 6px 2px; } .qmx-g .gname{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text2); padding-top:6px; }   /* 第三輪：不用四色；第九輪：icon 跟卡片同一顆；第十八輪：組標題上面那條線拿掉 */
+.qmx-g .gic{ width:20px; height:20px; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; } .qmx-g .gic .mi{ font-size:14px; }
+.qmx-a th{ padding-top:2px; }
+.qmx-h{ height:26px; min-width:34px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center; gap:3px; white-space:nowrap; border:1px solid var(--divider); border-radius:6px; background:#fff; font-family:inherit; font-size:11px; font-weight:800; color:var(--text2); cursor:pointer; position:relative; }
+.qmx-h.on{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.qmx-h.must{ border-color:var(--primary); background:var(--primary); color:#fff; }   /* 第八輪：必考＝實心 */
+.qmx-h .mi{ font-size:15px; margin-left:-2px; }
+.qmx-h .adot{ position:absolute; top:-3px; right:-3px; width:7px; height:7px; border-radius:50%; background:#D97706; }
+.qmx .gstart{ border-left:1px solid var(--divider); }
+.cell.off{ display:inline-block; width:22px; text-align:center; color:var(--text3); cursor:help; }
+.qadd-row{ display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; } .qadd-row .ql{ width:44px; padding-top:6px; font-size:10px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text3); }
+.qadd-chips{ display:flex; flex-wrap:wrap; gap:6px; flex:1; }
+.qadd-chips .tpchip.cc:disabled{ opacity:.4; cursor:default; }
+.dlg2-ft{ display:flex; justify-content:flex-end; gap:8px; padding:8px 0 12px; }
+.dlg2{ max-width:640px; }
+
+/* ---------- v7 · 第三步的畫布：學生拼句畫面（同 shared-settings-gallery） ---------- */
+.ss-ground{ background:#E8EEF4; padding:24px; position:relative; }
+.ss-ground .sp{ top:12px; right:16px; }
+.ss-card{ max-width:600px; margin:0 auto; background:#fff; border-radius:12px; padding:24px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.ss-hd{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:16px; }
+.ss-hint{ color:#EC4899; font-weight:600; font-size:15px; }
+.ss-tries{ font-size:12px; font-weight:700; color:#64748B; white-space:nowrap; }
+.ss-listen{ display:inline-flex; align-items:center; gap:6px; margin-bottom:16px; border:0; background:transparent; font-family:inherit; font-size:14px; font-weight:600; color:#EC4899; cursor:pointer; padding:6px 8px; border-radius:8px; }
+.ss-listen:hover{ background:#FDF2F8; } .ss-listen .mi{ font-size:20px; }
+.ss-zone{ min-height:72px; padding:16px; margin-bottom:16px; border-radius:8px; border:2px dashed #CBD5E1; background:#F8FAFC; display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+.ss-slot{ min-width:60px; min-height:52px; border:2px dashed #CBD5E1; border-radius:8px; }
+.ss-punct{ font-weight:700; font-size:20px; color:#64748B; padding-bottom:6px; }
+.ss-pool{ padding:16px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; display:flex; gap:8px; flex-wrap:wrap; }
+.ss-tile{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:60px; min-height:52px; padding:8px 16px; border-radius:8px; background:#fff; border:2px solid #E2E8F0; cursor:pointer; }
+.ss-tile:hover{ background:#FCE7F3; border-color:#F9A8D4; }
+.ss-tile .p{ font-size:11px; color:#94A3B8; line-height:1.2; } .ss-tile .z{ font-weight:700; font-size:18px; color:#1E293B; }
+.ss-ft{ display:flex; justify-content:flex-end; margin-top:24px; }
+/* ---------- v19 · 填空 ---------- */
+.chunk .u.blank{ background:#FDF2F8; border:2px dashed #F9A8D4; padding:0 6px 2px; }
+.chunk .u.blank .tx{ color:#BE185D; } .chunk .u.blank .py{ color:#BE185D; opacity:.75; }
+.wbank{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding:8px 12px; border-radius:10px; background:#F8FAFC; border:1px solid #E2E8F0; }
+.wb-tile{ display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 10px; border-radius:8px; background:#fff; border:1.5px solid #E2E8F0; font-size:15px; font-weight:700; color:#1E293B; }
+.wb-tile.ans{ background:#FCE7F3; border-color:#F9A8D4; color:#BE185D; } .wb-tile.ans .mi{ font-size:16px; }
+.fi-word{ display:inline-flex; flex-direction:column; align-items:center; padding:4px 4px; }
+.fi-word .p{ font-size:11px; color:#94A3B8; line-height:1.2; } .fi-word .z{ font-weight:700; font-size:18px; color:#1E293B; }
+.ss-slot.fi{ min-width:64px; background:#FDF2F8; border-color:#F9A8D4; }
+.ss-check{ height:36px; padding:0 20px; border:0; border-radius:8px; background:#EC4899; color:#fff; font-family:inherit; font-size:14px; font-weight:700; opacity:.5; }
+.ss-ground .sdd{ max-width:600px; margin:12px auto 0; }
+/* ---------- v7 · 第一步的 Example sentences（第四輪；第十輪改成開關） ---------- */
+/* 第十九輪：第一步「句子從哪來」的兩張選項卡（v6 第三十七輪／v8 第三十七輪同一套） */
+.qp-opts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.qopt{ display:flex; align-items:flex-start; gap:12px; padding:12px 16px; border:1px solid var(--divider); border-radius:12px; background:#fff; cursor:pointer; min-height:84px; transition:border-color .15s, background .15s; }
+.qopt:hover{ border-color:var(--primary-lighter); background:#F0FDF4; }
+.qopt.on{ border-color:var(--primary); box-shadow:0 0 0 1px var(--primary) inset; background:#F0FDF4; cursor:default; }
+.qopt[aria-disabled="true"]{ opacity:.5; cursor:default; } .qopt[aria-disabled="true"]:hover{ border-color:var(--divider); background:#fff; }
+.qopt:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+.qo-ic{ margin-top:2px; width:40px; height:40px; border-radius:8px; background:var(--grey100); color:var(--text2); display:flex; align-items:center; justify-content:center; flex:none; }
+.qo-ic .mi{ font-size:22px; } .qopt.on .qo-ic{ background:#DCFCE7; color:var(--primary-dark); }
+.qo-tx{ display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
+.qo-hd{ display:flex; align-items:center; gap:12px; min-height:32px; }
+.qo-tx b{ font-size:15px; font-weight:700; color:var(--text); line-height:1.2; } .qopt.on .qo-tx b{ color:var(--primary-dark); }
+.qo-tx small{ font-size:12px; color:var(--text2); line-height:1.4; }
+.qo-ctl{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.qo-ctl .stp.sm button{ width:30px; height:30px; } .qo-ctl .stp.sm .n{ width:40px; font-size:14px; line-height:30px; }
+.qo-ctl .cap.sum{ margin-left:auto; color:var(--text2); } .qo-ctl .cap.sum b{ color:var(--text); font-weight:800; }
+/* 第二十三輪（2026-10-02）：照 v6 第二步的版式——眉標 HOW MANY SENTENCES → 一張 .canvas → 卡裡灰底備注欄（數字欄＋up to 20＋怎麼分）→ 兩張選項卡 */
+.qp-sec{ padding:14px 16px; }
+.qp-calc{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:15px; font-weight:500; color:var(--text2); margin:0 0 12px; line-height:1.2;
+  padding:10px 14px; border:1px solid var(--divider); border-radius:10px; background:var(--grey100); }
+.qp-calc > .mi{ font-size:20px; color:var(--text3); margin-right:2px; }
+.qp-calc .qin input{ width:72px; height:36px; font-size:16px; font-weight:800; border-color:var(--primary); background:#fff; }
+.qp-calc b{ color:var(--text); font-weight:800; } .qp-calc b.cap-hit{ color:var(--warning-dark); } .qp-calc .dot{ color:var(--text3); }
+.exhd{ display:flex; align-items:baseline; gap:10px; margin:2px 0 6px; } .exhd b{ font-size:13px; font-weight:700; }
+.exnone{ display:flex; align-items:center; gap:8px; margin-top:10px; padding:10px 12px; border-radius:8px; background:var(--grey100); font-size:13px; color:var(--text2); }
+.exnone .mi{ font-size:18px; color:var(--primary-dark); } .exnone b{ color:var(--text); font-weight:700; }
+.exsw-row{ display:flex; align-items:center; gap:10px; padding:6px 0; flex-wrap:wrap; }   /* 第十三輪：開關 ＋ 1｜2 ＋ 總數同一列 */
+.exsw{ display:flex; align-items:center; gap:10px; border:0; background:transparent; padding:0; font:inherit; cursor:pointer; text-align:left; }
+.exsw .lbl{ font-size:14px; font-weight:600; color:var(--text); }
+.exsw-row .n{ margin-left:auto; font-size:12px; color:var(--text2); } .exsw-row .n b{ color:var(--text); }
+.seg.per.sm{ padding:2px; margin-left:6px; } .seg.per.sm button{ height:26px; min-width:34px; padding:0 8px; font-size:12px; }
+.exlist{ display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+.exgrp{ display:flex; gap:12px; align-items:flex-start; }
+.exw{ flex:none; width:84px; padding-top:9px; font-size:13px; font-weight:700; color:var(--text2); }
+.exrows{ flex:1; display:flex; flex-direction:column; gap:6px; }
+.exrow{ display:flex; align-items:flex-start; gap:8px; width:100%; text-align:left; padding:6px 10px 6px 6px; border:1px solid var(--divider); border-radius:10px; background:#fff; cursor:pointer; font-family:inherit; }
+.exrow:hover{ border-color:var(--text3); } .exrow.on{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.05); }
+.exrow .cb{ margin-top:1px; }
+.exrow .ext{ display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 12px; min-width:0; }
+.exrow .zh{ font-size:15px; font-weight:600; color:var(--text); }
+.exrow .py{ font-size:12px; color:var(--text2); } .exrow .tr{ font-size:12px; color:var(--text3); }
+/* ---------- v7 · 第一步的 Sentences per point ---------- */
+.seg.per button{ min-width:44px; } .seg.per button:disabled{ color:var(--text3); cursor:default; opacity:.5; }
+.stp button:disabled{ color:var(--text3); opacity:.4; cursor:not-allowed; background:var(--grey200); } .stp button:disabled:hover{ background:var(--grey200); color:var(--text3); } .stp.dis .n{ color:var(--text3); }   /* 第二十七輪續：到上限的 + 要看得出不能按——灰底、淡四成、禁止游標（使用者「+ 還是看起來可以按」） */
+.exonly{ display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; padding:0; font:inherit; font-size:14px; color:var(--text); cursor:pointer; }
+.exonly .cb .mi{ font-size:22px; }
+/* ---------- v7 · 中間兩步照基準檔抄（類名避開這頁已有的） ---------- */
+.frow{ display:flex; gap:16px; flex-wrap:wrap; } .frow .field{ width:31%; min-width:220px; }
+.chunk{ display:flex; align-items:flex-end; flex-wrap:wrap; gap:4px; }
+.chunk .u{ display:flex; flex-direction:column; align-items:center; padding:2px 6px; border-radius:8px; background:#F1F5F9; }
+.chunk .u.ed{ cursor:pointer; } .chunk .u.ed:hover{ background:#E2E8F0; }
+.chunk .u .py{ font-size:13.5px; color:var(--text2); line-height:1.2; margin-bottom:4px; min-height:16px; }
+.chunk .u .tx{ font-size:16px; font-weight:700; line-height:1.3; }
+.chunk .pt{ font-weight:700; color:#64748B; padding-bottom:4px; }
+.scr-hd{ display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+.scr-hd .ic{ width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:#FCE7F3; color:#EC4899; } .scr-hd .ic .mi{ font-size:20px; }
+.tph{ border:1px solid var(--divider); border-radius:16px; background:#FAFBFC; padding:20px; margin-bottom:24px; }
+.tph .t{ display:flex; align-items:center; gap:8px; margin-bottom:12px; } .tph .t .mi{ font-size:20px; color:#64748B; }
+.pchip{ display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:12px; background:#FCE7F3; color:#BE185D; font-size:12px; font-weight:600; }
+.pchip.lg{ height:30px; font-size:.85rem; font-weight:700; padding:0 10px; }
+.pchip.cnt{ height:28px; padding:0 4px 0 10px; gap:6px; font-size:13px; } .pchip.cnt .n{ min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#fff; color:#BE185D; font-size:12px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }   /* 第二十四輪：點 chip 右邊一顆數字徽章＝這個點幾句 */
+.eyebrow .hint b{ color:var(--text); font-weight:800; font-size:12px; letter-spacing:0; text-transform:none; } .eyebrow .hint b.cap-hit{ color:var(--warning-dark); }   /* 第二十六輪續：第二步眉標也提示上限 20，到頂轉琥珀 */
+/* 第二十五輪：每個教學點一張小卡——上面點名（同句子卡標頭的 chip）、下面「2 sentences」＋ −／+ 步進器；可以加或減 */
+.tpc{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:10px; }
+.tpc-card{ display:flex; flex-direction:column; gap:8px; padding:10px 12px; border:1px solid var(--divider); border-radius:10px; background:#fff; }
+.tpc-card .pchip{ align-self:flex-start; }
+.tpc-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tpc-n{ font-size:13px; color:var(--text2); white-space:nowrap; } .tpc-n b{ font-size:18px; font-weight:800; color:var(--text); margin-right:2px; }
+.tpc-row .stp.sm button{ width:28px; height:28px; } .tpc-row .stp.sm button .mi{ font-size:18px; }
+.tpc-cap{ font-size:11px; font-weight:700; color:var(--info); margin-top:-2px; }   /* 第二十七輪續：到 5 句時卡裡一行小字提示上限；使用者改藍字（資訊，不是警告） */
+.tph .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.tph .gen{ display:flex; gap:8px; align-items:stretch; } .tph .gen .inp{ flex:1; }
+.sqcard{ border:1px solid var(--divider); border-radius:16px; background:#fff; padding:16px 20px; cursor:grab; }
+.sqcard + .sqcard{ margin-top:16px; }
+.sqrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; } .sqrow .l{ display:flex; align-items:center; gap:8px; }
+.updown{ display:flex; flex-direction:column; margin-right:2px; }
+.sib{ width:28px; height:28px; border:0; background:transparent; border-radius:50%; color:#94A3B8; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:inherit; }
+.sib .mi{ font-size:18px; } .sib:hover{ background:rgba(145,158,171,.12); } .sib.dis{ opacity:.4; cursor:default; } .sib.del{ color:#EF4444; } .sib.on{ color:#EC4899; }
+.updown .sib{ width:24px; height:20px; }
+.qno{ font-size:16px; font-weight:700; color:#EC4899; } .qtr{ font-size:12px; color:var(--text2); margin-top:8px; }
+.qedit{ display:flex; flex-direction:column; gap:12px; margin-top:12px; } .qedit .ft{ display:flex; justify-content:space-between; }
+.autonote{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px; background:#F1F5F9; border:1px solid #E2E8F0; }
+.autonote .mi{ font-size:18px; color:#059669; animation:spin 2s linear infinite; }
+.autonote b{ font-size:12px; font-weight:700; color:#059669; } .autonote i{ width:1px; height:14px; background:#CBD5E1; } .autonote span{ font-size:12px; color:#64748B; }
+.seged{ display:flex; flex-direction:column; gap:12px; }
+.seged .pieces{ display:flex; align-items:stretch; flex-wrap:wrap; row-gap:8px; }
+.seged .pc{ display:grid; place-items:center; padding:4px; font-size:20px; font-weight:700; line-height:1.3; }
+.seged .pc.w{ background:#F1F5F9; } .seged .pc.p{ color:#64748B; }
+.seged .pc.l{ border-top-left-radius:6px; border-bottom-left-radius:6px; } .seged .pc.r{ border-top-right-radius:6px; border-bottom-right-radius:6px; }
+.seged .gap{ width:10px; align-self:stretch; background:#F1F5F9; border:0; cursor:pointer; position:relative; padding:0; }
+.seged .gap.cut{ width:16px; background:transparent; }
+.seged .gap::after{ content:''; position:absolute; left:50%; top:15%; height:70%; width:2px; border-radius:1px; transform:translateX(-50%); background:transparent; }
+.seged .gap.cut::after{ background:#EC4899; } .seged .gap:hover::after{ background:#F9A8D4; }
+.seged .sp{ width:6px; } .seged .ft{ display:flex; justify-content:space-between; gap:8px; }
+.pydlg{ background:#fff; border-radius:16px; width:100%; max-width:444px; }
+.pydlg .t{ font-size:18px; font-weight:700; padding:16px 24px 8px; } .pydlg .bd{ padding:0 24px 16px; }
+.pydlg .big{ font-size:32px; font-weight:700; text-align:center; letter-spacing:2px; margin:16px 0; }
+.syls{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+.syl{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px; border-radius:16px; background:var(--grey100); border:1px solid var(--divider); min-width:80px; }
+.syl .in{ width:80px; height:36px; border:1px solid var(--divider); border-radius:8px; text-align:center; font:inherit; font-size:14px; }
+.syl .tone{ width:100px; height:36px; border:1px solid var(--divider); border-radius:8px; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; }
+.pydlg .ft{ display:flex; justify-content:flex-end; gap:8px; padding:8px 16px 16px; }
+.srow{ display:flex; align-items:center; gap:12px; } .srow .n{ font-size:14px; font-weight:700; color:var(--text2); min-width:22px; } .srow .chunk{ flex:1; min-width:0; }
+.play.xs{ width:30px; height:30px; color:var(--primary); } .play.xs .mi{ font-size:20px; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a>
+      <a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main">
+    <div class="container">
+      <div class="h4"><span class="tico" style="background:#FCE7F3; color:#EC4899"><span class="mi">edit_note</span></span>New Sentence Fill-in</div>
+      <div class="stepper" id="stepper"></div>
+      <div class="content" id="content"></div>
+      <div class="footer">
+        <button class="btn text" id="back">Back</button>
+        <button class="btn contained" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v19 · Sentence Fill-in · 對照組 <a href="baseline-fill-in-blank.html?view=questions">題庫的 Fill in blank ↗</a> · <a href="spec.html">Spec ↗</a> · 分岔自 <a href="../v7-sentence-scramble/proposal.html?step=2&amp;n=12">v7 Scramble ↗</a></span>
+  <span>
+    <a href="?step=1&amp;sel=1" id="l0">1 Teaching Points</a> · <a href="?step=1&amp;sel=1&amp;n=20" id="l0n">1 到頂 20</a> · <a href="?step=1&amp;sel=1&amp;ex=1&amp;n=12" id="l0e">1 例句</a> ·
+    <a href="?step=2&amp;n=12" id="l1">2 Edit Sentences</a> ·
+    <a href="?step=3" id="l2">3 Settings</a> ·
+    <a href="?step=4" id="l3">4 Assign</a>
+  </span>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   假資料跟基準檔同一份（兩邊才比得起來）。
+   --------------------------------------------------------------------------- */
+const S = {
+  step:0, empty:false, gen:false, loaded:false, banner:false, assigned:false,
+  projects:[], practiceName:'', nameEdited:false,   // 從頭走：還沒選專案、還沒有 teaching points；名稱老師改過就不再跟專案走
+  pinyin:'PINYIN', translation:'STUDENT_CHOICE',
+  speed:'0.8', voice:'Xiaorou (Female)', attempts:3, playing:null,
+  open:null, ddOpen:false,
+  tp:null, added:[], poolOpen:false, customType:'WORD', typeOpen:false,   // Custom word 的型別（產品 CustomWordDialog 的下拉，預設 WORD）
+  hiddenW:null, imgSel:{}, uploaded:null, imgHidden:null,
+  order:null, cardOff:null,   // 第三步：字的順序／關掉不練的卡（'字|word' / '字|ex1' / '字|ex2'）   // 第二步：隱藏的字／每個字選的圖／老師上傳的圖   // 勾選的 teaching point ／ 加進來的字 ／ From Project 展開
+  picked:null, sel:null, done:null, start:'2026-09-10T08:00', due:'2026-09-17T23:59',
+  kind:'mandatory', perClass:false, perDates:{}, roster:null, justAssigned:false, review:false,
+};
+
+const PROJECTS = [
+  ['我的一天','zh-CN','HSK 2', 7],
+  ['环境保护与可持续发展','zh-CN','HSK 4', 12],
+  ['餐厅点餐（对话）','zh-CN','HSK 3', 0],
+];
+const PROJECT_LANG = 'zh-CN';   // targetLanguage：選到的專案裡任一個是 zh-TW 才會是 zh-TW
+
+const WORDS = [
+  { w:'起床', py:'qǐ chuáng', tr:'get up', pos:'verb', type:'VERB',
+    ex:[['我每天七点起床。','wǒ měi tiān qī diǎn qǐ chuáng.','I get up at seven every day.'],
+        ['周末我起床很晚。','zhōu mò wǒ qǐ chuáng hěn wǎn.','On weekends I get up late.']] },
+  { w:'早饭', py:'zǎo fàn', tr:'breakfast', pos:'noun', type:'NOUN',
+    ex:[['我早饭吃面包。','wǒ zǎo fàn chī miàn bāo.','I eat bread for breakfast.'],
+        ['你吃早饭了吗？','nǐ chī zǎo fàn le ma?','Have you had breakfast?']] },
+  { w:'上课', py:'shàng kè', tr:'attend class', pos:'verb', type:'VERB',
+    ex:[['我八点上课。','wǒ bā diǎn shàng kè.','I have class at eight.'],
+        ['今天我们不上课。','jīn tiān wǒ men bù shàng kè.','We do not have class today.']] },
+  { w:'图书馆', py:'tú shū guǎn', tr:'library', pos:'noun', type:'NOUN',
+    ex:[['下午我去图书馆看书。','xià wǔ wǒ qù tú shū guǎn kàn shū.','In the afternoon I go to the library to read.'],
+        ['图书馆里很安静。','tú shū guǎn lǐ hěn ān jìng.','It is very quiet in the library.']] },
+  { w:'运动', py:'yùn dòng', tr:'exercise', pos:'verb', type:'WORD',
+    ex:[['我喜欢晚上运动。','wǒ xǐ huan wǎn shang yùn dòng.','I like to exercise in the evening.'],
+        ['运动对身体很好。','yùn dòng duì shēn tǐ hěn hǎo.','Exercise is good for the body.']] },
+  { w:'睡觉', py:'shuì jiào', tr:'sleep', pos:'verb', type:'VERB', hidden:true,
+    ex:[['我十一点睡觉。','wǒ shí yī diǎn shuì jiào.','I go to sleep at eleven.'],
+        ['睡觉前我看一会儿书。','shuì jiào qián wǒ kàn yí huì er shū.','I read for a while before sleeping.']] },
+  { w:'一……就', py:'yī … jiù', tr:'as soon as', pos:'', type:'GRAMMAR', examplesOnly:true,
+    ex:[['我一起床就喝水。','wǒ yì qǐ chuáng jiù hē shuǐ.','I drink water as soon as I get up.'],
+        ['他一下课就回家。','tā yí xià kè jiù huí jiā.','He goes home as soon as class ends.']] },
+];
+/* teaching point chip 上的短型別標（照 teacher-planning 的 TPT）；卡片上仍用產品的長標籤 */
+const TYPE_SHORT = { WORD:'Word', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adj', GRAMMAR:'Grammar', PHRASE:'Phrase', MEASURE_WORD:'Measure', OTHER:'Other' };
+/* From Project 的池子：專案課文（splitArticleArray）裡的詞，去重、去標點。
+   「我的一天」的課文借 v3 CONTENT[1] 那五句。 */
+const POOL = {
+  '我的一天': ['我','每天','早上','七点','起床','以后','先','刷牙','洗脸','然后','吃','早饭','八点半','骑','自行车','去','学校',
+             '下午','四点','放学','常常','和','同学','一起','打','篮球','晚上','做完','作业','就','早点','睡觉'],
+};
+const TYPE_LABEL = { WORD:'Word / Vocabulary', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adjective',
+  GRAMMAR:'Grammar / Structure', PHRASE:'Phrase / Idiom', MEASURE_WORD:'Measure Word', OTHER:'Other' };
+/* 第二十輪：再生的例句（mock 先備好三句；產品上是 AI 一次生一句）。一個字最多 5 句＝最多再按三次 */
+const MAX_EX = 5;
+const EXTRA = {
+  '起床':[['你几点起床？','nǐ jǐ diǎn qǐ chuáng?','What time do you get up?'],
+          ['妈妈六点就起床了。','mā ma liù diǎn jiù qǐ chuáng le.','Mom was up at six.'],
+          ['起床以后我先刷牙。','qǐ chuáng yǐ hòu wǒ xiān shuā yá.','After getting up I brush my teeth first.']],
+  '早饭':[['早饭我喝一杯牛奶。','zǎo fàn wǒ hē yì bēi niú nǎi.','I drink a glass of milk for breakfast.'],
+          ['他常常不吃早饭。','tā cháng cháng bù chī zǎo fàn.','He often skips breakfast.'],
+          ['我们一起吃早饭吧。','wǒ men yì qǐ chī zǎo fàn ba.','Let us have breakfast together.']],
+  '上课':[['上课的时候不要说话。','shàng kè de shí hou bú yào shuō huà.','Do not talk during class.'],
+          ['你今天几点上课？','nǐ jīn tiān jǐ diǎn shàng kè?','What time is your class today?'],
+          ['我们在二楼上课。','wǒ men zài èr lóu shàng kè.','We have class on the second floor.']],
+  '图书馆':[['图书馆九点开门。','tú shū guǎn jiǔ diǎn kāi mén.','The library opens at nine.'],
+          ['我在图书馆借了两本书。','wǒ zài tú shū guǎn jiè le liǎng běn shū.','I borrowed two books from the library.'],
+          ['图书馆离学校很近。','tú shū guǎn lí xué xiào hěn jìn.','The library is close to the school.']],
+  '运动':[['你喜欢什么运动？','nǐ xǐ huan shén me yùn dòng?','What sports do you like?'],
+          ['每天运动半小时。','měi tiān yùn dòng bàn xiǎo shí.','Exercise for half an hour every day.'],
+          ['运动以后要多喝水。','yùn dòng yǐ hòu yào duō hē shuǐ.','Drink more water after exercising.']],
+  '睡觉':[['你昨天几点睡觉？','nǐ zuó tiān jǐ diǎn shuì jiào?','What time did you go to sleep yesterday?'],
+          ['弟弟已经睡觉了。','dì di yǐ jīng shuì jiào le.','My little brother is already asleep.'],
+          ['太晚睡觉对身体不好。','tài wǎn shuì jiào duì shēn tǐ bù hǎo.','Going to sleep too late is bad for you.']],
+  '一……就':[['我一到家就做作业。','wǒ yí dào jiā jiù zuò zuò yè.','I do homework as soon as I get home.'],
+          ['她一看书就想睡觉。','tā yí kàn shū jiù xiǎng shuì jiào.','She gets sleepy as soon as she reads.'],
+          ['天一亮我们就出发。','tiān yí liàng wǒ men jiù chū fā.','We set off as soon as it is light.']],
+};
+const NON_WORD = new Set(['GRAMMAR','PHRASE','OTHER']);
+/* 一個字現在有幾句：原本兩句（老師加的字是兩個佔位）＋ 生成的 */
+/* 第二十八輪：例句的拼音逐詞斷開，放在每個詞上面（學生端 EXAMPLE 卡就是這樣排：shared/word-groups.js）。
+   mock 用一份小詞表做最長匹配；產品端有自己的斷詞。 */
+const WORDLIST = ['图书馆','一会儿','的时候','半小时','十一点','每天','七点','起床','周末','很晚','早饭','面包','八点','上课','今天','我们','下午','看书','安静','喜欢','晚上','运动','身体','睡觉','喝水','下课','回家','几点','妈妈','六点','以后','刷牙','一杯','牛奶','常常','一起','不要','说话','二楼','九点','开门','两本','学校','什么','昨天','弟弟','已经','作业','出发','到家'];
+const SEG_EXCEPT = { '一起床':'一' };   // 「一……就」的句子：一／起床，不是一起／床
+function rubyHtml(zh, py){
+  const syl = py.replace(/[.?!,。？！，]/g, '').trim().split(/\s+/);
+  let i = 0, k = 0; const out = [];
+  while (i < zh.length){
+    const ch = zh[i];
+    if (/[。？！，、：；]/.test(ch)){ out.push(`<span class="tk pu"><span class="p"></span><span class="z">${ch}</span></span>`); i++; continue; }
+    const ex = Object.keys(SEG_EXCEPT).find(x => zh.startsWith(x, i));
+    const w = ex ? SEG_EXCEPT[ex] : (WORDLIST.find(x => zh.startsWith(x, i)) || ch);
+    out.push(`<span class="tk"><span class="p">${esc(syl.slice(k, k + w.length).join(' '))}</span><span class="z">${esc(w)}</span></span>`);
+    k += w.length; i += w.length;
+  }
+  return `<div class="rz">${out.join('')}</div>`;
+}
+const exOf = (v) => (v.generated ? [['','',''],['','','']] : v.ex).concat(S.extraEx[v.w] || []);
+
+const CLASSES = [
+  { id:'3b', name:'Chinese 3B', students:['陈小明','林佳蓉','王大卫','张怡君','李承恩','吴宜庭','黄柏翰','郑雅文'] },
+  { id:'4a', name:'Chinese 4A', students:['蔡宗翰','郑雅文','许博涵','杨子萱','周彦廷','高子涵'] },
+  { id:'5c', name:'Chinese 5C', students:['苏韵如','范文杰','邱柏宇','何昀蓁','曾筱婷'] },
+];
+
+/* 四步。第一步的名字沿 Follow Pattern 的 'Teaching Points'，第二步就叫這種練習的素材 */
+const STEPS = ['Teaching Points','Edit Sentences','Settings','Assign Practice'];   // STEPS_BY_TYPE[SENTENCE_SCRAMBLE]，第一步照 v4 叫 Teaching Points（產品叫 Content）   // 第二輪：第三步改叫 Questions（它沒有設定，是題目清單）   // VOCABULARY_MC_STEPS，第一步照 Follow Pattern 叫 Teaching Points（v4 的決定）
+const PINYINS = ['PINYIN','NO_PINYIN','STUDENT_CHOICE'];
+const TRANSLATIONS = ['SHOW','HIDE','STUDENT_CHOICE'];
+const IMAGES = ['SHOW','HIDE'];
+/* getVoiceList()：zh-CN 只有一組；zh-TW 是繁體 3 ＋ 簡體 4 串在一起（v3 §4 問題 11） */
+const VOICE_GROUPS = {
+  'zh-TW': ['HsiaoChen (Female)','HsiaoYu (Female)','YunJhe (Male)'],
+  'zh-CN': ['Xiaorou (Female)','Xiaoyi (Female)','Yunxiao (Male)','Yunxia (Male)'],
+};
+const voiceList = (lang) => lang === 'zh-TW'
+  ? [['zh-TW', VOICE_GROUPS['zh-TW']], ['zh-CN', VOICE_GROUPS['zh-CN']]]
+  : [['zh-CN', VOICE_GROUPS['zh-CN']]];
+
+/* ---------- 讀網址 ---------- */
+const qs = new URLSearchParams(location.search);
+S.step = Math.min(3, Math.max(0, (parseInt(qs.get('step') ?? '1', 10) || 1) - 1));   // ?step= 從 1 數（2026-09-14 改），內部仍是 0-based
+S.empty = qs.get('empty') === '1';
+S.gen = qs.get('gen') === '1';
+S.loaded = S.step > 0 || qs.get('back') === '1';   // 已經生成過；&back=1 = 從第二步 Back 回第一步的樣子（第二十五輪起不鎖，可以重選）
+S.banner = qs.get('banner') === '1';
+S.assigned = qs.get('assigned') === '1';
+// &sel=1 直接跳到「已選一個專案」；&gen / &loaded / step>0 也一定有選
+if (qs.get('sel') === '1' || S.gen || S.loaded) { S.projects = ['我的一天']; S.practiceName = '我的一天'; }
+const projIdx = parseInt(qs.get('proj') ?? '', 10);   // &proj=0|1|2 選哪一個專案（teacher-planning-b.html 嵌入時用，2026-10-07 鷹架；mock 只有「我的一天」有真的字）
+if (!Number.isNaN(projIdx) && PROJECTS[projIdx]) { S.projects = [PROJECTS[projIdx][0]]; S.practiceName = PROJECTS[projIdx][0]; }
+S.ddOpen = qs.get('dd') === '1';
+S.tp = new Set(WORDS.map(w => w.w));          // 預設全勾（產品現在就是全部載入）
+S.genWords = new Set(S.loaded ? S.tp : []);   // 第二十五輪：已經生成過的字；回頭多勾的按 Next 才生
+S.poolOpen = qs.get('pool') === '1';
+S.typeOpen = qs.get('tdd') === '1';   // Custom word 的型別選單打開
+S.hiddenW = new Set(WORDS.filter(w => w.hidden).map(w => w.w));
+S.image = qs.get('img') === '0' ? 'HIDE' : 'SHOW';   // Image 設定（IMAGE_PREFERENCES）
+S.specIdx = 0;
+S.allOpen = qs.get('all') === '1';   // 畫布上「Card 1 of N ▾」展開
+S.voiceOpen = qs.get('voice') === '1';       // &voice=1 Voice 下拉打開
+S.settingsOpen = qs.get('settings') === '1'; // &settings=1 學生的齒輪面板打開（要有 Choice by student 才有齒輪）
+if (qs.get('pyc') === '1') S.pinyin = 'STUDENT_CHOICE';   // 第十六輪：&pyc=1 Pinyin 選 Choice by student
+S.tipOpen = qs.get('tip') === '1';           // &tip=1 Auto pass 的 tooltip 開著（截圖用）
+S.stuPy = true; S.stuTr = true;              // 學生端的起始值：兩個都開（use-vocabulary-practice.js）
+S.phase = 'idle';
+S.imgHidden = new Set();
+S.order = WORDS.map(w => w.w);
+S.cardOff = new Set();
+S.extraEx = {}; S.genBusy = new Set();   // 第二十輪：生成的例句／正在生成的字
+S.exnOpen = qs.get('exn') === '1';
+S.pyDlg = qs.get('py') === '1';   // 第二步：Edit Pinyin 對話框
+S.cutIdx = qs.get('cut') === '1' ? 1 : null;    // 第十五輪：剪刀模式開在哪一句（&cut=1＝第二句）
+S.editIdx = qs.get('edit') === '1' ? 0 : null;  // 編輯模式開在哪一句（&edit=1＝第一句）
+S.cuts = {}; S.note = '';                        // 每句的切點；一次性的提示（Keep at least one sentence）
+S.sorder = null; if (qs.get('del') === '1') S.sorder = [0,2,3,4,5,6];   // &del=1：第二句已經刪掉
+S.perPoint = Math.max(1, parseInt(qs.get('per') ?? '1', 10) || 1);   // &per=2：每個點兩句（上限看 20 總數，render 時夾）
+S.exOnly = qs.get('exonly') === '1';                                 // 第八輪：&exonly=1 只用勾的例句、一句不生（附加版才有）
+S.nTotal = qs.get('n') ? parseInt(qs.get('n'), 10) || null : null; S.nDraft = null;   // nDraft：打字中的原字串（第二十三輪續：打字時不夾，離開欄位才夾）   // 第二十一輪：&n=12 總句數（null＝跟著勾的點數，每點一句）
+S.exMode = qs.get('exmode') === 'add' ? 'add' : 'replace';           // 第十二輪：取代版定案（預設）；&exmode=add 留著回看附加版
+S.exPer = qs.get('exper') === '2' ? 2 : 1;                           // 第十二輪：取代版每點用一句還是兩句例句（&exper=2）
+if (S.exOpen && !S.exPick.size && S.exMode === 'replace') { /* 開關開、沒指定勾哪些 → 每點先勾前 N 句 */ }
+S.exOpen = qs.get('ex') === '1';                                     // 第十輪：&ex=1 「Use example sentences」開關打開（開了才展開例句）
+S.exPick = new Set((qs.get('expick') || '').split(',').filter(Boolean));   // &expick=起床|0,早饭|0：勾了哪幾句例句（字|第幾句）
+if (S.exPick.size) S.exOpen = true;
+if (S.exOpen && !S.exPick.size && S.exMode === 'replace' && (qs.get('sel') === '1' || qs.get('back') === '1')) S.exPick = new Set(WORDS.flatMap(w => w.ex.slice(0, S.exPer).map((_, i) => `${w.w}|${i}`)));
+/* 第二輪（照 Planning）：矩陣＝題目清單。S.qm 是勾了哪些格（'字|題型'），S.qorder 是題目順序（第三步拖曳改的） */
+S.qm = null; S.qorder = null;
+S.qtarget = qs.get('fewer') ? parseInt(qs.get('fewer'), 10) : null;   // &fewer=20：Fewer than that，目標題數
+S.pv = null;
+S.pvq = null;           // 第二十一輪：&pvq=3 開第三題的學生預覽（第三步）                // 第十七輪：&pv=CN_TO_EN 開「學生看到的畫面」預覽
+S.qmode = qs.get('must') ? 'must' : 'random';                            // &must=1：Must cover、一種都還沒勾（預設）；&must=CN_TO_EN,AUDIO_TO_CN：先勾好
+S.qmust = new Set((qs.get('must') || '').split(',').filter(k => k && k !== '1').map(k => 'VOCAB_MC_' + k));
+S.qaddW = null; S.qaddT = null;       // &exn=1 例句數的下拉打開（第二十二輪）
+S.upDlg = qs.get('updlg') === '1' ? { w: WORDS[0].w, stage:'pick' } : qs.get('updlg') === '2' ? { w: WORDS[0].w, stage:'preview' } : null;   // 第二十四輪：上傳對話框
+if (qs.get('more') === '1') S.extraEx[WORDS[0].w] = EXTRA[WORDS[0].w].slice();   // &more=1 第一個字已經生到五句
+S.uploaded = new Set(qs.get('upload') === '1' ? [WORDS[0].w] : []);
+if (qs.get('upload') === '1') S.imgSel[WORDS[0].w] = 'mine';
+S.picked = new Set((qs.get('pick') || '').split(',').filter(Boolean));
+S.sel    = new Set([...S.picked].flatMap(id => CLASSES.find(c => c.id === id)?.students ?? []));
+S.done   = S.assigned ? [{ id:'3b', start:S.start, due:S.due, kind:'mandatory',
+                           students:CLASSES[0].students.slice(0, 5).concat('郑雅文') }] : [];
+if (qs.has('roster')) S.roster = qs.get('roster');
+S.perClass = qs.get('perclass') === '1';
+S.review = qs.get('review') === '1';
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const el = (id) => document.getElementById(id);
+
+/* ---------- 共用②：Stepper ---------- */
+function renderStepper(){
+  el('stepper').innerHTML = STEPS.map((label, i) => {
+    const cls = i === S.step ? 'active' : (i < S.step ? 'done' : '');
+    const sep = i ? `<div class="stp-sep ${i - 1 < S.step ? 'done' : ''}"></div>` : '';
+    return sep + `<div class="stp-item ${cls}">
+      <span class="stp-ind">${i + 1}</span><span class="stp-lbl">${label}</span></div>`;
+  }).join('');
+}
+
+/* 分段控制項（Assign 的 Mandatory / Optional 用） */
+function seg(name, value, options){
+  return `<div class="seg">${options.map(([v,t]) =>
+    `<button type="button" data-seg="${name}" data-val="${v}" class="${v === value ? 'on' : ''}"
+      aria-pressed="${v === value}">${t}</button>`).join('')}</div>`;
+}
+
+/* MUI Select（基準檔的，Display Settings 三個下拉還在用） */
+function select({ id, label, value, options, width, small }){
+  return `<div class="field ${small ? 'sm' : ''}" style="${width ? 'width:' + width : ''}">
+    <label>${label}</label>
+    <div class="ctrl" data-menu="${id}"><span>${esc(value)}</span><span class="mi caret">arrow_drop_down</span></div>
+    ${S.open === id ? `<div class="menu">${options.map(v =>
+      `<div class="opt ${v === value ? 'sel' : ''}" data-pick="${id}" data-val="${esc(v)}"><span>${esc(v)}</span></div>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+const imgph = (w) => `<div class="imgph"><span class="mi">image</span>${esc(w)}</div>`;
+
+/* =====================================================================
+   Step 1 · Vocabulary —— 原封不動（Vocabulary 自己的，不是共用元件）
+   ===================================================================== */
+/* Project 選單：c-dropdown-menu-18 的做法（v3），但 Vocabulary 是多選——
+   選單點一下切換勾選、不關；觸發鈕把選到的專案一個一個列出來。
+   第二十五輪（2026-09-15）：生成後**不再鎖住**——跟工程談定 practice 在第二步才存，第一步隨時可以回來重選。
+   （產品現在是 disabled={configsLoading || isPracticeReady}，那是因為它在第一步就建了 practice。） */
+function renderProjectPicker(){
+  const toks = S.projects.map(n => { const p = PROJECTS.find(x => x[0] === n);
+    return `<span class="tok"><span class="mark">${p[1]}</span><span>${esc(p[0])}</span><span class="lvl">${p[2]}</span></span>`; }).join('');
+  return `<div class="fld">
+    <label>Projects</label>
+    <div class="dd">
+      <button class="dd-trig" data-act="dd" aria-haspopup="menu" aria-expanded="${S.ddOpen}">
+        ${toks || '<span class="ph">Choose projects to take teaching points from</span>'}
+        <span class="mi caret">expand_more</span>
+      </button>
+      ${S.ddOpen ? `<div class="dd-menu" role="menu">
+        <div class="dd-lbl">Projects with teaching points</div>
+        ${PROJECTS.map(p => { const on = S.projects.includes(p[0]);
+          return `<button class="dd-item" role="menuitemcheckbox" aria-checked="${on}" data-proj="${esc(p[0])}">
+            <span class="mi tick ${on ? '' : 'off'}">check</span>
+            <span class="mark">${p[1]}</span>
+            <span class="nm">${esc(p[0])}</span>
+            <span class="lvl">${p[2]}</span>
+            <span class="cnt ${p[3] ? '' : 'err'}">${p[3] ? p[3] + ' words' : 'No teaching points'}</span>
+          </button>`; }).join('')}
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+/* Practice name：c-input-2，從第二步搬上來（選 Project 時它就被填好了，v3 同一個決定） */
+function renderPracticeName(){
+  return `<div class="fld" style="margin-top:24px">
+    <label for="pname">Practice name</label>
+    <input class="inp" id="pname" type="text" value="${esc(S.practiceName)}" placeholder="Practice name">
+    <span class="help">Filled in from the projects you pick. Change it if this practice needs its own name.</span>
+  </div>`;
+}
+
+/* 每個專案一個 frame（c-frame-6 ghost）。標頭：全選框 ＋ 專案名 ＋ 已選/總數；
+   panel：可勾的 teaching point；第二個 panel：Add words（From Project ＋ Custom word）。
+   邏輯照 teacher-planning 的 renderVocPointsPanel，樣式沿 v3。 */
+function tpOf(name){
+  if (name === '我的一天') return WORDS.map(w => ({ w:w.w, type:w.type }));
+  const proj = PROJECTS.find(p => p[0] === name);
+  return Array.from({ length: proj[3] }, (_, i) => ({ w:`词${i + 1}`, type:'WORD' }));
+}
+function renderTeachingPoints(){
+  return S.projects.map(name => {
+    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED' })));
+    const picked = tps.filter(t => S.tp.has(t.w)).length;
+    const all = tps.length > 0 && picked === tps.length, some = picked > 0;
+
+    /* 第二十五輪：回頭看不再鎖住。已經生成的字帶 Generated 標；新勾的字按 Next 才生 */
+    const chips = tps.length ? tps.map(t => {
+      const on = S.tp.has(t.w);
+      // 詞性不印（第八輪拿掉）；只有第一步加進來的字掛 Added
+      const ty = t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '';
+      const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';   // 回頭多勾的：還沒生
+      return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}">
+        <span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`;
+    }).join('') : '<span class="body2" style="color:var(--text2)">No teaching points. You can add some below.</span>';
+
+    /* From Project：課文裡的詞。已在清單裡的變灰打勾，其餘按 + 加進來（加進來就是一個勾好的 teaching point） */
+    const pool = POOL[name] || [];
+    const inSet = new Set(tps.map(t => t.w));
+    const left = pool.filter(w => !inSet.has(w)).length;
+    const poolHtml = S.poolOpen ? `<div class="pool">${pool.length ? pool.map(w => inSet.has(w)
+        ? `<button class="tpchip dim" disabled aria-label="${esc(w)} — already in"><span class="mi">check</span>${esc(w)}</button>`
+        : `<button class="tpchip" data-addpool="${esc(name)}|${esc(w)}"><span class="mi">add</span>${esc(w)}</button>`).join('')
+      : '<span class="body2" style="color:var(--text2)">This project has no text to pull words from.</span>'}</div>` : '';
+
+    return `<div class="frame">
+      <div class="frame-hd sel">
+        <button class="cb ${some ? '' : 'none'}" data-tpall="${esc(name)}" aria-label="Select all in ${esc(name)}">
+          <span class="mi">${all ? 'check_box' : some ? 'indeterminate_check_box' : 'check_box_outline_blank'}</span></button>
+        <div class="ttl"><div class="frame-ttl">${esc(name)}</div><div class="frame-desc">Teaching points</div></div>
+        <span class="cnt">${picked}/${tps.length}</span>
+      </div>
+      <div class="frame-panel">${chips}</div>
+      ${(() => { const newN = tps.filter(t => S.tp.has(t.w) && !S.genWords.has(t.w)).length, dropN = tps.filter(t => !S.tp.has(t.w) && S.genWords.has(t.w)).length;
+        return !S.loaded ? '' : `<div class="frame-hd"><div class="frame-desc">${newN || dropN
+          ? [newN ? `${newN} new teaching ${newN === 1 ? 'point gets' : 'points get'} sentences when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'point leaves' : 'points leave'} the practice with its sentences` : ''].filter(Boolean).join(' · ')
+          : 'Generated. Tick more points or untick some — the sentences you already have stay as they are.'}</div></div>`; })()}
+      <div class="frame-panel" style="display:block; overflow:visible">
+        <div class="addsep"><b>Add teaching points</b><span class="rule"></span></div>
+        <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
+          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>From Project
+          <span class="n">${pool.length ? (left ? `${left} to add` : 'all added') + ` · ${pool.length} words` : 'no content'}</span>
+        </button>
+        ${poolHtml}
+        <div class="tp-add">
+          <input class="inp" type="text" placeholder="Custom teaching point" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
+          <button class="btn contained" data-addcustom="${esc(name)}">Add</button>
+        </div>
+      </div>
+      ${renderExamples(name, tps)}
+    </div>`;
+  }).join('');
+}   // 第十九輪後半：例句清單搬到 Add teaching points 之下（使用者：例句在 Add teaching points 之下）
+
+/* 第四輪（方案 A）：勾了的點底下列出專案裡現成的例句，每句一個 checkbox，預設不勾——勾了就直接當題目帶進去（後端切詞、生音檔跟生成的走同一條）。
+   摺疊起來，像 From Project；標頭寫 N picked · M available。Custom 的點沒有例句。 */
+function exOfPoint(w){ const v = WORDS.find(x => x.w === w); return v ? v.ex : []; }
+function pickedEx(){ return S.projects.length && S.exOpen ? [...S.exPick].filter(k => S.tp.has(k.split('|')[0])) : []; }   // 開關關掉，勾過的也不算
+function exAutoFill(){ const sh = S.exMode === 'replace' ? shares() : null; S.exPick = new Set(tickedPts().flatMap(w => exOfPoint(w).slice(0, sh ? (sh[w] || 0) : S.exPer).map((_, i) => `${w}|${i}`))); }   // 第二十二輪：取代版照每點分到的份額勾   // 第十二輪：每個勾的點勾前 N 句   // 取消勾的點，它的例句也不算
+function renderExamples(name, tps){
+  const pts = tps.filter(t => S.tp.has(t.w) && exOfPoint(t.w).length);
+  const avail = pts.reduce((n, t) => n + exOfPoint(t.w).length, 0);
+  if (!avail) return '';
+  const picked = pickedEx().filter(k => pts.some(t => t.w === k.split('|')[0])).length;
+  const rows = S.exOpen ? `<div class="exlist">${pts.map(t => `<div class="exgrp"><div class="exw">${esc(t.w)}</div><div class="exrows">${exOfPoint(t.w).map((e, i) => { const k = `${t.w}|${i}`, on = S.exPick.has(k);
+      return `<button class="exrow ${on ? 'on' : ''}" data-ex="${esc(k)}" aria-pressed="${on}"><span class="cb ${on ? 'on' : ''}"><span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span></span><span class="ext"><span class="zh">${esc(e[0])}</span><span class="py">${esc(e[1])}</span><span class="tr">${esc(e[2])}</span></span></button>`; }).join('')}</div></div>`).join('')}</div>` : '';
+  /* 第十九輪：取代版——「用不用例句」搬到上面的選項卡，這裡只剩清單（選了例句才出現），清單上一行小標 */
+  if (S.exMode === 'replace') { if (!S.exOpen) return '';
+    const none = exNoneList();   // 第二十輪：沒有例句的點列在清單底下，說會照每點幾句生
+    return `<div class="frame-panel" style="display:block; overflow:visible">
+      <div class="exhd"><b>Example sentences</b><span class="cap">Untick any you don’t want · ${picked} of ${avail} picked</span></div>${rows}
+      ${(() => { const gen = exTotal() - pickedEx().length; return gen > 0 ? `<div class="exnone"><span class="mi">auto_awesome</span><span>${none.length ? `No examples for <b>${none.map(esc).join('、')}</b> · ` : ''}<b>${gen}</b> ${gen === 1 ? 'sentence' : 'sentences'} will be generated to reach ${exTotal()}</span></div>` : ''; })()}</div>`; }
+  /* 第十輪：摺疊的 chevron 換成開關「Use example sentences from these teaching points」，開了才展開清單；關掉勾過的也不算 */
+  return `<div class="frame-panel" style="display:block; overflow:visible">
+      ${(() => {
+        const on = S.exOpen && S.exMode === 'replace', ptsN = nPts(), exact = picked === ptsN * S.exPer, over2 = ptsN * 2 > 20;
+        const m = pickedByPoint(), covered = tickedPts().filter(w => m[w]).length;
+        const per = on ? `<span class="seg per sm"><button type="button" data-exper="1" class="${S.exPer === 1 ? 'on' : ''}">1</button><button type="button" data-exper="2" class="${S.exPer === 2 ? 'on' : ''}" ${over2 ? 'disabled' : ''} title="${over2 ? `${ptsN} × 2 would pass the limit of 20 sentences` : ''}">2</button></span><span class="cap">per point</span>` : '';
+        const right = on
+          ? (exact ? `<b>${ptsN}</b> × <b>${S.exPer}</b> = <b>${picked}</b> ${picked === 1 ? 'sentence' : 'sentences'} · nothing generated` : `<b>${picked}</b> ${picked === 1 ? 'sentence' : 'sentences'} · adjusted below · nothing generated`)
+            + (covered < ptsN ? ` · <span style="color:var(--warning-dark)">${ptsN - covered} ${ptsN - covered === 1 ? 'point has' : 'points have'} none picked</span>` : '')
+          : `${avail} available`;
+        return `<div class="exsw-row">
+          <button class="exsw" data-act="ex" role="switch" aria-checked="${S.exOpen}">
+            <span class="sw ${S.exOpen ? 'on' : ''}"><span class="track"></span></span>
+            <span class="lbl">${S.exMode === 'replace' ? 'Use example sentences instead of generating' : 'Use example sentences from these teaching points'}</span>
+          </button>
+          ${per}
+          <span class="n">${right}</span>
+        </div>`; })()}
+      ${rows}
+    </div>`;
+}
+
+/* 生成後的字表：勾起來的 teaching point ＋ 第一步加進來的字（後者拼音／翻譯／例句由 AI 生，mock 不編） */
+function selectedWords(){
+  const list = WORDS.filter(w => S.tp.has(w.w))
+    .concat(S.added.filter(a => S.tp.has(a.w)).map(a => ({ w:a.w, py:'', tr:'', pos:'', type:a.type || 'WORD', ex:[], generated:true })));
+  const pos = (w) => { const i = S.order.indexOf(w); return i < 0 ? 1e9 : i; };
+  return list.sort((a, b) => pos(a.w) - pos(b.w));
+}
+function renderVocabCard(v){
+  const isRO = v.examplesOnly ?? (v.type === 'GRAMMAR');
+  const head = isRO
+    ? `<div class="gram">${esc(v.w)}${v.py ? ` (${esc(v.py)})` : ''}</div>`
+    : v.generated
+    ? `<div class="word">${esc(v.w)}</div><div class="cap">Pinyin, meaning and examples are generated with the content.</div>`
+    : `<div class="word">${esc(v.w)}</div><div class="py">${esc(v.py)}</div><div class="tr">${esc(v.tr)}</div>`;
+  const tags = [
+    v.pos ? `<span class="chip sm">${esc(v.pos)}</span>` : '',
+    v.type ? `<span class="chip sm ${NON_WORD.has(v.type) ? 'secondary' : ''}">${TYPE_LABEL[v.type]}</span>` : '',
+    `<span class="chip sm info">HSK 2</span>`,
+  ].join('');
+  const ro = NON_WORD.has(v.type) ? `<div class="ro">
+      <div style="line-height:1.2"><div class="sub2" style="line-height:1.3">Read Sentences Only</div>
+        <div class="cap" style="line-height:1.2">Students will only read the example sentences below</div></div>
+      <div class="sw ${isRO ? 'on' : ''}"><span class="track"></span></div>
+    </div>` : '';
+  const img = v.type === 'GRAMMAR' ? '' : imgph(v.w) + '<div class="thumbs"><i class="sel"></i><i></i><i></i><i></i></div>';
+  return `<div class="vcard ${v.hidden ? 'hidden' : ''}">
+    <div class="acts">
+      <button class="ib edit" title="Edit examples"><span class="mi">edit</span></button>
+      <button class="ib eye ${v.hidden ? 'off' : ''}" title="${v.hidden ? 'Show to students' : 'Hide from students'}"><span class="mi">${v.hidden ? 'visibility_off' : 'visibility'}</span></button>
+    </div>
+    ${img}
+    ${head}
+    <div class="tags" style="margin-top:${isRO ? 0 : 16}px">${tags}</div>
+    ${ro}
+    ${v.ex.map((e, i) => `<div class="ex">
+      <span class="c"><strong>例句 ${i + 1}:</strong> ${esc(e[0])}</span>
+      <span class="c py">${esc(e[1])}</span>
+      <span class="c tr">${esc(e[2])}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderStep0(){
+  /* 第六輪：每點幾句的區塊搬到最上面；第七輪：改到 Practice name 底下、teaching point frame 之前 */
+  const picker = renderProjectPicker() + renderPracticeName() + renderCount();
+  if (S.gen) {
+    return `${picker}
+      <div class="loading">
+        <div class="orb"><span class="mi">autorenew</span></div>
+        <div class="h6">Generating sentences...</div>
+        <div class="body2" style="color:var(--text2); max-width:400px; margin:0 auto">One sentence per question, shared out across your teaching points. This may take a few moments.</div>
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="skel-grid">${[0,1,2].map(() => `<div class="skel-card">
+          <div class="skel" style="height:120px; margin-bottom:16px"></div>
+          <div class="skel" style="height:24px; width:70%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:60%; margin-bottom:8px"></div>
+          <div class="skel" style="height:18px; width:80%"></div></div>`).join('')}</div>
+      </div>`;
+  }
+  const body = S.projects.length === 0
+    ? `<div class="body2" style="color:var(--text2); margin-top:24px">Pick at least one project to preview teaching points.</div>`
+    : renderTeachingPoints();
+  return picker + body;
+}
+/* 第二輪（方案 A）：不問總數，問「每個點幾句」——1｜2｜3 sentences per point，總數算出來寫旁邊（7 points × 2 = 14 sentences）。
+   每個點一定有句子，「分不到」的情況消失；要單獨多給某個點，第二步 header 那顆留著。上限照產品 MAX_QUESTION_COUNT = 20 總數：超過的檔位灰掉。 */
+/* 第三輪：上限跟著點數算——20 句 ÷ 勾的點數（4 個點可以到 5 句一點，7 個點只能 2）。改成加減步進器，＋ 到頂就灰 */
+/* 第八輪（方案 A ＋ 「只用例句」選項）：N 是每個點的目標數，勾的例句先算進去、不夠的才生——每個點拿 max(N, 該點勾的例句數)。
+   另一個選項「Use the picked examples only」：一句不生，只有勾了例句的點才有句子。上限 20 總數。 */
+const nPts = () => S.projects.length ? S.tp.size : 0;   // 還沒選專案就沒有點（mock 的 S.tp 預設全勾，要看專案）
+const pickedByPoint = () => { const m = {}; pickedEx().forEach(k => { const w = k.split('|')[0]; m[w] = (m[w] || 0) + 1; }); return m; };
+const tickedPts = () => S.projects.length ? [...S.tp] : [];
+function totalFor(n){ const m = pickedByPoint(); return tickedPts().reduce((t, w) => t + Math.max(n, m[w] || 0), 0); }
+const PER_MAX = 5;   // 第二十輪：20 句總數的上限拿掉（使用者 2026-09-30；要問工程 E7 能不能放寬 MAX_QUESTION_COUNT），步進器只留每點最多 5 句
+const perMax = () => PER_MAX;
+/* 第二十一輪（2026-10-02）：第一步直接問總共要幾句、上限 20（產品 MAX_QUESTION_COUNT）——取代「每點幾句」的步進器。
+   預設＝勾的點數（每點一句）；老師改過就固定；最少要讓每個點分到一句（下限＝點數），最多 20。句子輪流分給勾的點。 */
+const MAX_TOTAL = 20;
+function genTotal(){ const pts = nPts(); if (!pts) return 0; const n = S.nTotal ?? pts; return Math.min(MAX_TOTAL, Math.max(Math.min(pts, MAX_TOTAL), n)); }
+function shares(){ const pts = tickedPts(), t = genTotal(), m = {}; if (!pts.length) return m; const lo = Math.floor(t / pts.length); let extra = t - lo * pts.length; pts.forEach(w => { m[w] = lo + (extra > 0 ? 1 : 0); if (extra > 0) extra--; }); return m; }   // 第二十二輪：總句數輪流分給勾的點
+function spreadText(t, pts){ const lo = Math.floor(t / pts), hi = Math.ceil(t / pts); return lo === hi ? `${lo} each` : `${lo}–${hi} each`; }
+/* 第二十輪：例句模式＝有例句的點用勾的例句，沒有例句的點照「每點幾句」生 */
+const exTotal = () => Math.max(genTotal(), pickedEx().length);   // 第二十二輪：例句模式也是問到的總數；老師多勾了就跟著多
+const exNoneList = () => { const m = pickedByPoint(); return tickedPts().filter(w => !m[w]); };
+function qCount(){ if (S.exMode === 'replace') S.exOnly = S.exOpen && S.projects.length > 0;   // 取代版：開關開＝只用例句
+  if (S.exOnly && !pickedEx().length && S.exMode !== 'replace') S.exOnly = false; S.perPoint = Math.min(Math.max(S.perPoint, 1), perMax());
+  if (S.exMode === 'replace' && S.exOnly) return exTotal();   // 第二十輪：沒例句的點也生
+  if (S.exMode === 'replace') return genTotal();   // 第二十一輪：生成卡問的是總句數
+  return S.exOnly ? pickedEx().length : totalFor(S.perPoint); }
+/* 第十九輪（2026-09-30）：第一步先問「句子從哪來」——Practice name 底下兩張選項卡（v6／v8 同一套 .qopt）：
+   Generate new sentences（AI 生，卡裡是每點幾句的步進器＋算式）｜Use example sentences（從 teaching point 的例句挑，卡裡是每點 1｜2 ＋ 算式）。
+   選了例句，teaching point 框裡直接攤開例句清單（開關那一列拿掉）。S.exOpen 仍是狀態：false＝生成、true＝例句。 */
+const optCard = (attrs, on, icon, title, body) => `<div class="qopt ${on ? 'on' : ''}" ${attrs} role="radio" aria-checked="${on}" tabindex="0">
+    <span class="qo-ic"><span class="mi">${icon}</span></span><span class="qo-tx"><span class="qo-hd"><b>${title}</b></span>${body}</span></div>`;
+function renderSource(){
+  /* 第二十二輪（2026-10-02）：分成兩部——先問 HOW MANY SENTENCES（數字欄＋up to 20＋怎麼分），再問 WHERE FROM（兩張選項卡）。
+     總句數對兩種來源都算數：例句模式照每點分到的份額先用例句（exAutoFill 用 shares()），不夠的生。卡裡不再有步進器／1｜2。 */
+  const pts = nPts(), on = S.exOpen && S.projects.length > 0;
+  const avail = S.projects.length ? tickedPts().reduce((n, w) => n + exOfPoint(w).length, 0) : 0;
+  const B = (x) => `<b>${x}</b>`;
+  const gT = genTotal(), atCap = gT >= MAX_TOTAL;
+  const howMany = `<div class="qp-calc"><span class="qin"><input id="ntotal" type="number" min="${Math.min(pts, MAX_TOTAL) || 1}" max="${MAX_TOTAL}" value="${S.nDraft ?? (gT || '')}" ${pts ? '' : 'disabled'} aria-label="Number of sentences"></span>
+      sentences <span class="dot">·</span> ${S.nDraft != null && parseInt(S.nDraft, 10) < Math.min(pts, MAX_TOTAL) ? `<b class="cap-hit">at least ${Math.min(pts, MAX_TOTAL)} · one per teaching point</b>` : `<b class="${atCap ? 'cap-hit' : ''}">up to ${MAX_TOTAL}</b>`}${pts ? ` <span class="dot">·</span> across ${B(pts)} teaching ${pts === 1 ? 'point' : 'points'} <span class="dot">·</span> ${spreadText(gT, pts)}` : ` <span class="dot">·</span> tick teaching points below`}</div>`;
+  const genBody = `<small>AI writes new sentences for the teaching points you tick</small>`;
+  const exBody = `<small>${avail ? `${avail} available` : 'Pick projects to see what is available'}</small>`;
+  return `<div class="eyebrow" style="margin-top:28px"><b>How many sentences</b><span class="rule"></span></div>
+    <div class="canvas" style="margin-bottom:24px"><div class="qp-sec">${howMany}
+    <div class="qp-opts">
+      ${optCard('data-src="gen"', !on, 'auto_awesome', 'Generate new sentences', genBody)}
+      ${optCard(`data-src="ex" ${avail ? '' : 'aria-disabled="true"'}`, on, 'format_quote', 'Example sentences from teaching points', exBody)}
+    </div></div></div>`;
+}
+function renderCount(){
+  if (S.exMode === 'replace') return renderSource();   // 第十九輪：取代版走選項卡；&exmode=add 仍是舊的步進器＋開關
+  const pts = nPts(), total = qCount(), max = perMax(), picked = pickedEx().length, gen = total - picked;
+  const m = pickedByPoint(), covered = tickedPts().filter(w => m[w]).length, extra = total - pts * S.perPoint;
+  const B = (x) => `<b style="color:var(--text)">${x}</b>`, T = `<b style="color:var(--text); font-size:16px">${total}</b> ${total === 1 ? 'sentence' : 'sentences'}`;
+  /* 第九輪：副標太多——說明句拿掉，只留一行算式；例句沒勾到的點數併進那一行；上限只在 ＋ 的 tooltip */
+  const sum = !pts ? '<span style="color:var(--text3)">Pick projects and tick teaching points below</span>'
+    : S.exOnly ? `${T} · examples only${covered < pts ? ` · <span style="color:var(--warning-dark)">${pts - covered} ${pts - covered === 1 ? 'point has' : 'points have'} none picked</span>` : ''}`
+    : `${B(pts)} ${pts === 1 ? 'point' : 'points'} × ${B(S.perPoint)}${extra > 0 ? ` + ${B(extra)} extra ${extra === 1 ? 'example' : 'examples'}` : ''} = ${T}${picked ? ` · ${picked} from examples, ${gen} generated` : ''}`;
+  return `<div class="fld" style="margin-top:24px; margin-bottom:24px; max-width:none">
+    <label>Sentences per teaching point</label>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+      <div class="stp ${S.exOnly ? 'dis' : ''}"><button type="button" data-per="-1" ${S.exOnly || S.perPoint <= 1 ? 'disabled' : ''} aria-label="Fewer"><span class="mi">remove</span></button><span class="n">${S.perPoint}</span><button type="button" data-per="1" ${S.exOnly || S.perPoint >= max ? 'disabled' : ''} aria-label="More" title="${!S.exOnly && S.perPoint >= max ? `${max + 1} per point would pass the limit of 20 sentences` : 'Picked examples count toward it; the rest is generated'}"><span class="mi">add</span></button></div>
+      <span class="body2" style="color:var(--text2)">${sum}</span>
+    </div>
+    ${picked ? `<button class="exonly ${S.exOnly ? 'on' : ''}" data-act="exonly" aria-pressed="${S.exOnly}"><span class="cb ${S.exOnly ? 'on' : ''}"><span class="mi">${S.exOnly ? 'check_box' : 'check_box_outline_blank'}</span></span>Use the picked examples only — generate nothing</button>` : ''}
+  </div>`;
+}
+
+/* =====================================================================
+   Step 2 · Edit Sentences（第一輪：照基準檔抄，只拿掉 Practice Name）
+   ===================================================================== */
+const SENTENCES = [
+  { idx:0, content:'我每天七点起床。', tr:'I get up at seven every day.', point:'起床', sc:['我','每天','七点','起床','。'], py:['wǒ','měi tiān','qī diǎn','qǐ chuáng','。'] },
+  { idx:1, content:'我早饭吃面包。', tr:'I eat bread for breakfast.', point:'早饭', sc:['我','早饭','吃','面包','。'], py:['wǒ','zǎo fàn','chī','miàn bāo','。'] },
+  { idx:2, content:'我八点上课。', tr:'I have class at eight.', point:'上课', sc:['我','八点','上课','。'], py:['wǒ','bā diǎn','shàng kè','。'] },
+  { idx:3, content:'下午我去图书馆看书。', tr:'In the afternoon I go to the library to read.', point:'图书馆', sc:['下午','我','去','图书馆','看书','。'], py:['xià wǔ','wǒ','qù','tú shū guǎn','kàn shū','。'] },
+  { idx:4, content:'我喜欢晚上运动。', tr:'I like to exercise in the evening.', point:'运动', sc:['我','喜欢','晚上','运动','。'], py:['wǒ','xǐ huan','wǎn shang','yùn dòng','。'] },
+  { idx:5, content:'我十一点睡觉。', tr:'I go to sleep at eleven.', point:'睡觉', sc:['我','十一点','睡觉','。'], py:['wǒ','shí yī diǎn','shuì jiào','。'] },
+  { idx:6, content:'我一起床就喝水。', tr:'I drink water as soon as I get up.', point:'一……就', sc:['我','一','起床','就','喝水','。'], py:['wǒ','yì','qǐ chuáng','jiù','hē shuǐ','。'] },
+  /* 第二十四輪（2026-10-02）：每個點第二句（跟 WORDS.ex 的第二句同一句），第一步要超過 7 句時才用到——第二步的句數才跟得上第一步問的 */
+  { idx:7, content:'周末我起床很晚。', tr:'On weekends I get up late.', point:'起床', sc:['周末','我','起床','很','晚','。'], py:['zhōu mò','wǒ','qǐ chuáng','hěn','wǎn','。'] },
+  { idx:8, content:'你吃早饭了吗？', tr:'Have you had breakfast?', point:'早饭', sc:['你','吃','早饭','了','吗','？'], py:['nǐ','chī','zǎo fàn','le','ma','？'] },
+  { idx:9, content:'今天我们不上课。', tr:'We do not have class today.', point:'上课', sc:['今天','我们','不','上课','。'], py:['jīn tiān','wǒ men','bù','shàng kè','。'] },
+  { idx:10, content:'图书馆里很安静。', tr:'It is very quiet in the library.', point:'图书馆', sc:['图书馆','里','很','安静','。'], py:['tú shū guǎn','lǐ','hěn','ān jìng','。'] },
+  { idx:11, content:'运动对身体很好。', tr:'Exercise is good for the body.', point:'运动', sc:['运动','对','身体','很','好','。'], py:['yùn dòng','duì','shēn tǐ','hěn','hǎo','。'] },
+  { idx:12, content:'睡觉前我看一会儿书。', tr:'I read for a while before sleeping.', point:'睡觉', sc:['睡觉','前','我','看','一会儿','书','。'], py:['shuì jiào','qián','wǒ','kàn','yí huì er','shū','。'] },
+  { idx:13, content:'他一下课就回家。', tr:'He goes home as soon as class ends.', point:'一……就', sc:['他','一','下课','就','回家','。'], py:['tā','yí','xià kè','jiù','huí jiā','。'] },
+  /* 第二十六輪（2026-10-02）：第二步 + 可以一路加到 20 總數——每個點再備三句當「生成」的結果（idx 14–34）；用完就複製該點第一句充數（gen:true） */
+  { idx:14, content:'他每天六点起床。', tr:'He gets up at six every day.', point:'起床', sc:['他','每天','六点','起床','。'], py:['tā','měi tiān','liù diǎn','qǐ chuáng','。'] },
+  { idx:15, content:'今天我起床晚了。', tr:'I got up late today.', point:'起床', sc:['今天','我','起床','晚','了','。'], py:['jīn tiān','wǒ','qǐ chuáng','wǎn','le','。'] },
+  { idx:16, content:'起床以后我喝水。', tr:'After getting up I drink water.', point:'起床', sc:['起床','以后','我','喝水','。'], py:['qǐ chuáng','yǐ hòu','wǒ','hē shuǐ','。'] },
+  { idx:17, content:'我们一起吃早饭。', tr:'We have breakfast together.', point:'早饭', sc:['我们','一起','吃','早饭','。'], py:['wǒ men','yì qǐ','chī','zǎo fàn','。'] },
+  { idx:18, content:'早饭我喝牛奶。', tr:'I drink milk for breakfast.', point:'早饭', sc:['早饭','我','喝','牛奶','。'], py:['zǎo fàn','wǒ','hē','niú nǎi','。'] },
+  { idx:19, content:'他不吃早饭。', tr:'He does not eat breakfast.', point:'早饭', sc:['他','不','吃','早饭','。'], py:['tā','bù','chī','zǎo fàn','。'] },
+  { idx:20, content:'我们九点上课。', tr:'We have class at nine.', point:'上课', sc:['我们','九点','上课','。'], py:['wǒ men','jiǔ diǎn','shàng kè','。'] },
+  { idx:21, content:'明天我们上课吗？', tr:'Do we have class tomorrow?', point:'上课', sc:['明天','我们','上课','吗','？'], py:['míng tiān','wǒ men','shàng kè','ma','？'] },
+  { idx:22, content:'上课的时候别说话。', tr:'Do not talk during class.', point:'上课', sc:['上课','的时候','别','说话','。'], py:['shàng kè','de shí hou','bié','shuō huà','。'] },
+  { idx:23, content:'我在图书馆学习。', tr:'I study in the library.', point:'图书馆', sc:['我','在','图书馆','学习','。'], py:['wǒ','zài','tú shū guǎn','xué xí','。'] },
+  { idx:24, content:'图书馆八点开门。', tr:'The library opens at eight.', point:'图书馆', sc:['图书馆','八点','开门','。'], py:['tú shū guǎn','bā diǎn','kāi mén','。'] },
+  { idx:25, content:'我们去图书馆吧。', tr:'Let us go to the library.', point:'图书馆', sc:['我们','去','图书馆','吧','。'], py:['wǒ men','qù','tú shū guǎn','ba','。'] },
+  { idx:26, content:'他每天都运动。', tr:'He exercises every day.', point:'运动', sc:['他','每天','都','运动','。'], py:['tā','měi tiān','dōu','yùn dòng','。'] },
+  { idx:27, content:'我不喜欢运动。', tr:'I do not like exercise.', point:'运动', sc:['我','不','喜欢','运动','。'], py:['wǒ','bù','xǐ huan','yùn dòng','。'] },
+  { idx:28, content:'运动以后我很累。', tr:'After exercising I am very tired.', point:'运动', sc:['运动','以后','我','很','累','。'], py:['yùn dòng','yǐ hòu','wǒ','hěn','lèi','。'] },
+  { idx:29, content:'我很早睡觉。', tr:'I go to sleep very early.', point:'睡觉', sc:['我','很','早','睡觉','。'], py:['wǒ','hěn','zǎo','shuì jiào','。'] },
+  { idx:30, content:'他还没睡觉。', tr:'He has not gone to sleep yet.', point:'睡觉', sc:['他','还','没','睡觉','。'], py:['tā','hái','méi','shuì jiào','。'] },
+  { idx:31, content:'睡觉前别喝咖啡。', tr:'Do not drink coffee before bed.', point:'睡觉', sc:['睡觉','前','别','喝','咖啡','。'], py:['shuì jiào','qián','bié','hē','kā fēi','。'] },
+  { idx:32, content:'我一到家就吃饭。', tr:'I eat as soon as I get home.', point:'一……就', sc:['我','一','到家','就','吃饭','。'], py:['wǒ','yí','dào jiā','jiù','chī fàn','。'] },
+  { idx:33, content:'她一看书就困。', tr:'She gets sleepy as soon as she reads.', point:'一……就', sc:['她','一','看书','就','困','。'], py:['tā','yí','kàn shū','jiù','kùn','。'] },
+  { idx:34, content:'我们一下课就去图书馆。', tr:'We go to the library as soon as class ends.', point:'一……就', sc:['我们','一','下课','就','去','图书馆','。'], py:['wǒ men','yí','xià kè','jiù','qù','tú shū guǎn','。'] },
+];
+const isWordTok = (t) => /[\p{L}\p{N}]/u.test(t);
+function chunkRow(x, { showPy = true, editable = false } = {}){
+  return `<div class="chunk">${x.sc.map((t, i) => isWordTok(t)
+    ? `<span class="u ${editable ? 'ed' : ''}" ${editable ? 'data-py="1"' : ''}>${showPy ? `<span class="py">${esc(x.py[i])}</span>` : ''}<span class="tx">${esc(t)}</span></span>`
+    : `<span class="pt">${esc(t)}</span>`).join('')}</div>`;
+}
+/* 第十五輪：剪刀真的能切／合。每個詞塊拆成字（拼音一字一音才拆），字與字之間一條縫；切點初始在原本的塊與塊之間；
+   Save 把切點重組回 splitContent／splitContentPinyin（照 scramble-tokens 的 fromSegmentPieces） */
+function segPieces(x){
+  const out = []; x.sc.forEach((t, ti) => { if (!isWordTok(t)) { out.push({ t, py:t, w:false, ti }); return; }
+    const syl = (x.py[ti] || '').split(' '), chars = [...t];
+    if (syl.length === chars.length) chars.forEach((ch, k) => out.push({ t:ch, py:syl[k], w:true, ti })); else out.push({ t, py:x.py[ti], w:true, ti }); });
+  return out;
+}
+function segCuts(x){ const pc = segPieces(x); if (!S.cuts[x.idx]) S.cuts[x.idx] = pc.slice(0, -1).map((p, i) => p.ti !== pc[i + 1].ti); return S.cuts[x.idx]; }
+function segRegroup(x){
+  const pc = segPieces(x), cuts = segCuts(x), sc = [], py = []; let t = '', p = [];
+  pc.forEach((piece, i) => { t += piece.t; if (piece.w) p.push(piece.py); const last = i === pc.length - 1, cut = last || cuts[i] || !piece.w || !pc[i + 1].w;
+    if (cut) { sc.push(t); py.push(piece.w ? p.join(' ') : piece.t); t = ''; p = []; } });
+  return { ...x, sc, py };
+}
+function renderSegEditor(x){
+  const pc = segPieces(x), cuts = segCuts(x); const changed = JSON.stringify(segRegroup(x).sc) !== JSON.stringify(x.sc);
+  let out = ''; pc.forEach((piece, i) => {
+    const prev = pc[i - 1], next = pc[i + 1];
+    const cutL = !prev || cuts[i - 1] || !prev.w || !piece.w, cutR = !next || cuts[i] || !next.w || !piece.w;
+    out += `<span class="pc ${piece.w ? 'w' : 'p'} ${cutL ? 'l' : ''} ${cutR ? 'r' : ''}">${esc(piece.t)}</span>`;
+    if (next) { if (piece.w && next.w) out += `<button class="gap ${cuts[i] ? 'cut' : ''}" data-gap="${x.idx}|${i}" aria-label="${cuts[i] ? 'Join' : 'Split'} ${esc(piece.t)} and ${esc(next.t)}"></button>`; else out += '<span class="sp"></span>'; }
+  });
+  const canSplitAll = cuts.some((c, i) => !c && pc[i].w && pc[i + 1].w);
+  return `<div class="seged">
+    <div class="cap">Click between two characters to split or join scramble blocks.</div>
+    <div class="pieces">${out}</div>
+    <div><div class="cap" style="display:block; margin-bottom:6px">Preview</div>${chunkRow(segRegroup(x))}</div>
+    <div class="ft"><button class="btn text sm ${canSplitAll ? '' : 'dis'}" data-splitall="${x.idx}" ${canSplitAll ? '' : 'disabled'}>Split into characters</button><span style="display:flex; gap:8px"><button class="btn outlined sm" data-segcancel="${x.idx}">Cancel</button><button class="btn contained sm ${changed ? '' : 'dis'}" data-segsave="${x.idx}" ${changed ? '' : 'disabled'}>Save</button></span></div>
+  </div>`;
+}
+/* 第十四輪：題號統一成 v6 的綠色膠囊 ＋ 左邊拖曳把手（卡片可以拖）；上下箭頭拿掉。教學點 chip 留粉紅（那是這張卡自己的） */
+/* 第二十四輪：第二步的句子照第一步問到的——每個點拿它分到的份額（shares()），7 個點 12 句＝5 個點兩句、2 個點一句；沒選專案就每點一句 */
+function defaultOrder(){ const pts = tickedPts(); if (!pts.length) return SENTENCES.filter(x => x.idx < 7).map(x => x.idx); const sh = shares(); return pts.flatMap(w => SENTENCES.filter(x => x.point === w).slice(0, sh[w] || 0).map(x => x.idx)); }
+function sentList(){ if (!S.sorder) S.sorder = defaultOrder(); return S.sorder.map(i => SENTENCES.find(x => x.idx === i)); }
+/* v19：空格＝教學點。blankIdx 找出句子裡要挖的詞塊（兩槽語法點兩個）；選項列＝答案＋干擾詞 */
+const DIS = {};   // 老師改過的干擾詞（idx → [詞]）
+const WORD_PY = { '起床':'qǐ chuáng','早饭':'zǎo fàn','上课':'shàng kè','图书馆':'tú shū guǎn','运动':'yùn dòng','睡觉':'shuì jiào','看书':'kàn shū','喝水':'hē shuǐ','回家':'huí jiā','吃饭':'chī fàn','学习':'xué xí','才':'cái','也':'yě','都':'dōu','再':'zài','还':'hái' };
+const POINT_WORDS = ['起床','早饭','上课','图书馆','运动','睡觉'];
+const isGram = (x) => x.point.includes('……');
+function blankIdx(x){ if (isGram(x)) { const parts = x.point.split('……'); return x.sc.map((t, i) => parts.includes(t) ? i : -1).filter(i => i >= 0); } const k = x.sc.indexOf(x.point); return k >= 0 ? [k] : []; }
+const answerWords = (x) => blankIdx(x).map(i => [x.sc[i], x.py[i]]);
+function disOf(x){ if (DIS[x.idx]) return DIS[x.idx]; if (isGram(x)) return ['才','也','都'];
+  let sd = 7 + x.idx; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+  return POINT_WORDS.filter(w => w !== x.point).map(w => [r(), w]).sort((a, b) => a[0] - b[0]).map(a => a[1]).slice(0, 3); }
+function fillRow(x, { showPy = true, editable = false } = {}){
+  const bl = blankIdx(x);
+  return `<div class="chunk">${x.sc.map((t, i) => isWordTok(t)
+    ? `<span class="u ${bl.includes(i) ? 'blank' : ''} ${editable ? 'ed' : ''}" ${editable ? 'data-py="1"' : ''} ${bl.includes(i) ? 'title="This word is the blank"' : ''}>${showPy ? `<span class="py">${esc(x.py[i])}</span>` : ''}<span class="tx">${esc(t)}</span></span>`
+    : `<span class="pt">${esc(t)}</span>`).join('')}</div>`;
+}
+function renderWordBank(x){
+  const ans = answerWords(x), dis = disOf(x);
+  return `<div class="wbank">
+    ${ans.map(([t]) => `<span class="wb-tile ans" title="Answer"><span class="mi">check</span>${esc(t)}</span>`).join('')}
+    ${dis.map((w) => `<span class="wb-tile">${esc(w)}</span>`).join('')}
+  </div>`;
+}
+function renderSCard(x, i){
+  const editing = S.editIdx === x.idx;
+  if (editing) return `<div class="sqcard" data-skey="${x.idx}">
+    <div class="sqrow"><div class="l"><span class="mi drag" style="color:var(--text3); font-size:20px">drag_indicator</span><span class="chip sm primary filled">Q${i + 1}</span><span class="pchip lg">${esc(x.point)}</span></div></div>
+    <div class="qedit">
+      <input class="inp" type="text" value="${esc(S.editZh ?? x.content)}" placeholder="Chinese" data-editzh="${x.idx}">
+      <input class="inp" type="text" value="${esc(S.editTr ?? x.tr)}" placeholder="Translation" data-edittr="${x.idx}">
+      <input class="inp" type="text" value="${esc(S.editDis ?? disOf(x).join('、'))}" placeholder="Distractors (3 words, separate with 、)" data-editdis="${x.idx}">
+      ${(S.editZh ?? x.content) !== x.content ? '<div class="autonote"><span class="mi">autorenew</span><b>Auto-update on save</b><i></i><span>After saving, pinyin, translation and the blank will be updated to match your edited Chinese.</span></div>' : ''}
+      <div class="ft"><button class="btn outlined sm" data-editcancel="${x.idx}">Cancel</button><button class="btn contained sm" data-editsave="${x.idx}">Save</button></div>
+    </div>
+  </div>`;
+  return `<div class="sqcard" draggable="true" data-skey="${x.idx}">
+    <div class="sqrow">
+      <div class="l">
+        <span class="mi drag" style="color:var(--text3); font-size:20px; cursor:grab">drag_indicator</span>
+        <span class="chip sm primary filled">Q${i + 1}</span><span class="pchip lg">${esc(x.point)}</span>
+      </div>
+      <div class="l" style="gap:4px">
+        <button class="sib" title="Edit" data-sedit="${x.idx}"><span class="mi">edit</span></button>
+        <button class="sib del" title="Delete" data-sdel="${x.idx}"><span class="mi">delete_outline</span></button>
+      </div>
+    </div>
+    ${fillRow(x, { editable:true })}
+    <div class="qtr">${esc(x.tr)}</div>
+    ${blankIdx(x).length ? renderWordBank(x) : '<div class="qtr" style="color:var(--warning-dark)">The teaching point is not in this sentence yet — pinyin and the blank will be set after saving.</div>'}
+  </div>`;
+}
+function renderStep1(){
+  const pts = tickedPts().length ? tickedPts() : WORDS.map(w => w.w);
+  const usage = pts.map(w => [w, sentList().filter(x => x.point === w).length]);
+  const total = sentList().length, asked = genTotal();   // 第二十四輪：眉標接上第一步問的數字
+  /* 第五輪：照 v6 的版式——重複的標題（icon ＋ Sentence Scramble ＋ 一句說明）拿掉，兩段各一條眉標，說明收進眉標右邊 */
+  return `
+    <div class="eyebrow" style="margin-top:0"><b>Teaching points · ${usage.length}</b><span class="rule"></span><span class="hint">Up to <b class="${total >= MAX_TOTAL ? 'cap-hit' : ''}">${MAX_TOTAL}</b> in total</span></div>
+    <div class="card" style="padding:16px 20px">
+      <div class="tpc">${usage.map(([pt, n]) => { const atCap = total >= MAX_TOTAL, atPer = n >= PER_MAX;   // 第二十六輪：20 總數；第二十七輪：每點上限 PER_MAX（5）
+        return `<div class="tpc-card"><span class="pchip">${esc(pt)}</span>
+          <div class="tpc-row"><span class="tpc-n"><b>${n}</b> ${n === 1 ? 'sentence' : 'sentences'}</span>
+            <div class="stp sm"><button type="button" data-tpdel="${esc(pt)}" ${n ? '' : 'disabled'} aria-label="One fewer for ${esc(pt)}" title="Remove the last sentence for ${esc(pt)}"><span class="mi">remove</span></button><button type="button" data-tpadd="${esc(pt)}" ${atCap || atPer ? 'disabled' : ''} aria-label="One more for ${esc(pt)}" title="${atPer ? `Up to ${PER_MAX} sentences per teaching point` : atCap ? `Up to ${MAX_TOTAL} sentences in total` : `Generate one more for ${esc(pt)}`}"><span class="mi">add</span></button></div></div>${atPer ? `<span class="tpc-cap">Up to ${PER_MAX} per point</span>` : atCap ? `<span class="tpc-cap">Up to ${MAX_TOTAL} in total</span>` : ''}</div>`; }).join('')}</div>
+    </div>
+    ${S.note ? `<div class="alert warn" style="margin:24px 0 0"><span class="mi">warning_amber</span><span>${S.note}</span></div>` : ''}
+    <div class="eyebrow"><b>Sentences · ${sentList().length}</b><span class="rule"></span><span class="hint">In this order · drag a card to reorder · the teaching point is the blank · click pinyin to fix tones</span></div>
+    ${sentList().map(renderSCard).join('')}
+    ${S.pyDlg ? `<div class="scrim2" data-act="closepy"><div class="pydlg" data-stop="1">
+      <div class="t">Edit Pinyin</div>
+      <div class="bd">
+        <div class="big">起床</div>
+        <div class="body2" style="color:var(--text2); text-align:center; margin-bottom:16px">qǐ chuáng</div>
+        <div class="syls">${[['qi','3rd ˇ'],['chuang','2nd ˊ']].map(([b, t]) => `<div class="syl"><input class="in" value="${b}" placeholder="pinyin"><span class="tone">${t}<span class="mi" style="font-size:20px; color:var(--text2)">arrow_drop_down</span></span></div>`).join('')}</div>
+      </div>
+      <div class="ft"><button class="btn text" data-act="closepy">Cancel</button><button class="btn contained" data-act="closepy">Save</button></div>
+    </div></div>` : ''}`;
+}
+
+/* =====================================================================
+   Step 3 · Settings（第一輪：照基準檔抄，只拿掉 Practice Name）
+   ===================================================================== */
+/* =====================================================================
+   Step 3 · Settings —— 第十六輪：套共用設計（R11 工具列＋畫布）
+   工具列：PINYIN · Shown｜Hidden｜Choice by student ‖ SPEED 試聽 chip ｜ VOICE 下拉 ‖ MAX TRIES · [− 3 +] ⓘ
+   （Scramble 沒有 Practice mode、沒有 Translation——學生端沒讀）。畫布＝學生的拼句畫面（assignments/content/sentence-scramble）：
+   打散的 tiles ＋ 虛線 slot、Listen to sentence、Check；齒輪只在 Choice by student 時出現。
+   基準檔那份「Sentences (7)」唯讀清單拿掉（D3：畫布就是句子）。
+   ===================================================================== */
+const SPEED_NAME = { '0.6':'Slow', '0.8':'Normal', '1':'Fast', 'choice':'Normal' };
+function ssTiles(x){ let sd = 3 + x.idx; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+  const words = x.sc.map((t, i) => [t, x.py[i]]).filter(([t]) => isWordTok(t)); const arr = words.map((w) => [r(), w]).sort((a, b) => a[0] - b[0]).map(a => a[1]);
+  if (arr.every((w, i) => w[0] === words[i][0])) arr.push(arr.shift());   // 跟 helpers.shuffle 一樣：洗出原順序就轉一格
+  return { words, pool: arr }; }
+function renderStep2(){
+  S.pinyin ??= 'PINYIN'; S.speed ??= '0.8'; S.voice ??= 'Xiaorou (Female)'; S.attempts ??= 3; S.idx ??= 0;
+  const list = sentList(), x = list[Math.min(S.idx, list.length - 1)];
+  const pyOn = S.pinyin === 'PINYIN' || (S.pinyin === 'STUDENT_CHOICE' && S.stuPy);
+  const ctl = (label, inner) => `<div class="tb-ctl"><span class="tl">${label}</span>${inner}</div>`;
+  const speedChips = [['0.6','Slow'],['0.8','Normal'],['1','Fast']].map(([v, t]) =>
+    `<button class="vchip ${S.speed === v ? 'on' : ''} ${S.playing === 'sp:' + v ? 'playing' : ''}" data-speed="${v}"><span class="mi">${S.playing === 'sp:' + v ? 'graphic_eq' : 'play_arrow'}</span>${t}</button>`).join('')
+    + `<button class="vchip ${S.speed === 'choice' ? 'on' : ''}" data-speed="choice">Choice by student</button>`;
+  const groups = voiceList(PROJECT_LANG);
+  const voiceMenu = S.voiceOpen ? `<div class="vdd-menu" role="menu">${groups.map(([g, lst]) => (groups.length > 1 ? `<div class="vl">${g}</div>` : '') +
+      lst.map(name => `<button class="vdd-item ${S.voice === name ? 'on' : ''}" role="menuitemradio" aria-checked="${S.voice === name}" data-voice="${name}">
+        <span class="vpl"><span class="mi">${S.playing === name ? 'graphic_eq' : 'play_arrow'}</span></span><span class="nm">${name}</span>${S.voice === name ? '<span class="mi tick">check</span>' : ''}</button>`).join('')).join('')}</div>` : '';
+  const voiceCtl = `<div class="vdd"><button class="vdd-trig" data-act="voicedd" aria-haspopup="menu" aria-expanded="${S.voiceOpen}"><span class="mi">${S.playing === S.voice ? 'graphic_eq' : 'play_arrow'}</span>${esc(S.voice)}<span class="mi caret">expand_more</span></button>${voiceMenu}</div>`;
+  const toolbar = `<div class="toolbar">
+    <div class="tb-row"><div class="tb-grp">${ctl('Pinyin', seg('pinyin', S.pinyin, [['PINYIN','Shown'],['NO_PINYIN','Hidden'],['STUDENT_CHOICE','Choice by student']]))}</div></div>
+    <div class="tb-row">
+      <div class="tb-grp">${ctl('Speed', `<span class="vgrp">${speedChips}</span>`)}${ctl('Voice', voiceCtl)}</div>
+      <div class="tb-grp">${ctl(`Max tries <button type="button" class="tip ${S.tipOpen ? 'on' : ''}" data-act="tip" data-tip="How many times a student may check one sentence. After the last try the answer is shown and the practice moves on (default 3)." aria-label="What max tries means"><span class="mi">info</span></button>`,
+        `<span class="stp"><button data-act="minus" aria-label="Fewer tries"><span class="mi">remove</span></button><span class="n">${S.attempts}</span><button data-act="plus" aria-label="More tries"><span class="mi">add</span></button></span>`)}</div>
+    </div></div>`;
+  /* 學生畫面：sentence-scramble/index.js 的 QuestionScreen——頂欄不畫（v3／v4 同一個取捨），只畫那張卡 ＋ 齒輪 ＋ 換句 */
+  const rows = [];
+  if (S.pinyin === 'STUDENT_CHOICE') rows.push(`<div class="pr">Pinyin<span class="sw2 ${S.stuPy ? 'on' : ''}" data-act="stupy" role="switch" aria-checked="${S.stuPy}"></span></div>`);
+  if (S.speed === 'choice') rows.push(`<div class="pr">Speed<span class="sel">Normal<span class="mi">arrow_drop_down</span></span></div>`);
+  const gear = rows.length ? `<div class="sp"><button class="gear" data-act="settings" aria-label="Settings" aria-expanded="${S.settingsOpen}"><span class="mi">settings</span></button>${S.settingsOpen ? `<div class="panel"><div class="ph">Settings<span class="mi">close</span></div>${rows.join('')}</div>` : ''}</div>` : '';
+  /* v19：句子照排、教學點的位置是虛線 slot；詞塊池＝答案＋干擾詞（固定順序打散，跟 helpers.shuffle 一樣洗出原順序就轉一格） */
+  const bl = blankIdx(x), ans = answerWords(x);
+  const slots = x.sc.map((t, i) => bl.includes(i) ? '<span class="ss-slot fi"></span>' : isWordTok(t)
+    ? `<span class="fi-word">${pyOn ? `<span class="p">${esc(x.py[i])}</span>` : ''}<span class="z">${esc(t)}</span></span>` : `<span class="ss-punct">${esc(t)}</span>`).join('');
+  let sd = 11 + x.idx; const rr = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+  const bank = ans.concat(disOf(x).map(w => [w, WORD_PY[w] || ''])); const pool = bank.map(w => [rr(), w]).sort((a, b) => a[0] - b[0]).map(a => a[1]);
+  if (pool.every((w, i) => w[0] === bank[i][0])) pool.push(pool.shift());
+  const tiles = pool.map(([t, py]) => `<span class="ss-tile">${pyOn ? `<span class="p">${esc(py)}</span>` : ''}<span class="z">${esc(t)}</span></span>`).join('');
+  const screen = `<div class="ss-ground">${gear}
+    <div class="ss-card">
+      <div class="ss-hd"><span class="ss-hint">Pick the word that completes the sentence.</span>${S.attempts > 1 ? `<span class="ss-tries">0 / ${S.attempts} tries</span>` : ''}</div>
+      <button class="ss-listen" data-act="play"><span class="mi">${S.phase === 'playing' ? 'graphic_eq' : 'volume_up'}</span>${S.phase === 'playing' ? 'Playing' : `Listen to sentence · ${SPEED_NAME[S.speed]} · ${esc(S.voice)}`}</button>
+      <div class="ss-zone fi">${slots}</div>
+      <div class="ss-pool">${tiles}</div>
+      <div class="ss-ft"><button class="ss-check" disabled>Check</button></div>
+    </div>
+    <div class="sdd"><button class="sdd-trig" data-act="sdd" aria-expanded="${S.allOpen}">Sentence ${list.indexOf(x) + 1} of ${list.length}<span class="mi">${S.allOpen ? 'expand_less' : 'expand_more'}</span></button>
+      ${S.allOpen ? `<div class="sdd-menu">${list.map((y, i) => `<button class="sdd-item ${y === x ? 'on' : ''}" data-sidx="${i}"><span class="n">${i + 1}</span><span class="pl" role="button" aria-label="Play this sentence" data-rowplay="${i}"><span class="mi">${S.rowPlay === i ? 'graphic_eq' : 'play_arrow'}</span></span><span class="z">${esc(y.content)}</span>${y === x ? '<span class="mi">check</span>' : ''}</button>`).join('')}</div>` : ''}</div>
+  </div>`;
+  return `<div class="canvas">${toolbar}
+    <div class="vp"><div class="win"><div class="win-bar"><span class="mi">desktop_windows</span>Student view</div>${screen}</div></div>
+    <div class="stu-foot"><span>${list.length} ${list.length === 1 ? 'sentence' : 'sentences'}${S.pinyin === 'NO_PINYIN' ? ' · pinyin hidden' : ''}</span></div>
+  </div>`;
+}
+
+/* =====================================================================
+   Step 4 · Assign Practice —— v3 整組照搬（八種共用）
+   ===================================================================== */
+const fmt = (v) => {
+  const d = new Date(v);
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getDate()}, ${
+    String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+const assignedIn = (id) => new Set(S.done.filter(a => a.id === id).flatMap(a => a.students));
+const conflictFor = (name, id) => S.done.find(a => a.id !== id && a.students.includes(name));
+
+function renderStep3(){
+  const list = !S.done.length ? '' : `
+    <div class="eyebrow"><b>Assigned</b><span class="rule"></span></div>
+    ${S.done.map((a, k) => {
+      const c = CLASSES.find(x => x.id === a.id);
+      return `<div class="card" style="${k ? 'margin-top:8px' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
+          <div style="min-width:0">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="sub2">${c.name}</span>
+              <span class="pill ${a.kind === 'optional' ? 'opt' : 'mand'}">${a.kind === 'optional' ? 'Optional' : 'Mandatory'}</span></div>
+            <div class="cap dis" style="margin-top:2px">${a.students.length} of ${c.students.length} students</div>
+            <div class="cap" style="margin-top:4px">${fmt(a.start)} → ${fmt(a.due)}</div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn text sm">Edit</button>
+            <button class="btn outerr sm">Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+
+  const classRows = CLASSES.map(c => {
+    const had = assignedIn(c.id);
+    const full = had.size === c.students.length;
+    const on = S.picked.has(c.id);
+    const open = S.roster === c.id;
+    const left = c.students.length - had.size;
+    const sub = full ? 'Everyone is assigned'
+      : had.size ? `${had.size} of ${c.students.length} assigned · ${left} left`
+      : `${c.students.length} students`;
+    const row = `<div class="clsrow ${on ? 'on' : ''} ${full ? 'done' : ''}"
+        ${full ? '' : `data-cls="${c.id}"`} style="${full ? '' : 'cursor:pointer'}">
+      <span class="box"><span class="mi">check</span></span>
+      <span class="grow"><span class="nm">${c.name}</span><span class="sub">${sub}</span></span>
+      ${full ? '<span class="pill mand">Assigned</span>'
+             : (on ? `<button class="linkbtn" data-roster="${c.id}">${open ? 'Close' : 'Choose students'}</button>` : '')}
+    </div>`;
+    const roster = (on && open) ? `<div class="roster">${c.students.map(nm => {
+      const cf = conflictFor(nm, c.id);
+      if (cf) return `<span class="stu off"><span class="box"></span>${nm}
+        <span class="tag warn">In ${CLASSES.find(x => x.id === cf.id).name}</span></span>`;
+      const was = had.has(nm);
+      const sel = S.sel.has(nm);
+      const tag = was && sel ? '<span class="tag ok">Assigned</span>'
+        : was && !sel ? '<span class="tag bad">Will remove</span>'
+        : sel ? '<span class="tag new">New</span>' : '';
+      return `<span class="stu ${sel ? 'on' : ''}" data-stu="${nm}"><span class="box"></span>${nm}${tag}</span>`;
+    }).join('')}</div>` : '';
+    return row + roster;
+  }).join('');
+
+  const n = S.picked.size;
+  const allFull = CLASSES.every(c => assignedIn(c.id).size === c.students.length);
+  const days = [1, 3, 7].map(d => `<button data-days="${d}">+${d} ${d === 1 ? 'day' : 'days'}</button>`).join('');
+
+  const form = allFull ? `<div class="card empty">Every class already has this practice.</div>` : `
+    <div class="eyebrow"><b>Who does it</b><span class="rule"></span>
+      ${S.done.length ? '<span class="hint">Assign it again to another class, with its own dates</span>' : ''}</div>
+    <div class="rows">${classRows}</div>
+
+    <div class="eyebrow"><b>When</b><span class="rule"></span></div>
+    <div class="rows">
+      ${n > 1 ? `<div class="modeline">
+        <span>${S.perClass ? 'Each class has its own dates.' : `These dates apply to all ${n} classes.`}</span>
+        <button class="linkbtn" data-act="perclass">${S.perClass ? 'Use one schedule for all' : 'Set dates per class'}</button>
+      </div>` : ''}
+      ${(n > 1 && S.perClass)
+        ? [...S.picked].map(id => {
+            const c = CLASSES.find(x => x.id === id);
+            const d = S.perDates[id] || { start:S.start, due:S.due };
+            return `<div class="perclass">
+              <div class="pc-name">${c.name}</div>
+              <div class="dtrow" style="margin-bottom:10px">
+                <span class="lbl">Start</span>
+                <input class="dt2" type="datetime-local" value="${d.start}">
+                <span class="quick"><button data-now="${id}">Now</button></span>
+              </div>
+              <div class="dtrow">
+                <span class="lbl">Due</span>
+                <input class="dt2" type="datetime-local" value="${d.due}">
+                <span class="quick">${[1,3,7].map(k =>
+                  `<button data-days="${k}" data-for="${id}">+${k} ${k === 1 ? 'day' : 'days'}</button>`).join('')}</span>
+              </div>
+            </div>`;
+          }).join('')
+        : `<div class="rw"><div class="dtrow">
+        <span class="lbl">Start</span>
+        <input class="dt2" type="datetime-local" value="${S.start}">
+        <span class="quick"><button data-now="1">Now</button></span>
+      </div></div>
+      <div class="rw"><div class="dtrow">
+        <span class="lbl">Due</span>
+        <input class="dt2" type="datetime-local" value="${S.due}">
+        <span class="quick">${days}</span>
+      </div></div>`}
+    </div>
+
+    <div class="eyebrow"><b>How it counts</b><span class="rule"></span></div>
+    <div class="rows">
+      <div class="rw">
+        <div><div class="lb">${S.kind === 'optional' ? 'Optional' : 'Mandatory'}</div>
+          <div class="hp">${S.kind === 'optional'
+            ? 'Self-paced practice. Students are not reminded and it is not chased as homework.'
+            : 'Counts as homework. Students get reminder emails until they finish it.'}</div></div>
+        <div class="ct">${seg('kind', S.kind, [['mandatory','Mandatory'],['optional','Optional']])}</div>
+      </div>
+    </div>`;
+
+  return list + form;
+}
+
+/* 上傳圖片的對話框（第二十四輪，新能力 E5）。兩個階段：選檔（拖放區）→ 預覽（檔名 ＋ 學生字卡長什麼樣）。
+   MUI Dialog 的殼跟 Assign 的預覽框同一套（.scrim / .dlg）。原型按拖放區就當作選好了一張 qichuang.jpg。 */
+function renderUpload(){
+  const { w, stage } = S.upDlg;
+  const v = selectedWords().find(x => x.w === w) || { w, py:'', tr:'' };
+  const replacing = S.uploaded.has(w);
+  const pyOn = S.pinyin !== 'NO_PINYIN', trOn = S.translation !== 'HIDE';
+  const body = stage === 'pick'
+    ? `<button class="dropzone" data-act="upchoose">
+        <span class="mi">cloud_upload</span>
+        <span class="t">Drop an image here, or click to choose</span>
+        <span class="c">PNG or JPG · up to 5 MB · landscape works best</span></button>`
+    : `<div class="up-prev">
+        <div class="file"><span class="thumb mine"><span class="mi">photo</span></span>
+          <span class="meta"><b>qichuang.jpg</b><span>1.2 MB · 1600 × 1067</span></span>
+          <button class="linkbtn" data-act="upback">Choose a different file</button></div>
+        <div class="lbl">On the word card</div>
+        <div class="minicard">
+          <div class="img mine"><span class="mi">photo</span></div>
+          <div class="txt">${pyOn ? `<div class="py">${esc(v.py)}</div>` : ''}<div class="w">${esc(w)}</div><div class="tr ${trOn ? '' : 'off'}">${esc(v.tr) || '&nbsp;'}</div></div>
+        </div>
+      </div>`;
+  return `<div class="scrim" data-act="closeup"><div class="dlg" data-stop="1" role="dialog" aria-labelledby="updlg-h">
+    <div class="dlg-hd">
+      <h3 id="updlg-h">${replacing ? 'Replace your image' : 'Upload an image'} for ${esc(w)}</h3>
+      <p>Shown on the left half of the word card. The AI pictures stay as choices.</p>
+    </div>
+    <div class="dlg-bd">${body}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closeup">Cancel</button>
+      ${stage === 'preview' ? '<button class="btn contained" data-act="upuse">Use this image</button>' : ''}
+    </div>
+  </div></div>`;
+}
+/* 第十七輪：題型預覽——學生端 mc/index.js QuestionScreen 的那張卡：題型 chip（MC_TYPE_COLORS 沒有 vocab 題型，落到 #666）、
+   題幹框（grey 6% 底、12% 框）：文字 h5 600 置中／圖 maxHeight 200／音檔 64px 播放鈕＋ Click to play audio、選項單欄 32px 圓字母。
+   跟 v3／v4 同一個取捨：只畫那張卡，頂欄進度條與 Previous／Next 不畫。 */
+function renderTypePreview(){
+  /* 第二十一輪：同一個對話框兩種入口——第二步點題型卡（S.pv：這種題型的一題）、第三步點某題的 Preview（S.pvq：就是那一題，‹ › 翻前後題） */
+  const byQ = S.pvq != null, list = byQ ? questions() : null;
+  if (byQ && (!list.length || S.pvq >= list.length)) { S.pvq = null; return ''; }
+  const q = byQ ? list[S.pvq] : null;
+  const t = byQ ? q.t : S.pv, d = MC_META[t], rows = QT_ROWS(), r = byQ ? rows.find(x => x.key === q.w) : (rows.find(x => !blockedWhy(x, t)) || rows[0]);
+  const qq = byQ ? q : buildQ(cellKey(r.key, t)); const i = byQ ? S.pvq : ORDERED_TYPES.indexOf(t);
+  const closeAct = byQ ? 'closepvq' : 'closepv';
+  const stem = qq.stemType === 'image' ? `<div class="pv-img"><span class="mi">image</span><span>${esc(r.vocabulary)}</span></div>`
+    : qq.stemType === 'audio' ? `<div class="pv-audio"><button class="pv-play" title="Play"><span class="mi">play_arrow</span></button><span class="cap">Click to play audio</span></div>`
+    : `<div class="pv-stem">${esc(qq.stem)}</div>`;
+  return `<div class="scrim" data-act="${closeAct}"><div class="dlg pvdlg" data-stop="1" role="dialog" aria-labelledby="pvdlg-h">
+    <div class="dlg-hd">
+      <h3 id="pvdlg-h">${byQ ? `<span class="chip sm primary filled">Q${i + 1}</span>` : ''}<span class="qt-ic" style="background:${d.bg}; color:${d.color}"><span class="mi">${d.icon}</span></span>${MC_LABEL[t]}${d.adv ? '<span class="qt-adv">Advanced</span>' : ''}${byQ ? `<span class="body2" style="font-weight:600; color:var(--text2)">${esc(qq.w)}</span>` : ''}</h3>
+    </div>
+    <div class="dlg-bd vp">
+      <div class="pv-card">
+        <span class="pv-chip">${MC_LABEL[t]}</span>
+        <div class="pv-box">${stem}</div>
+        <div class="pv-opts">${qq.opts.map(([l, v]) => `<div class="pv-opt"><span class="pv-letter">${l}</span><span>${esc(v)}</span></div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="dlg-ft">
+      <button class="btn contained" data-act="${closeAct}">Close</button>
+    </div>
+  </div></div>`;
+}
+function renderReview(){
+  const rows = [...S.picked].map(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const d = (S.perClass && S.perDates[id]) || { start:S.start, due:S.due };
+    const add = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    const skip = c.students.filter(nm => conflictFor(nm, id));
+    const off = c.students.filter(nm => !S.sel.has(nm) && !conflictFor(nm, id));
+    const cnt = add.length === c.students.length ? `all ${add.length} students` : `${add.length} of ${c.students.length} students`;
+    const ex = [
+      ...skip.map(nm => `${nm} is already in ${CLASSES.find(x => x.id === conflictFor(nm, id).id).name}`),
+      ...(off.length ? [`Not selected: ${off.join('、')}`] : []),
+    ];
+    return `<div class="rvc">
+      <div class="top"><span class="nm">${c.name}</span><span class="cnt">${cnt}</span></div>
+      <div class="when">${fmt(d.start)} → ${fmt(d.due)}</div>
+      ${ex.length ? `<div class="ex">${ex.join('<br>')}</div>` : ''}
+    </div>`;
+  }).join('');
+  const total = [...S.picked].reduce((k, id) => k +
+    CLASSES.find(x => x.id === id).students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id)).length, 0);
+  const nc = S.picked.size;
+  return `<div class="scrim" data-act="closerev"><div class="dlg" data-stop="1">
+    <div class="dlg-hd">
+      <h3>Assign to ${nc} ${nc === 1 ? 'class' : 'classes'}</h3>
+      <p>${S.kind === 'optional' ? 'Optional' : 'Mandatory'} · ${total} students</p>
+    </div>
+    <div class="dlg-bd">${rows}</div>
+    <div class="dlg-ft">
+      <button class="btn text" data-act="closerev">Back</button>
+      <button class="btn contained" data-act="confirm">Assign</button>
+    </div>
+  </div></div>`;
+}
+
+function commit(){
+  [...S.picked].forEach(id => {
+    const c = CLASSES.find(x => x.id === id);
+    const students = c.students.filter(nm => S.sel.has(nm) && !conflictFor(nm, id));
+    if (students.length) S.done.push({ id, start:S.start, due:S.due, kind:S.kind, students });
+  });
+  S.picked = new Set(); S.sel = new Set(); S.roster = null;
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderStepper();
+  el('content').innerHTML = [renderStep0, renderStep1, renderStep2, renderStep3][S.step]() + (S.review ? renderReview() : '') + (S.upDlg ? renderUpload() : '') + ((S.pv || S.pvq != null) ? renderTypePreview() : '');
+  el('back').classList.toggle('dis', S.step === 0);
+
+  /* 頁腳：第三步照 v3 把「送出一筆指派」與「結束流程」合成同一顆，依狀態換標籤。
+     第一步的 Next 在 Load Content 之前仍是灰的（沒動，是 Vocabulary 自己的閘）。 */
+  const n3 = S.step === 3 ? S.picked.size : 0;
+  el('next').textContent = S.step === 3
+    ? (S.justAssigned ? 'Assigned ✓'
+       : n3 ? `Assign to ${n3} ${n3 === 1 ? 'class' : 'classes'}`
+       : (S.done.length ? 'Done' : 'Skip for now'))
+    : (S.step === 2 ? 'Save' : S.step === 0 && !S.loaded ? 'Generate' : 'Next');   // resolvePrimaryActionLabel：第一步生成前 Generate、倒數第二步 Save
+  // 第一步：沒選專案／沒勾字 → 灰；生成中 → 轉圈（LoadingButton）；其餘可按
+  const canLoad = S.projects.length > 0 && S.tp.size > 0;
+  if (S.step === 0 && S.gen) el('next').innerHTML = '<span class="mi spinning">autorenew</span>Generate';
+  el('next').className = 'btn contained' + ((S.justAssigned || (S.step === 0 && (S.gen || !canLoad))) ? ' dis' : '');
+
+  ['l0','l1','l2','l3'].forEach(id => el(id).classList.remove('cur'));
+  el(['l0','l1','l2','l3'][S.step]).classList.add('cur');   // 狀態欄每步只留一個入口（使用者 2026-09-21）；各狀態的網址參數見 ITERATION.md
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.play')) { e.stopPropagation(); return; }
+
+
+  const per = e.target.closest('[data-per]');
+  if (per && !per.disabled){ S.perPoint = Math.min(perMax(), Math.max(1, S.perPoint + parseInt(per.dataset.per, 10))); render(); return; }
+  if (e.target.closest('[data-act="exonly"]')){ S.exOnly = !S.exOnly; render(); return; }
+  const ex = e.target.closest('[data-ex]');
+  if (ex){ const k = ex.dataset.ex; S.exPick.has(k) ? S.exPick.delete(k) : S.exPick.add(k); render(); return; }
+  const src = e.target.closest('[data-src]');   // 第十九輪：選項卡
+  if (src && src.getAttribute('aria-disabled') !== 'true' && !e.target.closest('[data-per],[data-exper],.qin')){ const want = src.dataset.src === 'ex'; if (want !== S.exOpen){ S.exOpen = want; if (!want) S.exOnly = false; else exAutoFill(); render(); } return; }
+  if (e.target.closest('[data-act="ex"]')){ S.exOpen = !S.exOpen; if (!S.exOpen) S.exOnly = false; else if (S.exMode === 'replace') exAutoFill(); render(); return; }
+  const scut = e.target.closest('[data-scut]');
+  if (scut){ const k = parseInt(scut.dataset.scut, 10); S.cutIdx = S.cutIdx === k ? null : k; S.editIdx = null; S.note = ''; render(); return; }
+  const sedit = e.target.closest('[data-sedit]');
+  if (sedit){ S.editIdx = parseInt(sedit.dataset.sedit, 10); S.editZh = null; S.editTr = null; S.cutIdx = null; S.note = ''; render(); return; }
+  /* 第二十五輪：每個點的小卡 −／+——+ 把這個點下一句接在它最後一句後面（demo 用 mock 的第二句，產品會真的生）；− 拿掉這個點最後一句，整份剩一句擋 */
+  const tpAdd = e.target.closest('[data-tpadd]');
+  if (tpAdd && !tpAdd.disabled){ const w = tpAdd.dataset.tpadd, list = sentList(); if (list.length >= MAX_TOTAL || list.filter(x => x.point === w).length >= PER_MAX) return; let nx = SENTENCES.find(x => x.point === w && !list.some(y => y.idx === x.idx));
+    if (!nx){ const src = SENTENCES.find(x => x.point === w); nx = { ...src, idx: Math.max(...SENTENCES.map(x => x.idx)) + 1, sc:[...src.sc], py:[...src.py], gen:true }; SENTENCES.push(nx); }   // 第二十六輪：mock 用完就複製一句充當 AI 新生的
+    const ord = list.map(x => x.idx); let at = -1; ord.forEach((i, k) => { if (SENTENCES.find(x => x.idx === i).point === w) at = k; }); ord.splice(at + 1, 0, nx.idx); S.sorder = ord; S.note = ''; render(); return; }
+  const tpDel = e.target.closest('[data-tpdel]');
+  if (tpDel && !tpDel.disabled){ const w = tpDel.dataset.tpdel, list = sentList(); const mine = list.filter(x => x.point === w); if (!mine.length) return; if (list.length <= 1) { S.note = 'Keep at least one sentence.'; render(); return; }
+    S.sorder = list.map(x => x.idx).filter(i => i !== mine[mine.length - 1].idx); S.note = ''; render(); return; }
+  const sdel = e.target.closest('[data-sdel]');
+  if (sdel){ const k = parseInt(sdel.dataset.sdel, 10); if (sentList().length <= 1) { S.note = 'Keep at least one sentence.'; render(); return; } S.sorder = sentList().map(x => x.idx).filter(i => i !== k); S.note = ''; render(); return; }
+  const gap = e.target.closest('[data-gap]');
+  if (gap){ const [k, g] = gap.dataset.gap.split('|').map(Number); const x = SENTENCES.find(y => y.idx === k); const c = segCuts(x); c[g] = !c[g]; render(); return; }
+  const sa = e.target.closest('[data-splitall]');
+  if (sa && !sa.disabled){ const x = SENTENCES.find(y => y.idx === parseInt(sa.dataset.splitall, 10)); const pc = segPieces(x); S.cuts[x.idx] = pc.slice(0, -1).map((p, i) => p.w && pc[i + 1].w ? true : S.cuts[x.idx][i]); render(); return; }
+  if (e.target.closest('[data-segcancel]')){ const k = parseInt(e.target.closest('[data-segcancel]').dataset.segcancel, 10); delete S.cuts[k]; S.cutIdx = null; render(); return; }
+  const ss = e.target.closest('[data-segsave]');
+  if (ss && !ss.disabled){ const k = parseInt(ss.dataset.segsave, 10); const x = SENTENCES.find(y => y.idx === k); const r = segRegroup(x); x.sc = r.sc; x.py = r.py; delete S.cuts[k]; S.cutIdx = null; render(); return; }
+  if (e.target.closest('[data-editcancel]')){ S.editIdx = null; S.editZh = null; S.editTr = null; S.editDis = null; render(); return; }
+  const es = e.target.closest('[data-editsave]');
+  if (es){ const x = SENTENCES.find(y => y.idx === parseInt(es.dataset.editsave, 10)); if (S.editTr != null) x.tr = S.editTr;
+    if (S.editZh != null && S.editZh !== x.content) { x.content = S.editZh; x.sc = [S.editZh]; x.py = ['']; x.regen = true; }   // 中文改了：後端重生拼音／翻譯／音檔，mock 先整句一塊、拼音留白
+    if (S.editDis != null){ const ws = S.editDis.split(/[、,，\s]+/).map(w => w.trim()).filter(Boolean); DIS[x.idx] = disOf(x).map((w, k) => ws[k] || w); }   // 固定三個：只改字，多的丟掉、少的留原字
+    S.editIdx = null; S.editZh = null; S.editTr = null; S.editDis = null; render(); return; }
+  const xp = e.target.closest('[data-exper]');
+  if (xp && !xp.disabled){ S.exPer = parseInt(xp.dataset.exper, 10); exAutoFill(); render(); return; }
+  if (e.target.closest('[data-py]')){ S.pyDlg = true; render(); return; }
+  if (e.target.closest('[data-act="closepy"]')){ const ac = e.target.closest('[data-act="closepy"]'); if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.pyDlg = false; render(); } return; }
+  const rp = e.target.closest('[data-rowplay]');   // 第十八輪：只聽那一句、不換預覽
+  if (rp){ S.rowPlay = +rp.dataset.rowplay; render(); setTimeout(() => { S.rowPlay = null; render(); }, 1400); return; }
+  const si = e.target.closest('[data-sidx]');
+  if (si){ S.idx = parseInt(si.dataset.sidx, 10); S.allOpen = false; render(); return; }
+  const mv = e.target.closest('[data-mv]');
+  if (mv){
+    const [w, dir, scope] = mv.dataset.mv.split('|');
+    const vis = (scope === 'all' ? selectedWords() : selectedWords().filter(v => !S.hiddenW.has(v.w))).map(v => v.w);
+    const i = vis.indexOf(w), j = dir === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= vis.length) return;
+    const a = S.order.indexOf(vis[i]), b = S.order.indexOf(vis[j]);
+    if (a < 0 || b < 0){ S.order = selectedWords().map(v => v.w); return render(); }
+    [S.order[a], S.order[b]] = [S.order[b], S.order[a]];
+    render(); return;
+  }
+  /* 第二輪：矩陣與題目清單是同一份資料 */
+  const qc = e.target.closest('[data-qcell]');
+  if (qc){ const k = qc.dataset.qcell; qm().has(k) ? S.qm.delete(k) : S.qm.add(k); S.qauto?.delete(k); S.qtargetLocked = true; qmSyncOrder(); render(); return; }
+  const qcol = e.target.closest('[data-qcol]');
+  if (qcol && S.qtarget != null && S.qmode === 'must'){ const t = qcol.dataset.qcol; S.qmust.has(t) ? S.qmust.delete(t) : S.qmust.add(t); qmRefill(); render(); return; }   // Must cover：欄頭＝必考
+  if (qcol){ const t = qcol.dataset.qcol, rows = QT_ROWS().filter(r => !blockedWhy(r, t)); const allOn = rows.every(r => qm().has(cellKey(r.key, t)));
+    rows.forEach(r => { const k = cellKey(r.key, t); allOn ? S.qm.delete(k) : S.qm.add(k); S.qauto?.delete(k); }); qmSyncOrder(); render(); return; }
+  const qrow = e.target.closest('[data-qrow]');
+  if (qrow){ const r = QT_ROWS().find(x => x.key === qrow.dataset.qrow); const ts = ORDERED_TYPES.filter(t => !blockedWhy(r, t)); const allOn = ts.every(t => qm().has(cellKey(r.key, t)));
+    ts.forEach(t => { const k = cellKey(r.key, t); allOn ? S.qm.delete(k) : S.qm.add(k); S.qauto?.delete(k); }); qmSyncOrder(); render(); return; }
+  if (e.target.closest('[data-qall]')){ S.qtarget = null; qmRefill(); render(); return; }
+  if (e.target.closest('[data-qfewer]')){ S.qtarget = Math.min(qmMax(), 20); qmRefill(); render(); return; }
+  const pv = e.target.closest('[data-pv]');
+  if (pv){ S.pv = pv.dataset.pv; render(); return; }
+  const pvq = e.target.closest('[data-pvq]');
+  if (pvq){ S.pvq = parseInt(pvq.dataset.pvq, 10); render(); return; }
+  const qmo = e.target.closest('[data-qmode]');
+  if (qmo){ S.qmode = qmo.dataset.qmode; S.qmust = new Set(); qmRefill(); render(); return; }   // 第十輪：切到 Must cover 時一種都不預勾，老師自己點欄頭
+  const qd = e.target.closest('[data-qdel]');
+  if (qd){ qmDropEntry(qd.dataset.qdel); qmSyncOrder(); render(); return; }
+  const qr = e.target.closest('[data-qraffle]');
+  if (qr){ const [w, t] = qr.dataset.qraffle.split('|'); const cand = ORDERED_TYPES.filter(x => TEXT_STEM.has(x) && x !== t && !qm().has(cellKey(w, x)));
+    if (!cand.length) return; const nt = cand[Math.floor(rnd() * cand.length)]; const k = qr.dataset.qraffle, i = S.qorder.indexOf(k);
+    S.qorder.splice(i, 1, cellKey(w, nt)); if (!S.qorder.some(x => x !== cellKey(w, nt) && baseKey(x) === baseKey(k))) S.qm.delete(baseKey(k)); S.qm.add(cellKey(w, nt)); qmSyncOrder(); render(); return; }
+  const qaw = e.target.closest('[data-qaddw]'); if (qaw){ S.qaddW = qaw.dataset.qaddw; S.qaddT = null; render(); return; }
+  const qat = e.target.closest('[data-qaddt]'); if (qat){ S.qaddT = qat.dataset.qaddt; render(); return; }
+  const gx = e.target.closest('[data-genex]');
+  if (gx){
+    const w = gx.dataset.genex, v = selectedWords().find(x => x.w === w);
+    if (!v || S.genBusy.has(w)) return;
+    S.genBusy.add(w); render();
+    setTimeout(() => {   // 原型用 1.6 秒代替 AI 生成；一次一句。老師加的字沒有備好的句子，補佔位
+      const had = (S.extraEx[w] || []).length;
+      if (exOf(v).length >= MAX_EX) { S.genBusy.delete(w); return render(); }
+      const one = (EXTRA[w] || [])[had] || ['','',''];
+      S.extraEx[w] = (S.extraEx[w] || []).concat([one]);
+      S.genBusy.delete(w); render();
+    }, 1600);
+    return;
+  }
+  const xn = e.target.closest('[data-exn]');
+  if (xn){
+    const k = +xn.dataset.exn;
+    selectedWords().filter(v => !S.hiddenW.has(v.w)).forEach(v => exOf(v).forEach((_, i) => {
+      const key = `${v.w}|ex${i + 1}`; i < k ? S.cardOff.delete(key) : S.cardOff.add(key);
+    }));
+    S.exnOpen = false; render(); return;
+  }
+  const gi = e.target.closest('[data-grpimg]');
+  if (gi){
+    const ws = imgWords(selectedWords().filter(v => !S.hiddenW.has(v.w)));
+    const all = ws.every(v => !S.imgHidden.has(v.w));
+    ws.forEach(v => all ? S.imgHidden.add(v.w) : S.imgHidden.delete(v.w));
+    render(); return;
+  }
+  const gt = e.target.closest('[data-grp]');
+  if (gt){
+    const keys = cardKeys(gt.dataset.grp, selectedWords().filter(v => !S.hiddenW.has(v.w)));
+    const all = keys.every(k => !S.cardOff.has(k));
+    keys.forEach(k => all ? S.cardOff.add(k) : S.cardOff.delete(k));
+    render(); return;
+  }
+  const ct = e.target.closest('[data-cardtoggle]');
+  if (ct){ const k = ct.dataset.cardtoggle; S.cardOff.has(k) ? S.cardOff.delete(k) : S.cardOff.add(k); render(); return; }
+  const hd = e.target.closest('[data-hide]');
+  if (hd){ const w = hd.dataset.hide; S.hiddenW.has(w) ? S.hiddenW.delete(w) : S.hiddenW.add(w); render(); return; }
+  const hi = e.target.closest('[data-hideimg]');
+  if (hi){ const w = hi.dataset.hideimg; S.imgHidden.has(w) ? S.imgHidden.delete(w) : S.imgHidden.add(w); render(); return; }
+  const pi = e.target.closest('[data-pickimg]');
+  if (pi){ const [w, i] = pi.dataset.pickimg.split('|'); S.imgSel[w] = i === 'mine' ? 'mine' : +i; render(); return; }
+  const up = e.target.closest('[data-upload]');
+  if (up){ S.upDlg = { w: up.dataset.upload, stage:'pick' }; render(); return; }   // 第二十四輪：開上傳對話框
+  const ty = e.target.closest('[data-type]');
+  if (ty){ S.customType = ty.dataset.type; S.typeOpen = false; render(); return; }
+  const tp = e.target.closest('[data-tp]');
+  if (tp){ const w = tp.dataset.tp; S.tp.has(w) ? S.tp.delete(w) : S.tp.add(w); render(); return; }
+  const tpa = e.target.closest('[data-tpall]');
+  if (tpa){
+    const name = tpa.dataset.tpall;
+    const mine = tpOf(name).map(t => t.w).concat(S.added.filter(a => a.sk === name).map(a => a.w));
+    const allOn = mine.every(w => S.tp.has(w));
+    mine.forEach(w => allOn ? S.tp.delete(w) : S.tp.add(w));
+    render(); return;
+  }
+  const ap = e.target.closest('[data-addpool]');
+  if (ap){ const [sk, w] = ap.dataset.addpool.split('|'); addWord(sk, w); return; }
+  const ac0 = e.target.closest('[data-addcustom]');
+  if (ac0){ const sk = ac0.dataset.addcustom; const inp = document.querySelector(`[data-custom="${sk}"]`);
+    addWord(sk, (inp?.value || '').trim(), S.customType); return; }
+  const pj = e.target.closest('[data-proj]');
+  if (pj){
+    // 多選：切換勾選、選單不關。practiceName：選到的專案用「 + 」串起來（第二十六輪；產品是第一個專案），老師自己改過就不再動
+    const val = pj.dataset.proj;
+    S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+    S.empty = S.projects.length === 0;
+    if (!S.nameEdited) S.practiceName = S.projects.join(' + ');
+    render(); return;
+  }
+  const menu = e.target.closest('[data-menu]');
+  const pick = e.target.closest('[data-pick]');
+  if (pick){
+    const id = pick.dataset.pick, val = pick.dataset.val;
+    if (id === 'pinyin') S.pinyin = val;
+    if (id === 'translation') S.translation = val;
+    S.open = null; render(); return;
+  }
+  if (menu){ S.open = S.open === menu.dataset.menu ? null : menu.dataset.menu; render(); return; }
+
+  const sg = e.target.closest('[data-seg]');
+  const vc = e.target.closest('[data-voice]');
+  const cl = e.target.closest('[data-cls]');
+  const rs = e.target.closest('[data-roster]');
+  const dy = e.target.closest('[data-days]');
+  const st = e.target.closest('[data-stu]');
+  if (st){ const nm = st.dataset.stu; S.sel.has(nm) ? S.sel.delete(nm) : S.sel.add(nm); render(); return; }
+  if (rs){ S.roster = S.roster === rs.dataset.roster ? null : rs.dataset.roster; render(); return; }
+  if (cl){
+    const id = cl.dataset.cls, c = CLASSES.find(x => x.id === id);
+    if (S.picked.has(id)){
+      S.picked.delete(id); c.students.forEach(nm => S.sel.delete(nm));
+      if (S.roster === id) S.roster = null;
+    } else {
+      S.picked.add(id);
+      c.students.forEach(nm => { if (!conflictFor(nm, id)) S.sel.add(nm); });
+    }
+    render(); return;
+  }
+  if (dy){
+    const d = +dy.dataset.days, dt = new Date(S.start);
+    dt.setDate(dt.getDate() + d); dt.setHours(23, 59);
+    S.due = dt.toISOString().slice(0, 16); render(); return;
+  }
+  const sc = e.target.closest('[data-speed]');
+  if (sc){
+    S.speed = sc.dataset.speed;
+    S.playing = S.speed === 'choice' ? null : 'sp:' + S.speed;
+    render();
+    if (S.playing) setTimeout(() => { S.playing = null; render(); }, 1400);
+    return;
+  }
+  if (sg){ S[sg.dataset.seg] = sg.dataset.val; render(); return; }
+  if (vc){
+    S.voice = vc.dataset.voice; S.playing = vc.dataset.voice; S.voiceOpen = false; render();
+    setTimeout(() => { S.playing = null; render(); }, 1400);
+    return;
+  }
+  const ac = e.target.closest('[data-act]');
+  if (ac){
+    const a = ac.dataset.act;
+    if (a === 'dd'){ S.ddOpen = !S.ddOpen; render(); return; }
+    if (a === 'pool'){ S.poolOpen = !S.poolOpen; render(); return; }
+    if (a === 'sdd'){ S.allOpen = !S.allOpen; render(); return; }
+    if (a === 'play' && S.step === 2){ playCard(); return; }
+    if (a === 'pickcard'){ S.specIdx = +ac.dataset.i; playCard(); return; }   // 清單留著，換卡不收；產品換到新卡就自動播（use-vocabulary-practice.js 的 useEffect）
+    if (a === 'playseq'){ playCard(); return; }
+    if (a === 'settings'){ S.settingsOpen = !S.settingsOpen; render(); return; }
+    if (a === 'tip'){ ac.classList.toggle('on'); return; }   // 點一下也開，給觸控用
+    if (a === 'stupy') S.stuPy = !S.stuPy;
+    if (a === 'stutr') S.stuTr = !S.stuTr;
+    if (a === 'voicedd'){ S.voiceOpen = !S.voiceOpen; render(); return; }
+    if (a === 'typedd'){ S.typeOpen = !S.typeOpen; render(); return; }
+    if (a === 'exndd'){ S.exnOpen = !S.exnOpen; render(); return; }
+    if (a === 'qadd'){ S.add = true; render(); return; }
+    if (a === 'qaddclose'){ if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.add = false; render(); } return; }
+    if (a === 'qaddgo'){ const rows = QT_ROWS(); const w = S.qaddW || rows[0]?.key; const r = rows.find(x => x.key === w);
+      const free = ORDERED_TYPES.filter(t => r && !blockedWhy(r, t)); const notIn = free.filter(t => !qm().has(cellKey(w, t))); const t = free.includes(S.qaddT) ? S.qaddT : (notIn[0] || free[0]);
+      if (t){ const k = cellKey(w, t); if (qm().has(k)) { let n = 2; while (S.qorder.includes(`${k}|${n}`)) n++; S.qorder.push(`${k}|${n}`); } else { S.qm.add(k); qmSyncOrder(); } }   // 第二十六輪：已在考卷裡＝加第二題
+      S.add = false; S.qaddT = null; render(); return; }
+    if (a === 'upchoose'){ S.upDlg.stage = 'preview'; render(); return; }   // 原型：點拖放區＝選好了一張
+    if (a === 'upback'){ S.upDlg.stage = 'pick'; render(); return; }
+    if (a === 'closepvq'){ if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.pvq = null; render(); } return; }
+    if (a === 'closepv'){ if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.pv = null; render(); } return; }
+    if (a === 'closeup'){ if (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]')) { S.upDlg = null; render(); } return; }   // 按 Cancel 或點遮罩都關
+    if (a === 'upuse'){ const w = S.upDlg.w; S.uploaded.add(w); S.imgSel[w] = 'mine'; S.imgHidden.delete(w); S.upDlg = null; render(); return; }
+    if (a === 'minus') S.attempts = Math.max(1, S.attempts - 1);
+    if (a === 'plus') S.attempts = Math.min(10, S.attempts + 1);
+    if (a === 'perclass') S.perClass = !S.perClass;
+    if (a === 'closerev' && (ac.tagName === 'BUTTON' || !e.target.closest('[data-stop]'))) S.review = false;   // 鷹架修正：Back 鈕在 data-stop 裡面，原本按不到
+    if (a === 'confirm'){
+      S.review = false; commit(); S.justAssigned = true; render();
+      window.scrollTo(0, 0);
+      setTimeout(() => { S.justAssigned = false; render(); }, 1600);
+      return;
+    }
+    render(); return;
+  }
+  if (S.open !== null || S.ddOpen || S.typeOpen || S.voiceOpen || S.exnOpen){ S.open = null; S.ddOpen = false; S.typeOpen = false; S.voiceOpen = false; S.exnOpen = false; render(); }   // 點外面關掉
+});
+
+/* 畫布的播放：一張卡只有一段音檔，PRACTICE_STATE.PLAYING → IDLE（use-vocabulary-practice.js 的 handlePlayAudio），假裝播 1.4 秒 */
+function playCard(){
+  if (S.phase === 'playing') return;
+  S.phase = 'playing'; render();
+  setTimeout(() => { S.phase = 'idle'; render(); }, 1400);
+}
+
+/* 加一個字：歸在它所在的專案底下，掛 Added、預設勾起來。已經在清單裡的不重複加。 */
+function addWord(sk, w, type = 'WORD'){
+  if (!w) return;
+  const exists = tpOf(sk).some(t => t.w === w) || S.added.some(a => a.sk === sk && a.w === w);
+  if (!exists){ S.added.push({ sk, w, type }); S.order.push(w); }
+  S.tp.add(w); S.custom = '';
+  render();
+}
+document.addEventListener('keydown', (e) => {
+  const inp = e.target.closest?.('[data-custom]');
+  if (inp && e.key === 'Enter'){ e.preventDefault(); addWord(inp.dataset.custom, inp.value.trim(), S.customType); }
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'ntotal'){ S.nDraft = null; S.nTotal = genTotal() || null; render(); } });   // 離開欄位：夾回 [點數, 20]
+document.addEventListener('input', (e) => {
+  const inp = e.target.closest?.('[data-custom]'); if (inp) S.custom = inp.value;
+  if (e.target.id === 'pname'){ S.practiceName = e.target.value; S.nameEdited = true; }
+  if (e.target.closest?.('[data-editzh]')){ S.editZh = e.target.value; const x = SENTENCES.find(y => y.idx === parseInt(e.target.dataset.editzh, 10)); const show = S.editZh !== x.content; const card = e.target.closest('.qedit'); const has = card.querySelector('.autonote'); if (show && !has) { render(); const f = document.querySelector('[data-editzh]'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } } }
+  if (e.target.closest?.('[data-edittr]')) S.editTr = e.target.value;
+  if (e.target.closest?.('[data-editdis]')) S.editDis = e.target.value;
+
+  if (e.target.id === 'ntotal'){ S.nDraft = e.target.value; const n = parseInt(e.target.value, 10); if (n >= 1) S.nTotal = n; if (S.exOpen && S.exMode === 'replace') exAutoFill(); render(); const i = document.getElementById('ntotal'); if (i) i.focus(); }   // 第二十三輪續：打字時欄位照打的顯示（不夾、不全選），算式用夾過的；離開欄位（change）才把欄位夾回
+  if (e.target.id === 'qtarget'){ const n = parseInt(e.target.value, 10); if (n >= 1) { S.qtarget = Math.min(qmMax(), n); qmRefill(); render(); const i = document.getElementById('qtarget'); if (i) { i.focus(); i.select(); } } }   // 老師改過名稱，之後換專案不再覆蓋
+});
+
+/* 第一步的 Next 就是原本的 Load Content：建 practice → GENERATING → 生詞載好，留在第一步給老師看卡。
+   原型用 2.4 秒代替 AI 生成。生好之後 Next 才是「到 Settings」。 */
+function startLoad(){
+  S.gen = true; S.ddOpen = false; S.poolOpen = false; render(); window.scrollTo(0, 0);
+  setTimeout(() => {   // 生完自動進 Vocabulary（照 Scramble 的 auto-advance）。第二十五輪：只生新勾的，舊的卡、圖、例句都留著
+    S.gen = false; S.loaded = true; S.genWords = new Set(S.tp); goStep(1);   // 取消勾的字就此離開，不再算「已生成」
+  }, 2400);
+}
+const newWords = () => [...S.tp].filter(w => !S.genWords.has(w));
+
+/* 換步驟＝換一頁，捲回最上面（v3；產品沒做） */
+function goStep(n){ S.step = n; S.review = false; S.open = null; S.ddOpen = false; render(); window.scrollTo(0, 0); }
+
+document.addEventListener('dragstart', (e) => { const c = e.target.closest?.('[data-qkey]'); if (c) { S.dragKey = c.dataset.qkey; e.dataTransfer.effectAllowed = 'move'; }
+  const sc = e.target.closest?.('[data-skey]'); if (sc) { S.dragS = parseInt(sc.dataset.skey, 10); e.dataTransfer.effectAllowed = 'move'; } });
+document.addEventListener('dragover', (e) => { if (e.target.closest?.('[data-skey]')) e.preventDefault(); });
+document.addEventListener('drop', (e) => { const c = e.target.closest?.('[data-skey]'); if (!c || S.dragS == null) return; const to = parseInt(c.dataset.skey, 10); if (to === S.dragS) return; e.preventDefault();
+  const o = sentList().map(x => x.idx), a = o.indexOf(S.dragS), b = o.indexOf(to); o.splice(a, 1); o.splice(b, 0, S.dragS); S.sorder = o; S.dragS = null; render(); });
+document.addEventListener('dragover', (e) => { if (e.target.closest?.('[data-qkey]')) e.preventDefault(); });
+document.addEventListener('drop', (e) => { const c = e.target.closest?.('[data-qkey]'); if (!c || !S.dragKey || c.dataset.qkey === S.dragKey) return; e.preventDefault();
+  const from = S.qorder.indexOf(S.dragKey), to = S.qorder.indexOf(c.dataset.qkey); S.qorder.splice(from, 1); S.qorder.splice(to, 0, S.dragKey); S.dragKey = null; render(); });
+el('back').addEventListener('click', () => { if (S.step > 0) goStep(S.step - 1); });
+el('next').addEventListener('click', () => {
+  if (S.step === 0){
+    if (S.gen || !(S.projects.length && S.tp.size)) return;
+    if (S.loaded){ S.genWords = new Set(S.tp); goStep(1); return; }   // 回頭改過再 Next：不做生成動畫，直接回第二步（使用者 2026-09-15）；新字在卡上生
+    startLoad(); return;                      // 第一次：Next ＝ 原本的 Load Content，生完自動進第二步
+  }
+  if (S.step === 1){ goStep(2); return; }
+  if (S.step === 2){ goStep(3); return; }
+  if (S.justAssigned) return;
+  if (S.picked.size){ S.review = true; render(); return; }
+  location.href = location.pathname;
+});
+
+if (S.exOpen && S.exMode === 'replace' && S.projects.length && !qs.get('expick')) exAutoFill();   // 第二十二輪：&ex=1 進來照份額預勾
+render();
+</script>
+</body>
+</html>
