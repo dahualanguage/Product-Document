@@ -9,6 +9,7 @@
   - `proposal.html`（**提案**，一份檔四種型別：`?type=scramble|fillin|response|building`，預設 scramble；其餘參數同 v7／v19，response／building 另有 v12 的 `&regen=1`、`&audio=1`、`&tr=`、`&pin=`、`&sc=1`）
   - 基準檔不搬，留在各自的資料夾當對照組：v7 `create-scramble.html`、v12／v15 `create-follow-pattern.html`、v19 `baseline-fill-in-blank.html`
 - **程式碼基準**：dahua-dash `origin/develop` @ `7528c30f`（v19 fetch 的那一版；v12／v15 是 `c8179072`）
+- **交接包**：`handoff/sentence-practices/`（2026-11-02；一份涵蓋四種：`sentence-practices.html` 原型複本、`choose-practice-type.html`、`HANDOFF.md`、`API-CONTRACT.md`、`index.html`）。這份 ITERATION.md 是設計登記簿，工程看交接包
 - **狀態**：**2026-10-30 第三輪**（Building 第一步加回例句來源、例句＝Suggested answer）。**2026-10-29 第二輪**（Response／Building 第一步不用例句；TEACHING POINTS 小卡改成「− 數字 +」＋ 大字總數；spec 改成嵌入提案＋tab；未 commit、未部署）。使用者定位：四種結構一樣、工程會一起開發，所以併成一份。v7／v12／v15／v19 留著當紀錄不再更新（index 卡標「不再更新 · 併入 v20」反灰），之後只改這一版；`spec.html` 照 v16 版型重寫（頂欄、左側目錄、十一節），提案用 tab 嵌在第 4 節
 
 ## 使用者定的（2026-10-28）
@@ -38,6 +39,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-02 | 交接包 handoff/sentence-practices | 使用者「這份 md 很多工程師會看不懂的東西」→ 定一份涵蓋四種（不沿用 handoff/sentence-scramble 加三種）。照直白寫法：名詞對照先解釋代號、每條「現在→改成→改哪裡→卡住的」、不放輪數與討論；E1–E4 改編號為問題 1–5 並對照 Scramble 包的 E1–E10。Scramble 那一包仍有效，只改三處（小卡、區塊標題、Translation）。程式碼基準 7528c30f |
 | 2026-10-30 | Scramble／Cloze 第三步加 Translation（Shown｜Hidden｜Choice by student） | 使用者「Sentence Scramble／Sentence Cloze 的 setting 可以設定翻譯開關學生選擇」。工具列 Pinyin 旁邊多一組 Translation，三個選項跟 Response／Building 同一套；畫布在 Listen 底下多一行翻譯；Choice by student 時學生端 Settings 面板多 Translation 開關（跟 Pinyin 一樣）。預設 Choice by student、學生端開關預設開（跟 Response／Building 一樣）。這樣四種的工具列只差 Response／Building 的 Practice mode |
 | 2026-10-30 | Building 第一步加回「Example sentences from teaching points」，例句＝Suggested answer | 使用者「Sentence Building 的答案可以吃 teaching point 的例句」。選了例句後第二步每句一題：Suggested answer 是那句例句（詞塊切法同 Scramble、教學點高亮、卡上標 Example）、Question 照教學點寫（請用「起床」造句。）；該點份額不夠的才生。Response 維持不用。例句卡底下小字 each one becomes a suggested answer。E4：後端 Building 生成能不能吃現成的句子當答案 |
 | 2026-10-29 | spec 改成 v16 同一套版型 | 使用者「這頁 spec 的排版可以跟其他頁的一樣嗎？照 v16」。頂欄＋左側目錄＋十一節（為什麼併、範圍、名詞對照、提案 tab 嵌入、四步、哪裡不一樣、教學點小卡規則、九張卡、已定與待定、要問工程、檔案）。嵌入的提案留在第 4 節，九張卡 tab 排第一 |
