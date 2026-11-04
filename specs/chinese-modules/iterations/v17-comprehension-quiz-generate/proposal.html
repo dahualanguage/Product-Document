@@ -610,6 +610,16 @@ body{ padding-bottom:48px; }
 .more{ margin:0 0 16px; padding:0 0 12px; border-bottom:1px dashed var(--divider); }
 .more .eyebrow{ margin-top:8px !important; }
 .more-ft{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:12px; flex-wrap:wrap; }
+
+/* 2026-11-04：題數改成「− 數字 ＋」（使用者「這個模組改成 - 1 ＋，兩邊的都改」），樣子照 v20 的 .stp；數字仍可直接打 */
+.cstp{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:10px; overflow:hidden; background:#fff; flex:none; }
+.cstp button{ width:36px; height:36px; border:0; background:#fff; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+.cstp button .mi{ font-size:20px; }
+.cstp button:hover{ background:var(--grey200); color:var(--text); }
+.cstp button:disabled{ color:var(--text3); opacity:.4; cursor:not-allowed; background:var(--grey200); }
+.qt-bar .cstp input{ width:44px; height:36px; border:0; border-left:1px solid var(--divider); border-right:1px solid var(--divider); border-radius:0; padding:0; font-family:inherit; font-size:16px; font-weight:800; text-align:center; -moz-appearance:textfield; }
+.qt-bar .cstp input::-webkit-outer-spin-button, .qt-bar .cstp input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.qt-bar .cstp input:focus{ outline:0; box-shadow:none; background:rgba(0,203,97,.06); }
 </style>
 </head>
 <body>
@@ -909,7 +919,7 @@ function renderTypes(counts, { id = 'c', title = 'What to ask' } = {}){
       <div class="qt-bar">
         <span class="qt-ico ${f}"><span class="mi">${ic}</span></span>
         <div class="qt-txt"><b>${l}</b><span>${FORMAT_DESC[f]}</span></div>
-        <input type="number" min="0" value="${counts[f].comprehension || 0}" data-cnt="${id}|${f}|comprehension" aria-label="${l} questions" ${S.proj === null ? 'disabled' : ''}>
+        <div class="cstp"><button type="button" data-cstep="${id}|${f}|comprehension" data-d="-1" aria-label="One fewer" ${S.proj === null || !(counts[f].comprehension || 0) ? 'disabled' : ''}><span class="mi">remove</span></button><input type="number" min="0" value="${counts[f].comprehension || 0}" data-cnt="${id}|${f}|comprehension" aria-label="${l} questions" ${S.proj === null ? 'disabled' : ''}><button type="button" data-cstep="${id}|${f}|comprehension" data-d="1" aria-label="One more" ${S.proj === null ? 'disabled' : ''}><span class="mi">add</span></button></div>
       </div>
     </div>`).join('')}</div>`;
   /* 2026-11-04：總數搬到題型卡之上（使用者「0 questions 總數往上擺在題型之上」），底列拿掉 */
@@ -1190,6 +1200,10 @@ function startGenerate(){
 }
 
 document.addEventListener('click', (e) => {
+  /* 2026-11-04：− ／＋ 題數 */
+  const cs = e.target.closest('[data-cstep]');
+  if (cs){ if (cs.disabled) return; const k = cs.dataset.cstep, d = +cs.dataset.d, inp = document.querySelector(`[data-cnt="${k}"]`); if (!inp) return;
+    inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + d); inp.dispatchEvent(new Event('input', { bubbles:true })); document.activeElement?.blur?.(); return; }
   const pj = e.target.closest('[data-proj]');
   if (pj){ pickProject(+pj.dataset.proj); S.ddOpen = false; render(); return; }
   const tp = e.target.closest('[data-tp]');

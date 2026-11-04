@@ -31,6 +31,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-04 | 題數欄改成「− 數字 ＋」 | 使用者「這個模組改成 - 1 ＋，兩邊的都改」。樣子照 v20 的 .stp；數字仍可直接打；0 時 − 灰掉。v17／v18 同一套，Generate more 也是 |
 | 2026-11-04 | Generate more 鈕加重 | 使用者「太不明顯」。從灰細框小鈕改成綠框、淺綠實底、綠字粗體、38px 高；位置不動（第二步眉標右邊） |
 | 2026-11-04 | 第二步眉標的提示句拿掉 | 使用者「拿掉 True/False N · Multi-Choice N · drag to reorder · click a question to edit it」。眉標只剩 QUESTIONS · N 和 Generate more；只剩一題時「Last question…」那句照留 |
 | 2026-11-04 | 總數搬到題型卡之上 | 使用者「0 questions 總數往上擺在題型之上」。卡片左上一行大字總數「N questions」，底列整條拿掉 |
