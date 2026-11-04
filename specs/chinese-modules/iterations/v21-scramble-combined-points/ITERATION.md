@@ -53,6 +53,11 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-03 | 教學點 chip 語法點掛 Grammar 標 | 使用者「要」（元件總表 §7.4 待定那條）。原本只有 v17 掛；現在 frame 裡型別是 GRAMMAR 的點（專案的、或 Custom 選 Grammar / Structure 加的）都掛紫色 Grammar，跟 Added 可以並存。Vocabulary 兩張待定 |
+| 2026-11-03 | Custom teaching point 旁加型別下拉 | 使用者「所有的 add 應該都要有詞性」：Vocabulary 那顆型別下拉（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）套到八張卡；v17／v20／v21 補上，加的點記 ptype。產品的 teaching-point-picker 沒有型別，交接時要提 |
+| 2026-11-02 | From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。共用元件，v4／v6／v17／v20／v21 一起改 |
+| 2026-11-02 | From project 池子裡已在清單的點改綠色 | 使用者「已經選取過的灰色改成綠色的」：原本 opacity .5 灰掉，改成跟勾選 chip 同一套綠框淡綠底、綠勾，仍不能點。共用元件，v4／v6／v17／v20／v21 一起改 |
+| 2026-11-02 | 教學點 frame 底下兩行併一行 | 使用者「這裡改成一句就好」：ADD TEACHING POINTS 小標拿掉，From Project 摺疊列改寫 **Add teaching points from project**（右邊 N to add · M words、底下 Custom teaching point 輸入欄不變）。共用元件，v4／v6／v17／v20／v21 一起改；定案記在 `iterations/practice-components.html` §7 |
 | 2026-10-29 | 提案 A 第三輪：預設組合拿掉、選點欄黏在那一列底下、拆組鈕拿掉、一組最多三個點 | 使用者自己試用後四條：「刪除預設讓我自己用看看」「下面那欄黏著按加的那題」「拆組鈕不用，都有 × 了」「一個 group 限制三個」。到三個時 Add point 換成小字 Up to 3 points、選單自動收起 |
 | 2026-10-29 | 提案 A：一組可以只有一個點 | 使用者「A 方案可以保留選擇一個 teaching point 的選項嗎」。改成開關打開時每個勾的點各自一組（On its own＝自己出句，虛線框），老師把點加進別組就合（Add point 從別組搬過來）；合併的組可以拆（call_split）、單點可以拿出來。New group、On their own 那行、「needs two points」都拿掉。句數行寫「2 combined groups · 3 on their own」，最少句數＝組數 |
 | 2026-10-29 | 提案 A 另開一份 | 使用者「再開一個提案 A」。`proposal-a.html`：開關打開後老師把勾的點圈成幾組（Group 1、2、3…，每組 Add point／×，New group；沒圈到的點自己一句），AI 照組生句；句數輪流分給每一組和每個單獨的點；第二步小卡的 + ＝那一組再生一句，沒有配對選單。跟 B＋C 並行，之後給使用者比 |

@@ -7,7 +7,7 @@
 - **日期**：2026-10-23
 - **範圍與理由**：`../v16-remove-question-bank/spec.html`。這一版只畫 Open-ended Questions 那條流程；Comprehension Quiz 在 v17
 - **設計檔**：`proposal.html`（`?step=` 從 1 數；參數見檔頭）。基準檔沿用 v13 `create-qa.html`，不重做
-- **狀態**：提案第一輪，未部署、未 commit
+- **狀態**：**2026-11-04 起 Open-ended Questions 的唯一版本**（v13 併進來；v13 的 `create-qa.html` 是基準）。提案第一輪，未部署、未 commit
 
 ## 這一版定了什麼
 

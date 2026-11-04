@@ -392,8 +392,8 @@ button{ font-family:inherit; }
 .tpchip .ty{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--grey200); color:var(--text2); }
 .tpchip .ty.gram{ background:#F3E8FF; color:#7C3AED; }
 .tpchip .ty.added{ background:#DCECFE; color:#193592; }
-.tpchip.dim{ opacity:.5; cursor:default; }
-.tpchip.dim:hover{ border-color:var(--divider); color:var(--text2); }
+.tpchip.dim, .tpchip.dim:hover{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); color:var(--text); cursor:default; }   /* 2026-11-02：已在清單的點用綠色（跟勾選 chip 同色），不再灰掉 */
+.tpchip.dim .mi{ color:var(--primary); }
 .addsep{ display:flex; align-items:center; gap:12px; margin:4px 0 8px; }
 .addsep b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
 .addsep .rule{ flex:1; height:1px; background:var(--divider); }
@@ -1554,7 +1554,7 @@ function tpOf(name){
 }
 function renderTeachingPoints(){
   return S.projects.map(name => {
-    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED' })));
+    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED', ptype:a.type })));   // ptype：自己加的點選的型別（2026-11-03 Grammar 標要看）
     const picked = tps.filter(t => S.tp.has(t.w)).length;
     const all = tps.length > 0 && picked === tps.length, some = picked > 0;
 
@@ -1562,7 +1562,7 @@ function renderTeachingPoints(){
     const chips = tps.length ? tps.map(t => {
       const on = S.tp.has(t.w);
       // 詞性不印（第八輪拿掉）；只有第一步加進來的字掛 Added
-      const ty = t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '';
+      const ty = (t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '') + ((t.type === 'GRAMMAR' || t.ptype === 'GRAMMAR') ? '<span class="ty gram">Grammar</span>' : '');   // 2026-11-03：語法點掛 Grammar（同 v17）
       const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';   // 回頭多勾的：還沒生
       return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}">
         <span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`;
@@ -1571,7 +1571,6 @@ function renderTeachingPoints(){
     /* From Project：課文裡的詞。已在清單裡的變灰打勾，其餘按 + 加進來（加進來就是一個勾好的 teaching point） */
     const pool = POOL[name] || [];
     const inSet = new Set(tps.map(t => t.w));
-    const left = pool.filter(w => !inSet.has(w)).length;
     const poolHtml = S.poolOpen ? `<div class="pool">${pool.length ? pool.map(w => inSet.has(w)
         ? `<button class="tpchip dim" disabled aria-label="${esc(w)} — already in"><span class="mi">check</span>${esc(w)}</button>`
         : `<button class="tpchip" data-addpool="${esc(name)}|${esc(w)}"><span class="mi">add</span>${esc(w)}</button>`).join('')
@@ -1590,14 +1589,19 @@ function renderTeachingPoints(){
           ? [newN ? `${newN} new teaching ${newN === 1 ? 'point gets' : 'points get'} ${UNITS} when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'point leaves' : 'points leave'} the practice with its ${UNITS}` : ''].filter(Boolean).join(' · ')
           : 'Generated. Tick more points or untick some — the sentences you already have stay as they are.'}</div></div>`; })()}
       <div class="frame-panel" style="display:block; overflow:visible">
-        <div class="addsep"><b>Add teaching points</b><span class="rule"></span></div>
-        <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
-          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>From Project
-          <span class="n">${pool.length ? (left ? `${left} to add` : 'all added') + ` · ${pool.length} words` : 'no content'}</span>
+                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
+          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>Add teaching points from project
         </button>
         ${poolHtml}
         <div class="tp-add">
           <input class="inp" type="text" placeholder="Custom teaching point" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
+          <div class="dd">
+            <button class="dd-trig" data-act="typedd" aria-haspopup="menu" aria-expanded="${S.typeOpen}">
+              <span class="nm">${TYPE_LABEL[S.customType]}</span><span class="mi caret">${S.typeOpen ? 'expand_less' : 'expand_more'}</span></button>
+            ${S.typeOpen ? `<div class="dd-menu" role="menu">${Object.entries(TYPE_LABEL).map(([k, l]) =>
+              `<button class="dd-item" role="menuitemradio" aria-checked="${k === S.customType}" data-type="${k}">
+                <span class="nm">${l}</span>${k === S.customType ? '<span class="mi tick">check</span>' : ''}</button>`).join('')}</div>` : ''}
+          </div>
           <button class="btn contained" data-addcustom="${esc(name)}">Add</button>
         </div>
       </div>

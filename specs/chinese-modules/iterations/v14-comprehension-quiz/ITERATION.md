@@ -11,7 +11,7 @@
 - **程式碼基準**：dahua-dash `origin/develop` @ `c8179072`（2026-10-19 fetch）
   - 老師端：`steps/step-one-mc.js`、`steps/shared/use-question-bank-step.js`、`qa/create/article-preview-section.js`、`practice-unified-view.js`（ExamModeCard 第 160–215 行、isMC 第二步第 2164–2186 行、`mcEditMinStep`）、`steps/mc-step-two-section.js`（mode="combined"）、`components/edit-in-question-bank-button.js`、`utils/{question-bank-counts,practice-step-gating,processing-dialog-copy}.js`、`enum/practices.js`
   - 學生端：`assignments/content/mc/{index,use-mc-practice,scoring}.js`、`utils/score.js`
-- **狀態**：基準 ＋ 提案第一輪（2026-10-19，套共用設計 S1–S9；Planning 兩案改嵌 `proposal.html`）
+- **狀態**：**2026-11-04 併入 v17**（`../v17-comprehension-quiz-generate/proposal.html`，之後在那裡改；這份題庫版提案停在第一輪，基準檔留著當 v17 的對照組）。基準 ＋ 提案第一輪（2026-10-19，套共用設計 S1–S9；Planning 兩案改嵌 `proposal.html`）
 
 ## 登記時就查到的
 

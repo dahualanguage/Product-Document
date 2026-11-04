@@ -12,7 +12,7 @@
 - **程式碼基準**：dahua-dash `origin/develop` @ `77ea5d6f`（2026-09-10 fetch）
   - v3 收在 `17990056`。中間 4 個 commit（#930 word-bank add-words validation、reading challenge QA / spelling）
     用 `git diff --name-only` 確認**沒有動到 Vocabulary 建立流程或學生端 vocabulary 的任何一支檔案**
-- **狀態**：**已定稿、已交接**（2026-09-16；2026-09-29 依使用者指示回套畫廊的兩條，交接包複本未動）。交接包：`handoff/vocabulary-mirroring/`（HANDOFF.md ＋ API-CONTRACT.md ＋ 原型複本 ＋ 入口頁），線上 https://project-logeg.vercel.app/handoff/vocabulary-mirroring/ 。E1–E6 全部寫進契約，等工程回答。
+- **狀態**：**已定稿、已交接**（2026-09-16；2026-09-29 依使用者指示回套畫廊的兩條，交接包複本未動；2026-11-02 第一步 frame 用字統一成 Add teaching points／Custom teaching point，交接包複本亦未動）。交接包：`handoff/vocabulary-mirroring/`（HANDOFF.md ＋ API-CONTRACT.md ＋ 原型複本 ＋ 入口頁），線上 https://project-logeg.vercel.app/handoff/vocabulary-mirroring/ 。E1–E6 全部寫進契約，等工程回答。
 - 走過的輪次：第一輪（2026-09-10）換共用元件；第二輪（2026-09-11）第一步的 teaching point 可勾選、可加字（邏輯照 planning mode）；第三輪 Next 取代 Load Content；第四輪流程改四步 Teaching Points → Vocabulary → Settings → Assign；第五輪第二步 Vocabulary 重畫（一個字＝三張卡、拿掉 Add Vocab、圖片可上傳）；第六～十八輪（2026-09-11）第二步與第三步逐項修（見 change log）；**第十九輪（2026-09-15）第三步 Settings 照 R11 改成工具列＋畫布；第二十輪（2026-09-15）第二步的卡：練不練全部用眼睛、例句可再生（一次一句、最多再三句，新能力 E6）；第二十一輪（2026-09-15）群組標頭加 Word cards／Examples 兩顆組開關；第二十二輪 Examples 改成下拉選 0～n 句；第二十三輪標頭計數拿掉、組開關靠右；第二十四輪上傳圖片的對話框；第二十五輪 Back 回第一步不再鎖住（practice 在第二步才存）；第二十六輪多專案的名稱 A + B；第二十七輪例句卡文字置右；第二十八輪拼音逐詞斷開；第二十九輪例句置左；第三十輪卡的開關收成標頭 chip、眼睛只剩圖片那一顆；第三十一輪圖片也有組開關；第三十二輪圖上的眼睛改成 ☑ Image chip；第三十七輪（交接後）Hide 改回眼睛、總開關做成小工具列；第三十八輪小工具列加標題 Apply to all words；第三十九輪標題／工具列／卡的間距**。**未部署**（等使用者說 OK 才 `vercel deploy`）
 
 ## 登記時就查到的兩件事（寫進 spec，不是改動）
@@ -51,7 +51,7 @@
 
 | 網址 | 看到什麼 |
 |---|---|
-| `?step=1`（從頭走：還沒選專案）/ `&sel=1` 已選 / `&dd=1` / `&pool=1` / `&gen=1` | 第一步 Teaching Points：Project 選單（c-dropdown-menu-18，多選）、Practice name（c-input-2）、可勾的 teaching point frame ＋ Add words；`&gen=1` 生成中 |
+| `?step=1`（從頭走：還沒選專案）/ `&sel=1` 已選 / `&dd=1` / `&pool=1` / `&gen=1` | 第一步 Teaching Points：Project 選單（c-dropdown-menu-18，多選）、Practice name（c-input-2）、可勾的 teaching point frame ＋ Add teaching points（2026-11-02 前叫 Add words）；`&gen=1` 生成中 |
 | `?step=2` / `&upload=1` / `&more=1` / `&updlg=1` / `&updlg=2` | 第二步 Vocabulary：一個字一列、右邊是學生卡；`&upload=1` 第一個字換成老師上傳的圖；`&more=1` 第一個字已生成到五句；`&updlg=1` 上傳對話框選檔、`&updlg=2` 預覽。`?step=1&back=1` 是從這裡 Back 回第一步的樣子（第二十五輪起不鎖：可以重選，多勾的掛 New） |
 | `?step=3` / `&all=1` / `&voice=1` / `&settings=1` / `&tip=1` / `&banner=1` | 第三步 Settings（**R11：工具列＋畫布，同一張卡**）：工具列 Pinyin｜Translation｜Image ／ Speed｜Voice ‖ Auto pass ⓘ；畫布是學生的主欄（頂欄、進度條、齒輪、一疊卡、Play 鈕、`Card 1 of N ▾`）。`&all=1` 卡片清單原地展開、`&voice=1` Voice 下拉打開、`&settings=1` 學生的齒輪面板打開（Translation 預設 Their choice 所以有齒輪）、`&tip=1` Auto pass 說明開著、`&banner=1` 音檔重產中 |
 | `?step=4&pick=3b,4a&roster=4a&assigned=1` | 第四步 Assign：已指派一班、再派兩班、4A 名冊展開（郑雅文標 In Chinese 3B） |
@@ -65,6 +65,10 @@
 
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
+| 老師 | 2026-11-02：From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪我自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。v4／v6／v17／v20／v21 一起改。 |
+| 老師 | 2026-11-02：From project 池子裡已在清單的點改綠色 | 使用者指示（「已經選取過的灰色改成綠色的」）。原本 opacity .5 灰掉，改成跟勾選 chip 同一套綠框淡綠底、綠勾，仍不能點。v4／v6／v17／v20／v21 一起改。 |
+| 老師 | **2026-11-02：frame 底下兩行併一行** | 使用者指示（2026-11-02「這裡改成一句就好」，指 ADD TEACHING POINTS 小標 ＋ From Project 摺疊列）。小標拿掉，摺疊列改寫 **Add teaching points from project**（右邊 N to add · M words 不變），底下 Custom teaching point 輸入欄不變。v4／v6／v17／v20／v21 一起改；凍結的 v7／v12／v15／v19 不動。 |
+| 老師 | **2026-11-02：第一步 frame 的用字跟其他七張統一** | 使用者指示（2026-11-02「用字我們先統一起來」，在 `iterations/practice-components.html` §7.4 定）。小標 **Add words → Add teaching points**、輸入欄 **Custom word → Custom teaching point**、空專案提示 *add words below → add some below*、回頭提示 *N new words are added… → N new teaching points are added…*／*Tick more words → Tick more points*（cards 這個單位字照留）。型別下拉照留——產品 CustomWordDialog 本來就有。交接包 `handoff/vocabulary-mirroring/` 的複本**沒動**，要不要跟著改待問。 |
 | 老師 | **畫廊回套（2026-09-29）：清單每列一顆小播放鍵** | 使用者看共用設定畫廊時定的兩條（2026-09-23），回套到已交接的 v4（使用者 2026-09-29：「已交接但可以更新」）。①Card x of N 展開的清單每列一顆小播放鍵，點了只聽那一張、不換預覽（點列本身仍是換卡＋自動播，照產品）；②主 Play 鈕放大成實心主綠（純視覺，記檔頭）。交接包 `handoff/vocabulary-mirroring/` 的複本沒有跟著改。 |
 | 老師 | **第一輪：只換 v3 動過的共用元件，其餘原封不動** | 使用者指示（2026-09-10）。「共用」照 `practice-design-rules.html` §1 那張表：八張卡共用的 Stepper、標題前的型別圖示、頁腳、換步驟捲回最上面、Assign 整步；五種共用的 Audio Settings（Speed／Voice）與 Max attempts。Audio Mode 卡 Vocabulary 本來就沒有。再加 v3 在第一步換的三個 ReUI 元件（見下一列）。**刻意留著沒動的**：Load Content 那條、載入後的生詞卡、Practice Config 分隔線、Display Settings 手風琴（三個下拉還是印 enum）、Vocabulary Preview 兩欄卡——所以第二步現在是新舊並置，落差看得見，那就是下一輪要決定的東西。 |
 | 老師 | 第一步的三個欄位換成 v3 用的 ReUI 元件 | 第一版漏了，使用者指出（2026-09-10）後補。①Project 選單 → `c-dropdown-menu-18`（標籤在上、outline 觸發鈕、選單有群組標題、每列 語言 mark ＋ 名稱 ＋ 級數 ＋ 詞數）。**Vocabulary 是多選**，所以跟 v3 有一處不同：點一下切換勾選、選單不關、觸發鈕把選到的專案一個一個列出來；practice 建好之後鎖住（照產品 `disabled={isPracticeReady}`），鎖頭取代箭頭。②Practice name → `c-input-2`，**從第二步搬到第一步**——v3 同一個決定，理由一樣（選 Project 的當下它就被填好了）；產品取的是第一個選到的專案，說明文字照寫 *Filled in from the first project*。③Teaching Points Preview → `c-frame-6` ghost frame，一個專案一個，底色用 Vocabulary 欄的 wash `#FFF8E7`；Title `Teaching points`、Description `⟨專案名⟩ · N words`，收掉原本的「Teaching Points Preview」大標與那句 *Review the teaching points…*。Load Content 那條沒動。`?step=0&dd=1` 看選單打開。 |

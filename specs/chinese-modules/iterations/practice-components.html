@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Practice 共用元件總表 · Chinese Modules</title>
+  <!-- 2026-11-02 開：把 v3–v21 提案裡重複出現的元件收在一頁。每個元件只認一個「定案出處」（最後一次改它的版本）；
+       圖全部是提案頁的實機裁圖（iframe 1440 寬、依量到的座標裁），改了出處這頁的圖就跟著變。 -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; font-size: 13px; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .main-content { flex: 1; min-width: 0; max-width: 1240px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 10px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; scroll-margin-top: 64px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #00A749; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 9px 12px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .tag { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+    .t-done { background:#dcfce7; color:#166534; } .t-open { background:#fef3c7; color:#92400e; } .t-new { background:#e0e7ff; color:#3730a3; } .t-frz { background:#f1f5f9; color:#64748b; }
+    /* 裁圖：iframe 1440 寬，--x/--y/--h 是元件在 1440 版面上的座標（CSS px），--s 縮放，--pad 四周留白 */
+    .crop { position: relative; overflow: hidden; border: 2px solid #cbd5e1; border-radius: 14px; box-shadow: 0 14px 34px rgba(15,23,42,.10); margin: 8px 0 26px;
+      background-color: #eef1f5; background-image: radial-gradient(#c7cfda 1px, transparent 1px); background-size: 14px 14px;
+      --s: 1; --x: 304; --y: 0; --h: 200; --pad: 12; height: calc((var(--h) + 2 * var(--pad)) * var(--s) * 1px); }
+    .crop iframe { position: absolute; width: 1440px; height: 1500px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; left: calc((var(--x) - var(--pad)) * var(--s) * -1px); top: calc((var(--y) - var(--pad)) * var(--s) * -1px); pointer-events: none; }
+    .crop.cpt iframe { height: 1000px; }
+    .crop.tall iframe { height: 1900px; }   /* 比 1500 高的元件：把提案頁底下那條固定狀態列推出裁圖範圍 */   /* 對話框是垂直置中的，iframe 高度要跟量座標時的視窗一樣 */
+    /* 圖上方的標籤列：綠色「元件」膠囊 ＋ 一句說明 ＋ 右邊開新分頁 */
+    .cap { display: flex; align-items: center; gap: 10px; margin: 20px 0 0; font-size: 13px; font-weight: 600; color: #0f172a; }
+    .cap::before { content: '元件'; flex: none; background: #00A749; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .4px; padding: 2px 9px; border-radius: 6px; }
+    .cap a { margin-left: auto; color: #00A749; font-weight: 700; text-decoration: none; font-size: 12px; white-space: nowrap; }
+    /* 標題底下：誰在用 */
+    a.code { font-family: "SF Mono", Menlo, monospace; font-size: 12px; font-weight: 700; color: #0f172a; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 5px; padding: 0 5px; text-decoration: none; cursor: help; white-space: nowrap; }
+    a.code:hover { border-color: #00A749; color: #00A749; }
+    .uses { display: flex; flex-wrap: wrap; gap: 6px; margin: -6px 0 14px; }
+    .uses span, .uses a, .uses .pr { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; color: #475569; text-decoration: none; }
+    .uses a:hover, .uses .pr:hover { border-color: #00A749; color: #00A749; }
+    .uses .pr { cursor: pointer; font-family: inherit; line-height: inherit; }
+    .uses .pr.on { background: #00A749; border-color: #00A749; color: #fff; }
+    [data-pr].off { display: none !important; }
+    .uses .src { background: transparent; border: 0; padding: 3px 12px 3px 0; margin-right: 4px; border-right: 1px solid #e2e8f0; border-radius: 0; color: #94a3b8; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .uses .src a { font-family: "SF Mono", Menlo, monospace; font-size: 12px; font-weight: 700; color: #0f172a; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 5px; padding: 0 6px; text-decoration: none; }
+    .uses .src a:hover { border-color: #00A749; color: #00A749; }
+    .uses .src a.code { padding: 0 5px; }
+    .uses .src:last-child, .uses .src:has(+ .grp) { border-right: 0; margin-right: 0; }
+    .uses .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex-basis: 100%; }
+    .uses span.lbl { background: transparent; border-color: transparent; color: #94a3b8; padding-left: 0; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+    .sw { display:inline-block; width:12px; height:12px; border-radius:3px; border:1px solid rgba(0,0,0,.12); vertical-align:-1px; margin-right:4px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; } .main-content { padding: 24px; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../index.html">Home</a><span class="sep">/</span>
+    <a href="index.html"><span class="num">2.4</span> Versions &amp; Iteration</a><span class="sep">/</span>
+    <span class="current">Practice 共用元件總表</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">目錄</div>
+      <ol>
+        <li><a href="#what">1 這份是什麼</a></li>
+        <li><a href="#matrix">2 總表：元件 × 練習</a></li>
+        <li><a href="#shell">3 外殼：Stepper、頁腳</a></li>
+        <li><a href="#source">4 來源選單</a></li>
+        <li><a href="#name">5 Practice name</a></li>
+        <li><a href="#howmany">6 How many ＋ 來源卡</a></li>
+        <li><a href="#tpframe">7 教學點 frame</a></li>
+        <li><a href="#tpcard">8 第二步眉標 ＋ 教學點小卡</a></li>
+        <li><a href="#qcard">9 題卡的共同骨架</a></li>
+        <li><a href="#settings">10 Settings：工具列 ＋ Student view</a></li>
+        <li><a href="#assign">11 Assign</a></li>
+        <li><a href="#choose">12 Choose Practice Type</a></li>
+        <li><a href="#bits">13 共用的小零件與顏色</a></li>
+        <li><a href="#gaps">14 不一致的地方</a></li>
+        <li><a href="#files">15 出處檔案</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Practice 共用元件總表</h1>
+        <div class="subtitle">Versions &amp; Iteration 線上十幾版提案裡重複出現的元件，一個元件一節：長什麼樣、哪些練習在用、規則定在哪一版。</div>
+        <div class="meta"><span>2026-11-02</span><span>涵蓋 v3–v21 的提案</span><span>圖＝提案頁實機裁圖，會跟著出處更新</span><span>程式碼基準 dahua-dash 7528c30f</span></div>
+      </div>
+
+      <h2 id="what"><span class="num">1</span> 這份是什麼</h2>
+      <p>九張 practice 卡的建立流程都是同一條：選來源 → 看內容 → 設定 → 指派。各版提案裡一半以上的東西是共用的，但它們散在十幾份 <code>proposal.html</code> 裡，改一個元件要翻好幾版才知道現在長什麼樣。這頁把共用元件收在一起，<strong>每個元件只認一個定案出處</strong>——最後一次改它的那一版——其他版本都算引用。</p>
+      <ul>
+        <li><strong>要改元件</strong>：改定案出處那一版的 proposal，這頁的圖會跟著變；規則表手動補一列。</li>
+        <li><strong><a class="code" href="#codes" title="共用改動 S1–S11：S1 Practice name 在第一步；S2 第一步的元件：來源選單、內容 frame、教學點勾選；S3 Settings ＝ 工具列 ＋ 視窗預覽；S4 Shown｜Hidden｜Choice by student；S5 Practice mode：Text visible｜Audio only；S6 Max tries ＋ ⓘ；S7 Speed 試聽、Voice 分組標地區；S8 Assign 搬回頁面；S9 頁腳標籤、捲回最上面、Next 灰著要說原因；S10 回第一步不鎖、只生新的（等工程）；S11 審句步：眼睛＝隱藏、對話類提醒只在這一步（等工程）">S1–S11</a> 的編號</strong>：2026-09-16 交接給工程的「共用改動」規格（凍結在 <a class="inline" href="../../../handoff/practice-shared/shared-practice-changes.html">handoff/practice-shared</a>）用的編號，這頁各節標出來對照；iterations 裡那份活的複本 2026-11-03 收掉，之後以這頁為準。</li>
+        <li><strong>跟 <a class="inline" href="practice-design-rules.html">設計判準 <a class="code" href="practice-design-rules.html#r1" title="判準 R1–R11：R1 依「它改變什麼」分段，不依欄位來源；R2 模式不是設定；R3 控制項三選一：分段／chip／下拉；R4 「學生自己決定」一律講 Choice by student；R5 預覽與設定同一張卡；R6 學生端排版照抄，不憑印象；R7 用字講老師關心的事，不講機制；R8 只講例外，不覆述常規；R9 鎖定、衝突、空白都要給原因；R10 一個動作從頭到尾同一個字；R11 Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R1–R11</a></a> 的關係</strong>：判準講為什麼，這頁講長什麼樣、用在哪。</li>
+        <li>各版提案頂上那條開發用的狀態列不是產品、不是元件，交接時不帶。</li>
+      </ul>
+      <h3 id="codes">代號怎麼讀</h3>
+      <p>這頁和判準頁都會看到三種代號。滑到代號上會顯示它是什麼，點了跳到定義。</p>
+      <div class="two">
+        <table>
+          <tr><th style="width:70px">R＝判準</th><th>rule，為什麼這樣畫（<a class="inline" href="practice-design-rules.html">判準頁</a>）</th></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r1">R1</a></td><td>依「它改變什麼」分段，不依欄位來源</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r2">R2</a></td><td>模式不是設定</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r3">R3</a></td><td>控制項三選一：分段／chip／下拉</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r4">R4</a></td><td>「學生自己決定」一律講 Choice by student</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r5">R5</a></td><td>預覽與設定同一張卡</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r6">R6</a></td><td>學生端排版照抄，不憑印象</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r7">R7</a></td><td>用字講老師關心的事，不講機制</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r8">R8</a></td><td>只講例外，不覆述常規</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r9">R9</a></td><td>鎖定、衝突、空白都要給原因</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r10">R10</a></td><td>一個動作從頭到尾同一個字</td></tr>
+          <tr><td><a class="code" href="practice-design-rules.html#r11">R11</a></td><td>Settings 的固定形狀：工具列 ＋ 畫布同一張卡</td></tr>
+        </table>
+        <table>
+          <tr><th style="width:70px">S＝共用改動</th><th>shared，2026-09-16 交接給工程、八張卡一起改的十一件事</th></tr>
+          <tr><td><a class="code" href="#codes">S1</a></td><td>Practice name 在第一步</td></tr>
+          <tr><td><a class="code" href="#codes">S2</a></td><td>第一步的元件：來源選單、內容 frame、教學點勾選</td></tr>
+          <tr><td><a class="code" href="#codes">S3</a></td><td>Settings ＝ 工具列 ＋ 視窗預覽</td></tr>
+          <tr><td><a class="code" href="#codes">S4</a></td><td>Shown｜Hidden｜Choice by student</td></tr>
+          <tr><td><a class="code" href="#codes">S5</a></td><td>Practice mode：Text visible｜Audio only</td></tr>
+          <tr><td><a class="code" href="#codes">S6</a></td><td>Max tries ＋ ⓘ</td></tr>
+          <tr><td><a class="code" href="#codes">S7</a></td><td>Speed 試聽、Voice 分組標地區</td></tr>
+          <tr><td><a class="code" href="#codes">S8</a></td><td>Assign 搬回頁面</td></tr>
+          <tr><td><a class="code" href="#codes">S9</a></td><td>頁腳標籤、捲回最上面、Next 灰著要說原因</td></tr>
+          <tr><td><a class="code" href="#codes">S10</a></td><td>回第一步不鎖、只生新的（等工程）</td></tr>
+          <tr><td><a class="code" href="#codes">S11</a></td><td>審句步：眼睛＝隱藏、對話類提醒只在這一步（等工程）</td></tr>
+        </table>
+      </div>
+      <p><b>E＝要問工程</b>（engineering）：各版 ITERATION.md 裡等工程回答的題目，編號只在那一版裡有效，例如 v7 的 E1 跟 v20 的 E1 不是同一題。</p>
+
+      <h2 id="matrix"><span class="num">2</span> 總表：元件 × 練習</h2>
+      <table>
+        <tr><th style="width:190px">元件</th><th style="width:70px">哪一步</th><th>哪些練習在用</th><th style="width:150px">定案出處</th><th style="width:120px">最後改動</th></tr>
+        <tr><td><a class="inline" href="#shell">Stepper ＋ 頁腳</a></td><td>外殼</td><td>九張卡全部</td><td>v3 → v4（Next 在第一步寫 Generate）</td><td>2026-09-15</td></tr>
+        <tr><td><a class="inline" href="#source">Projects 多選選單</a></td><td>1</td><td>Vocabulary Mirroring、Vocabulary Quiz、Scramble、Cloze、Response、Building</td><td>v4（c-dropdown-menu-18 多選）</td><td>2026-09-10</td></tr>
+        <tr><td><a class="inline" href="#source">Project 單選 ／ Question bank 選單</a></td><td>1</td><td>單選：Content Mirroring、v17／v18 生題。題庫：Open-ended Questions（v13）、Comprehension Quiz（v14）</td><td>v3 ／ v13</td><td>2026-10-23（v16 拿掉題庫後 v17／v18 改回專案）</td></tr>
+        <tr><td><a class="inline" href="#name">Practice name</a></td><td>1</td><td>全部（<a class="code" href="#codes" title="共用改動 S1 · Practice name 在第一步">S1</a>）</td><td>v3</td><td>—</td></tr>
+        <tr><td><a class="inline" href="#howmany">How many ＋ 來源卡</a></td><td>1</td><td>Scramble、Cloze、Building 兩張卡；Response 只有 How many。v17／v18 是題型 × 題數格子、v6 是 Question Types 一扇窗（不是這個元件）</td><td>v7 第二十一～二十二輪 → v20</td><td>2026-10-30</td></tr>
+        <tr><td><a class="inline" href="#tpframe">教學點 frame</a></td><td>1</td><td>Vocabulary 兩張、Scramble、Cloze、Response、Building——九張裡六張（Open-ended、Comprehension Quiz 不勾點；v17 2026-11-04 只考 Comprehension 後拿掉）</td><td>v4 第二輪 → v7 第一輪（Add teaching points）→ v17（Grammar 標）→ v20</td><td>2026-11-02 用字統一（Vocabulary 改叫 Add teaching points）</td></tr>
+        <tr><td><a class="inline" href="#tpcard">第二步眉標 ＋ 教學點小卡</a></td><td>2</td><td>Scramble、Cloze、Response、Building（v20 一個 <code>renderTpCards</code>）。眉標 Questions · N 另見 v6 第三步、v17／v18</td><td>v7 第二十五輪 → v20 第二輪</td><td>2026-10-29</td></tr>
+        <tr><td><a class="inline" href="#qcard">題卡的共同骨架</a></td><td>2</td><td>Scramble、Cloze、Response、Building；v17／v18 的題卡同一套把手／膠囊／Edit／Delete</td><td>v7 → v12 → v20</td><td>2026-10-28</td></tr>
+        <tr><td><a class="inline" href="#settings">Settings 工具列 ＋ Student view 視窗</a></td><td>3</td><td>Content Mirroring、Vocabulary Mirroring、Open-ended、Scramble、Cloze、Response、Building；Vocabulary Quiz 第二步 Question Types 用同一扇窗；Comprehension Quiz 沒有這一步</td><td>v3（<a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a>）→ 各卡自己的格子</td><td>2026-10-30 Scramble／Cloze 加 Translation</td></tr>
+        <tr><td><a class="inline" href="#assign">Assign</a></td><td>4</td><td>全部（<a class="code" href="#codes" title="共用改動 S8 · Assign 搬回頁面">S8</a>）</td><td>v8（已交接 handoff/assign-history）</td><td>2026-10-02</td></tr>
+        <tr><td><a class="inline" href="#choose">Choose Practice Type</a></td><td>入口</td><td>全部</td><td>v1 → handoff/choose-practice-type → v20 九張卡</td><td>2026-10-29</td></tr>
+        <tr><td>Generating 畫面（轉圈 ＋ 骨架卡）</td><td>1 按 Generate</td><td>Vocabulary 兩張、Sentence 四種、v17、v18</td><td>v4（<code>&amp;gen=1</code>）</td><td>—</td></tr>
+        <tr><td>ProcessingDialog（改中文後重算拼音、翻譯）</td><td>2 存檔</td><td>Scramble、Cloze、Response、Building（<code>&amp;regen=1</code>）</td><td>基準複刻，沒改</td><td>—</td></tr>
+      </table>
+
+      <h2 id="shell"><span class="num">3</span> 外殼：Stepper、頁腳</h2>
+      <div class="uses"><span class="src">定案 <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a></span><button type="button" class="pr" data-pr="all">九張卡全部</button></div>
+      <p class="cap" data-pr="scr clz res bld"><span>頂欄 ＋ 標題 New Sentence Scramble ＋ Stepper（v20 第二步）</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" target="_blank" rel="noopener">開這一頁 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--x:240; --s:.95; --y:0; --h:215; --pad:0"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" title="頂欄、標題、Stepper" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr clz res bld"><span>頁腳：Back ＋ 主鈕（第一步生成前寫 Generate）</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">開這一頁 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:969; --h:32"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" title="頁腳" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>標題</td><td>New ＋ 練習名；左邊型別 icon，底色與字色照 <code>practice-type-labels.js</code> 那一欄</td></tr>
+        <tr><td>Stepper</td><td>圓形數字 ＋ 步名；做完的綠底白字、進行中的綠底帶光暈、沒到的灰。步名照各版定的：Teaching Points → Edit Sentences／Question Review → Settings → Assign Practice（Sentence 四種）；Content Mirroring、Vocabulary 各自的步名見該版</td></tr>
+        <tr><td>主鈕依步換字（<a class="code" href="#codes" title="共用改動 S9 · 頁腳標籤、捲回最上面、Next 灰著要說原因">S9</a>）</td><td>第一步生成前 <b>Generate</b>（生成中轉圈）→ 中間 <b>Next</b> → 倒數第二步 <b>Save</b> → 第四步 <b>Assign to N classes</b>／<b>Done</b>／<b>Skip for now</b>。灰著要說原因（<a class="code" href="practice-design-rules.html#r9" title="判準 R9 · 鎖定、衝突、空白都要給原因">R9</a>）：第一步沒選專案或沒勾點就灰</td></tr>
+        <tr><td>Back</td><td>第一步灰。回第一步不鎖（2026-09-15 跟工程談定 practice 在第二步才存），專案、教學點都可以重選，只生新勾的</td></tr>
+        <tr><td>換步</td><td>捲回最上面（<a class="code" href="#codes" title="共用改動 S9 · 頁腳標籤、捲回最上面、Next 灰著要說原因">S9</a>）</td></tr>
+      </table>
+
+      <h2 id="source"><span class="num">4</span> 來源選單（<a class="code" href="#codes" title="共用改動 S2 · 第一步的元件：來源選單、內容 frame、教學點勾選">S2</a> 第一步的元件）</h2>
+      <div class="uses"><span class="src">定案 <a href="v4-vocabulary-mirroring/spec.html" target="_blank" rel="noopener">v4</a> ／ <a href="v13-open-ended-questions/spec.html" target="_blank" rel="noopener">v13</a></span><div class="grp"><span class="lbl">多選：</span><button type="button" class="pr" data-pr="vm">Vocabulary Mirroring</button><button type="button" class="pr" data-pr="vq">Vocabulary Quiz</button><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="res">Sentence Response</button><button type="button" class="pr" data-pr="bld">Sentence Building</button></div><div class="grp"><span class="lbl">單選：</span><button type="button" class="pr" data-pr="cm">Content Mirroring</button><button type="button" class="pr" data-pr="cq">v17 Comprehension Quiz 生題</button><button type="button" class="pr" data-pr="oe">v18 Open-ended 生題</button></div><div class="grp"><span class="lbl">題庫：</span><button type="button" class="pr" data-pr="qb-oe">Open-ended Questions（v13）</button><button type="button" class="pr" data-pr="qb-cq">Comprehension Quiz（v14）</button></div></div>
+          <p class="cap" data-pr="vm vq scr clz res bld"><span>Projects 多選（v20；Vocabulary 兩張同一個）</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;dd=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="vm vq scr clz res bld" class="crop" style="--y:240; --h:230; max-width:560px"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;dd=1" title="Projects 多選選單" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="cm"><span>Project 單選（v3 Content Mirroring）</span><a href="v3-content-mirroring/proposal.html?step=1&amp;dd=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="cm" class="crop" style="--y:240; --h:230; max-width:560px"><iframe src="v3-content-mirroring/proposal.html?step=1&amp;dd=1" title="Project 單選 v3" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="cq oe"><span>Project 單選（v17 生題；v18 同一個）</span><a href="v17-comprehension-quiz-generate/proposal.html?step=1&amp;proj=0&amp;dd=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="cq oe" class="crop" style="--y:240; --h:230; max-width:560px"><iframe src="v17-comprehension-quiz-generate/proposal.html?step=1&amp;proj=0&amp;dd=1" title="Project 單選 v17" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="qb-cq qb-oe"><span>Question bank 單選（v14；v13 同一個）</span><a href="v14-comprehension-quiz/proposal.html?step=1&amp;dd=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="qb-cq qb-oe" class="crop" style="--y:240; --h:230; max-width:560px"><iframe src="v14-comprehension-quiz/proposal.html?step=1&amp;dd=1" title="Question bank 選單" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>長相</td><td>標籤在上、outline 觸發鈕、選單有群組標題（Projects with teaching points）。每列：語言 mark（BCP-47 原樣）＋ 名稱 ＋ 級數 ＋ 數量。沒有教學點的專案數量那格紅字 <i>No teaching points</i>，仍可選但勾不到點</td></tr>
+        <tr><td>多選</td><td>Vocabulary 兩張、Sentence 四種。點一下切換、選單不關；觸發鈕把選到的專案用細直線隔開一個一個列出來</td></tr>
+        <tr><td>單選</td><td>Content Mirroring（一份課文）；v17／v18 生題（後端一次只吃一個專案）</td></tr>
+        <tr><td>題庫版</td><td>v13／v14 的 Question bank：每列題庫名 ＋ 題數。v16 提案拿掉題庫之後，v17（Comprehension Quiz）／v18（Open-ended）第一步改回選專案</td></tr>
+        <tr><td>生成後回頭</td><td>不鎖，可以重選；新勾的點按 Next 才生</td></tr>
+      </table>
+
+      <h2 id="name"><span class="num">5</span> Practice name（<a class="code" href="#codes" title="共用改動 S1 · Practice name 在第一步">S1</a> 名稱在第一步）</h2>
+      <div class="uses"><span class="src">定案 <a href="v3-content-mirroring/spec.html" target="_blank" rel="noopener">v3</a></span><button type="button" class="pr" data-pr="all">九張卡全部</button></div>
+      <p class="cap" data-pr="scr clz res bld"><span>Practice name（v20）</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:333; --h:95"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" title="Practice name" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>位置</td><td>第一步、來源選單正下方（產品現在長在第二步，<a class="code" href="#codes" title="共用改動 S1 · Practice name 在第一步">S1</a> 搬上來）</td></tr>
+        <tr><td>自動填</td><td>選了來源就填入專案名或題庫名；多個來源用「 + 」串（我的一天 + 环境保护与可持续发展），取消一個就縮回去；老師改過之後不再跟著來源變</td></tr>
+        <tr><td>說明句</td><td><i>Filled in from the projects you pick. Change it if this practice needs its own name.</i>（單選寫 the project、題庫寫 the question bank）</td></tr>
+      </table>
+
+      <h2 id="howmany"><span class="num">6</span> How many ＋ 來源卡</h2>
+      <div class="uses"><span class="src">定案 <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a></span><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="bld">Sentence Building</button><button type="button" class="pr" data-pr="res">Sentence Response（只有數字那一行）</button></div>
+      <p class="cap" data-pr="scr clz res bld"><span>生成（預設）：數字欄 ＋ up to 20 ＋ 怎麼分，底下兩張選項卡</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:456; --h:213"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" title="How many sentences ＋ 兩張來源卡" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="bld"><span>選了例句卡（Building：each one becomes a suggested answer）</span><a href="v20-sentence-practices/proposal.html?type=building&amp;step=1&amp;sel=1&amp;ex=1&amp;n=12" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="bld" class="crop" style="--y:456; --h:213"><iframe src="v20-sentence-practices/proposal.html?type=building&amp;step=1&amp;sel=1&amp;ex=1&amp;n=12" title="選了例句卡（Building）" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>眉標</td><td>HOW MANY SENTENCES／QUESTIONS，單位字隨型別（Scramble、Cloze 叫 sentence；Response、Building 叫 question）</td></tr>
+        <tr><td>數字欄那一行</td><td>數字 · <b>up to 20</b>（到頂轉琥珀）· across N teaching points · 1–2 each。下限＝勾的點數，低於它寫 <i>at least N · one per teaching point</i>；沒勾點寫 <i>tick teaching points below</i>。預設＝勾的點數（每點一句），老師改過就固定；句子輪流分給勾的點</td></tr>
+        <tr><td>兩張選項卡</td><td><b>Generate new sentences</b>（AI writes new sentences for the teaching points you tick）｜<b>Example sentences from teaching points</b>（N available；沒例句時淡掉）。照產品 <code>function-selector.js</code> 的可點 Card：icon 方塊 ＋ 標題 ＋ 小字，選中＝綠框淡綠底。選了例句，教學點 frame 裡在 Add teaching points 之下攤開例句清單、照份額預勾</td></tr>
+        <tr><td>哪些有</td><td>Scramble、Cloze 兩張卡；Building 2026-10-30 加回（例句＝Suggested answer，多一句 <i>each one becomes a suggested answer</i>）；Response 2026-10-29 定沒有例句卡，只有數字那一行</td></tr>
+        <tr><td>來歷</td><td>v7 第十九輪（2026-09-30）先問「句子從哪來」→ 第二十一～二十二輪（2026-10-02）改成先問幾句、再問從哪來，版式照 v6 第二步</td></tr>
+        <tr><td>不是這個元件的</td><td>v17／v18 的「幾題」是題型 × 題數格子（What to ask）；v6 Vocabulary Quiz 的是第二步 Question Types 一扇窗（HOW MANY：Custom｜Use all N）</td></tr>
+      </table>
+
+      <h2 id="tpframe"><span class="num">7</span> 教學點 frame（<a class="code" href="#codes" title="共用改動 S2 · 第一步的元件：來源選單、內容 frame、教學點勾選">S2</a> 第一步的元件）</h2>
+      <div class="uses"><span class="src">定案 <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a>（Vocabulary 版 <a href="v4-vocabulary-mirroring/spec.html" target="_blank" rel="noopener">v4</a>）</span><button type="button" class="pr" data-pr="vm">Vocabulary Mirroring</button><button type="button" class="pr" data-pr="vq">Vocabulary Quiz</button><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="res">Sentence Response</button><button type="button" class="pr" data-pr="bld">Sentence Building</button></div>
+      <p>這是老師在第一步勾「要練哪些教學點」的黃底框：選了幾個專案就有幾個框，按 Generate 時只有勾起來的點會生成。</p>
+      <p>v4 到 v21 幾乎每一版都有這個框，版型、顏色、chip 樣式完全一樣（同一套 CSS 複製下來的）；不一樣的是<b>內容</b>：Grammar 標有沒有、提示句的單位字。小標與輸入欄的用字（Vocabulary 原本叫 Add words／Custom word）<b>2026-11-02 已統一成 Add teaching points／Custom teaching point</b>。另外有兩處多了一塊：Scramble／Cloze／Building 的例句清單、v17 的眉標（型別下拉 2026-11-03 起八張都有）。7.2 把框拆成一塊一塊，列出提案怎麼定、產品現在怎麼做；7.3 是各練習的對照表；7.4 列出要統一的話得先決定的事。</p>
+      <p>產品現況（dahua-dash <code>4bf77dc2</code>）：只有 Sentence Scramble 和 Follow Pattern 做了這個框（<code>steps/shared/teaching-point-picker.js</code>），而且比提案少 From Project、Added／New 標、回頭不鎖；Vocabulary 兩張和 Comprehension Quiz 的第一步還是舊畫面。</p>
+
+      <h3>7.1 框裡有什麼（由上往下）</h3>
+      <p class="cap" data-pr="scr clz res bld"><span>收起：標頭（全選框 ＋ 專案名 ＋ Teaching points ＋ 7/7）→ 可勾的 chip → 一行 Add teaching points from project（摺疊）→ Custom teaching point</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:693; --h:252"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" title="教學點 frame" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr clz res bld"><span>Add teaching points from project 展開：課文裡的詞，已在清單的綠色打勾、其餘按 + 加進來</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;pool=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:693; --h:382"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;pool=1" title="From Project 展開" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr clz res bld"><span>生成後 Back 回來：不鎖，chip 底下多一行講差異；多勾的點掛 New</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;back=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:693; --h:292"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;back=1" title="生成後回頭" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr clz bld"><span>選了「Example sentences from teaching points」卡：Add teaching points 之下攤開例句清單（只有 Scramble／Cloze／Building）</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;ex=1&amp;n=12" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz bld" class="crop tall" style="--y:693; --h:939"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1&amp;ex=1&amp;n=12" title="例句清單" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="vm vq"><span>Vocabulary 兩張（v4／v6）：用字已統一；型別下拉 2026-11-03 起八張卡都有，長得一樣</span><a href="v4-vocabulary-mirroring/proposal.html?step=1&amp;sel=1&amp;pool=1&amp;tdd=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="vm vq" class="crop" style="--y:452; --h:636"><iframe src="v4-vocabulary-mirroring/proposal.html?step=1&amp;sel=1&amp;pool=1&amp;tdd=1" title="Vocabulary 的版本：Add words ＋ 型別下拉" loading="lazy"></iframe></div>
+
+      <h3>7.2 逐塊規則：定案 vs 產品現在</h3>
+      <table>
+        <tr><th style="width:150px">區塊</th><th>定案（v20；Vocabulary 差異另註）</th><th style="width:300px">產品現在（4bf77dc2）</th></tr>
+        <tr><td>容器</td><td>c-frame-6 ghost frame，一個專案一個。<strong>底色一律黃 <span class="sw" style="background:#FFF8E7"></span>#FFF8E7</strong>（2026-10-21 定：v4／v6／v7／v12 的 <code>.frame</code> 都用，不再照欄色；內容 frame 不在此限）</td><td>ContentFrame，底色照型別欄的 wash</td></tr>
+        <tr><td>標頭</td><td>三態全選框（全勾／部分／沒勾；沒點時灰）＋ 專案名 ＋ 小字 <i>Teaching points</i> ＋ 右邊 已選/總數</td><td>一樣，小字寫 <i>Teaching points · From project</i></td></tr>
+        <tr><td>chip</td><td>勾選框 icon ＋ 字，勾了綠框淡綠底。勾＝會生成。不印詞性（v4 第八輪）</td><td>一樣。Edit 模式已存的點鎖住、不能取消</td></tr>
+        <tr><td>chip 標籤</td><td><span class="tag t-new">Added</span> 第一步自己加的、<span class="tag t-new">New</span> 生成後回頭多勾還沒生的、<span class="tag" style="background:#F3E8FF;color:#7C3AED">Grammar</span> 語法點（v17 先有，v17 11/04 拿掉框；<b>2026-11-03 定 Sentence 四種也掛</b>，自己加的點選 Grammar 型別也掛）。Vocabulary 兩張還沒</td><td>沒有標籤</td></tr>
+        <tr><td>空專案</td><td><i>No teaching points. You can add some below.</i>（v4／v6 原本寫 <i>add words below</i>，2026-11-02 統一）</td><td><i>No teaching points found in this project. You can add some below.</i></td></tr>
+        <tr><td>生成後回頭</td><td>不鎖（2026-09-15 跟工程談定 practice 第二步才存）。chip 底下一行寫差異：<i>N new teaching points get sentences when you press Next · N unticked points leave the practice with its sentences</i>；沒差異寫 <i>Generated. Tick more points or untick some — the sentences you already have stay as they are.</i> 單位字照型別換：Scramble／Cloze <b>sentences</b>、Response／Building／v17 <b>questions</b>、Vocabulary <b>words／cards</b></td><td>Edit 模式鎖住已存的點（<a class="code" href="#codes" title="共用改動 S10 · 回第一步不鎖、只生新的（等工程）">S10</a> 等工程）</td></tr>
+        <tr><td>Add teaching points</td><td>2026-11-02 起<b>沒有獨立小標</b>：原本「ADD TEACHING POINTS 細線小標 ＋ From Project 摺疊列」兩行併成一行（見下一列）。加的點歸它所在的專案；九張用字一律 teaching points（Vocabulary 原本叫 Add words，同日統一）</td><td>沒有這段。Custom 是<b>另一個 frame</b>：標題 <i>Custom</i>、說明 <i>Teaching points you add yourself</i>，自己的 chip ＋ 輸入欄</td></tr>
+        <tr><td>From project</td><td>一行摺疊列：chevron ＋ <b>Add teaching points from project</b>（右邊原本有 <i>N to add · M words</i> 小字，2026-11-02 拿掉——產品沒有這一行）。展開＝課文裡的詞：已在清單的<b>綠色打勾</b>（跟勾選 chip 同色，不能點；2026-11-02 前是灰的）、其餘 + 一按就變成勾好的點；沒課文寫 <i>This project has no text to pull words from.</i></td><td>沒有（產品的 From Project 在 Vocabulary 第二步的 Add Vocab 對話框）</td></tr>
+        <tr><td>Custom 輸入</td><td>輸入欄 placeholder <i>Custom teaching point</i> ＋ 中間一顆<b>型別下拉</b>（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）＋ Add。<b>2026-11-03 定：八張卡都有型別下拉</b>（原本只有 Vocabulary 兩張；用字 2026-11-02 統一）</td><td>輸入欄 <i>Custom teaching point</i> ＋ Add（空字 disabled、Enter 也能加）</td></tr>
+        <tr><td>例句清單</td><td>Scramble／Cloze／Building 選了例句卡時，在 Add teaching points 之下攤開：小標 <i>Example sentences · Untick any you don’t want · N of M picked</i>，一個點一組、每句勾選框 ＋ 中文／拼音／翻譯；底下 <i>No examples for X · N sentences will be generated to reach 12</i>（v7 第十九～二十輪）</td><td>沒有</td></tr>
+        <tr><td>v17 Comprehension Quiz</td><td>2026-11-04 起沒有教學點 frame：只考 Comprehension、題目都從整篇課文出，第一步只問 True/False、Multiple choice 各幾題。之前的眉標、Grammar 標、說明句都隨框拿掉</td><td>—</td></tr>
+        <tr><td>不在框裡的</td><td>v21 的「一句結合多個教學點」開關、勾哪些點可以合，放在 How many 卡底下，不動這個框</td><td>—</td></tr>
+      </table>
+
+      <h3>7.3 各練習差在哪</h3>
+      <table>
+        <tr><th style="width:130px">項目</th><th>Vocabulary Mirroring／Quiz（v4／v6）</th><th>Sentence 四種（v20）</th><th>Comprehension Quiz 生題（v17，11/04 起沒有這個框）</th><th>產品（4bf77dc2）</th></tr>
+        <tr><td>小標</td><td>Add teaching points（11/02 前 Add words）</td><td>Add teaching points</td><td>Add teaching points</td><td>另一個 frame：Custom</td></tr>
+        <tr><td>輸入欄</td><td>Custom teaching point ＋ 型別下拉（11/02 前 Custom word）</td><td>Custom teaching point ＋ 型別下拉（11/03 加）</td><td>Custom teaching point ＋ 型別下拉（11/03 加）</td><td>Custom teaching point，沒有型別</td></tr>
+        <tr><td>Grammar 標</td><td>無（第八輪連詞性標一起拿掉）</td><td><b>有</b>（11/03 加）</td><td><b>有</b></td><td>無</td></tr>
+        <tr><td>Added／New 標</td><td>有</td><td>有</td><td>有</td><td>無</td></tr>
+        <tr><td>空專案文案</td><td>…You can add some below.（11/02 前 add words below）</td><td>…You can add some below.</td><td>…You can add some below.</td><td>No teaching points found in this project. You can add some below.</td></tr>
+        <tr><td>回頭提示的單位</td><td>teaching points／cards（11/02 前 words／cards）</td><td>sentences（Scramble／Cloze）、questions（Response／Building）</td><td>questions</td><td>不提示，鎖住已存的點</td></tr>
+        <tr><td>From project 一行</td><td>有</td><td>有</td><td>有</td><td>無</td></tr>
+        <tr><td>例句清單</td><td>無</td><td>Scramble／Cloze／Building</td><td>無</td><td>無</td></tr>
+        <tr><td>眉標</td><td>無</td><td>無</td><td>有</td><td>無</td></tr>
+        <tr><td>出處</td><td>v4 第二、八、九、二十五輪</td><td>v20（承 v7 第一輪的版面）</td><td>v17 第一輪（搬 v12 的框）</td><td><code>teaching-point-picker.js</code>、<code>use-teaching-point-pool.js</code>；Vocabulary 走 <code>step-one-vocabulary.js</code> 還沒接</td></tr>
+      </table>
+
+      <h3>7.4 要統一的話（都還沒定，列在 §14）</h3>
+      <ul>
+        <li><span class="tag t-done">2026-11-02 定</span> <b>用字</b>：Vocabulary 的 Add words／Custom word 改成 Add teaching points／Custom teaching point，跟其他七張與產品 picker 一致；空專案與回頭提示的 words 也改 points（cards 照留）；型別下拉 2026-11-03 定八張卡都要有（v17／v20／v21 補上，產品只有 CustomWordDialog 有）。v4／v6 的 proposal.html 已改；<b>交接包 handoff/vocabulary-mirroring、vocabulary-quiz 的複本沒動，要不要跟著改待問</b>。</li>
+        <li><span class="tag t-done">2026-11-03 定</span> <b>Grammar 標</b>：v20／v21 補上，自己加的點選 Grammar 型別也掛；v4／v6 要不要跟還沒說。</li>
+        <li><span class="tag t-open">待定</span> <b>空專案文案</b>：三種收成產品那句 <i>No teaching points found in this project. You can add some below.</i></li>
+        <li><span class="tag t-done">2026-11-03 改了</span> <b>v17 說明句</b>改成 <i>Pinyin and Meaning questions are written from the points you tick</i>，題數格子一起從 4×2 變 3×2（照 v19 拿掉 Fill in blank）。</li>
+        <li><span class="tag t-done">交接時要講</span> 提案跟產品 picker 差四件：Custom 併進專案 frame 底下（加的點歸該專案）、多 Add teaching points from project、多 Added／New 標、回頭不鎖只生新的（<a class="code" href="#codes" title="共用改動 S10 · 回第一步不鎖、只生新的（等工程）">S10</a>）。</li>
+      </ul>
+
+      <h3 id="tpframe2">7.5 第二版提案（2026-11-02，另開一份：<a class="inline" href="v20-sentence-practices/proposal-frame.html?type=scramble&amp;step=1&amp;sel=1&amp;pool=1&amp;ex=1&amp;n=12" target="_blank" rel="noopener">proposal-frame.html ↗</a>）</h3>
+      <p>使用者看完 7.1 之後提了三條，另開一份從 v20 proposal.html 複製的提案來解，原版不動、兩份並排比：</p>
+      <table>
+        <tr><th style="width:230px">問題</th><th>改成</th></tr>
+        <tr><td>① Add teaching points from project 的開合不夠明顯</td><td>那一列改成 accordion 樣：整列有框、hover 變淺綠底、箭頭搬到右邊；打開時箭頭轉 180°、列變綠框淺綠底（跟勾選 chip 同色）、跟底下的池子接成一塊綠框淺綠底的區域（打開時不留白）</td></tr>
+        <tr><td>② 專案名前面的全選框沒意義</td><td>拿掉。標頭只剩專案名 ＋ Teaching points ＋ 已選/總數；要全部取消就一顆一顆點</td></tr>
+        <tr><td>③ 例句展開後離上面的字太遠</td><td>例句清單從框的最底下搬到 chip 正下方（Add teaching points from project 之上），標題貼上緣。2026-09-30 定的「例句在 Add teaching points 之下」因此翻掉——因為那時中間沒有別的東西，現在中間隔了一整段加點的區域</td></tr>
+        <tr><td>④ 例句模式裡，上面那排字不用再重複（2026-11-03）</td><td>選了例句卡時整排 chip 收掉，chip 直接當例句清單的左欄：勾／取消在那裡做，取消的點右邊空著、沒例句的點（自己加的）右邊寫 <i>No examples · will be generated</i>。沒選例句卡時 chip 那排照舊</td></tr>
+      </table>
+      <p class="cap" data-pr="scr clz res bld"><span>第二版收起：標頭沒有全選框，開合列有框、箭頭在右</span><a href="v20-sentence-practices/proposal-frame.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:693; --h:262"><iframe src="v20-sentence-practices/proposal-frame.html?type=scramble&amp;step=1&amp;sel=1" title="frame 第二版收起" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr clz bld"><span>第二版全開（例句模式）：chip 那排收掉、chip 當例句清單的左欄；加點的區域在最後、打開時跟池子接成一塊</span><a href="v20-sentence-practices/proposal-frame.html?type=scramble&amp;step=1&amp;sel=1&amp;pool=1&amp;ex=1&amp;n=12" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz bld" class="crop tall" style="--y:693; --h:1013"><iframe src="v20-sentence-practices/proposal-frame.html?type=scramble&amp;step=1&amp;sel=1&amp;pool=1&amp;ex=1&amp;n=12" title="frame 第二版全開" loading="lazy"></iframe></div>
+      <p>定了再回套到 v4／v6／v17／v21（跟前面幾條一樣六份一起改）。</p>
+
+      <h2 id="tpcard"><span class="num">8</span> 第二步眉標 ＋ 教學點小卡</h2>
+      <div class="uses"><span class="src">定案 <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a></span><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="res">Sentence Response</button><button type="button" class="pr" data-pr="bld">Sentence Building</button></div>
+      <p class="cap" data-pr="scr clz res bld"><span>一般：眉標 TEACHING POINTS · 7，右邊大字 Sentences · 12 ＋ up to 20；每點 chip ＋ − 數字 +</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:240; --h:138"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" title="教學點小卡：一般" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="res bld"><span>到 20 題上限：總數轉琥珀、每張 + 灰、卡裡小字 Up to 20 in total（Response：單位字 Questions）</span><a href="v20-sentence-practices/proposal.html?type=response&amp;step=2&amp;n=20" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="res bld" class="crop" style="--y:240; --h:175"><iframe src="v20-sentence-practices/proposal.html?type=response&amp;step=2&amp;n=20" title="教學點小卡：到上限" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>眉標</td><td>TEACHING POINTS · N；右端 <b>Sentences · 18</b>（22px）＋ 小字 up to 20，到頂轉琥珀。單位字隨型別</td></tr>
+        <tr><td>每點一張</td><td>chip ＋ 步進器「− 2 +」，數字夾在中間；卡裡不印單位字（2026-10-29 定：眉標右邊已有 Sentences · N）。卡最小寬 128，七個點一列排完</td></tr>
+        <tr><td>− ／ +</td><td>+ 把這個點再生一句，接在它最後一句後面、掛 New；− 拿掉該點最後一句；整份至少留一句</td></tr>
+        <tr><td>上限</td><td>每點 5、總數 20（產品 <code>MAX_QUESTION_COUNT</code>）。到頂 + 灰，卡裡一行小字 <i>Up to 5 per point</i>／<i>Up to 20 in total</i>（v7 第二十七輪，2026-10-05）</td></tr>
+        <tr><td>底下清單的眉標</td><td>Sentences · N／Questions · N，副標全拿掉（2026-10-29；原本 In this order · drag a card to reorder…）</td></tr>
+        <tr><td>哪些有</td><td>v20 四種一個 <code>renderTpCards</code>。v6 Vocabulary Quiz 第三步、v17／v18 只有眉標 Questions · N（題目不是按點分的，沒有小卡）</td></tr>
+        <tr><td>待定</td><td>到總數上限時每張卡都重複 Up to 20 in total 那行藍字，建議只留眉標的琥珀（v20 待定）</td></tr>
+      </table>
+
+      <h2 id="qcard"><span class="num">9</span> 題卡的共同骨架</h2>
+      <div class="uses"><span class="src">定案 <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a></span><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="res">Sentence Response</button><button type="button" class="pr" data-pr="bld">Sentence Building</button><button type="button" class="pr" data-pr="cq">v17 Comprehension Quiz 生題</button><button type="button" class="pr" data-pr="oe">v18 Open-ended 生題</button></div>
+      <p class="cap" data-pr="scr clz res bld"><span>Scramble 的句子卡：把手 ＋ Q1 膠囊 ＋ 教學點 chip ＋ 右邊剪刀／Edit／Delete；中間是各型別自己的內容</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr clz res bld" class="crop" style="--y:463; --h:143"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" title="句子卡（Scramble）" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>共同的</td><td>左上：拖曳把手 ＋ 綠膠囊題號 ＋ 教學點 chip（＋ Example／New／Edited 標）。右上：動作鈕。拖曳換序；刪到剩一題擋</td></tr>
+        <tr><td>各型別自己的</td><td>Scramble：詞塊 ＋ 剪刀（調整切塊）＋ 點拼音改聲調。Cloze：教學點那塊變粉紅虛線空格 ＋ 底下選項詞塊列（答案 ＋ 3 個干擾詞）。Response：Question → Pattern（琥珀）→ Suggested answer。Building：Question ＋ Suggested answer</td></tr>
+        <tr><td>Edit</td><td>原地展開欄位，Cancel／Save。中文改了存檔後拼音、翻譯、詞塊重算（Auto-update on save；Response／Building 跳 ProcessingDialog）</td></tr>
+        <tr><td>v17／v18 的題卡</td><td>同一套把手、膠囊、Edit／Delete；內容是選擇題（題幹 ＋ 選項 ＋ 正解）或問答（題目 ＋ 參考答案）</td></tr>
+        <tr><td><a class="code" href="#codes" title="共用改動 S11 · 審句步：眼睛＝隱藏、對話類提醒只在這一步（等工程）">S11</a> 審句步</td><td>眼睛＝隱藏（可還原，不是刪除）；對話類專案 Split／Merge 收掉、句子表上方一則 warning <i>Conversation — lines can’t be split or merged.</i>，第一步不提醒。<span class="tag t-open">等工程</span> 隱藏要 updatedArticleArray 帶 hidden（同 Content Mirroring 交接包 H1）</td></tr>
+      </table>
+
+      <h2 id="settings"><span class="num">10</span> Settings：工具列 ＋ Student view 視窗（<a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a> 固定形狀、<a class="code" href="#codes" title="共用改動 S3–S7：S3 Settings ＝ 工具列 ＋ 視窗預覽；S4 Shown｜Hidden｜Choice by student；S5 Practice mode：Text visible｜Audio only；S6 Max tries ＋ ⓘ；S7 Speed 試聽、Voice 分組標地區">S3–S7</a> 格子與用字）</h2>
+      <div class="uses"><span class="src">定案 <a href="v3-content-mirroring/spec.html" target="_blank" rel="noopener">v3</a> <a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a> → <a href="v20-sentence-practices/spec.html" target="_blank" rel="noopener">v20</a></span><button type="button" class="pr" data-pr="cm">Content Mirroring</button><button type="button" class="pr" data-pr="vm">Vocabulary Mirroring</button><button type="button" class="pr" data-pr="oe">Open-ended Questions</button><button type="button" class="pr" data-pr="scr">Sentence Scramble</button><button type="button" class="pr" data-pr="clz">Sentence Cloze</button><button type="button" class="pr" data-pr="res">Sentence Response</button><button type="button" class="pr" data-pr="bld">Sentence Building</button><button type="button" class="pr" data-pr="vq">Vocabulary Quiz（Question Types 同一扇窗）</button></div>
+      <p class="cap" data-pr="cm"><span>Content Mirroring（v3，<a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a> 的參考實作）：PRACTICE MODE ‖ PINYIN｜TRANSLATION｜TRANSLATION FIRST ／ SPEED｜VOICE ‖ MAX TRIES；畫布＝PRACTICE SENTENCE 卡</span><a href="v3-content-mirroring/proposal.html?step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="cm" class="crop" style="--y:240; --h:698"><iframe src="v3-content-mirroring/proposal.html?step=3" title="Settings：Content Mirroring" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="vm"><span>Vocabulary Mirroring（v4）：PINYIN｜TRANSLATION｜IMAGE ／ SPEED｜VOICE ‖ MAX TRIES；畫布＝一疊字卡</span><a href="v4-vocabulary-mirroring/proposal.html?step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="vm" class="crop" style="--y:240; --h:720"><iframe src="v4-vocabulary-mirroring/proposal.html?step=3" title="Settings：Vocabulary Mirroring" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="oe"><span>Open-ended Questions（v18）：PRACTICE MODE ‖ PINYIN ／ SPEED｜VOICE ‖ GUIDE PHRASE LANGUAGE；畫布＝問答畫面</span><a href="v18-open-ended-generate/proposal.html?step=3&amp;proj=0" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="oe" class="crop" style="--y:240; --h:682"><iframe src="v18-open-ended-generate/proposal.html?step=3&amp;proj=0" title="Settings：Open-ended Questions" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="scr"><span>Sentence Scramble（v20）：PINYIN｜TRANSLATION ／ SPEED｜VOICE ‖ MAX TRIES；畫布＝拼句畫面</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="scr" class="crop" style="--y:240; --h:779"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=3" title="Settings：Scramble" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="clz"><span>Sentence Cloze（v20）：工具列同 Scramble；畫布＝填空畫面</span><a href="v20-sentence-practices/proposal.html?type=fillin&amp;step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="clz" class="crop" style="--y:240; --h:778"><iframe src="v20-sentence-practices/proposal.html?type=fillin&amp;step=3" title="Settings：Cloze" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="res"><span>Sentence Response（v20）：第一列多 PRACTICE MODE（Text visible｜Audio only）；畫布＝問答卡</span><a href="v20-sentence-practices/proposal.html?type=response&amp;step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="res" class="crop" style="--y:240; --h:886"><iframe src="v20-sentence-practices/proposal.html?type=response&amp;step=3" title="Settings：Response" loading="lazy"></iframe></div>
+      <p class="cap" data-pr="bld"><span>Sentence Building（v20）：同 Response；畫布＝造句卡</span><a href="v20-sentence-practices/proposal.html?type=building&amp;step=3" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="bld" class="crop" style="--y:240; --h:743"><iframe src="v20-sentence-practices/proposal.html?type=building&amp;step=3" title="Settings：Building" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>形狀（<a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a>）</td><td>一張卡：上面是貼在畫布頂上的工具列，兩列——第一列畫面上看得到的（Practice mode ‖ Pinyin｜Translation｜Vocabulary 多 Image），第二列喇叭播什麼（Speed｜Voice ‖ Max tries ⓘ）；每格 10px 大寫小標在上、28px 控制項在下，組與組之間細直線。下面是灰地板 <span class="sw" style="background:#DFE5EC"></span>#DFE5EC 上一個有陰影的視窗，34px 視窗列（小螢幕圖示 ＋ Student view），裡面是學生端主欄照抄。底部一行計數（N sentences · pinyin hidden）</td></tr>
+        <tr><td>控制項（<a class="code" href="#codes" title="共用改動 S4–S7：S4 Shown｜Hidden｜Choice by student；S5 Practice mode：Text visible｜Audio only；S6 Max tries ＋ ⓘ；S7 Speed 試聽、Voice 分組標地區">S4–S7</a>）</td><td>Pinyin／Translation／Translation first：分段控制項 <b>Shown｜Hidden｜Choice by student</b>（enum 值不外露）。Speed：四顆 chip，前三顆帶 ▶ 點一下＝選它＋聽它。Voice：帶 ▶ 的下拉，不只一組才標地區。Max tries：加減 ＋ 數字，ⓘ tooltip 寫後果（用完次數就揭曉、往下走）</td></tr>
+        <tr><td>畫布</td><td>照 <code>assignments/content/&lt;type&gt;/</code> 抄主欄。Choice by student 幾個，齒輪面板就幾列。Play 鈕 44px 實心主色、字面寫會怎麼播（2026-09-23）。「Sentence 1 of N ▾」原地展開全部、每列一顆播放鍵、超過 15 列在清單裡捲（2026-09-29）</td></tr>
+        <tr><td>各卡只放真有的格子</td><td>Content Mirroring：Practice mode ‖ Pinyin｜Translation｜Translation first ／ Speed｜Voice ‖ Max tries。Vocabulary Mirroring：Pinyin｜Translation｜Image ／ Speed｜Voice ‖ Max tries。Open-ended：Practice mode ‖ Pinyin ／ Speed｜Voice ‖ Guide phrase language（沒 Max tries）。Scramble／Cloze：Pinyin｜Translation ／ Speed｜Voice ‖ Max tries（Translation 2026-10-30 加，預設 Choice by student）。Response／Building：Practice mode ‖ Pinyin｜Translation ／ Speed｜Voice ‖ Max tries</td></tr>
+        <tr><td>同一扇窗的別處</td><td>Vocabulary Quiz 沒有顯示／音檔設定，第二步 Question Types 用同一扇窗（工具列 HOW MANY／HOW TO PICK、畫布＝矩陣）。Comprehension Quiz 沒有這一步</td></tr>
+        <tr><td>更多</td><td>完整規則 <a class="inline" href="practice-design-rules.html"><a class="code" href="practice-design-rules.html#r11" title="判準 R11 · Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R11</a></a>。上面七張就是九張卡所有的 Settings（Vocabulary Quiz、Comprehension Quiz 沒有這一步）；2026-11-03 起取代原本手畫的 Settings 畫廊</td></tr>
+      </table>
+
+      <h2 id="assign"><span class="num">11</span> Assign（<a class="code" href="#codes" title="共用改動 S8 · Assign 搬回頁面">S8</a> 搬回頁面）</h2>
+      <div class="uses"><span class="src">定案 <a href="v8-assign-history/proposal.html?step=4&amp;hist=1" target="_blank" rel="noopener">v8</a></span><button type="button" class="pr" data-pr="all">九張卡全部</button></div>
+      <p class="cap" data-pr="all"><span>v8 定案：History（指派中／已過期）＋ New assignment（勾班、名單、日期、Mandatory／Optional、逾期扣分）</span><a href="v8-assign-history/proposal.html?step=4&amp;hist=1" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="all" class="crop" style="--y:252; --h:849"><iframe src="v8-assign-history/proposal.html?step=4&amp;hist=1" title="Assign：有歷史" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>在頁面上</td><td>不是對話框（<a class="code" href="#codes" title="共用改動 S8 · Assign 搬回頁面">S8</a>）。兩段：<b>History · N</b>（指派中／已過期兩個 tab、每列 Edit／Unassign／Extend due date、可收合、超過 5 列先列 5）＋ <b>New assignment</b></td></tr>
+        <tr><td>勾班</td><td>一班一列，已指派過的寫 N of M assigned · K left、全班都派過的列灰掉；點開名單只講例外（<a class="code" href="practice-design-rules.html#r8" title="判準 R8 · 只講例外，不覆述常規">R8</a>：整班寫 all 5 students，被別班派走的標 In Chinese 3B）</td></tr>
+        <tr><td>送出</td><td>主鈕 Assign to N classes → Review 預覽 → Assign；送完同一顆變 Assigned ✓、Done（<a class="code" href="practice-design-rules.html#r10" title="判準 R10 · 一個動作從頭到尾同一個字">R10</a> 同一個動作同一個字）</td></tr>
+        <tr><td>v8 新增</td><td>逾期扣分（Late by X days · −N%，Optional 不套）、每班自己的 Start／Due、沒 Due 的情況。PM 四條已回，成績頁 Original／Adjusted 另開版</td></tr>
+        <tr><td>出處</td><td><a class="inline" href="v8-assign-history/ITERATION.md">v8 ITERATION.md</a>、交接包 <code>handoff/assign-history/</code>（HANDOFF.md ＋ API-CONTRACT.md）</td></tr>
+      </table>
+
+      <h2 id="choose"><span class="num">12</span> Choose Practice Type</h2>
+      <div class="uses"><a class="src" href="v20-sentence-practices/choose-practice-type.html" target="_blank" rel="noopener">定案 v20 choose-practice-type.html</a><a href="v20-sentence-practices/choose-practice-type.html" target="_blank" rel="noopener">入口，九張卡全部</a></div></span>
+      <p class="cap" data-pr="all"><span>九張卡：Content／Vocabulary／Sentence（2×2）／Comprehension 四欄</span><a href="v20-sentence-practices/choose-practice-type.html" target="_blank" rel="noopener">開 ↗</a></p>
+      <div data-pr="all" class="crop cpt" style="--x:80; --s:.85; --y:119; --h:762; --pad:0"><iframe src="v20-sentence-practices/choose-practice-type.html" title="Choose Practice Type 九張卡" loading="lazy"></iframe></div>
+      <table>
+        <tr><th style="width:160px">規則</th><th>內容</th></tr>
+        <tr><td>欄與色</td><td>四欄照 <code>practice-type-labels.js</code>：Content <span class="sw" style="background:#EFFBF4"></span>#00754A、Vocabulary <span class="sw" style="background:#FFF8E7"></span>#8F6209、Sentence <span class="sw" style="background:#FEF2F8"></span>#BE185D、Comprehension <span class="sw" style="background:#F3E8FF"></span>#6D28D9。卡＝icon ＋ 名稱 ＋ 一句說明</td></tr>
+        <tr><td>九張</td><td>Sentence 欄 2×2：Scramble、Cloze ／ Building、Response（2026-10-29 定順序）；Cloze 標 New；對話框 1280 寬</td></tr>
+        <tr><td>鎖定</td><td>素材沒建立時卡鎖住並說原因（handoff 的 <code>locked-state.html</code>，<code>?s=nobank|nocontent</code>）</td></tr>
+        <tr><td>出處</td><td>v1 定案（2026-08-27）→ 交接包 <code>handoff/choose-practice-type/</code> → v20 加第九張（<a class="inline" href="v20-sentence-practices/choose-practice-type.html">choose-practice-type.html</a>）</td></tr>
+      </table>
+
+      <h2 id="bits"><span class="num">13</span> 共用的小零件與顏色</h2>
+      <table>
+        <tr><th style="width:190px">小件</th><th>長相</th><th style="width:260px">用在</th></tr>
+        <tr><td>眉標 <code>.eyebrow</code></td><td>11px 大寫粗體 ＋ 細線拉到底 ＋ 右端 hint 或大字總數</td><td>第一步 How many、第二步 Teaching points／Sentences、Assign 的 History／New assignment、v6 的 Questions</td></tr>
+        <tr><td>教學點 chip <code>.tpchip</code></td><td>34px、左邊勾選框 icon、勾了綠框淡綠底；標籤 Added／New／Grammar</td><td>教學點 frame、From Project 池子</td></tr>
+        <tr><td>題號膠囊 <code>.chip.sm.primary.filled</code></td><td>綠底白字 Q1</td><td>第二步題卡</td></tr>
+        <tr><td>步進器 <code>.stp</code></td><td>− 數字 +，一個外框；38px（第一步）、28px（工具列）、小卡用 <code>.sm</code>；到頂 + 灰、tooltip 寫原因</td><td>How many（舊版）、教學點小卡、Max tries</td></tr>
+        <tr><td>選項卡 <code>.qopt</code></td><td>icon 方塊 ＋ 標題 ＋ 小字；選中綠框淡綠底；沒得選的淡掉</td><td>第一步來源卡、v6 HOW MANY、v8 逾期扣分</td></tr>
+        <tr><td>試聽 chip <code>.vchip</code></td><td>藥丸、帶 ▶；播放中換成 graphic_eq</td><td>Settings 的 Speed</td></tr>
+        <tr><td>分段控制項 <code>.seg</code></td><td>一排鈕、選中深色</td><td>Settings 的 Pinyin／Translation／Practice mode、Assign 的 Mandatory／Optional</td></tr>
+        <tr><td>視窗 <code>.win</code></td><td>灰地板 ＋ 陰影框 ＋ 34px 視窗列 Student view</td><td>Settings 畫布、v6 Question Types 矩陣、題型預覽對話框（v6 第二十七輪在對話框裡拿掉）</td></tr>
+      </table>
+      <table>
+        <tr><th style="width:190px">色</th><th>值</th><th>只用在</th></tr>
+        <tr><td>主色</td><td><span class="sw" style="background:#00CB61"></span>#00CB61 ／ 深 <span class="sw" style="background:#00A749"></span>#00A749</td><td>選中、完成、主鈕、Play</td></tr>
+        <tr><td>教學點 frame 底</td><td><span class="sw" style="background:#FFF8E7"></span>#FFF8E7</td><td>所有練習的教學點 frame（2026-10-21）</td></tr>
+        <tr><td>欄色 wash</td><td>Content <span class="sw" style="background:#EFFBF4"></span>#EFFBF4、Vocabulary <span class="sw" style="background:#FFF8E7"></span>#FFF8E7、Sentence <span class="sw" style="background:#FEF2F8"></span>#FEF2F8（ink #EC4899）、Comprehension <span class="sw" style="background:#F3E8FF"></span>#F3E8FF</td><td>型別 icon 底、內容 frame、Choose Practice Type 的卡</td></tr>
+        <tr><td>琥珀</td><td><span class="sw" style="background:#F59E0B"></span>#F59E0B 系</td><td>到上限（up to 20、Sentences · 20）、沒勾點的提醒、Response 的 Pattern 框</td></tr>
+        <tr><td>藍標／紫標</td><td><span class="sw" style="background:#DCECFE"></span>#DCECFE／#193592 ・ <span class="sw" style="background:#F3E8FF"></span>#F3E8FF／#7C3AED</td><td>Added、New ・ Grammar</td></tr>
+        <tr><td>字與 icon</td><td>Public Sans；Material Icons Round</td><td>全部提案</td></tr>
+      </table>
+
+      <h2 id="gaps"><span class="num">14</span> 不一致的地方（要統一要先問）</h2>
+      <table>
+        <tr><th style="width:230px">哪裡</th><th>現況</th><th style="width:200px">狀態</th></tr>
+        <tr><td>教學點 frame 的用字</td><td>Vocabulary 兩張（v4／v6）原本叫 <b>Add words／Custom word</b>；2026-11-02 統一成 <b>Add teaching points／Custom teaching point</b>；型別下拉 2026-11-03 起八張都有（產品只有 CustomWordDialog 有，Sentence 那邊要新做）</td><td><span class="tag t-done">已統一</span> 交接包複本沒動，要不要跟著改待問</td></tr>
+        <tr><td>教學點 frame 的 Grammar 標</td><td>v17 的語法點掛 <span class="tag" style="background:#F3E8FF;color:#7C3AED">Grammar</span>；v20 四種沒掛（CSS 有、沒用），v4／v6 第八輪連詞性標一起拿掉</td><td><span class="tag t-done">11/03 v20 已補</span> Vocabulary 要不要跟待定</td></tr>
+        <tr><td>教學點 frame 的文案</td><td>空專案兩種寫法（提案 add some below／產品 No teaching points found in this project…；v4／v6 的 add words below 11/02 已改）</td><td><span class="tag t-open">待定</span> 收成產品那句（v17 的 Fill in blank 句 11/03 已改）</td></tr>
+        <tr><td>第二步教學點小卡</td><td>v20 是新版（− 數字 +、大字總數）；v7／v12／v15／v19 還是舊版（左邊 2 sentences、右邊 −／+ 分兩頭）</td><td><span class="tag t-frz">已凍結</span> 那四版不再改，併入 v20</td></tr>
+        <tr><td>第一步「要幾題」</td><td>三種長相：數字欄 ＋ 來源卡（Sentence 四種）、題型 × 題數格子（v17／v18）、Question Types 一扇窗（v6）</td><td><span class="tag t-done">各自有理由</span> 題目按點分 vs 按題型分</td></tr>
+        <tr><td>來源選單</td><td>v13／v14 的 Question bank 在 v16 拿掉題庫後會消失；v13／v14 的提案仍以題庫為基準</td><td><span class="tag t-open">等 v16 定</span></td></tr>
+        <tr><td>Practice name 說明句</td><td>projects you pick／the project／the question bank 三種</td><td><span class="tag t-done">照來源換字</span></td></tr>
+        <tr><td>Settings 畫廊</td><td>手畫的 shared-settings-gallery 停在 2026-09-23，跟不上 v20</td><td><span class="tag t-done">2026-11-03 收掉</span> §10 改用七張實機裁圖</td></tr>
+        <tr><td>共用改動 <a class="code" href="#codes" title="共用改動 S10 · 回第一步不鎖、只生新的（等工程）">S10</a></td><td>「回第一步不鎖、只生新的」在 v4／v7／v12／v20 都畫了，後端能不能只補新勾的點還沒回</td><td><span class="tag t-open">等工程</span></td></tr>
+      </table>
+
+      <h2 id="files"><span class="num">15</span> 出處檔案</h2>
+      <table>
+        <tr><th style="width:230px">元件</th><th>定案出處（改這裡）</th><th>看什麼</th></tr>
+        <tr><td>外殼、來源選單、Practice name、How many ＋ 來源卡、教學點 frame、第二步小卡、題卡、Settings</td><td><a class="inline" href="v20-sentence-practices/proposal.html?type=scramble&amp;step=1&amp;sel=1" target="_blank" rel="noopener">v20 proposal.html</a></td><td><code>?type=scramble|fillin|response|building&amp;step=1|2|3|4</code>、<code>&amp;sel=1</code>、<code>&amp;dd=1</code>、<code>&amp;pool=1</code>、<code>&amp;ex=1</code>、<code>&amp;n=12</code></td></tr>
+        <tr><td>Vocabulary 的教學點 frame（多型別下拉）</td><td><a class="inline" href="v4-vocabulary-mirroring/proposal.html?step=1&amp;sel=1&amp;pool=1" target="_blank" rel="noopener">v4 proposal.html</a>、<a class="inline" href="v6-vocabulary-quiz/proposal.html?step=1&amp;sel=1&amp;pool=1" target="_blank" rel="noopener">v6 proposal.html</a></td><td><code>&amp;tdd=1</code> 型別選單打開</td></tr>
+        <tr><td>Question bank 選單</td><td><a class="inline" href="v14-comprehension-quiz/proposal.html?step=1&amp;dd=1" target="_blank" rel="noopener">v14 proposal.html</a>、<a class="inline" href="v13-open-ended-questions/proposal.html?step=1&amp;dd=1" target="_blank" rel="noopener">v13 proposal.html</a></td><td></td></tr>
+        <tr><td>題型 × 題數格子</td><td><a class="inline" href="v17-comprehension-quiz-generate/proposal.html?step=1&amp;proj=0" target="_blank" rel="noopener">v17 proposal.html</a>、<a class="inline" href="v18-open-ended-generate/proposal.html?step=1&amp;proj=0" target="_blank" rel="noopener">v18 proposal.html</a></td><td><code>&amp;filled=1</code></td></tr>
+        <tr><td>Assign</td><td><a class="inline" href="v8-assign-history/proposal.html?step=4&amp;hist=1" target="_blank" rel="noopener">v8 proposal.html</a></td><td><code>&amp;hist=1</code>、<code>&amp;past=1</code>、<code>&amp;late=reduced</code>；交接包 <code>handoff/assign-history/</code></td></tr>
+        <tr><td>Choose Practice Type</td><td><a class="inline" href="v20-sentence-practices/choose-practice-type.html" target="_blank" rel="noopener">v20 choose-practice-type.html</a></td><td>八張卡的交接版在 <code>handoff/choose-practice-type/</code></td></tr>
+        <tr><td>規則文件</td><td><a class="inline" href="practice-design-rules.html">設計判準 <a class="code" href="practice-design-rules.html#r1" title="判準 R1–R11：R1 依「它改變什麼」分段，不依欄位來源；R2 模式不是設定；R3 控制項三選一：分段／chip／下拉；R4 「學生自己決定」一律講 Choice by student；R5 預覽與設定同一張卡；R6 學生端排版照抄，不憑印象；R7 用字講老師關心的事，不講機制；R8 只講例外，不覆述常規；R9 鎖定、衝突、空白都要給原因；R10 一個動作從頭到尾同一個字；R11 Settings 的固定形狀：工具列 ＋ 畫布同一張卡">R1–R11</a></a>；<a class="code" href="#codes" title="共用改動 S1–S11：S1 Practice name 在第一步；S2 第一步的元件：來源選單、內容 frame、教學點勾選；S3 Settings ＝ 工具列 ＋ 視窗預覽；S4 Shown｜Hidden｜Choice by student；S5 Practice mode：Text visible｜Audio only；S6 Max tries ＋ ⓘ；S7 Speed 試聽、Voice 分組標地區；S8 Assign 搬回頁面；S9 頁腳標籤、捲回最上面、Next 灰著要說原因；S10 回第一步不鎖、只生新的（等工程）；S11 審句步：眼睛＝隱藏、對話類提醒只在這一步（等工程）">S1–S11</a> 的原始交接規格凍結在 <a class="inline" href="../../../handoff/practice-shared/">handoff/practice-shared</a>（iterations 裡的活複本與 Settings 畫廊 2026-11-03 收掉）</td></tr>
+      </table>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · Practice 共用元件總表 · November 2026</footer>
+    </main>
+  </div>
+<script>
+/* 藥丸＝分頁：點哪個練習，底下只留它的裁圖（data-pr 標的）；tag all 的永遠顯示 */
+document.querySelectorAll('.uses').forEach(u => {
+  const items = []; let el = u.nextElementSibling;
+  while (el && el.tagName !== 'H2') { if (el.hasAttribute('data-pr')) items.push(el); items.push(...el.querySelectorAll('[data-pr]')); el = el.nextElementSibling; }   /* .two 之類的容器裡的也算 */
+  const pills = [...u.querySelectorAll('.pr')]; if (!pills.length || !items.length) return;
+  const show = k => { pills.forEach(b => b.classList.toggle('on', b.dataset.pr === k)); items.forEach(it => { const t = it.dataset.pr.split(' '); it.classList.toggle('off', !(t.includes('all') || t.includes(k) || k === 'all')); }); };
+  pills.forEach(b => b.addEventListener('click', () => show(b.dataset.pr)));
+  const first = items[0].dataset.pr.split(' ')[0]; show(pills.some(b => b.dataset.pr === first) ? first : pills[0].dataset.pr);
+});
+</script>
+</body>
+</html>

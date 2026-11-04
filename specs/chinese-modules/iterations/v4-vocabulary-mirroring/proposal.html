@@ -56,6 +56,7 @@
    第二十二輪（2026-09-15）：Examples 那顆改成下拉，選 0～n（n＝例句最多的字有幾句），每個字都練前 k 句；個別改過就顯示 mixed。
    第二十三輪（2026-09-15）：標頭右邊「6 words · 17 cards for students · in this order · 1 hidden」拿掉，組開關搬到那個位子。
    第二十四輪（2026-09-15）：上傳圖片的對話框——選檔（拖放區）→ 預覽（檔名 ＋ 學生字卡）→ Use this image。
+   2026-11-02 用字統一：Add words → Add teaching points、Custom word → Custom teaching point、空專案與回頭提示的 words → points（型別下拉照留）。跟 Sentence 四種、v17、產品 teaching-point-picker.js 一致；定案記在 iterations/practice-components.html §7.4。
    第二十五輪（2026-09-15）：Back 回第一步不再鎖住——跟工程談定 practice 在第二步才存，所以專案、teaching point、Add words 都能重選；
      已生成的字留著，多勾的掛 New、按 Next 直接回第二步（不做生成動畫，新字在卡上生），取消勾的離開練習。
    第二十六輪（2026-09-15）：選兩個以上專案時 Practice name 用「 + 」串起來（A + B）；老師改過名稱就不再跟著專案變。
@@ -387,8 +388,8 @@ button{ font-family:inherit; }
 .tpchip .ty{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--grey200); color:var(--text2); }
 .tpchip .ty.gram{ background:#F3E8FF; color:#7C3AED; }
 .tpchip .ty.added{ background:#DCECFE; color:#193592; }
-.tpchip.dim{ opacity:.5; cursor:default; }
-.tpchip.dim:hover{ border-color:var(--divider); color:var(--text2); }
+.tpchip.dim, .tpchip.dim:hover{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); color:var(--text); cursor:default; }   /* 2026-11-02：已在清單的點用綠色（跟勾選 chip 同色），不再灰掉 */
+.tpchip.dim .mi{ color:var(--primary); }
 .addsep{ display:flex; align-items:center; gap:12px; margin:4px 0 8px; }
 .addsep b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
 .addsep .rule{ flex:1; height:1px; background:var(--divider); }
@@ -1158,12 +1159,11 @@ function renderTeachingPoints(){
       const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';   // 回頭多勾的：還沒生
       return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}">
         <span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`;
-    }).join('') : '<span class="body2" style="color:var(--text2)">No teaching points. You can add words below.</span>';
+    }).join('') : '<span class="body2" style="color:var(--text2)">No teaching points. You can add some below.</span>';
 
     /* From Project：課文裡的詞。已在清單裡的變灰打勾，其餘按 + 加進來（加進來就是一個勾好的 teaching point） */
     const pool = POOL[name] || [];
     const inSet = new Set(tps.map(t => t.w));
-    const left = pool.filter(w => !inSet.has(w)).length;
     const poolHtml = S.poolOpen ? `<div class="pool">${pool.length ? pool.map(w => inSet.has(w)
         ? `<button class="tpchip dim" disabled aria-label="${esc(w)} — already in"><span class="mi">check</span>${esc(w)}</button>`
         : `<button class="tpchip" data-addpool="${esc(name)}|${esc(w)}"><span class="mi">add</span>${esc(w)}</button>`).join('')
@@ -1179,17 +1179,15 @@ function renderTeachingPoints(){
       <div class="frame-panel">${chips}</div>
       ${(() => { const newN = tps.filter(t => S.tp.has(t.w) && !S.genWords.has(t.w)).length, dropN = tps.filter(t => !S.tp.has(t.w) && S.genWords.has(t.w)).length;
         return !S.loaded ? '' : `<div class="frame-hd"><div class="frame-desc">${newN || dropN
-          ? [newN ? `${newN} new ${newN === 1 ? 'word is' : 'words are'} added to the Vocabulary step when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'word leaves' : 'words leave'} the practice` : ''].filter(Boolean).join(' · ')
-          : 'Generated. Tick more words or untick some — the cards you already have stay as they are.'}</div></div>`; })()}
+          ? [newN ? `${newN} new teaching ${newN === 1 ? 'point is' : 'points are'} added to the Vocabulary step when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'point leaves' : 'points leave'} the practice` : ''].filter(Boolean).join(' · ')
+          : 'Generated. Tick more points or untick some — the cards you already have stay as they are.'}</div></div>`; })()}
       <div class="frame-panel" style="display:block; overflow:visible">
-        <div class="addsep"><b>Add words</b><span class="rule"></span></div>
-        <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
-          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>From Project
-          <span class="n">${pool.length ? (left ? `${left} to add` : 'all added') + ` · ${pool.length} words` : 'no content'}</span>
+                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
+          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>Add teaching points from project
         </button>
         ${poolHtml}
         <div class="tp-add">
-          <input class="inp" type="text" placeholder="Custom word" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
+          <input class="inp" type="text" placeholder="Custom teaching point" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
           <div class="dd">
             <button class="dd-trig" data-act="typedd" aria-haspopup="menu" aria-expanded="${S.typeOpen}">
               <span class="nm">${TYPE_LABEL[S.customType]}</span><span class="mi caret">${S.typeOpen ? 'expand_less' : 'expand_more'}</span></button>

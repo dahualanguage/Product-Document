@@ -13,7 +13,7 @@
   - 第二步 `steps/qa-step-two-section.js` ＋ `components/{audio-mode-toggle-card,audio-settings-panel,audio-status-banner,edit-in-question-bank-button}.js`
   - 第三步 `steps/step-three.js`（八種共用）。**注意**：c8179072 的 step-three.js 已經是 History 分頁（In progress／Past due）＋ 內嵌 `NewAssignmentForm`，不是 v3 那張「Assigned students ＋ Assign Practice 鈕」。契約規定第三步直接抄分岔來源的基準、不重畫，所以這份基準檔的第三步是 v3 的舊畫面；Assign 的現況歸 v8-assign-history
   - 學生端 `src/sections/assignments/content/qa/{practice-content-list,content-window}.js`、`qa/components/{QAPracticeStartCard,MessageList,StartPracticeButton}.js`、`content/index.js`
-- **狀態**：基準（10/19 上午）＋ 提案第一輪（10/19 下午：套共用設計，Planning 要嵌的那一份）。未部署、未 commit
+- **狀態**：**2026-11-04 併入 v18**（`../v18-open-ended-generate/proposal.html`，之後在那裡改；這份題庫版提案停在第一輪，基準檔留著當 v18 的對照組）。基準（10/19 上午）＋ 提案第一輪（10/19 下午：套共用設計，Planning 要嵌的那一份）。未部署、未 commit
 
 ## 登記時就查到的
 

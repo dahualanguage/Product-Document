@@ -39,6 +39,12 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-03 | 教學點 chip 語法點掛 Grammar 標 | 使用者「要」（元件總表 §7.4 待定那條）。原本只有 v17 掛；現在 frame 裡型別是 GRAMMAR 的點（專案的、或 Custom 選 Grammar / Structure 加的）都掛紫色 Grammar，跟 Added 可以並存。Vocabulary 兩張待定 |
+| 2026-11-03 | Custom teaching point 旁加型別下拉 | 使用者「所有的 add 應該都要有詞性」：Vocabulary 那顆型別下拉（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）套到八張卡；v17／v20／v21 補上，加的點記 ptype。產品的 teaching-point-picker 沒有型別，交接時要提 |
+| 2026-11-02 | 教學點 frame 第二版提案，另開 `proposal-frame.html` | 使用者三條：①Add teaching points from project 的開合不夠明顯 ②專案名前的全選框沒意義 ③例句展開後離上面的字太遠。解法：①開合列改 accordion 樣（整列有框、箭頭在右、開了轉 180° 跟池子接成一塊；hover 與打開用淺綠，使用者「改用淺綠」）②全選框拿掉 ③例句清單搬到 chip 正下方、加點區域移到最後（翻掉 v7 第十九輪「例句在 Add teaching points 之下」）。④（2026-11-03）例句模式裡上面那排 chip 不重複：chip 直接當例句清單的左欄，勾／取消在那裡做，沒例句的點右邊寫 No examples · will be generated。從 proposal.html 複製、只動 renderTeachingPoints／renderExamples＋一段 CSS；原版不動，定了再回套六份。圖與對照在 `iterations/practice-components.html` §7.5 |
+| 2026-11-02 | From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。共用元件，v4／v6／v17／v20／v21 一起改 |
+| 2026-11-02 | From project 池子裡已在清單的點改綠色 | 使用者「已經選取過的灰色改成綠色的」：原本 opacity .5 灰掉，改成跟勾選 chip 同一套綠框淡綠底、綠勾，仍不能點。共用元件，v4／v6／v17／v20／v21 一起改 |
+| 2026-11-02 | 教學點 frame 底下兩行併一行 | 使用者「這裡改成一句就好」：ADD TEACHING POINTS 小標拿掉，From Project 摺疊列改寫 **Add teaching points from project**（右邊 N to add · M words、底下 Custom teaching point 輸入欄不變）。共用元件，v4／v6／v17／v20／v21 一起改；定案記在 `iterations/practice-components.html` §7 |
 | 2026-11-02 | 交接包 handoff/sentence-practices | 使用者「這份 md 很多工程師會看不懂的東西」→ 定一份涵蓋四種（不沿用 handoff/sentence-scramble 加三種）。照直白寫法：名詞對照先解釋代號、每條「現在→改成→改哪裡→卡住的」、不放輪數與討論；E1–E4 改編號為問題 1–5 並對照 Scramble 包的 E1–E10。Scramble 那一包仍有效，只改三處（小卡、區塊標題、Translation）。程式碼基準 7528c30f |
 | 2026-10-30 | Scramble／Cloze 第三步加 Translation（Shown｜Hidden｜Choice by student） | 使用者「Sentence Scramble／Sentence Cloze 的 setting 可以設定翻譯開關學生選擇」。工具列 Pinyin 旁邊多一組 Translation，三個選項跟 Response／Building 同一套；畫布在 Listen 底下多一行翻譯；Choice by student 時學生端 Settings 面板多 Translation 開關（跟 Pinyin 一樣）。預設 Choice by student、學生端開關預設開（跟 Response／Building 一樣）。這樣四種的工具列只差 Response／Building 的 Practice mode |
 | 2026-10-30 | Building 第一步加回「Example sentences from teaching points」，例句＝Suggested answer | 使用者「Sentence Building 的答案可以吃 teaching point 的例句」。選了例句後第二步每句一題：Suggested answer 是那句例句（詞塊切法同 Scramble、教學點高亮、卡上標 Example）、Question 照教學點寫（請用「起床」造句。）；該點份額不夠的才生。Response 維持不用。例句卡底下小字 each one becomes a suggested answer。E4：後端 Building 生成能不能吃現成的句子當答案 |
