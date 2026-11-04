@@ -28,6 +28,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-04 | 第二步題卡拿掉播放鍵 | 使用者「在 Edit Questions 不用播放」。題卡右邊剩鉛筆、✕；聽題目在第三步 Settings & Preview 的學生視窗 |
 | 2026-11-04 | Extension 不用灰色 | 使用者「Extension 示意不要用灰色」。示意卡底、icon、選中框、學生回答條改青綠（#F0FDFA／#CCFBF1／#0F766E／#14B8A6）；第二步的 Extension 小標同色，兩步對得起來 |
 | 2026-11-04 | 題數欄改成「− 數字 ＋」 | 使用者「這個模組改成 - 1 ＋，兩邊的都改」。樣子照 v20 的 .stp；數字仍可直接打；0 時 − 灰掉。v17／v18 同一套，Generate more 也是 |
 | 2026-11-04 | 照 v17 的原則改一輪 | 使用者「先依照 Comprehension Quiz 剛剛修改的原則修改」。①第一步先看課文、再問題目；課文整段不斷句、demo 加長成四段（Content Base 題的事實都還成立）②What to ask 兩種題目改成示意卡（Content Base：課文灰條裡一段標色＋問題條；Extension：問題條＋學生自己的回答條），總數大字擺在卡片上方 ③拿掉 10 題上限、底列原因、Use a suggested mix ④第二步建議答案直接展開（唯讀，鉛筆打開才改）、眉標提示句拿掉、Generate more 加重。Content Base／Extension 的類別 chip 保留（兩種都有，有資訊量） |
