@@ -53,6 +53,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-04 | 題卡骨架：Q 膠囊灰階、左邊 ∧ 把手 ∨ | 使用者「題卡的共同骨架都吃這個設定」（照 v17／v18）。句子卡與問答卡左邊一條直欄，上下鈕換一格、把手照舊拖曳；Q 膠囊從綠改灰。編輯中的卡不變 |
 | 2026-11-03 | 教學點 chip 語法點掛 Grammar 標 | 使用者「要」（元件總表 §7.4 待定那條）。原本只有 v17 掛；現在 frame 裡型別是 GRAMMAR 的點（專案的、或 Custom 選 Grammar / Structure 加的）都掛紫色 Grammar，跟 Added 可以並存。Vocabulary 兩張待定 |
 | 2026-11-03 | Custom teaching point 旁加型別下拉 | 使用者「所有的 add 應該都要有詞性」：Vocabulary 那顆型別下拉（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）套到八張卡；v17／v20／v21 補上，加的點記 ptype。產品的 teaching-point-picker 沒有型別，交接時要提 |
 | 2026-11-02 | From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。共用元件，v4／v6／v17／v20／v21 一起改 |

@@ -39,6 +39,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-04 | 題卡骨架：Q 膠囊灰階、左邊 ∧ 把手 ∨ | 使用者「題卡的共同骨架都吃這個設定」（照 v17／v18）。句子卡與問答卡左邊一條直欄，上下鈕換一格、把手照舊拖曳；Q 膠囊從綠改灰。編輯中的卡不變 |
 | 2026-11-03 | 教學點 chip 語法點掛 Grammar 標 | 使用者「要」（元件總表 §7.4 待定那條）。原本只有 v17 掛；現在 frame 裡型別是 GRAMMAR 的點（專案的、或 Custom 選 Grammar / Structure 加的）都掛紫色 Grammar，跟 Added 可以並存。Vocabulary 兩張待定 |
 | 2026-11-03 | Custom teaching point 旁加型別下拉 | 使用者「所有的 add 應該都要有詞性」：Vocabulary 那顆型別下拉（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）套到八張卡；v17／v20／v21 補上，加的點記 ptype。產品的 teaching-point-picker 沒有型別，交接時要提 |
 | 2026-11-02 | 教學點 frame 第二版提案，另開 `proposal-frame.html` | 使用者三條：①Add teaching points from project 的開合不夠明顯 ②專案名前的全選框沒意義 ③例句展開後離上面的字太遠。解法：①開合列改 accordion 樣（整列有框、箭頭在右、開了轉 180° 跟池子接成一塊；hover 與打開用淺綠，使用者「改用淺綠」）②全選框拿掉 ③例句清單搬到 chip 正下方、加點區域移到最後（翻掉 v7 第十九輪「例句在 Add teaching points 之下」）。④（2026-11-03）例句模式裡上面那排 chip 不重複：chip 直接當例句清單的左欄，勾／取消在那裡做，沒例句的點右邊寫 No examples · will be generated。從 proposal.html 複製、只動 renderTeachingPoints／renderExamples＋一段 CSS；原版不動，定了再回套六份。圖與對照在 `iterations/practice-components.html` §7.5 |
