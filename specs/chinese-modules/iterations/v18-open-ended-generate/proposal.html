@@ -894,7 +894,8 @@ body{ padding-bottom:48px; }
 /* 小 chip：Q 號膠囊、型別、分類（照 v6 proposal 的 .chip.sm；型別色＝MC_TYPE_COLORS） */
 .chip.sm{ height:24px; padding:0 8px; font-size:12px; gap:4px; cursor:default; }
 .chip.sm:hover{ border-color:var(--divider); color:var(--text2); }
-.chip.sm.qno{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:700; }
+.chip.sm.qno{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; font-weight:700; }   /* 2026-11-04：題號改灰階（使用者） */
+.iconbtn.mv .mi{ font-size:20px; } .iconbtn.mv:disabled{ opacity:.3; cursor:default; }
 .chip.sm.tchip.tf, .chip.sm.tchip.tf:hover{ background:var(--tf-bg); border-color:rgba(16,185,129,.45); color:var(--tf); }
 .chip.sm.tchip.mc, .chip.sm.tchip.mc:hover{ background:var(--mc-bg); border-color:rgba(59,130,246,.45); color:var(--mc); }
 /* Test Mode 卡（practice-unified-view.js 的 ExamModeCard）：開關 ＋ 開了才出現的三行 */
@@ -1308,6 +1309,8 @@ function renderQCard(q, i){
       ${tchip(q)}
       ${q.isNew ? '<span class="ty new">New</span>' : ''}${q.edited ? '<span class="ty edited">Edited</span>' : ''}
       ${title}
+      <button class="iconbtn mv" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move up" title="Move up"><span class="mi">arrow_upward</span></button>
+      <button class="iconbtn mv" data-act="down" data-i="${i}" ${i === S.questions.length - 1 ? 'disabled' : ''} aria-label="Move down" title="Move down"><span class="mi">arrow_downward</span></button>
       <button class="iconbtn" data-act="expand" data-i="${i}" aria-expanded="${open}" aria-label="${open ? 'Done editing' : 'Edit question'}"><span class="mi">${open ? 'expand_less' : 'edit'}</span></button>
       <button class="iconbtn err" data-act="remove" data-i="${i}" ${last ? 'disabled' : ''} title="${last ? 'A practice needs at least one question' : 'Remove this question'}" aria-label="Remove question"><span class="mi">close</span></button>
     </div>${body}
@@ -1329,6 +1332,9 @@ function renderStep1(){
     ${renderMore()}
     <div class="mcq-list">${S.questions.map(renderQCard).join('')}</div>`;
 }
+/* 2026-11-04：上移／下移一格；展開中的那張跟著移 */
+function moveQ(i, d){ const j = i + d; if (j < 0 || j >= S.questions.length) return; const q = S.questions; [q[i], q[j]] = [q[j], q[i]];
+  S.expanded = new Set([...S.expanded].map(k => (k === i ? j : k === j ? i : k))); }
 function removeQ(i){ S.questions.splice(i, 1); S.expanded = new Set([...S.expanded].filter(k => k !== i).map(k => (k > i ? k - 1 : k))); }
 
 /* =====================================================================
@@ -1575,6 +1581,7 @@ document.addEventListener('click', (e) => {
     if (a === 'suggest') S.counts = DEMO_COUNTS();
     if (a === 'expand'){ S.expanded.has(i) ? S.expanded.delete(i) : S.expanded.add(i); }
     if (a === 'remove'){ if (ac.disabled) return; removeQ(i); }
+    if (a === 'up' || a === 'down'){ if (ac.disabled) return; moveQ(i, a === 'up' ? -1 : 1); }   // 2026-11-04：上下鈕換序（拖曳照留）
     if (a === 'playq'){ if (ac.disabled) return; S.rowPlay = i; render(); setTimeout(() => { S.rowPlay = null; render(); }, 1400); return; }
     if (a === 'more'){ S.more = true; S.moreCounts = DEFAULT_COUNTS(); }
     if (a === 'moreoff') S.more = false;
