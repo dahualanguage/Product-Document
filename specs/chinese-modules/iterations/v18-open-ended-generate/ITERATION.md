@@ -28,6 +28,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-04 | 第三步學生預覽放上課文 | 使用者「把這一頁的預覽頁放上文章」（附產品學生端截圖）。照 `assignments/content/qa/content-window.js`：視窗左欄 Content（書本 icon、標題、底線、逐詞拼音，Pinyin 設定控制顯示），右欄題目（標頭改成 N Questions＋齒輪、guide phrase、題目泡泡、Play、Question x of N）。逐詞拼音用 pinyin-pro 產、只有「我的一天」有；Audio only 時左欄收掉（學生端純聽力不看課文——待確認） |
 | 2026-11-04 | 第二步題卡拿掉播放鍵 | 使用者「在 Edit Questions 不用播放」。題卡右邊剩鉛筆、✕；聽題目在第三步 Settings & Preview 的學生視窗 |
 | 2026-11-04 | Extension 不用灰色 | 使用者「Extension 示意不要用灰色」。示意卡底、icon、選中框、學生回答條改青綠（#F0FDFA／#CCFBF1／#0F766E／#14B8A6）；第二步的 Extension 小標同色，兩步對得起來 |
 | 2026-11-04 | 題數欄改成「− 數字 ＋」 | 使用者「這個模組改成 - 1 ＋，兩邊的都改」。樣子照 v20 的 .stp；數字仍可直接打；0 時 − 灰掉。v17／v18 同一套，Generate more 也是 |
