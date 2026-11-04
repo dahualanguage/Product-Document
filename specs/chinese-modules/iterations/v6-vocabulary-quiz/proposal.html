@@ -1160,6 +1160,18 @@ body{ padding-bottom:48px; }
 .qadd-chips .tpchip.cc:disabled{ opacity:.4; cursor:default; }
 .dlg2-ft{ display:flex; justify-content:flex-end; gap:8px; padding:8px 0 12px; }
 .dlg2{ max-width:640px; }
+
+/* 2026-11-04：題卡共同骨架（照 v17／v18／v20）——Q 膠囊灰階；左邊一條直欄 ∧ 把手 ∨。只改提案頁，交接包複本不動 */
+.mcq.rail{ display:grid; grid-template-columns:26px minmax(0,1fr); column-gap:12px; padding-left:10px; }
+.mcq.rail > .mv-rail{ grid-column:1; grid-row:1 / span 20; align-self:center; }
+.mcq.rail > :not(.mv-rail){ grid-column:2; }
+.mcq.rail .mcq-bd{ padding-left:0; }
+.mv-rail{ display:flex; flex-direction:column; align-items:center; gap:2px; width:26px; }
+.mv-rail .drag{ color:var(--text3); font-size:20px; cursor:grab; }
+.mv-rail .mv{ border:0; background:transparent; padding:0; width:26px; height:22px; border-radius:6px; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.mv-rail .mv .mi{ font-size:22px; } .mv-rail .mv:hover{ background:var(--grey200); color:var(--text); }
+.mv-rail .mv:disabled{ opacity:.25; cursor:default; background:transparent; }
+.mcq .chip.sm.primary.filled{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; }
 </style>
 </head>
 <body>
@@ -1943,9 +1955,9 @@ function renderMcCard(q, i){
     : `<div class="mc-img txt"><span>${esc(q.stem)}</span></div>`;
   const g = groupOf(q.t);
   const isMust = S.qtarget != null && S.qmode === 'must' && S.qmust.has(q.t) && !S.qauto?.has(q.key);   // 第三十九輪：必考題型出的題——標 chip、沒有 Swap type（換了就不是必考的題型）
-  return `<div class="mcq" draggable="true" data-qkey="${esc(q.key)}">
+  return `<div class="mcq rail" draggable="true" data-qkey="${esc(q.key)}">
+    <div class="mv-rail"><button class="mv" data-qmv="${esc(q.key)}|-1" ${i === 0 ? 'disabled' : ''} aria-label="Move up" title="Move up"><span class="mi">keyboard_arrow_up</span></button><span class="mi drag" title="Drag to reorder">drag_indicator</span><button class="mv" data-qmv="${esc(q.key)}|1" ${i === S.qorder.length - 1 ? 'disabled' : ''} aria-label="Move down" title="Move down"><span class="mi">keyboard_arrow_down</span></button></div>
     <div class="mcq-hd">
-      <span class="mi drag">drag_indicator</span>
       <span class="chip sm primary filled">Q${i + 1}</span>
       <span class="body2" style="font-weight:700; color:var(--text); margin-right:4px">${esc(q.w)}</span>
       <span class="chip sm tchip"><span class="mi" style="color:${MC_META[q.t].color}">${MC_META[q.t].icon}</span>${MC_LABEL[q.t]}</span>
@@ -1967,7 +1979,7 @@ function renderStep2(){
   const notIn = freeTypes.filter(t => !qm().has(cellKey(addRow.key, t)));
   const addT = freeTypes.includes(S.qaddT) ? S.qaddT : (notIn[0] || freeTypes[0]);
   return `
-    <div class="eyebrow" style="margin-top:0"><b>Questions · ${qs2.length}</b><span class="rule"></span><span class="hint">In this order · drag a card to reorder</span></div>
+    <div class="eyebrow" style="margin-top:0"><b>Questions · ${qs2.length}</b><span class="rule"></span><span class="hint">In this order · drag a card or use the arrows to reorder</span></div>
     <div class="mcq-list">${qs2.map(renderMcCard).join('')}</div>
     <button class="dashbtn" data-act="qadd"><span class="mi">add</span>Add Question</button>
     ${S.add ? `<div class="scrim2" data-act="qaddclose"><div class="dlg2" data-stop="1">
@@ -2244,6 +2256,9 @@ function render(){
 }
 
 document.addEventListener('click', (e) => {
+  const qmv = e.target.closest('[data-qmv]');   // 2026-11-04：題卡 ∧ ∨ 換序
+  if (qmv){ if (qmv.disabled) return; const p = qmv.dataset.qmv.lastIndexOf('|'), k = qmv.dataset.qmv.slice(0, p), d = +qmv.dataset.qmv.slice(p + 1), o = S.qorder, a = o.indexOf(k), b = a + d;
+    if (a < 0 || b < 0 || b >= o.length) return; [o[a], o[b]] = [o[b], o[a]]; render(); return; }
   if (e.target.closest('.play')) { e.stopPropagation(); return; }
 
 

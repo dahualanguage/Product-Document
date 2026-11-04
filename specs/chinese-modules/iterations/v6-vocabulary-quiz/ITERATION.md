@@ -68,6 +68,7 @@
 
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
+| 老師 | 2026-11-04：題目清單的卡套共同骨架 | 使用者「題卡的共同骨架都吃這個設定」→「只改提案頁」。Q 膠囊從綠改灰；左邊一條直欄 ∧ 把手 ∨（上下鈕換一格、把手照舊拖曳）；眉標提示改 *drag a card or use the arrows to reorder*。**交接包 handoff/vocabulary-quiz 的複本沒動** |
 | 老師 | 2026-11-02：From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪我自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。v4／v6／v17／v20／v21 一起改。 |
 | 老師 | 2026-11-02：From project 池子裡已在清單的點改綠色 | 使用者指示（「已經選取過的灰色改成綠色的」）。原本 opacity .5 灰掉，改成跟勾選 chip 同一套綠框淡綠底、綠勾，仍不能點。v4／v6／v17／v20／v21 一起改。 |
 | 老師 | **2026-11-02：frame 底下兩行併一行** | 使用者指示（2026-11-02「這裡改成一句就好」，指 ADD TEACHING POINTS 小標 ＋ From Project 摺疊列）。小標拿掉，摺疊列改寫 **Add teaching points from project**（右邊 N to add · M words 不變），底下 Custom teaching point 輸入欄不變。v4／v6／v17／v20／v21 一起改；凍結的 v7／v12／v15／v19 不動。 |
