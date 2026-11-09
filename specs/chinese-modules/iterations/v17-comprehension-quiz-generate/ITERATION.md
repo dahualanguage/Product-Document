@@ -37,6 +37,7 @@
 | 2026-11-04 | Generate more 鈕加重 | 使用者「太不明顯」。從灰細框小鈕改成綠框、淺綠實底、綠字粗體、38px 高；位置不動（第二步眉標右邊） |
 | 2026-11-04 | 第二步眉標的提示句拿掉 | 使用者「拿掉 True/False N · Multi-Choice N · drag to reorder · click a question to edit it」。眉標只剩 QUESTIONS · N 和 Generate more；只剩一題時「Last question…」那句照留 |
 | 2026-11-04 | 總數搬到題型卡之上 | 使用者「0 questions 總數往上擺在題型之上」。卡片左上一行大字總數「N questions」，底列整條拿掉 |
+| 2026-11-09 | What to ask 從兩張變四張 2×2：下排「Write my own」老師自己出題 | 使用者「讓 question type 可以讓老師新增手寫問題的選項」→「卡裡最上面先選 True/False｜Multiple choice 在第一步」→「變成四張卡片 2x2 排版」。上排照舊（AI 出的 True/False、Multiple choice），下排 **Write a True/False**（*Your own statement — not AI*）、**Write a Multiple choice**（*Your own question and answers — not AI*；一度叫 Write my own …，使用者從四組選項選了動詞開頭的 B）：示意是虛線的空題目欄＋空的 True｜False／A–D，鉛筆 icon 用該型別的顏色，題數 − N ＋ 同一套；總數四格相加。填幾題，第二步就在最後出幾張空白題卡（型別固定、掛 **Yours**、直接打開），寫題目、選項、點正解。手寫題沒寫完（題目或任一選項空白）Save 灰著、眉標寫 *N of your own questions still need a question and answers before you can save*；手寫題不掛 Edited。只填手寫題時第一步主鈕是 Next、不跑 Generating。Generate more 面板同一張四卡，手寫的接在最後、不掛 New。中間兩版（第三張卡；卡裡切型別）作廢。demo：`&own=TF,MC` |
 | 2026-11-04 | 底列拿掉「Ask for at least one question」 | 使用者「也拿掉」。底列只剩「N questions」；0 題時 Generate／Add 照樣灰著，但畫面上不再寫原因（跟判準 R9「灰著要給原因」不一致，使用者定） |
 | 2026-11-04 | 第二步題卡答案直接展開 | 使用者「答案直接展開」。收起的題卡也列出選項（True/False 兩格、Multiple choice A–D），正解綠／藍底加勾，唯讀；鉛筆打開才是可改的題目欄與選項 |
 | 2026-11-04 | 底列拿掉「All questions are written from the whole article」 | 使用者「不用副標」。底列只剩總數，0 題時加原因 |

@@ -28,6 +28,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-09 | What to ask 從兩張變四張 2×2：下排「Write a …」老師自己出題（同 v17） | 使用者「Open-ended Questions 也新增這樣的功能」。上排照舊（AI 出的 Content Base、Extension），下排 **Write a Content Base question**（*Your own question about the article — not AI*）、**Write an Extension question**（*Your own question about the student’s life — not AI*）：示意是虛線的空題目欄＋空的 Suggested answer 欄、灰底，鉛筆 icon 用該類別的顏色，題數 − N ＋ 同一套；總數四格相加。填幾題，第二步就在最後出幾張空白題卡（類別固定、掛 **Yours**、直接打開），寫題目和建議答案；拼音那行改寫 *Pinyin and audio are made from your question when you save*。題目或建議答案空著時 Next 灰著、眉標寫 *N of your own questions still need a question and a suggested answer before you can continue*；手寫題不掛 Edited。只填手寫題時第一步主鈕是 Next、不跑 Generating。Generate more 面板同一張四卡，手寫的接在最後、不掛 New。demo：`&own=CB,EX` |
 | 2026-11-04 | 上下鈕搬到左邊把手那一欄 | 使用者「上下擺在這裡」（指拖曳把手）。題卡左邊一條直欄：∧、把手、∨，垂直置中；右邊只剩 Edit、Delete |
 | 2026-11-04 | 題號膠囊改灰階、加上移／下移鈕 | 使用者「把 Q1 的 tag 改成灰階，增加往上往下改順序的按鈕」。Q 膠囊從綠底白字改灰底深灰字；題卡右邊 Edit 前多 ↑ ↓，第一題的 ↑、最後一題的 ↓ 灰掉；拖曳換序照留 |
 | 2026-11-04 | 第三步學生預覽放上課文 | 使用者「把這一頁的預覽頁放上文章」（附產品學生端截圖）。照 `assignments/content/qa/content-window.js`：視窗左欄 Content（書本 icon、標題、底線、逐詞拼音，Pinyin 設定控制顯示），右欄題目（標頭改成 N Questions＋齒輪、guide phrase、題目泡泡、Play、Question x of N）。逐詞拼音用 pinyin-pro 產、只有「我的一天」有；Audio only 時左欄收掉（學生端純聽力不看課文——待確認） |
