@@ -1,13 +1,13 @@
 # v18 — Open-ended Questions：拿掉題庫、進練習才生成
 
-- **功能名稱**：New Open-ended Questions（`QA`）建立流程
+- **功能名稱**：New Open-ended Questions（`QA`）建立流程 → **2026-11-11 改名 Free response**（使用者）
 - **網址**：https://dahua-dash-dev.web.app/dashboard/practice/create/?type=QA
 - **截圖**：沿用 v13
 - **分岔自**：v13 `proposal.html`（外殼、Stepper、第一步欄位、第二步的 R11 工具列＋學生視窗、Assign 步全部沿用）；第一步的格子、教學點 frame、Generating、第二步的題目卡＋Generate more 跟 v17 同一套
 - **日期**：2026-10-23
 - **範圍與理由**：`../v16-remove-question-bank/spec.html`。這一版只畫 Open-ended Questions 那條流程；Comprehension Quiz 在 v17
 - **設計檔**：`proposal.html`（`?step=` 從 1 數；參數見檔頭）。基準檔沿用 v13 `create-qa.html`，不重做
-- **狀態**：**2026-11-04 起 Open-ended Questions 的唯一版本**（v13 併進來；v13 的 `create-qa.html` 是基準）。提案第一輪，未部署、未 commit
+- **狀態**：**2026-11-12 題卡加回 Answer conditions**（產品題庫頁就有的、後端生成的唯讀條件；題庫拿掉後只剩這張卡能看到）。2026-11-11 改名 Free response、只剩 Extension（Content Base 搬去 v17 Comprehension Quiz）。2026-11-04 起 Open-ended Questions 的唯一版本（v13 併進來；v13 的 `create-qa.html` 是基準）。提案第一輪，未部署、未 commit
 
 ## 這一版定了什麼
 
@@ -15,6 +15,7 @@
 - 第一步：專案單選 → Practice name → **What to ask**（兩列：Content Base／Extension，題庫頁 Q&A 區塊的兩個 radio；icon 照 CATEGORY_ICONS；一欄題數 0–10；預設全 0、底列「Use a suggested mix」帶入 5＋2）→ **Article** → Generate。**沒有教學點**（第二輪拿掉；第一輪原本照 v17 畫了黃底 frame）。
 - 沒課文的專案：Generate 灰、原因在格子底列「This project has no article content yet」，課文 frame 裡一條黃色提醒。
 - 第二步 Edit Questions：一題一張卡（類別 chip 用 v13 的 .qtype、題目＋拼音、播放、編輯、✕、拖曳）。展開＝編輯題目與建議答案；拼音唯讀，改了題目重產拼音與音檔。Generate more 同一張格子接在最後掛 New。現行「Edit Questions & Answers in Question Bank」鈕沒了。
+- 題卡上有 **Answer conditions**（2026-11-12 加回）：產品題庫頁每題 Q&A 的 Suggested Answer 底下本來就有這塊（`questionsBank/view/generate/questions/answer-conditions.js`，PR #978，2026-09-23）——後端從題目＋建議答案生成，分 **Must cover**（綠勾）／**Not required**（灰圈）兩組，老師只能看不能改，改了題目或建議答案後端會重產；AI 批改學生答案的「完整度」就是對著它。題庫拿掉之後這塊唯一的入口就是這張卡，所以照產品的樣子搬過來：收起時在建議答案那條底下，鉛筆打開時一樣唯讀、底下一行講「AI 用它評分、改題目或建議答案會重寫、不能直接改」；手寫題存檔前只有一行「存檔時 AI 從你的題目和建議答案寫出來」。沒課文的佔位卡不顯示。學生端不顯示（產品也沒有）。
 - 第三步：v13 第二步的工具列＋學生視窗原封不動，底下的課文與題目清單拿掉（題目在第二步處理完；要看哪一題用視窗裡的 Question x of N）。
 - 第四步 Assign：S8。
 
@@ -23,11 +24,15 @@
 1. Open-ended 的題目沒有「對應到哪個教學點」的欄位（後端只把專案的教學點當提示塞進 prompt），所以第一步不勾點、卡上也沒有教學點 chip，跟 v17 不同。後端照舊會拿專案的教學點當提示，老師不用管。
 2. Generate 之後建 practice 的 ProcessingDialog 沒畫（照現行「Processing content...」）。
 3. 已指派後回來改題的版本確認沒畫（v16 待定 4）；學生答題時建議答案怎麼進評分（v16 待定 2）。
+4. Answer conditions 現在存在題庫的題目上（`question.answerConditions`，`requiredConditions`／`notRequiredConditions` 兩個字串陣列），練習本身（`updatedArticleArray`）沒有這個欄位；題目改存在練習上之後，條件要跟著搬過去、改題後重產的時機也要定——v16 的 spec 已劃掉不再更新，這條待工程的問題記在這裡。重產要幾秒（產品手動加題時把表單鎖住就是在等它）——改完題目關掉鉛筆之後，條件要不要先顯示「更新中」，沒畫，等工程回時間再說。QA pipeline 那套拿條件去測 prompt 的工具 2026-10-26 已搬去 dahua-admin-dash，不在老師端。
 
 ## Change log
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-12 | 第二步題卡加回 **Answer conditions**（Must cover／Not required，唯讀） | 使用者問「現在哪些練習有 Answer conditions」→ 查到只有題庫頁的 Q&A 題有、題庫拿掉就沒入口 → 「對 要加回去」。照產品 `answer-conditions.js` 的樣子（#FAF5FF 底、#E9D5FF 框、紫標題、綠勾／灰圈）放在建議答案底下，收起、打開都顯示；打開時底下多一行講它會跟著題目／建議答案重寫、不能直接改；手寫題存檔前只有說明一行。mock 八題 Extension 各寫了 1–2 條 Must cover、1–2 條 Not required（`rc`／`nr`）。**沒畫**：改完題目後「條件更新中」的等待狀態（等工程回要幾秒） |
+| 2026-11-11 | 練習改名 **Free response**；Content Base 搬去 v17，只剩 Extension | 使用者「把 Open-ended Questions 的 content based question 也改到 Comprehension Quiz，因為都是考 Comprehension 的內容」→「v18 的練習名改成 Free response」→「剩下 Extension 只有一種題型」。標題 *New Free response*；What to ask 剩兩張（**Extension** *About the student’s own life, building on the article*｜**Write an Extension question**）、總數兩格相加；Article 區提示改 *Extension questions build on this*；`&own=EX` 一個數。mock 的 content 題留在檔裡沒用。**還沒改**：Choose practice type 那張卡的名字與說明、側欄／產品的 practice type label、index 以外提到 Open-ended Questions 的頁（planning、元件總表）——改名要整套走，等定案後一起 |
+| 2026-11-11 | Write a … 卡的示意改虛線灰條（同 v17） | 使用者在 v17 說「像是讓用戶直接在這頁打，會帶出錯誤的意圖」，這裡一起改：鉛筆＋題目虛線、學生回答虛線，不再畫輸入框和 placeholder |
 | 2026-11-09 | What to ask 從兩張變四張 2×2：下排「Write a …」老師自己出題（同 v17） | 使用者「Open-ended Questions 也新增這樣的功能」。上排照舊（AI 出的 Content Base、Extension），下排 **Write a Content Base question**（*Your own question about the article — not AI*）、**Write an Extension question**（*Your own question about the student’s life — not AI*）：示意是虛線的空題目欄＋空的 Suggested answer 欄、灰底，鉛筆 icon 用該類別的顏色，題數 − N ＋ 同一套；總數四格相加。填幾題，第二步就在最後出幾張空白題卡（類別固定、掛 **Yours**、直接打開），寫題目和建議答案；拼音那行改寫 *Pinyin and audio are made from your question when you save*。題目或建議答案空著時 Next 灰著、眉標寫 *N of your own questions still need a question and a suggested answer before you can continue*；手寫題不掛 Edited。只填手寫題時第一步主鈕是 Next、不跑 Generating。Generate more 面板同一張四卡，手寫的接在最後、不掛 New。demo：`&own=CB,EX` |
 | 2026-11-04 | 上下鈕搬到左邊把手那一欄 | 使用者「上下擺在這裡」（指拖曳把手）。題卡左邊一條直欄：∧、把手、∨，垂直置中；右邊只剩 Edit、Delete |
 | 2026-11-04 | 題號膠囊改灰階、加上移／下移鈕 | 使用者「把 Q1 的 tag 改成灰階，增加往上往下改順序的按鈕」。Q 膠囊從綠底白字改灰底深灰字；題卡右邊 Edit 前多 ↑ ↓，第一題的 ↑、最後一題的 ↓ 灰掉；拖曳換序照留 |
