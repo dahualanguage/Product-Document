@@ -85,7 +85,7 @@
   .app > .side .logo img{ height:37px; width:auto; }
   .app > .side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; color:#212B36; }
   .app > .side .logo b i{ font-style:normal; color:var(--primary); }
-  .app > .side .nav{ flex:1; overflow-y:auto; display:block; }
+  .app > .side .nav{ flex:1; overflow-y:auto; display:block; scrollbar-width:none; } .app > .side .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：不顯示側邊欄捲軸 */
   .app > .side .nav .grp{ padding:0 16px; margin-top:16px; }
   .app > .side .nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
     color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
@@ -376,6 +376,7 @@
     ['VOCABULARY','Vocabulary Mirroring','Say the words back, one by one', true],
     ['VOCABULARY_MC','Vocabulary Quiz','Word meaning & usage, in MC form', true],
     ['SENTENCE_SCRAMBLE','Sentence Scramble','Listen & rearrange words', true],
+    ['SENTENCE_CLOZE','Sentence Cloze','Fill the blank with the right word', true],   /* 2026-11-04：補 Cloze（使用者「Sentence 少了 cloze」），嵌 v20 ?type=fillin */
     ['SENTENCE_RESPONSE','Sentence Response','Answer questions using a pattern', true],
     ['SENTENCE_BUILDING','Sentence Building','Build sentences from teaching points', true],
     ['MULTIPLE_CHOICE','Comprehension Quiz','Did they understand the passage?', true],
@@ -429,6 +430,19 @@
       step2:function(){ return 'The questions, in the order students get them —— drag to <b>reorder</b>, <b>edit</b> one, or <b>add</b> one.'; },
       explain:{}
     },
+    SENTENCE_CLOZE:{
+      page:'iterations/v20-sentence-practices/proposal.html', key:'v7', type:'fillin',
+      steps:['Teaching Points','Edit Sentences','Settings','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any point, set <b>how many</b> sentences, and where they come from.'; },
+      step1:function(){ return 'Each sentence has its teaching point as the <b>blank</b> —— check the answer word and the three <b>distractors</b>, edit or delete a sentence.'; },
+      explain:{
+        pinyin:['Pinyin','Whether the sentence and the word tiles show pinyin. <b>Choice by student</b> puts a toggle in the student’s own settings panel.'],
+        translation:['Translation','Whether the English shows under the sentence. Same three choices as pinyin.'],
+        speed:['Speed','How fast the sentence is read —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
+        voice:['Voice','Which voice reads the sentence —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a name to hear it.'],
+        tries:['Max tries','How many times a student may check one blank before the answer is shown. Default 3.']
+      }
+    },
     SENTENCE_SCRAMBLE:{
       page:'iterations/v7-sentence-scramble/proposal.html', key:'v7',
       steps:['Teaching Points','Edit Sentences','Settings','Assign Practice'],
@@ -458,7 +472,7 @@
       }
     },
     SENTENCE_BUILDING:{
-      page:'iterations/v12-follow-pattern/proposal.html', key:'b', sub:'SENTENCE_BUILDING',
+      page:'iterations/v15-sentence-building/proposal.html', key:'b', sub:'SENTENCE_BUILDING',   /* 2026-10-22 拆去 v15（使用者「直接開成兩個 v」）；&sub= 那邊已不讀，留著無害 */
       steps:['Teaching Points','Question Review','Settings','Assign Practice'],
       step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— untick any point and set <b>how many</b> questions. <b>Generate</b> writes one prompt per point.'; },
       step1:function(){ return 'One card per question —— the <b>teaching point</b> students build a sentence with, and a <b>suggested answer</b> to score against. Edit or delete any; pick a point to add one more.'; },
@@ -471,32 +485,35 @@
         tries:['Attempts per question','How many times a student may re-record one question. Default 3.']
       }
     },
+    /* 2026-11-04：v13／v14 併入 v18／v17（使用者「v13 v14 可以跟 v17 v18 結合」「改成嵌入 17 18」）——題庫版換成拿掉題庫、進練習才生成的版本。
+       Open-ended 變四步（Content → Edit Questions → Settings & Preview → Assign），設定在第三步（SETT 預設 2）；Comprehension Quiz 仍三步，第二步是 Edit & Preview */
     QA:{
-      page:'iterations/v13-open-ended-questions/proposal.html', key:'b', settings:1,
-      steps:['Content','Settings & Preview','Assign Practice'],
-      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project —— step 1 picks its question bank' : 'Step 1 is filled in: the question bank for <b>'+esc(p.name)+'</b>')+' —— every question in it, Content Base and Extension, with the passage underneath.'; },
-      settingsHead:'Tap a setting to see what it does. The questions are listed under the settings —— remove any you don’t want.',
+      page:'iterations/v18-open-ended-generate/proposal.html', key:'b',
+      steps:['Content','Edit Questions','Settings & Preview','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— set how many <b>Content Base</b> and <b>Extension</b> questions, then <b>Generate</b>. The passage is underneath.'; },
+      step1:function(){ return 'One card per question —— open one to change the question or the <b>suggested answer</b>, drag to <b>reorder</b>, delete any, or <b>Generate more</b>.'; },
       explain:{
-        mode:['Audio Mode','Students hear each question instead of reading it. Pinyin is locked to <b>Student choice</b> while it is on.'],
-        pinyin:['Pinyin','Whether the questions show pinyin. <b>Student choice</b> puts a toggle on the student’s start screen. Default: shown.'],
-        speed:['Speed','How fast each question is read —— Slow, Normal or Fast. <b>Student choice</b> lets them switch while practising.'],
+        mode:['Practice mode','<b>Audio only</b>: students hear each question instead of reading it. Pinyin is up to the student while it is on.'],
+        pinyin:['Pinyin','Whether the questions show pinyin. <b>Choice by student</b> puts a toggle on the student’s start screen. Default: shown.'],
+        speed:['Speed','How fast each question is read —— Slow, Normal or Fast. <b>Choice by student</b> lets them switch while practising.'],
         voice:['Voice','Which voice reads the questions —— Xiaorou and Xiaoyi (female), Yunxiao and Yunxia (male). Press play beside a question to hear it.'],
         guide:['Guide phrase language','The spoken instructions students hear before they start —— English or Chinese. Default: Chinese.']
       }
     },
     MULTIPLE_CHOICE:{
-      page:'iterations/v14-comprehension-quiz/proposal.html', key:'b', settings:1,
-      steps:['Question Bank','Edit & Preview','Assign Practice'],
-      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project —— step 1 picks its question bank' : 'Step 1 is filled in: the question bank for <b>'+esc(p.name)+'</b>')+' —— its True/False and Multiple Choice questions, with the passage underneath.'; },
-      settingsHead:'Drag to <b>reorder</b>, remove a question, or expand one to check the answer.',
+      page:'iterations/v17-comprehension-quiz-generate/proposal.html', key:'b', settings:1,
+      steps:['Content','Edit & Preview','Assign Practice'],
+      step0:function(p){ return (S.newProj ? 'Saved <b>'+esc(p.name)+'</b> as a Project' : 'Step 1 is filled in: <b>'+esc(p.name)+'</b>')+' —— set how many <b>True/False</b> and <b>Multiple choice</b> questions, then <b>Generate</b>. They are all about the passage underneath.'; },
+      settingsHead:'Open a card to edit it, drag to <b>reorder</b>, or <b>Generate more</b>.',
       explain:{
         exam:['Test Mode','Adds a time limit for the whole quiz —— the slider suggests about 30 seconds per question. Off by default.'],
         order:['Order','Students get the questions in the order shown here —— drag a card to move it.'],
-        bank:['Edit in Question Bank','Changing a question’s wording or answer happens in the Question Bank, not here —— this step only picks and orders.']
+        edit:['Edit','Open a card to change the question, the choices or the right answer —— right here, no Question Bank.'],
+        more:['Generate more','Add more questions of any kind; the ones you already have stay as they are.']
       }
     }
   };
-  var NEEDS_WORDS=['VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING','QA','MULTIPLE_CHOICE'];   /* 這幾種的 mock 只有「我的一天」有真的字／題庫 */
+  var NEEDS_WORDS=['VOCABULARY','VOCABULARY_MC','SENTENCE_SCRAMBLE','SENTENCE_CLOZE','SENTENCE_RESPONSE','SENTENCE_BUILDING','QA','MULTIPLE_CHOICE'];   /* 這幾種的 mock 只有「我的一天」有真的字／題庫 */
   /* 軌道（跟 v14 C 同一套色）：卡的顏色跟著它的軌道，列標題由列裡的軌道算出來 */
   var TRACKS={
     material: {ink:'#64748b', tint:'#e2e8f0', wash:'#f8fafc', label:'#7C8BA1', rule:'#dfe6ee'},
@@ -507,8 +524,8 @@
   };
   var TRACK_NAME={material:'Material', content:'Content', vocab:'Vocabulary', sentence:'Sentence', comp:'Comprehension'};
   var EP_TRACK={ HANDOUT:'material', SLIDE:'material', MIRRORING:'content', VOCABULARY:'vocab', VOCABULARY_MC:'vocab',
-    SENTENCE_SCRAMBLE:'sentence', SENTENCE_RESPONSE:'sentence', SENTENCE_BUILDING:'sentence', MULTIPLE_CHOICE:'comp', QA:'comp' };
-  var EP_GROUPS=[ ['HANDOUT','SLIDE','MIRRORING'], ['VOCABULARY','VOCABULARY_MC'], ['SENTENCE_SCRAMBLE','SENTENCE_RESPONSE','SENTENCE_BUILDING'], ['MULTIPLE_CHOICE','QA'] ];
+    SENTENCE_SCRAMBLE:'sentence', SENTENCE_CLOZE:'sentence', SENTENCE_RESPONSE:'sentence', SENTENCE_BUILDING:'sentence', MULTIPLE_CHOICE:'comp', QA:'comp' };
+  var EP_GROUPS=[ ['HANDOUT','SLIDE','MIRRORING'], ['VOCABULARY','VOCABULARY_MC'], ['SENTENCE_SCRAMBLE','SENTENCE_CLOZE','SENTENCE_RESPONSE','SENTENCE_BUILDING'], ['MULTIPLE_CHOICE','QA'] ];
   function thumb(inner){
     return '<span class="thumb"><svg viewBox="0 0 136 56" role="img" aria-hidden="true">'+
       '<rect x=".5" y=".5" width="135" height="55" rx="7" fill="#f8fafc" stroke="#e6ecf3"/>'+inner+'</svg></span>';
@@ -573,6 +590,15 @@
       '<rect x="77" y="13" width="21" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
       '<rect x="103" y="10" width="16" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
       '<rect x="17" y="34" width="102" height="13" rx="3" fill="none" stroke="#10b981" stroke-dasharray="3 3"/>'),
+    /* a sentence with one blank, word tiles below */
+    SENTENCE_CLOZE: thumb(
+      '<rect x="17" y="11" width="22" height="9" rx="2" fill="#cbd5e1"/>'+
+      '<rect x="43" y="9" width="30" height="13" rx="3" fill="#fdf2f8" stroke="#EC4899" stroke-dasharray="3 2"/>'+
+      '<rect x="77" y="11" width="40" height="9" rx="2" fill="#cbd5e1"/>'+
+      '<rect x="17" y="33" width="22" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="44" y="33" width="22" height="12" rx="3" fill="#fff" stroke="#EC4899"/>'+
+      '<rect x="71" y="33" width="22" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'+
+      '<rect x="98" y="33" width="21" height="12" rx="3" fill="#fff" stroke="#cbd5e1"/>'),
     /* a prompt, answered out loud */
     QA: thumb(
       '<rect x="18" y="12" width="86" height="5" rx="2.5" fill="#94a3b8"/>'+
@@ -682,6 +708,7 @@
     var q=['step='+(cfg().zero ? S.step : S.step+1)];   /* 提案（v3–v7）從 1 數、基準檔（v12–v14）從 0 數 */
     if(S.proj!==null) q.push('proj='+projOf()[cfg().key]);
     if(cfg().sub) q.push('sub='+cfg().sub);
+    if(cfg().type) q.push('type='+cfg().type);   /* v20 一份檔四種：&type=fillin 是 Cloze */
     return cfg().page+'?'+q.join('&');
   }
   var lastUrl=null;
@@ -881,6 +908,7 @@
     VOCABULARY:function(){ return '12 words · 36 cards · Pinyin shown · 3 tries'; },
     VOCABULARY_MC:function(){ return '10 questions · all question types'; },
     SENTENCE_SCRAMBLE:function(){ return '8 sentences · Pinyin shown · Normal speed · 3 tries'; },
+    SENTENCE_CLOZE:function(){ return '8 sentences · 3 distractors each · Pinyin shown · Normal speed · 3 tries'; },
     /* 2026-10-19：四張新卡，數字照 v12／v13／v14 基準檔的假資料、預設照產品 */
     SENTENCE_RESPONSE:function(){ return '7 questions · Pinyin student choice · Translation student choice · 3 tries'; },
     SENTENCE_BUILDING:function(){ return '7 questions · Pinyin student choice · Translation student choice · 3 tries'; },

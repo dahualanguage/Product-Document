@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v24 ＋ v23 — Practice 列表狀態分頁 ＋ Results 頁 · Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; font-size: 13px; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; }
+    .sidebar a.sub { padding-left: 34px; font-size: 12px; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 10px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 800; color: #0f172a; margin: 18px 0 6px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #00A749; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 9px 12px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 14px 0 6px; background: #eef0f3; height: 560px; position: relative; }
+    .preview iframe { width: 1440px; height: 820px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #00A749; font-weight: 600; text-decoration: none; }
+    .now { color:#64748b; } .to { color:#0f172a; }
+    table.fix { table-layout: fixed; } table.fix code { word-break: break-all; }
+    .part { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:6px; margin-right:6px; vertical-align:middle; }
+    .p24 { background:#dbeafe; color:#1e40af; } .p23 { background:#dcfce7; color:#166534; }
+    /* 分數顏色的色樣 */
+    .sw { display:inline-flex; align-items:center; gap:8px; font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; }
+    .sw i { width:14px; height:14px; border-radius:4px; display:inline-block; }
+    .good { color:#047857; } .fair { color:#d97706; } .poor { color:#e11d48; }
+    /* 為什麼：一步推一步 */
+    .why { counter-reset: w; margin: 0 0 16px; }
+    .why li { list-style:none; position:relative; padding:10px 14px 10px 44px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; }
+    .why li::before { counter-increment:w; content:counter(w); position:absolute; left:14px; top:11px; width:22px; height:22px; border-radius:6px; background:#dbeafe; color:#1e40af; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+    .why li b { color:#0f172a; display:block; margin-bottom:2px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; } .main-content { padding: 24px; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a><span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a><span class="sep">/</span>
+    <span class="current">v24 ＋ v23 · Practice 列表狀態分頁 ＋ Results 頁</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">目錄</div>
+      <ol>
+        <li><a href="#files">1 原型與檔案</a></li>
+        <li><a href="#scope">2 範圍</a></li>
+        <li><a class="sub" href="#why">2.1 為什麼要狀態分頁</a></li>
+        <li><a class="sub" href="#inout">2.2 這一版做／不做</a></li>
+        <li><a href="#spec">3 設計規格</a></li>
+        <li><a class="sub" href="#filters">3.1 列表：標題列與篩選列</a></li>
+        <li><a class="sub" href="#tabs">3.2 列表：四個分頁</a></li>
+        <li><a class="sub" href="#cards">3.3 列表：卡片與 Result</a></li>
+        <li><a class="sub" href="#layout">3.4 Results：骨架</a></li>
+        <li><a class="sub" href="#roster">3.5 Results：左欄</a></li>
+        <li><a class="sub" href="#topbar">3.6 Results：分數卡與 Attempt</a></li>
+        <li><a class="sub" href="#late">3.7 遲交、顏色、星星</a></li>
+        <li><a class="sub" href="#sections">3.8 Results：右欄各段</a></li>
+        <li><a href="#changes">4 要改的地方</a></li>
+        <li><a href="#open">5 要問工程</a></li>
+        <li><a href="#accept">6 驗收</a></li>
+        <li><a href="#terms">7 名詞對照</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Practice 列表的狀態分頁 ＋ Results 頁</h1>
+        <p class="subtitle">老師看成績的一條路：Practice 列表多一組狀態分頁，把到期的練習集中（v24）；按 Result 進 Results 頁看全班誰交了、幾分、一個人的細節（v23）。兩頁一份 spec。</p>
+        <div class="meta"><span>v24 ＋ v23</span><span>2026-11-18</span><span>狀態：定案，已打包 handoff/practice-results</span><span>後端要多給：交卷數、沒交出去的作答、遲交天數</span><span>程式碼基準：dahua-dash origin/develop @ 36664ed4</span></div>
+      </div>
+      <p>段落前面標 <span class="part p24">列表</span> 的是 v24（Practice 列表），標 <span class="part p23">Results</span> 的是 v23（Results 頁）。</p>
+
+      <h2 id="files"><span class="num">1</span> 原型與檔案</h2>
+      <table>
+        <tr><th>檔案</th><th>是什麼</th><th>看什麼</th></tr>
+        <tr><td><span class="part p24">列表</span><a class="inline" href="../v24-practice-list-ended/proposal.html?tab=ended">v24 proposal.html</a></td><td>Practice 列表提案</td><td><code>?tab=all|unassigned|progress|ended</code>、<code>&amp;view=card|list</code>、<code>&amp;menu=1</code> 第一張卡的 ⋯ 打開、<code>&amp;longcls=1</code> 長班名、<code>&amp;empty=1</code> 沒有練習</td></tr>
+        <tr><td><span class="part p24">列表</span><a class="inline" href="../v24-practice-list-ended/practice-list-baseline.html?view=card">v24 practice-list-baseline.html</a></td><td>現行列表的複刻（對照用）</td><td><code>?view=card|list</code>、<code>&amp;menu=1</code></td></tr>
+        <tr><td><span class="part p23">Results</span><a class="inline" href="proposal.html?type=vocab">proposal.html</a></td><td>Results 頁提案</td><td><code>?type=vocab|mirroring|vocabquiz|quiz|scramble|building|response|openended</code>；<code>&amp;stu=emma</code> 交之前練過、<code>stu=liam</code> 遲交、<code>stu=olivia</code> 答舊版、<code>stu=ava</code> 改過分；<code>&amp;unsub=1</code> 選到沒交的、<code>&amp;empty=1</code> 沒人交、<code>&amp;remind=1</code> Send reminder 確認框、<code>&amp;edit=1</code> Edit score 對話框、<code>&amp;noedit=1</code> 不能改分、<code>&amp;wrong=1</code> 只看答錯</td></tr>
+        <tr><td><span class="part p23">Results</span><a class="inline" href="results-baseline.html?type=vocab">results-baseline.html</a></td><td>現行 Results 頁的複刻（對照用）</td><td>參數同上</td></tr>
+        <tr><td><a class="inline" href="../../../../handoff/practice-results/HANDOFF.md">handoff/practice-results/</a></td><td>交接包：HANDOFF.md ＋ 兩份原型複本（假資料內嵌）</td><td>給工程</td></tr>
+        <tr><td><a class="inline" href="../v24-practice-list-ended/ITERATION.md">v24 ITERATION.md</a>、<a class="inline" href="ITERATION.md">v23 ITERATION.md</a></td><td>逐輪紀錄、現況查證、change log</td><td>要追來龍去脈時</td></tr>
+      </table>
+      <p>假資料的「今天」是 2026-11-20。兩份原型互連：列表按 Result 進 Results 頁；Results 的 Back 回到列表原來的分頁和檢視。</p>
+
+      <h2 id="scope"><span class="num">2</span> 範圍</h2>
+
+      <h3 id="why">2.1 為什麼要狀態分頁</h3>
+      <p>一句話：<strong>老師看成績的需求是「到期」才出現的，但列表裡沒有任何東西告訴老師哪些到期了。</strong>一步一步：</p>
+      <ol class="why">
+        <li><b>成績要到期才有意義。</b>到期前學生還在交，交卷數會變、分數會變，老師進去看到的是半成品；到期之後名單才定，哪些人沒交才算數。所以「看 Result」這個動作，幾乎都發生在到期之後。</li>
+        <li><b>現在的列表看不出「到期了沒」。</b>列表固定照建立時間新到舊排，一頁 12 張；三個下拉是型別、Mandatory／Optional、班級，沒有一個是「狀態」。一份三週前派、昨天到期的練習，會沉在第二、三頁，老師得自己記哪天到期。</li>
+        <li><b>Result 按鈕每張卡都有、都能按，所以它不是線索。</b>沒指派過的按了跳 <i>No assignment found</i>，指派了沒人交的進去是空頁。老師不能靠按鈕的樣子判斷「這張有東西可看」。</li>
+        <li><b>所以要加的是一個「狀態」的切面，不是第四個下拉。</b>下拉是縮小範圍（我要看哪種型別、哪個班）；老師進這頁第一個問題是「我現在要處理哪一批」，這是分頁的事。四個 tab：<strong>All｜Unassigned｜In progress｜Ended</strong>（沒有未指派的練習時，Unassigned 不出現），跟下拉、搜尋同一列，四個 tab 共用下拉和搜尋。</li>
+        <li><b>每一班都到期才算結束，但每班的狀態都看得到。</b>一個練習常派給多個班、到期日不同。7A 到期了老師就要看 7A，不能等 7B。<strong>每一班都過了到期日才進 Ended</strong>，還有一班沒到期就留在 In progress。卡上照樣每班一行，標出哪班結束、哪班還在跑，所以 7A 到期了老師在 In progress 的卡上就看得到 7A 的交卷數、也能進 Result。這樣一個練習只會在一個 tab，Unassigned＋In progress＋Ended＝All。沒設到期日的班永遠不結束，所以有這種班的練習不會進 Ended。</li>
+        <li><b>Ended 是集中，不是限制。</b>沒結束的練習照舊能進 Result。tab 只是把該看的放在一起。</li>
+        <li><b>排序跟著需求走。</b>Ended tab 照<strong>最近結束的在前</strong>（一個練習多班結束取最晚那個），剛到期的最急著看；All、In progress 照舊建立時間。</li>
+        <li><b>卡上直接寫交卷數。</b>Ended 的班那一行寫 <code>Ended Nov 18 · 8/10 submitted</code>，老師不用進去就知道交齊沒、值不值得現在看；分數留給 Results 頁，一人一個。</li>
+        <li><b>還沒有東西可看的 Result 鈕停用。</b>沒指派、或指派了一個人都沒交，Result 灰掉、滑過寫原因。按鈕的狀態終於跟「有沒有東西」一致（第 3 點的問題）。</li>
+      </ol>
+      <div class="callout-info callout"><strong>用字也是這個邏輯的一部分。</strong>看成績的動作統一叫 <strong>Result</strong>（照卡片現在的按鈕）：列表 ⋯ 選單的 Student Submissions、Results 頁的標題 Assignment Submission List 都跟著改。老師從 tab → 卡片 → 頁面看到的是同一個詞。</div>
+
+      
+      <h3 id="inout">2.2 這一版做／不做</h3>
+      <h4><span class="part p24">列表</span>做</h4>
+      <ul>
+        <li>標題列放 New practice；篩選列最左邊四個分頁、下拉縮成短名稱。</li>
+        <li>分頁的判斷與排序；Unassigned 為 0 時不出現。</li>
+        <li>卡上每班兩行（班名 ＋ Mandatory／Optional；狀態小字），結束的班寫結束日 ＋ 交卷數；長班名截斷。</li>
+        <li>Result 沒東西可看時停用；列表檢視多一欄指派狀態 ＋ Result 鈕；⋯ 選單改字。</li>
+      </ul>
+      <h4><span class="part p24">列表</span>不做</h4>
+      <ul>
+        <li>卡片配色、Assign Now、頁碼、三個下拉的選項、Share／Clone／Edit／Delete：照產品。</li>
+        <li>Ended 專用的卡：沒有，四個分頁用同一張卡。</li>
+      </ul>
+      <h4><span class="part p23">Results</span>做</h4>
+      <ul>
+        <li>整頁照 Students 頁的骨架：兩欄各自捲、右欄貼頂列。</li>
+        <li>左欄每班一張灰卡；沒交的人集中在卡最上面 ＋ Send reminder；交了的名單一人一行。</li>
+        <li>分數放進右欄最上面的分數卡；頁面不放任何全班合計數字。</li>
+        <li>看得到學生交出去之前練的每一次（Attempt）；遲交寫出天數；星星拿掉；Score breakdown 改成數字；Content Mirroring 每句卡改 V2 畫法。</li>
+      </ul>
+      <h4><span class="part p23">Results</span>不做</h4>
+      <ul>
+        <li>不加 Students 頁的搜尋框、班級下拉（名單已照班分卡）。</li>
+        <li>不動改分規則（哪些型別能改、Revert to system）、遲交扣分怎麼算、評語怎麼寄、Not in class／Left class 的判斷、各型別卡裡的資料。</li>
+      </ul>
+
+      <h2 id="spec"><span class="num">3</span> 設計規格</h2>
+      <p>下面是現在的樣子。用詞和程式裡的名字對照在第 7 節。</p>
+
+      <h3 id="filters"><span class="part p24">列表</span>3.1 標題列與篩選列</h3>
+      <div class="preview" style="height:560px"><iframe src="../v24-practice-list-ended/proposal.html?tab=all" title="All：標題列右邊 New practice；白框第一列＝四個分頁｜Type／Assignment／Class｜搜尋" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>All：標題列右邊 New practice；白框第一列＝四個分頁｜Type／Assignment／Class｜搜尋</span><a href="../v24-practice-list-ended/proposal.html?tab=all" target="_blank">開原型 ↗</a></p>
+
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>標題列</td><td>左邊 Practice List ＋ 副標；右邊 <strong>New practice</strong>（綠色實心）＋ 卡片／列表切換鈕。New practice 不在篩選列</td></tr>
+        <tr><td>篩選列</td><td>白框第一列：最左邊四個分頁 → 一條細直線 → 三個下拉 → 搜尋靠右。窄的時候搜尋框先縮</td></tr>
+        <tr><td>分頁樣式</td><td>底線式：14/600，沒選的 <code>#637381</code>；選中字 <code>#00A749</code>、底線 2px <code>#00CB61</code>。分頁名後面一顆數字（12/700、圓角 6px）：沒選的灰底灰字，選中的 <code>rgba(0,203,97,.14)</code> 底 <code>#00A749</code> 字</td></tr>
+        <tr><td>下拉</td><td>短名稱 <strong>Type／Assignment／Class</strong>；原本「· 12」的數字拿掉，數字只在分頁上。下拉和搜尋四個分頁共用</td></tr>
+      </table>
+
+      <h3 id="tabs"><span class="part p24">列表</span>3.2 四個分頁的規則</h3>
+      <div class="preview" style="height:560px"><iframe src="../v24-practice-list-ended/proposal.html?tab=ended" title="Ended：每一班都過期的練習，最近結束的在前；每班第二行 Ended Nov 10 · 12/12 submitted" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Ended：每一班都過期的練習，最近結束的在前；每班第二行 Ended Nov 10 · 12/12 submitted</span><a href="../v24-practice-list-ended/proposal.html?tab=ended" target="_blank">開原型 ↗</a></p>
+
+      <table>
+        <tr><th style="width:150px">分頁</th><th>放哪些練習</th><th style="width:240px">排序</th></tr>
+        <tr><td>All</td><td>全部</td><td>建立時間新到舊（照產品）</td></tr>
+        <tr><td>Unassigned</td><td>一個班都還沒指派</td><td>建立時間新到舊</td></tr>
+        <tr><td>In progress</td><td>還有至少一班<strong>沒過</strong>到期日，或有班沒設到期日</td><td>建立時間新到舊</td></tr>
+        <tr><td>Ended</td><td><strong>每一班都過了</strong>到期日</td><td>最近結束的在前：多班取最晚的結束日；同一天再照建立時間</td></tr>
+      </table>
+      <table>
+        <tr><th style="width:150px">規則</th><th>說明</th></tr>
+        <tr><td>不重疊</td><td>一個練習只會在 Unassigned、In progress、Ended 其中一個；三個數字加起來等於 All</td></tr>
+        <tr><td>一班過期、一班還沒</td><td>只在 In progress。卡上過期那班照樣寫結束日和交卷數（3.3），老師在 In progress 就看得到、也能進 Result</td></tr>
+        <tr><td>沒設到期日</td><td>這班永遠不結束；有這種班的練習不會進 Ended</td></tr>
+        <tr><td>今天怎麼算</td><td>到期日 ＜ 今天就算過期，照學校時區算日界</td></tr>
+        <tr><td>Unassigned 為 0</td><td>這個分頁不出現。老師正停在 Unassigned、把最後一個指派出去，回到 All</td></tr>
+        <tr><td>預設</td><td>All</td></tr>
+        <tr><td>空狀態</td><td>Ended：<i>No ended assignments yet</i> ／ <i>A practice shows here once all of its classes pass their due date.</i>；In progress：<i>Nothing in progress</i> ／ <i>Assign a practice and it shows here until its due date passes.</i>；All 照產品；Unassigned 沒有空狀態</td></tr>
+      </table>
+
+      <h3 id="cards"><span class="part p24">列表</span>3.3 卡片、Result、列表檢視、⋯ 選單</h3>
+      <div class="preview" style="height:560px"><iframe src="../v24-practice-list-ended/proposal.html?tab=all&longcls=1" title="長班名：班名 chip … 截斷、滑過看全名；Mandatory 一定在同一行；狀態在第二行" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>長班名：班名 chip … 截斷、滑過看全名；Mandatory 一定在同一行；狀態在第二行</span><a href="../v24-practice-list-ended/proposal.html?tab=all&longcls=1" target="_blank">開原型 ↗</a></p>
+
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>卡片</td><td>照產品：卡框、頭的底色、icon 方塊、Test／Result 鈕顏色都走 <code>getPracticeTypeConfig</code> 的九組色票</td></tr>
+        <tr><td>每班兩行</td><td>第一行：灰 chip 班名 ＋ Mandatory／Optional chip；班名太長用 … 截斷、<code>title</code> 放全名。第二行狀態小字（11/600），靠左：<br>結束了 <code>Ended Nov 10 · 12/12 submitted</code>（交卷數全交綠字，否則深色）<br>還在跑 <code>Due Nov 25</code>（七天內綠字，照產品）<br>沒到期日 <code>No due date</code><br>不再寫紅字 Overdue。結束的班排前面。班與班之間 10px</td></tr>
+        <tr><td>Result 停用</td><td>沒指派過 → 停用，滑過 <i>Not assigned yet</i>；指派了、每一班都 0 人交 → 停用，滑過 <i>No submissions yet</i>。卡片、列表檢視、⋯ 選單三處一起</td></tr>
+        <tr><td>列表檢視</td><td>每列右邊多一欄，每班一行（班名截斷、Mandatory／Optional、狀態）＋ Result 鈕</td></tr>
+        <tr><td>⋯ 選單</td><td>Student Submissions → <strong>Result</strong>；Test Practice → <strong>Test</strong>。其餘不動</td></tr>
+        <tr><td>按 Result</td><td>進 Results 頁；Back 回原來的分頁和檢視。從 Dashboard 進來的回 Dashboard</td></tr>
+      </table>
+
+      <h3 id="layout"><span class="part p23">Results</span>3.4 頁面骨架</h3>
+      <div class="preview" style="height:640px"><iframe src="proposal.html?type=vocab" title="Vocabulary Mirroring：左欄每班一張灰卡，右欄貼頂列 ＋ 分數卡 ＋ 各段" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Vocabulary Mirroring：左欄每班一張灰卡，右欄貼頂列 ＋ 分數卡 ＋ 各段</span><a href="proposal.html?type=vocab" target="_blank">開原型 ↗</a></p>
+
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>整頁</td><td>照 Students 頁 <code>src/sections/teacher/students/index.js</code>：這條路由藏 dashboard 的 header，側欄照舊。兩欄 grid：左 380px｜右其餘，高 100vh，兩欄各自捲。1100px 以下左欄 330px；900px 以下改上下疊、整頁一起捲</td></tr>
+        <tr><td>左欄</td><td>白底、右邊一條細線。欄頭 → 一條細線 → 班級卡</td></tr>
+        <tr><td>右欄</td><td>底色 <code>rgba(244,247,251,.85)</code>。貼頂列 → 內容區（左右內距 30px、最寬 1000px）：分數卡 → 各段，段與段之間 24px</td></tr>
+        <tr><td>合計數字</td><td>產品頂上的 Submitted／Avg Score／Perfect 三張卡拿掉；整頁不放任何全班合計（班平均也不放）</td></tr>
+        <tr><td>空狀態</td><td>沒選人 <i>Select a student to view results</i>；全班沒人交 <i>No submissions yet</i>；選到沒交的：貼頂列名字底下寫 <i>Not submitted</i>，底下 <i>This student has not submitted yet</i></td></tr>
+      </table>
+
+      <h3 id="roster"><span class="part p23">Results</span>3.5 左欄：欄頭、班級卡、沒交的人、名單</h3>
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>欄頭</td><td><code>← Back</code> 小連結 → 36px 型別 icon 方塊 ＋ 練習名 22/800 → 底下一行灰字型別（13/600，例 <i>Vocabulary Mirroring</i>）。欄頭底下一條細線</td></tr>
+        <tr><td>班級卡</td><td>每個班級指派一張淺灰卡：底 <code>#F4F6F9</code>、框 <code>#E6EBF1</code>、圓角 14px、內距 8px，卡與卡之間 12px。同一班指派兩次出兩張</td></tr>
+        <tr><td>卡頭</td><td>班名 18/800 ＋ 下一行到期日 14/600 灰（<i>Due Nov 20</i>）＋ 右邊開合箭頭（沒有框）。<strong>卡頭不放數字</strong>。點卡頭收起或展開；收起只剩卡頭</td></tr>
+        <tr><td>對齊</td><td>班名、NOT SUBMITTED、SUBMITTED、學生頭像的左緣同一條線（卡內 8px ＋ 13.5px）；左欄捲軸位置一直留著（<code>scrollbar-gutter: stable</code>），展開、收起卡一樣寬</td></tr>
+        <tr><td>沒交的人</td><td>移出名單，集中在卡最上面一個白框（框 <code>#e6ebf1</code>、圓角 12px，跟 Dashboard 的 Not submitted 同一個樣子）：標題列左邊灰色大寫 <code>NOT SUBMITTED (2)</code>，右邊綠色實心 <strong>Send reminder</strong>；底下一排名字 chip（白底灰框）。全班都交了，白框不出現</td></tr>
+        <tr><td>Send reminder</td><td>確認框（Dashboard 的 <code>reminder-popup.js</code>）：標題 <i>Send reminder</i>、一行 <i>2 students in Class 7A who have not submitted</i>、列出會收到的名字、Cancel｜Send reminder。送出後 3 秒內同一班再按沒反應</td></tr>
+        <tr><td>交了的名單</td><td>灰色大寫小標 <code>SUBMITTED</code>，一人一列，照名字排。一列：40px 漸層頭像 ＋ 縮寫｜名字 14/700（太長 …）｜分數 15/800 <strong>靠左</strong>（首位數字對齊）、三階色｜tag 欄</td></tr>
+        <tr><td>tag 欄</td><td>固定 110px（1100px 以下 96px），沒 tag 就空著。只放兩種：遲交 <code>Late 2d · ×80%</code>（3.7）、交之前練過灰色 <code>Attempt 1 · 72</code>（3.6）。Old version、Adjusted 不在列上，在分數卡</td></tr>
+        <tr><td>選中／滑過</td><td>選中 1.5px <code>#6ee7b7</code> 框 ＋ <code>#ecfdf5</code> 底；滑過白底（在灰卡上）。點一列，右欄捲回頂</td></tr>
+      </table>
+
+      <h3 id="topbar"><span class="part p23">Results</span>3.6 右欄：貼頂列、分數卡、Attempt</h3>
+      <div class="preview" style="height:560px"><iframe src="proposal.html?type=vocab&stu=emma" title="交之前練過的 Emma：名單 Attempt 1 · 72；分數卡底下 Attempt 1｜Submission 兩顆，Submission 綠框" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>交之前練過的 Emma：名單 Attempt 1 · 72；分數卡底下 Attempt 1｜Submission 兩顆，Submission 綠框</span><a href="proposal.html?type=vocab&stu=emma" target="_blank">開原型 ↗</a></p>
+
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>貼頂列</td><td>46px 頭像 ＋ 名字 19/800 ＋ 底下一行班名 13/600 灰；最右邊帳號頭像。毛玻璃 <code>rgba(244,247,251,.85)</code> ＋ blur、底下一條細線，貼在右欄頂上。五種 panel 共用。<strong>分數不在這裡</strong></td></tr>
+        <tr><td>分數卡</td><td>右欄內容最上面一張全寬白卡（圓角 14px、內距 16px 20px 18px）。第一行：灰色大寫 <code>SCORE</code>，右邊綠字 <strong>Edit score</strong>（只有能改分的型別：Content／Vocabulary Mirroring、Open-ended、Sentence Building／Response）。第二行：大分數 48/800（三階色）＋ <code>/100</code>，右邊狀態 tag。Quiz／Scramble 的分數環拿掉，分數只在這張卡</td></tr>
+        <tr><td>狀態 tag</td><td><code>Adjusted</code>（老師改過分，琥珀）、<code>Late 2 days · ×80%</code>（遲交，橘紅）、<code>v2 · Old version</code>（答的是舊版練習，灰，跟 <code>OldVersionChip</code> 同字）</td></tr>
+        <tr><td>Edit score 對話框</td><td>標題 <i>Edit score</i>、一行 <i>The system gave Ava Huang 64/100. Your score replaces it on the list and for the student.</i>；標籤在上的輸入框（0–100）；改過分才有的 <i>Revert to system</i>（白框琥珀字）靠左，Cancel（白框）、Save（綠實心）靠右。改分規則不動</td></tr>
+        <tr><td>Attempt 與 Submission</td><td>一個學生一個指派，老師端只有<strong>一筆 Submission</strong>（按 Submit to Teacher 的那筆）。在那之前學生練的每一次叫 <strong>Attempt</strong>，沒有交給老師</td></tr>
+        <tr><td>名單</td><td>分數是 Submission 的分數；交之前練過的，tag 欄灰色 <code>Attempt 1 · 72</code>（最後一次 Attempt 的編號和分數）。只寫數字，不寫差幾分</td></tr>
+        <tr><td>分數卡</td><td>底下一條細線，一排按鈕，<strong>每次作答一顆，直接排出來</strong>，照時間排、Submission 在最後：<code>Attempt 1 · Nov 12 · 72</code>｜<code>Submission · Nov 15 · 92</code>。分數三階色；正在看的那顆綠框淡綠底；按鈕多了換行</td></tr>
+        <tr><td>看 Attempt</td><td>大分數換成那次的；tag 換灰色 <code>Attempt</code>；底下一行 <i>Practice attempt on Nov 12, not submitted. The submission (92) is the score on the list.</i>；不能 Edit score、沒有 Teacher comment（老師只能改、只能評 Submission）；Score breakdown、每句卡換成那一次的</td></tr>
+        <tr><td>算哪一次</td><td>名單、成績都算 Submission。換學生回到看 Submission</td></tr>
+      </table>
+
+      <h3 id="late"><span class="part p23">Results</span>3.7 遲交天數、分數的顏色、星星</h3>
+      <table>
+        <tr><th style="width:150px">規則</th><th>說明</th></tr>
+        <tr><td>遲交天數</td><td>分數卡 <code>Late 2 days · ×80%</code>（1 天寫 <code>1 day</code>）；名單寫短版 <code>Late 2d · ×80%</code>、<code>title</code> 放全句（名單 tag 欄加寬會把名字擠成 <code>Emma C…</code>）。拿不到天數退回 <code>Late · ×80%</code></td></tr>
+      </table>
+      <table>
+        <tr><th>分數</th><th>顏色</th><th>意思</th></tr>
+        <tr><td>80 以上（含 80）</td><td><span class="sw good"><i style="background:#047857"></i>#047857</span></td><td>綠，過關</td></tr>
+        <tr><td>60–79</td><td><span class="sw fair"><i style="background:#d97706"></i>#d97706</span></td><td>橘，普通</td></tr>
+        <tr><td>60 以下</td><td><span class="sw poor"><i style="background:#e11d48"></i>#e11d48</span></td><td>紅，要注意</td></tr>
+      </table>
+      <table>
+        <tr><th style="width:150px">規則</th><th>說明</th></tr>
+        <tr><td>門檻與色號</td><td>門檻用 <code>src/utils/score.js</code> 的 <code>scoreTier</code>（80／60）；色號用 <code>src/sections/teacher/shared/practice-detail-popup.js</code> 的 <code>SCORE_TIER_COLORS</code>（建議搬到 <code>utils/score.js</code> 共用）</td></tr>
+        <tr><td>看哪個數</td><td>最後的分數：改過分看改過的、扣過遲交看扣完的。名單和分數卡同一個值、同一個顏色</td></tr>
+        <tr><td>用在哪</td><td>名單分數、分數卡大分數、每次作答按鈕上的分數、每句卡和每題的分數。沒交的不上色。列表卡上的交卷數不套</td></tr>
+        <tr><td>星星</td><td><strong>全部拿掉。</strong>中文練習現在交卷都是 V2，新交的本來就沒有星星；只剩改版前的 V1 舊紀錄會出現。分數卡只留 <code>85 /100</code>；每句卡、重錄清單、Sentence Building／Response 每題、Open-ended 每輪對話換成 <code>80/100</code>（星數 × 20），三階色</td></tr>
+      </table>
+
+      <h3 id="sections"><span class="part p23">Results</span>3.8 右欄各段</h3>
+      <div class="preview" style="height:640px"><iframe src="proposal.html?type=mirroring" title="Content Mirroring：Score breakdown 三格數字；每句一字一欄 ＋ 聲調圖 ＋ 90/100；整頁沒有星星" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Content Mirroring：Score breakdown 三格數字；每句一字一欄 ＋ 聲調圖 ＋ 90/100；整頁沒有星星</span><a href="proposal.html?type=mirroring" target="_blank">開原型 ↗</a></p>
+
+      <p>每一段：段頭（30px icon 方塊 ＋ 標題 13/800 ＋ 灰色計數 pill ＋ 右邊 32px 開合鈕，照 Students 頁 <code>student-detail.js</code> 的 SectionHeader）＋ 一張白卡（圓角 14px）。卡裡的內嵌區（圖表盒、字詞回饋、Student answer）淺灰底 <code>#f8fafc</code>、不疊框。</p>
+      <table>
+        <tr><th style="width:220px">型別</th><th>段落，由上到下</th></tr>
+        <tr><td>Content Mirroring</td><td>Score breakdown → <strong>Sentences</strong>（計數＝句數）→ Teacher comment</td></tr>
+        <tr><td>Vocabulary Mirroring</td><td>Score breakdown → <strong>Recordings</strong>（計數＝卡數）→ Teacher comment</td></tr>
+        <tr><td>Vocabulary Quiz、Comprehension Quiz</td><td><strong>Questions</strong>（右邊 <code>All · 8｜Wrong · 3</code>）。沒有改分、沒有評語（照產品）</td></tr>
+        <tr><td>Sentence Scramble、Sentence Cloze</td><td><strong>Sentences</strong>（同上 All／Wrong）。沒有改分、沒有評語</td></tr>
+        <tr><td>Sentence Building、Sentence Response</td><td><strong>Questions</strong>（計數 <code>2 passed</code>）→ Teacher comment</td></tr>
+        <tr><td>Open-ended Questions</td><td><strong>Conversation</strong>（卡裡 Conversation｜AI Feedback 兩個切換）→ Teacher comment</td></tr>
+      </table>
+      <table>
+        <tr><th style="width:150px">區塊</th><th>規則</th></tr>
+        <tr><td>Score breakdown</td><td><strong>不用長條。</strong>Fluency／Accuracy／Pronunciation 三格並排，每格灰色大寫小標 ＋ 大數字 26/800 <code>85%</code>，格與格之間細直線。門檻照 <code>sentence-panel.js</code>：85 以上綠、70 以上橘、其他紅；字用深一階 <code>#047857</code>／<code>#B45309</code>／<code>#B91C1C</code></td></tr>
+        <tr><td>Content Mirroring 每句卡（V2）</td><td>卡頭：灰膠囊 <code>#1</code>（Auto Pass 的句子加琥珀 <code>Auto Pass · 5 tries</code>）＋ 右邊 <code>90/100</code> ＋ 播放鈕。一字一欄（拼音／字／狀態圖示）＋ 句子英文。結果一行 <i>Perfect!／Good job!／Try again!</i> ＋ 幾個字要改、要複習、沒唸到。聲調圖（學生實線、範例虛線，第一個有問題的字框起來）。圖底下那個字的聲調卡或 <i>Word not detected</i>。有重錄的照現在的重錄清單。V1 舊紀錄照現在的元件，星星換成分數</td></tr>
+        <tr><td>Teacher comment</td><td>綠色 icon 方塊 ＋ 一張卡：textarea（圓角 11px，focus 綠框 ＋ 光暈）；左下 <code>0 / 2000 characters</code>，右下綠框小鈕 <strong>Send comment</strong>（送過寫 <strong>Update comment</strong>；沒字停用）</td></tr>
+      </table>
+
+      <h2 id="changes"><span class="num">4</span> 要改的地方</h2>
+      <p>對的是 <code>36664ed4</code>（2026-11-17）的程式。</p>
+      <h3><span class="part p24">列表</span></h3>
+      <table class="fix">
+        <tr><th style="width:38px">#</th><th style="width:130px">改什麼</th><th>現在</th><th>改成</th><th style="width:210px">改哪個檔</th></tr>
+        <tr><td>L1</td><td><strong>標題列、篩選列</strong></td><td class="now">一列三個下拉 ＋ 搜尋 ＋ New Practice；沒有分頁</td><td class="to">New practice 搬到標題列；篩選列最左邊四個分頁（3.1、3.2）；下拉縮成短名稱</td><td><code>src/sections/practice/view/index.js</code>、<code>src/utils/practice-list-filters.js</code></td></tr>
+        <tr><td>L2</td><td><strong>每班兩行</strong></td><td class="now">每班一行；過期紅字 <code>Overdue · Nov 18</code>；沒到期日空著；長班名擠爆</td><td class="to">兩行、班名截斷、結束寫日期 ＋ 交卷數、<code>No due date</code>（3.3）</td><td><code>src/components/dahua/practice/</code>、<code>practice-card-config.js</code></td></tr>
+        <tr><td>L3</td><td><strong>Result 停用</strong></td><td class="now">每張都能按；沒指派按了跳 snackbar</td><td class="to">沒指派、沒人交 → 停用 ＋ 原因（三處一起）</td><td>卡片元件、<code>src/sections/practice/practice-table-row.js</code></td></tr>
+        <tr><td>L4</td><td><strong>列表檢視</strong></td><td class="now">看不到指派狀態</td><td class="to">右邊每班一行 ＋ Result 鈕</td><td><code>practice-table-row.js</code></td></tr>
+        <tr><td>L5</td><td><strong>用字</strong></td><td class="now">Student Submissions、Test Practice、Assignment Submission List</td><td class="to">Result、Test、Result</td><td><code>practice-table-row.js</code>、<code>history/index.js</code></td></tr>
+        <tr><td>L6</td><td><strong>空狀態</strong></td><td class="now">一種</td><td class="to">Ended、In progress 各一句；Unassigned 為 0 不出現</td><td><code>view/index.js</code></td></tr>
+      </table>
+      <h3><span class="part p23">Results</span></h3>
+      <table class="fix">
+        <tr><th style="width:38px">#</th><th style="width:130px">改什麼</th><th>現在</th><th>改成</th><th style="width:210px">改哪個檔</th></tr>
+        <tr><td>R1</td><td><strong>頁面骨架</strong></td><td class="now">一張 Card 78vh；Back、標題在 Card 外；頂上三張合計卡</td><td class="to">照 Students 頁兩欄各自捲、藏 header；合計卡拿掉（3.4）</td><td><code>src/sections/assignments/view/history/index.js</code>、dashboard layout</td></tr>
+        <tr><td>R2</td><td><strong>左欄</strong></td><td class="now">照班分組、組頭只有班名；沒交的混在名單裡；沒有 Send reminder</td><td class="to">欄頭、每班灰卡、沒交白框 ＋ Send reminder、交了的一人一行（3.5）</td><td><code>history/left-panel.js</code>、<code>src/utils/assignment/submission-roster.js</code></td></tr>
+        <tr><td>R3</td><td><strong>貼頂列 ＋ 分數卡</strong></td><td class="now">每個 panel 自己畫名字、星星、%、chip、鉛筆；Quiz／Scramble 分數環</td><td class="to">共用貼頂列；分數卡（3.6）；分數環拿掉</td><td><code>history/index.js</code>（<code>renderDetail</code> 外包一層）、五個 panel、<code>panels/shared/score-override-control.js</code></td></tr>
+        <tr><td>R4</td><td><strong>分數上色</strong></td><td class="now">primary 色</td><td class="to">三階色（3.7）</td><td><code>left-panel.js</code>、分數卡、<code>utils/score.js</code></td></tr>
+        <tr><td>R5</td><td><strong>Attempt</strong></td><td class="now"><code>buildHistoryByUser</code> 只留 <code>isSubmitted</code> 那筆，沒交的作答全濾掉</td><td class="to">也留同一學生沒交的作答；名單 tag ＋ 分數卡每次一顆按鈕（3.6）</td><td><code>history/index.js</code>、<code>left-panel.js</code>、分數卡。要後端（第 5 節第 2 題）</td></tr>
+        <tr><td>R6</td><td><strong>遲交天數</strong></td><td class="now"><code>Late · ×80%</code></td><td class="to"><code>Late 2 days · ×80%</code>／名單 <code>Late 2d · ×80%</code>（3.7）</td><td><code>src/components/late-credit-chip/late-credit-chip.js</code>。要後端（第 3 題）</td></tr>
+        <tr><td>R7</td><td><strong>拿掉星星</strong></td><td class="now">V1 舊紀錄顯示 0–5 星</td><td class="to">分數卡拿掉；其他四處換 <code>80/100</code>（3.7）</td><td><code>score-override-control.js</code>、<code>sentence-card-shell.js</code>、<code>retake-history-list.js</code>、<code>panels/follow-pattern-panel.js</code>、<code>panels/qa-panel.js</code></td></tr>
+        <tr><td>R8</td><td><strong>右欄各段</strong></td><td class="now">caption／Divider／h6／emoji 標題；Score breakdown 長條</td><td class="to">SectionHeader ＋ 白卡；Score breakdown 三格數字；Content Mirroring 每句卡 V2；Teacher comment 綠框小鈕（3.8）</td><td>五個 panel、<code>sentence-panel.js</code></td></tr>
+        <tr><td>R9</td><td><strong>Edit score 對話框</strong></td><td class="now">Dialog xs、浮動標籤、contained 鈕</td><td class="to">標籤在上的輸入框、一句說明、Revert 靠左、Cancel／Save 靠右（3.6）</td><td><code>score-override-control.js</code></td></tr>
+      </table>
+
+      <h2 id="open"><span class="num">5</span> 要問工程</h2>
+      <table>
+        <tr><th style="width:28px">#</th><th style="width:60px">問誰</th><th>問題</th><th style="width:200px">影響</th></tr>
+        <tr><td>1</td><td>後端</td><td>列表要每個班級指派的交卷數（submitted／total）。現在 Results 頁一個指派打一次 <code>getAssignmentHistories</code>，列表 12 張卡 × 每張幾班太重。能不能 <code>getAssignments</code> 一次帶回，或加 summary 欄位？</td><td>L2 交卷數、L3「沒人交」停用。拿不到先只寫結束日、停用只看「沒指派」</td></tr>
+        <tr><td>2</td><td>後端</td><td>學生交出去之前的作答（<code>isSubmitted</code> 為 false 的 history）後端有沒有留分數與每句結果？<code>getAssignmentHistories</code> 現在會回這些嗎（前端把它們濾掉）？要能跟 Submission 一起拿回</td><td>R5 Attempt</td></tr>
+        <tr><td>3</td><td>後端</td><td>遲交幾天用哪個時間算？history 只有 <code>creationTime</code>／<code>lastModified</code>（改分也可能動到）和指派的 <code>expiredDate</code>。能不能回 <code>submittedDate</code> 或直接 <code>daysLate</code>（照學校時區）？</td><td>R6 遲交天數</td></tr>
+        <tr><td>4</td><td>前端</td><td>Results 頁網址 <code>/dashboard/assignments/submissions</code> 要不要跟標題改成 result？改了會讓分享出去的連結失效</td><td>L5</td></tr>
+      </table>
+
+      <h2 id="accept"><span class="num">6</span> 驗收</h2>
+      <table>
+        <tr><th style="width:28px">#</th><th style="width:280px">老師做什麼</th><th>畫面應該怎樣</th></tr>
+        <tr><td>1</td><td><span class="part p24">列表</span>開 Practice 列表</td><td>標題列右邊有 New practice；篩選列最左邊 All｜Unassigned｜In progress｜Ended 帶數字，預設 All；下拉寫 Type／Assignment／Class</td></tr>
+        <tr><td>2</td><td>數一數</td><td>Unassigned＋In progress＋Ended 等於 All</td></tr>
+        <tr><td>3</td><td>把最後一個沒指派的指派出去</td><td>Unassigned 分頁消失；停在 Unassigned 的話回到 All</td></tr>
+        <tr><td>4</td><td>切到 Ended</td><td>只剩每一班都過期的，最近結束的在前；每班第二行 <code>Ended Nov 10 · 12/12 submitted</code></td></tr>
+        <tr><td>5</td><td>找一個 7A 過期、7B 沒過期的</td><td>只在 In progress；7A <code>Ended Nov 18 · 8/10 submitted</code> 排前面、7B <code>Due Nov 25</code></td></tr>
+        <tr><td>6</td><td>看班名很長的卡</td><td>班名 … 截斷、滑過看全名；Mandatory 還在同一行</td></tr>
+        <tr><td>7</td><td>看沒指派過、指派了沒人交的卡</td><td>Result 灰掉，滑過 <i>Not assigned yet</i>／<i>No submissions yet</i>；列表檢視、⋯ 選單一樣</td></tr>
+        <tr><td>8</td><td>切列表檢視、打開 ⋯</td><td>每列右邊每班一行 ＋ Result 鈕；選單寫 Result、Test</td></tr>
+        <tr><td>9</td><td><span class="part p23">Results</span>按一張 Vocabulary Mirroring 的 Result</td><td>沒有 dashboard header；左欄白、右欄灰各自捲；沒有合計卡</td></tr>
+        <tr><td>10</td><td>看 Class 7A 灰卡</td><td>卡頭只有 Class 7A／Due Nov 20；先 NOT SUBMITTED 白框（名字 ＋ Send reminder），再 SUBMITTED 名單</td></tr>
+        <tr><td>11</td><td>按 Send reminder</td><td>確認框列出名字；送出後 3 秒內再按沒反應</td></tr>
+        <tr><td>12</td><td>看名單</td><td>頭像、名字、分數、tag；分數靠左對齊；80 綠、70 橘、50 紅</td></tr>
+        <tr><td>13</td><td>點遲交的 Liam</td><td>名單 <code>Late 2d · ×80%</code>；分數卡 <code>68 /100</code> ＋ <code>Late 2 days · ×80%</code></td></tr>
+        <tr><td>14</td><td>點 Emma（交之前練過一次）</td><td>名單 <code>Attempt 1 · 72</code>；分數卡 92 底下 <code>Attempt 1</code>、<code>Submission</code> 兩顆，Submission 綠框</td></tr>
+        <tr><td>15</td><td>按 Attempt 1</td><td>大分數 72、<code>Attempt</code>、一行說明；沒有 Edit score、沒有評語；底下換成那次的</td></tr>
+        <tr><td>16</td><td>換學生再回 Emma</td><td>回到看 Submission</td></tr>
+        <tr><td>17</td><td>看 Content Mirroring 一份</td><td>Score breakdown 三格數字；每句一字一欄 ＋ 聲調圖 ＋ <code>90/100</code>；整頁沒有星星</td></tr>
+        <tr><td>18</td><td>切到 Comprehension Quiz</td><td>同一條貼頂列和分數卡；沒有 Edit score；Questions ＋ All／Wrong；沒有分數環</td></tr>
+        <tr><td>19</td><td>點沒交的學生</td><td>貼頂列寫 Not submitted；底下 <i>This student has not submitted yet</i></td></tr>
+        <tr><td>20</td><td>按 Back</td><td>回列表剛才的分頁和檢視</td></tr>
+        <tr><td>21</td><td>視窗縮到 900px 以下</td><td>Results 左右改上下疊、整頁一起捲</td></tr>
+      </table>
+
+      <h2 id="terms"><span class="num">7</span> 名詞對照</h2>
+      <p>這份文件一律用左欄的詞。</p>
+      <table>
+        <tr><th style="width:130px">用詞</th><th style="width:330px">程式裡是什麼</th><th>意思</th></tr>
+        <tr><td>Unassigned</td><td>新的分頁；判斷＝沒有任何 class assignment</td><td>還沒派給任何班的練習</td></tr>
+        <tr><td>In progress</td><td>新的分頁；判斷＝任一 class assignment 沒過期或沒 due date</td><td>還有班在跑的練習</td></tr>
+        <tr><td>Ended</td><td>新的分頁；判斷＝<strong>每一個</strong> class assignment 的 due date ＜ 今天</td><td>每一班都到期的練習</td></tr>
+        <tr><td>Result</td><td>卡片的 Result 鈕 → <code>/dashboard/assignments/submissions</code></td><td>看成績的動作；⋯ 選單、Results 頁標題都用這個字</td></tr>
+        <tr><td>班級指派</td><td>一個 class assignment（同一班指派兩次取最新）</td><td>一個班的一次指派：到期日、Mandatory／Optional、交卷數</td></tr>
+        <tr><td>Results 頁</td><td><code>src/app/dashboard/assignments/submissions/page.js</code>、<code>history/index.js</code></td><td>老師看一份指派全班成果的頁</td></tr>
+        <tr><td>班級卡</td><td><code>src/utils/assignment/submission-roster.js</code> <code>buildRoster</code> 的一組</td><td>Results 左欄一個班一張灰卡</td></tr>
+        <tr><td>貼頂列</td><td>新做的，照 <code>src/sections/teacher/students/student-detail.js</code> 的 sticky top bar</td><td>右欄頂上：頭像、名字、班名</td></tr>
+        <tr><td>分數卡</td><td>新做的，取代 <code>score-override-control.js</code> 畫的那一塊</td><td>右欄內容最上面：分數、tag、Edit score、每次作答</td></tr>
+        <tr><td>三階色</td><td><code>utils/score.js</code> <code>scoreTier</code> ＋ <code>practice-detail-popup.js</code> <code>SCORE_TIER_COLORS</code></td><td>80／60 兩個門檻分綠橘紅</td></tr>
+        <tr><td>Submission</td><td>同一學生同一指派 <code>isSubmitted</code> 的那一筆（最多一筆）</td><td>學生按 Submit to Teacher 交給老師的作答；名單和成績算這筆</td></tr>
+        <tr><td>Attempt</td><td>同一學生同一指派 <code>isSubmitted</code> 為 false 的 history</td><td>交出去之前練的每一次；老師只能看，不能改分或寫評語</td></tr>
+        <tr><td>Late</td><td><code>late-credit-chip.js</code></td><td>遲交、分數乘了 N%；寫出遲交幾天</td></tr>
+        <tr><td>Adjusted</td><td><code>score-override-control.js</code> 的 override</td><td>老師改過分；只在分數卡</td></tr>
+        <tr><td>Old version</td><td><code>old-version-chip.js</code>（<code>v2 · Old version</code>）</td><td>學生答的是舊版練習；只在分數卡</td></tr>
+        <tr><td>V2</td><td><code>SCORING_ENGINE.DAHUA_V2</code>、<code>isV2Scored()</code></td><td>新版評分：0–100、一字一欄、聲調圖、沒有星星。中文現在交卷都是 V2</td></tr>
+        <tr><td>Score breakdown</td><td><code>sentence-panel.js</code> <code>calculateRubric</code></td><td>Mirroring 的 Fluency／Accuracy／Pronunciation 三個百分比</td></tr>
+        <tr><td>SectionHeader</td><td><code>src/sections/teacher/students/student-detail.js</code></td><td>icon 方塊 ＋ 標題 ＋ 計數 pill ＋ 開合鈕那一列</td></tr>
+      </table>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · v24 ＋ v23 · November 2026</footer>
+    </main>
+  </div>
+</body>
+</html>

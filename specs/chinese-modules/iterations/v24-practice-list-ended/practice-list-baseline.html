@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice List — v24 基準（現行複刻）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<style>
+/* ===========================================================================
+   基準檔 —— 現行 Practice List（/dashboard/practice/）逐項照 sx 複刻。對照組：proposal.html。假資料共用 mock.js。
+
+   出處（dahua-dash origin/develop @ 696f4a42，2026-11-12 fetch）：
+     src/sections/practice/view/index.js                       Container maxWidth=false · 標題列（48px 灰圓 icon ＋ h4 Practice List ＋ body2）· 右上 ToggleButtonGroup 卡片／列表
+                                                               · Card：篩選列 p16（三個 select small minWidth 200/200/180 ＋ Search 180 ＋ New Practice）· PagedListSection（px16 pb16 ＋ 右下 Pagination）
+                                                               · 卡片檢視 Grid md=4 spacing 2；列表檢視 Stack spacing 2
+     src/components/dahua/practice/PracticeCardContent.jsx     FULL 卡：outlined r24 框色照型別；頭 px24 pt20 pb16 headerBg ＋ 40px icon 方塊 ＋ h6 名 ＋ v1 ＋ 型別 chip ＋ ⋯
+                                                               · 內容 p24：Belongs to（caption gray400 ＋ 18px folder ＋ body2 700）· 分隔線 ＋ Assigned to N classes（14px groups icon ＋ caption 600）
+                                                               · 每班：灰 chip（gray100／gray700 11.2px 600）＋ Mandatory／Optional chip（20px 11px）＋ 到期小字 10.4px 600（Due 灰 400／七天內 #10B981／Overdue #EF4444）
+                                                               · 沒指派：虛線 outlined 按鈕 Assign Now（gray400 字、gray300 框）· 底下 Test outlined｜Result contained（13px 600、顏色照型別）
+     src/components/dahua/practice/practice-card-config.js     getPracticeTypeConfig 九種色票；buildPracticeAssignmentMap
+     src/components/dahua/practice/PracticeCardActions.jsx     ⋯ Menu：Assign Practice（有指派才有）／Share／Clone／Edit／Delete（紅）
+     src/sections/practice/practice-table-row.js               列表列：p16 白底 1px gray200 r16；48px Avatar（型別色）＋ subtitle1 600 名 ＋ 型別 chip ＋ v1 outlined chip；小字 專案 · 日期；右邊 ⋯（七條選單）
+     src/components/assignment/AssignmentTypeChip.js            Mandatory #F1F5F9／#475569、Optional #E0E7FF／#3730A3，r12
+     src/sections/shared/paged-list-section.js                 Pagination color primary shape rounded size small
+   側欄與頁首照 v3 基準檔（config-layout.js：Sidebar 240 ＋ Header 80）。
+
+   網址參數：?view=card|list（預設 card）· &menu=1 第一張卡的 ⋯ 打開 · &empty=1 沒有練習
+   =========================================================================== */
+*{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2); --hover:rgba(145,158,171,.08);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --g50:#F9FAFB; --g100:#F3F4F6; --g200:#E5E7EB; --g300:#D1D5DB; --g400:#9CA3AF; --g500:#6B7280; --g700:#374151; --g900:#111827;
+  --error:#FF5630; --error-lighter:#FFE9D5;
+  --shadow-card:0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12);
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; padding-bottom:48px; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼 ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:var(--hover); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:var(--hover); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:80px 40px 0; }
+.container{ padding:16px 24px; }
+
+/* ---------- 標題列 ---------- */
+.pagehd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:40px; }
+.pagehd .lf{ display:flex; align-items:center; gap:16px; }
+.pagehd .ico{ width:48px; height:48px; border-radius:50%; background:var(--grey200); display:flex; align-items:center; justify-content:center; color:var(--text2); }
+.pagehd .ico .mi{ font-size:26px; }
+.pagehd h1{ font-size:24px; font-weight:700; line-height:1.5; }
+.pagehd p{ font-size:14px; color:var(--text2); }
+.tbg{ display:inline-flex; border:1px solid var(--divider); border-radius:8px; overflow:hidden; }
+.tbg button{ width:40px; height:36px; border:0; background:#fff; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; }
+.tbg button + button{ border-left:1px solid var(--divider); }
+.tbg button.on{ background:rgba(0,203,97,.08); color:var(--primary); }
+.tbg .mi{ font-size:20px; }
+
+/* ---------- 大卡 ＋ 篩選列 ---------- */
+.bigcard{ background:#fff; border-radius:16px; box-shadow:var(--shadow-card); }
+.filters{ display:flex; align-items:center; gap:12px; padding:16px; flex-wrap:wrap; row-gap:12px; }
+.sel{ height:40px; border:1px solid rgba(145,158,171,.2); border-radius:8px; background:#fff; padding:0 14px; display:inline-flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; color:var(--text); }
+.sel .mi{ font-size:22px; color:var(--text2); }
+.sel.dis{ color:var(--text3); }
+.search{ height:40px; width:180px; border:1px solid rgba(145,158,171,.2); border-radius:8px; background:#fff; padding:0 14px; display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--text3); }
+.search .mi{ font-size:20px; }
+.btn{ border:0; border-radius:8px; height:36px; padding:0 16px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn .mi{ font-size:20px; }
+.grow{ flex:1; }
+.listwrap{ padding:0 16px 16px; }
+.grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; }
+.pager{ display:flex; justify-content:flex-end; margin-top:16px; gap:4px; }
+.pager span{ min-width:26px; height:26px; padding:0 6px; border-radius:8px; font-size:13px; display:inline-flex; align-items:center; justify-content:center; color:var(--text); }
+.pager span.on{ background:var(--primary); color:#fff; font-weight:600; }
+.pager span.nav{ color:var(--text3); }
+.emptyc{ padding:48px 0; text-align:center; color:var(--text2); }
+.emptyc b{ display:block; font-size:18px; font-weight:700; color:var(--text); margin-bottom:4px; }
+
+/* ---------- 卡片（PracticeCardContent FULL） ---------- */
+.pc{ background:#fff; border:1px solid; border-radius:24px; overflow:hidden; display:flex; flex-direction:column; height:100%; cursor:pointer; transition:box-shadow .2s; position:relative; }
+.pc:hover{ box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.pc-hd{ padding:20px 24px 16px; border-bottom:1px solid; display:flex; justify-content:space-between; align-items:flex-start; }
+.pc-hd .lf{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.pc-hd .ico{ width:40px; height:40px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex:none; }
+.pc-hd .ico .mi{ font-size:22px; }
+.pc-hd .ttl{ flex:1; min-width:0; }
+.pc-hd .nm{ display:flex; align-items:flex-start; gap:6px; }
+.pc-hd .nm b{ font-size:18px; font-weight:700; line-height:1.5; overflow-wrap:anywhere; }
+.pc-hd .nm .v{ font-size:11.2px; color:var(--text3); padding-top:2px; flex:none; }
+.typechip{ display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:8px; font-size:13px; font-weight:600; letter-spacing:.2px; margin-top:4px; }
+.more{ width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; flex:none; margin:-6px -8px 0 0; }
+.more:hover{ background:var(--hover); } .more .mi{ font-size:20px; }
+.pc-bd{ padding:24px 24px 16px; flex:1; display:flex; flex-direction:column; gap:16px; }
+.ctx .l{ font-size:12px; font-weight:500; color:var(--g400); }
+.ctx .vrow{ display:flex; align-items:center; gap:6px; }
+.ctx .vrow .mi{ font-size:18px; color:var(--g500); }
+.ctx .vrow b{ font-size:14px; font-weight:700; color:var(--g700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.asg{ padding-top:12px; border-top:1px solid var(--g200); }
+.asg .hd{ display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:12px; font-weight:600; color:var(--g500); }
+.asg .hd .mi{ font-size:14px; color:var(--g400); }
+.asg .row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; row-gap:4px; }
+.asg .row + .row{ margin-top:6px; }
+.clschip{ height:24px; padding:0 8px; border-radius:8px; background:var(--g100); color:var(--g700); font-size:11.2px; font-weight:600; display:inline-flex; align-items:center; }
+.achip{ height:20px; padding:0 8px; border-radius:12px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; }
+.achip.m{ background:#F1F5F9; color:#475569; } .achip.o{ background:#E0E7FF; color:#3730A3; }
+.due{ font-size:10.4px; font-weight:600; }
+.assignnow{ width:100%; height:36px; border:1px dashed var(--g300); border-radius:12px; background:transparent; color:var(--g400); font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.assignnow:hover{ color:var(--error); border-color:var(--error); background:var(--error-lighter); }
+.assignnow .mi{ font-size:18px; }
+.pc-ft{ display:flex; gap:8px; padding:0 24px 24px; margin-top:auto; }
+.pc-ft button{ flex:1; height:36px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.pc-ft .test{ background:transparent; border:1px solid; }
+.pc-ft .res{ border:0; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.pc-ft .mi{ font-size:16px; }
+.menu{ position:absolute; top:56px; right:24px; z-index:20; background:#fff; border-radius:12px; padding:8px 0; min-width:180px; box-shadow:0 0 2px 0 rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); }
+.menu div{ display:flex; align-items:center; gap:12px; padding:8px 16px; font-size:14px; min-height:40px; }
+.menu div:hover{ background:var(--hover); }
+.menu div .mi{ font-size:20px; }
+.menu div.del{ color:var(--error); }
+
+/* ---------- 列表列（practice-table-row.js） ---------- */
+.rows{ display:flex; flex-direction:column; gap:16px; }
+.prow{ display:flex; align-items:center; gap:16px; padding:16px; background:#fff; border:1px solid var(--g200); border-radius:16px; cursor:pointer; transition:all .2s; position:relative; }
+.prow:hover{ background:var(--g50); border-color:var(--g300); transform:translateX(4px); }
+.prow .av{ width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; }
+.prow .av .mi{ font-size:24px; }
+.prow .c{ flex:1; min-width:0; }
+.prow .c .t{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.prow .c .t b{ font-size:16px; font-weight:600; color:var(--g900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.prow .c .t .typechip{ margin-top:0; }
+.vchip{ height:24px; padding:0 8px; border-radius:8px; border:1px solid rgba(145,158,171,.32); font-size:13px; display:inline-flex; align-items:center; }
+.prow .meta{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--g500); }
+.prow .meta i{ width:3px; height:3px; border-radius:50%; background:var(--g400); display:inline-block; }
+.prow .more{ margin:0; }
+.prow .menu{ top:60px; right:16px; }
+
+/* ---------- 說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px; padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="../v25-teacher-dashboard/teacher-dashboard-baseline.html"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="container" id="app"></div></div>
+</div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v24 · 現行 Practice List 複刻 · 提案 <a href="proposal.html">proposal.html ↗</a> · 進去的頁 <a href="../v23-practice-results/results-baseline.html?type=vocab">v23 Results 基準 ↗</a></span>
+  <span id="blinks"></span>
+</div>
+
+<script>
+(function(){
+  const M = window.V24; const esc = M.esc;
+  const qs = new URLSearchParams(location.search);
+  const S = { view: qs.get('view') === 'list' ? 'list' : 'card', menu: qs.get('menu') === '1' ? 0 : -1, empty: qs.get('empty') === '1', page: 0 };
+  const PER = 12;
+
+  // PracticeCardContent getDueDateLabel：過期紅、七天內綠、其他 gray400
+  const dueLabel = (c) => {
+    if (!c.due) return '';
+    const d = M.daysUntil(c.due);
+    const color = d < 0 ? '#EF4444' : d <= 7 ? '#10B981' : 'var(--g400)';
+    return `<span class="due" style="color:${color}">${d < 0 ? 'Overdue · ' : 'Due '}${M.fmtDay(c.due)}</span>`;
+  };
+  const menu = (p, list) => {
+    const items = list
+      ? [['groups', 'Assign Practice'], ['science', 'Test Practice'], ['grading', 'Student Submissions'], ['share', 'Share'], ['content_copy', 'Clone'], ['edit', 'Edit'], ['delete', 'Delete', 'del']]
+      : [...(p.classes.length ? [['groups', 'Assign Practice']] : []), ['share', 'Share'], ['content_copy', 'Clone'], ['edit', 'Edit'], ['delete', 'Delete', 'del']];
+    return `<div class="menu">${items.map(([i, l, c]) => `<div class="${c || ''}" ${l === 'Student Submissions' ? `data-href="${M.resultHref(p, 'results-baseline.html', '&view=list')}"` : ''}><span class="mi">${i}</span>${l}</div>`).join('')}</div>`;
+  };
+  const card = (p, i) => {
+    const T = M.TYPES[p.type]; const c = T.card;
+    const asg = p.classes.length
+      ? `<div class="asg"><div class="hd"><span class="mi">groups</span>Assigned to ${p.classes.length} ${p.classes.length === 1 ? 'class' : 'classes'}</div>
+          ${p.classes.map((k) => `<div class="row"><span class="clschip">${esc(k.name)}</span><span class="achip ${k.optional ? 'o' : 'm'}">${k.optional ? 'Optional' : 'Mandatory'}</span>${dueLabel(k)}</div>`).join('')}</div>`
+      : `<div class="asg"><button class="assignnow"><span class="mi">groups</span>Assign Now</button></div>`;
+    return `<div class="pc" style="border-color:${c.border}">
+      <div class="pc-hd" style="background:${c.headerBg};border-color:${c.divider}">
+        <div class="lf"><span class="ico" style="background:${c.iconBg};color:${c.iconColor}"><span class="mi">${M.cardIcon(p.type)}</span></span>
+          <div class="ttl"><div class="nm"><b>${esc(p.name)}</b><span class="v">v${p.v}</span></div><span class="typechip" style="background:${T.tag.wash};color:${T.tag.label}">${T.label}</span></div></div>
+        <button class="more" data-menu="${i}"><span class="mi">more_vert</span></button>
+      </div>
+      <div class="pc-bd"><div class="ctx"><div class="l">Belongs to</div><div class="vrow"><span class="mi">folder</span><b>${esc(p.project)}</b></div></div>${asg}</div>
+      <div class="pc-ft"><button class="test" style="color:${c.btn};border-color:${c.border}"><span class="mi">science</span>Test</button><button class="res" style="background:${c.btn}" data-href="${M.resultHref(p, 'results-baseline.html')}"><span class="mi">grading</span>Result</button></div>
+      ${S.menu === i ? menu(p, false) : ''}
+    </div>`;
+  };
+  const row = (p, i) => {
+    const T = M.TYPES[p.type]; const c = T.card;
+    return `<div class="prow"><span class="av" style="background:${c.iconBg};color:${c.iconColor}"><span class="mi">${p.type === 'OPEN_ENDED' ? 'chat_bubble' : p.type.startsWith('VOCAB') ? 'bookmark' : 'mic'}</span></span>
+      <div class="c"><div class="t"><b>${esc(p.name)}</b><span class="typechip" style="background:${T.tag.wash};color:${T.tag.label}">${T.label}</span><span class="vchip">v${p.v}</span></div>
+        <div class="meta"><span>${esc(p.project)}</span><i></i><span>${p.created}</span></div></div>
+      <button class="more" data-menu="${i}"><span class="mi">more_vert</span></button>
+      ${S.menu === i ? menu(p, true) : ''}</div>`;
+  };
+
+  const render = () => {
+    const all = S.empty ? [] : M.listFor('all');
+    const pages = Math.max(1, Math.ceil(all.length / PER));
+    const shown = all.slice(S.page * PER, S.page * PER + PER);
+    document.getElementById('app').innerHTML = `
+      <div class="pagehd"><div class="lf"><span class="ico"><span class="mi">assignment</span></span><div><h1>Practice List</h1><p>Create and assign practice sessions.</p></div></div>
+        <div class="tbg"><button class="${S.view === 'card' ? 'on' : ''}" data-view="card" aria-label="card view"><span class="mi">view_module</span></button><button class="${S.view === 'list' ? 'on' : ''}" data-view="list" aria-label="table view"><span class="mi">table_rows</span></button></div></div>
+      <div class="bigcard">
+        <div class="filters">
+          <span class="sel" style="min-width:200px">All Practice Types (${all.length})<span class="mi">arrow_drop_down</span></span>
+          <span class="sel" style="min-width:200px">All Assignment Types (${all.length})<span class="mi">arrow_drop_down</span></span>
+          <span class="sel" style="min-width:180px">All Classes<span class="mi">arrow_drop_down</span></span>
+          <span class="grow"></span>
+          <span class="search"><span class="mi">search</span>Search...</span>
+          <button class="btn contained"><span class="mi">add</span>New Practice</button>
+        </div>
+        <div class="listwrap">
+          ${all.length ? (S.view === 'card' ? `<div class="grid">${shown.map(card).join('')}</div>` : `<div class="rows">${shown.map(row).join('')}</div>`)
+            + `<div class="pager"><span class="nav mi">chevron_left</span>${Array.from({ length: pages }, (_, k) => `<span class="${k === S.page ? 'on' : ''}">${k + 1}</span>`).join('')}<span class="nav mi">chevron_right</span></div>`
+          : '<div class="emptyc"><b>No data</b>Create a practice to see it here.</div>'}
+        </div>
+      </div>`;
+  };
+  document.getElementById('app').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-href]'); if (go) { location.href = go.dataset.href; return; }
+    const v = e.target.closest('[data-view]'); if (v) { S.view = v.dataset.view; S.menu = -1; render(); return; }
+    const m = e.target.closest('[data-menu]'); if (m) { const i = Number(m.dataset.menu); S.menu = S.menu === i ? -1 : i; render(); return; }
+    if (S.menu >= 0 && !e.target.closest('.menu')) { S.menu = -1; render(); }
+  });
+  render();
+  const links = [['?view=card', '卡片'], ['?view=card&menu=1', '卡片 ⋯ 選單'], ['?view=list', '列表'], ['?view=list&menu=1', '列表 ⋯ 選單'], ['?empty=1', '沒有練習']];
+  document.getElementById('blinks').innerHTML = links.map(([q, l]) => `<a href="${q}" class="${location.search === q ? 'cur' : ''}">${l}</a>`).join(' · ');
+}());
+</script>
+</body>
+</html>

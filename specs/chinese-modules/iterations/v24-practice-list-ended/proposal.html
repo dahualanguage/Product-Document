@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice List — v24 提案（All｜Unassigned｜In progress｜Ended）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<style>
+/* ===========================================================================
+   提案 —— v24：Practice 列表多三個 tab（All｜In progress｜Ended），Ended 集中「到期了、該看成績」的練習。不是現行產品。
+   對照組 practice-list-baseline.html。假資料共用 mock.js。
+
+   使用者 2026-11-12 一題一題定的六條（細節在 ITERATION.md）：
+     ① 任一班過了到期日就進 Ended，卡上標結束的班和還在跑的班；沒到期日的不結束
+        → 2026-11-18 改（使用者「Ended 改成全部都截止」）：**每一班都**過了到期日才進 Ended；In progress 跟 Ended 不再重疊
+     ② All｜In progress｜Ended 三個 tab；一個練習可以同時在後兩個（11-18 起不會了）；沒指派的只在 All
+     ③ 沒結束的照舊能看成績
+     ④ Ended 卡上每班多 `8/10 submitted`（交卷數一次拿到→待問工程）
+     ⑤ Ended 照最近結束在前；另外兩個照建立時間
+     ⑥ tab 用 All／In progress／Ended；看成績統一叫 Result
+
+   第一版把卡片壓成 v23 的單色 token，使用者「UI 可以更接近現在上線的版本嗎？有顏色」→ 第二版卡片回到產品的樣子：
+     卡框、頭的底色、icon 方塊、Test／Result 按鈕顏色都照 getPracticeTypeConfig 的九組色票（跟 practice-list-baseline.html 一樣）；
+     每班一列也照產品（灰 chip 班名 ＋ Mandatory／Optional chip ＋ 右邊小字），只是小字改寫成 Ended Nov 18 · 8/10 submitted。
+     新的只有：篩選列上面的三個 tab（.seg）、每班的結束日期與交卷數、列表檢視多的那一欄與 Result 鈕、用字。
+   2026-11-12 跟 v23 接起來（使用者「把 v23 v24 互動連貫再一起」）：Result（卡片、列表、⋯ 選單）→ ../v23-practice-results/proposal.html?type=&name=&cls=&back=<這個 tab>；v23 的 Back 回來。
+   2026-11-12 再加（使用者「讓還沒有 result 的 practice 的 result 按鈕 disable」）：沒指派、或指派了但一個人都還沒交 → Result 鈕（卡片底下、列表右邊、⋯ 選單那條）停用，
+     滑過寫原因（R9）：Not assigned yet ／ No submissions yet。產品現在是能按、按了跳 snackbar「No assignment found for this practice」。
+
+   2026-11-17：多一個 tab **Unassigned**（使用者「新增一個 tab 叫 unassign」）——一個班都還沒指派的練習；順序 All｜Unassigned｜In progress｜Ended（照生命週期）；
+     照建立時間新的在前；定案 ② 的「沒指派的只在 All」改成「沒指派的在 All 和 Unassigned」。
+     同日：**沒有未指派的練習時，這個 tab 不出現**（使用者），所以沒有空狀態；停在這個 tab 時最後一個被指派掉，跳回 All。看樣子用 &empty=1。
+   2026-11-18：卡上每班改兩行（班名＋Mandatory／狀態小字），長班名 … 截斷、滑過看全名（使用者「太擠，教室名稱也可能更長」）；&longcls=1 看長班名。
+   網址參數：?tab=all|unassigned|progress|ended（預設 all）· &view=card|list · &menu=1 第一張卡的 ⋯ 打開 · &empty=1 沒有練習
+   =========================================================================== */
+*{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2); --hover:rgba(145,158,171,.08);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+  --error:#FF5630;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; padding-bottom:48px; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+.num{ font-variant-numeric:tabular-nums; }
+
+/* ---------- 外殼 ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:var(--hover); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:var(--hover); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:80px 40px 0; }
+.container{ padding:16px 24px; }
+
+/* ---------- token ---------- */
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:inherit; line-height:20px; }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px 0 rgba(0,203,97,.24); }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.text{ background:transparent; color:var(--text); } .btn.text:hover{ background:var(--grey200); }
+.btn.outlined{ background:transparent; border:1px solid rgba(145,158,171,.32); color:var(--text); }
+.btn.outlined:hover{ background:rgba(145,158,171,.08); border-color:var(--text); }
+.btn.sm{ padding:4px 10px; font-size:13px; } .btn .mi{ font-size:18px; }
+.btn.dashed{ border:1px dashed var(--grey300); color:var(--text3); background:transparent; }
+.btn.dashed:hover{ border-color:var(--primary); color:var(--primary-dark); background:rgba(0,203,97,.06); }
+.ibtn{ width:32px; height:32px; border:0; background:transparent; border-radius:8px; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.ibtn:hover{ background:var(--grey200); color:var(--text); } .ibtn .mi{ font-size:20px; }
+.card{ border:1px solid var(--divider); border-radius:16px; background:#fff; }
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:0 0 8px; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); white-space:nowrap; }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); min-width:16px; }
+.seg{ display:inline-flex; background:var(--grey200); border-radius:10px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:8px; padding:0 14px; height:34px; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.seg button .n{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(145,158,171,.16); color:var(--text2); }
+.seg button.on .n{ background:rgba(0,203,97,.12); color:var(--primary-dark); }
+.seg.icons button{ padding:0 10px; } .seg.icons .mi{ font-size:20px; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.pill.mand{ background:#F1F5F9; color:#475569; } .pill.opt{ background:#E0E7FF; color:#3730A3; }
+.tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; white-space:nowrap; display:inline-flex; align-items:center; }
+.tag.ok{ background:#D3FCD2; color:#118D57; } .tag.warn{ background:#FFF5CC; color:#7A4100; } .tag.off{ background:var(--grey200); color:var(--text2); }
+.dd-trig{ height:40px; display:inline-flex; align-items:center; gap:10px; border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 12px; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; }
+.dd-trig .caret{ font-size:18px; color:var(--text2); margin-left:auto; }
+.dd-trig .cnt{ font-weight:500; color:var(--text2); }
+.inp{ height:40px; border:1px solid var(--divider); border-radius:8px; background:#fff; padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); display:inline-flex; align-items:center; gap:8px; }
+.inp .mi{ font-size:20px; color:var(--text3); } .inp span{ color:var(--text3); }
+.typechip{ display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.2px; }
+
+/* ---------- 標題列 ---------- */
+.h4{ font-size:24px; font-weight:700; line-height:1.5; display:flex; align-items:center; gap:12px; }
+.h4 .tico{ width:40px; height:40px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center; background:var(--grey200); color:var(--text2); }
+.h4 .tico .mi{ font-size:22px; }
+.h4 .sub{ font-size:14px; font-weight:400; color:var(--text2); }
+.pagehd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+.tabs{ margin-bottom:16px; }
+/* 2026-11-16 tab 收進篩選列（使用者「這些 filter UI 結合在一起」）：一個白框一列，tab 底線式在左、短下拉在右 */
+.filters.one{ padding:0 16px; gap:8px; min-height:64px; flex-wrap:nowrap; }
+.ftabs{ display:flex; align-self:stretch; gap:4px; margin-right:8px; }
+.ftabs button{ border:0; background:none; font:inherit; font-size:14px; font-weight:600; color:var(--text2); padding:0 12px; display:inline-flex; align-items:center; gap:8px; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; }
+.ftabs button.on{ color:var(--primary-dark); border-bottom-color:var(--primary); }   /* 2026-11-18：選中改主綠（使用者「tab 換個顏色」），原本黑 */
+.ftabs button:hover:not(.on){ color:var(--text); }
+.ftabs .n{ font-size:12px; font-weight:700; min-width:22px; height:22px; padding:0 6px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; background:var(--grey200); color:var(--text2); }
+.ftabs button.on .n{ background:rgba(0,203,97,.14); color:var(--primary-dark); }
+.fsep{ width:1px; height:24px; background:var(--divider); margin:0 8px; flex:none; }
+.filters.one .dd-trig{ font-weight:500; color:var(--text2); }
+/* 不折行：字一律單行；窄的時候搜尋框先縮，再窄「搜尋＋New practice」整組靠右換到第二列 */
+.filters.one{ flex-wrap:wrap; row-gap:0; }
+.filters.one > *{ white-space:nowrap; flex-shrink:0; }
+.filters.one button, .filters.one .dd-trig{ white-space:nowrap; }
+.ftabs button{ min-height:64px; padding:0 10px; }
+.filters.one .dd-trig{ gap:6px; padding:0 10px; }
+.fsep{ margin:0 4px; }
+.fright{ display:flex; align-items:center; gap:8px; margin-left:auto; flex:1 1 0; justify-content:flex-end; min-width:0; padding:12px 0; }
+.filters.one .inp{ flex:0 1 200px; width:auto !important; min-width:110px; }
+.filters.one > .fright{ flex:1 1 0; min-width:130px; }
+.hdr-r{ display:flex; align-items:center; gap:12px; } /* 2026-11-16 New practice 搬到標題列（使用者「往上擺不用跟 filter 一起」） */
+
+/* ---------- 篩選列 ---------- */
+.filters{ display:flex; align-items:center; gap:12px; padding:16px; flex-wrap:wrap; row-gap:12px; border-bottom:1px solid var(--divider); }
+.grow{ flex:1; }
+.listwrap{ padding:16px; }
+.grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; }
+.pager{ display:flex; justify-content:flex-end; margin-top:16px; gap:4px; }
+.pager span{ min-width:26px; height:26px; padding:0 6px; border-radius:8px; font-size:13px; display:inline-flex; align-items:center; justify-content:center; color:var(--text); }
+.pager span.on{ background:var(--primary); color:#fff; font-weight:600; }
+.pager span.nav{ color:var(--text3); }
+.emptyc{ padding:56px 24px; text-align:center; color:var(--text2); font-size:14px; }
+.emptyc b{ display:block; font-size:16px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.emptyc .mi{ font-size:36px; color:var(--text3); display:block; margin:0 auto 8px; }
+
+/* ---------- 卡片 ---------- */
+.pc{ display:flex; flex-direction:column; height:100%; cursor:pointer; position:relative; border-radius:24px; border:1px solid; overflow:hidden; transition:box-shadow .2s; }
+.pc:hover{ box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.pc-hd{ padding:20px 16px 16px 24px; display:flex; align-items:flex-start; gap:12px; border-bottom:1px solid; }
+.pc-hd .tico{ width:40px; height:40px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center; }
+.pc-hd .tico .mi{ font-size:22px; }
+.pc-hd .ttl{ flex:1; min-width:0; }
+.pc-hd .nm{ display:flex; align-items:baseline; gap:6px; }
+.pc-hd .nm b{ font-size:18px; font-weight:700; line-height:1.5; overflow-wrap:anywhere; }
+.pc-hd .nm .v{ font-size:11px; color:var(--text3); flex:none; }
+.pc-hd .typechip{ margin-top:4px; }
+.pc-bd{ padding:24px 24px 16px; flex:1; display:flex; flex-direction:column; gap:16px; }
+.ctx .l{ font-size:12px; font-weight:500; color:#9CA3AF; }
+.ctx .vrow{ display:flex; align-items:center; gap:6px; }
+.ctx .vrow .mi{ font-size:18px; color:#6B7280; }
+.ctx .vrow b{ font-size:14px; font-weight:700; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.asg{ padding-top:12px; border-top:1px solid #E5E7EB; }
+.asg .hd{ display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:12px; font-weight:600; color:#6B7280; }
+.asg .hd .mi{ font-size:14px; color:#9CA3AF; }
+/* 2026-11-18：每班兩行（使用者「這邊太擠了，教室名稱也有可能會更長」）——第一行班名（長就 … 截斷）＋ Mandatory／Optional；第二行狀態小字 */
+.asg .row{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.asg .row + .row{ margin-top:10px; }
+.asg .row .l1{ display:flex; align-items:center; gap:6px; min-width:0; }
+.asg .row .clschip{ flex:0 1 auto; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; display:block; line-height:24px; }
+.clschip{ height:24px; padding:0 8px; border-radius:8px; background:#F3F4F6; color:#374151; font-size:11.2px; font-weight:600; display:inline-flex; align-items:center; white-space:nowrap; flex:none; }
+.achip{ height:20px; padding:0 8px; border-radius:12px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; flex:none; }
+.achip.m{ background:#F1F5F9; color:#475569; } .achip.o{ background:#E0E7FF; color:#3730A3; }
+.asg .st{ font-size:11px; font-weight:600; color:#9CA3AF; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; padding-left:2px; }   /* 第二行，靠左 */
+.asg .st.soon{ color:#10B981; }
+.asg .st.ended{ color:#374151; }
+.asg .st .sub{ font-weight:800; color:var(--text); }
+.asg .st .sub.all{ color:var(--primary-dark); }
+.pc-ft{ display:flex; gap:8px; padding:0 24px 24px; margin-top:auto; }
+.pc-ft button{ flex:1; height:36px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.pc-ft .test{ background:transparent; border:1px solid; }
+.pc-ft .res{ border:0; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.pc-ft .res:disabled, .btn:disabled{ background:rgba(145,158,171,.24) !important; color:rgba(145,158,171,.8) !important; box-shadow:none; cursor:not-allowed; border-color:transparent; }   /* MUI contained disabled */
+.menu div.dis, .menu div.dis .mi{ color:var(--text3); cursor:not-allowed; } .menu div.dis:hover{ background:transparent; }
+.pc-ft .mi{ font-size:16px; }
+.assignnow{ width:100%; height:36px; border:1px dashed #D1D5DB; border-radius:12px; background:transparent; color:#9CA3AF; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.assignnow:hover{ color:var(--error); border-color:var(--error); background:#FFE9D5; }
+.assignnow .mi{ font-size:18px; }
+.menu{ position:absolute; top:52px; right:16px; z-index:20; background:#fff; border:1px solid var(--divider); border-radius:10px; padding:4px; min-width:180px; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 32px -8px rgba(33,43,54,.22); }
+.menu div{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; font-size:14px; }
+.menu div:hover{ background:var(--grey200); }
+.menu div .mi{ font-size:18px; color:var(--text2); }
+.menu div.del, .menu div.del .mi{ color:var(--error); }
+
+/* ---------- 列表列 ---------- */
+.rows{ display:flex; flex-direction:column; gap:10px; }
+.prow{ display:flex; align-items:center; gap:14px; padding:12px 12px 12px 16px; cursor:pointer; position:relative; transition:border-color .15s; }
+.prow:hover{ border-color:var(--text3); }
+.prow{ border-color:#E5E7EB; border-radius:16px; }
+.prow:hover{ background:#F9FAFB; border-color:#D1D5DB; }
+.prow .tico{ width:48px; height:48px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; }
+.prow .tico .mi{ font-size:24px; }
+.prow .c{ flex:1; min-width:0; }
+.prow .c .t{ display:flex; align-items:center; gap:8px; }
+.prow .c .t b{ font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.prow .c .t .v{ font-size:11px; color:var(--text3); }
+.prow .meta{ font-size:12px; color:var(--text2); margin-top:2px; display:flex; gap:6px; align-items:center; }
+.prow .asgcol{ width:300px; flex:none; display:flex; flex-direction:column; gap:3px; }
+.prow .asgcol .row{ display:flex; align-items:center; gap:8px; font-size:12px; }
+.prow .asgcol .cls{ font-weight:600; width:90px; flex:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }   /* 2026-11-18：長班名截斷 */
+.prow .asgcol .st{ color:#9CA3AF; font-weight:600; display:flex; align-items:center; gap:6px; }
+.prow .asgcol .st.ended{ color:#374151; }
+.prow .asgcol .sub{ font-weight:700; }
+.prow .asgcol .none{ font-size:12px; color:var(--text3); }
+.prow .acts{ display:flex; align-items:center; gap:4px; flex:none; }
+.prow .menu{ top:52px; right:12px; }
+
+/* ---------- 說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px; padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="../v25-teacher-dashboard/proposal.html"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="container" id="app"></div></div>
+</div>
+
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v24 · All｜Unassigned｜In progress｜Ended · 對照組 <a href="practice-list-baseline.html" id="blbase">現行複刻 ↗</a> · 進去的頁 <a href="../v23-practice-results/proposal.html?type=vocab">v23 Result ↗</a></span>
+  <span id="blinks"></span>
+</div>
+
+<script>
+(function(){
+  const M = window.V24; const esc = M.esc;
+  const qs = new URLSearchParams(location.search);
+  const TABS = [['all', 'All'], ['unassigned', 'Unassigned'], ['progress', 'In progress'], ['ended', 'Ended']];   // 2026-11-17：多 Unassigned（使用者），照生命週期排在 All 後面
+  if (qs.get('longcls') === '1') M.PRACTICES.forEach((p) => p.classes.forEach((k) => { k.name = { 'Class 7A': 'Grade 7 Chinese · Section A (Mon/Wed)', 'Class 8B': 'Heritage Chinese 8B — Afternoon' }[k.name] || k.name; }));   // 2026-11-18 demo：長班名
+  const S = { tab: ['all', 'unassigned', 'progress', 'ended'].includes(qs.get('tab')) ? qs.get('tab') : 'all', view: qs.get('view') === 'list' ? 'list' : 'card', menu: qs.get('menu') === '1' ? 0 : -1, empty: qs.get('empty') === '1', page: 0 };
+  const PER = 12;
+  document.getElementById('blbase').href = `practice-list-baseline.html?view=${S.view}`;
+
+  // 每班一列：結束了寫 Ended Nov 18 ＋ 8/10 submitted；還在跑寫 Due Nov 25；沒到期日寫 No due date（定案 ①④）
+  // 照產品 getDueDateLabel：七天內綠；過期不再寫紅字 Overdue，改成 Ended ＋ 交卷數（定案 ①④⑥）
+  const statusOf = (k) => {
+    if (k.ended) return `<span class="st ended">Ended ${M.fmtDay(k.due)}<span style="color:#C4CDD5">·</span><span class="sub num ${k.submitted === k.total ? 'all' : ''}">${k.submitted}/${k.total} submitted</span></span>`;
+    if (!k.due) return '<span class="st">No due date</span>';
+    return `<span class="st ${M.daysUntil(k.due) <= 7 ? 'soon' : ''}">Due ${M.fmtDay(k.due)}</span>`;
+  };
+  const classRow = (k) => `<div class="row"><div class="l1"><span class="clschip" title="${esc(k.name)}">${esc(k.name)}</span><span class="achip ${k.optional ? 'o' : 'm'}">${k.optional ? 'Optional' : 'Mandatory'}</span></div>${statusOf(k)}</div>`;   // 2026-11-18：兩行
+  // 還沒有成績：沒指派、或每一班都 0 人交（使用者 11/12）。原因寫在 title 裡
+  const resHref = (p) => M.resultHref(p, 'proposal.html', `&back=${S.tab}${S.view === 'list' ? '&view=list' : ''}`);
+  const noResult = (p) => (!p.classes.length ? 'Not assigned yet' : p.classes.every((k) => !k.submitted) ? 'No submissions yet' : '');
+  const sortedClasses = (p) => [...p.classes].sort((a, b) => (b.ended - a.ended) || (a.due || '9').localeCompare(b.due || '9'));   // 結束的排前面
+  const menu = (p, list) => {
+    const nr = noResult(p);
+    const items = [...(p.classes.length ? [['groups', 'Assign practice']] : []), ...(list ? [['science', 'Test'], ['grading', 'Result', nr ? 'dis' : '', nr, nr ? '' : resHref(p)]] : []), ['share', 'Share'], ['content_copy', 'Clone'], ['edit', 'Edit'], ['delete_outline', 'Delete', 'del']];
+    return `<div class="menu">${items.map(([i, l, c, t, href]) => `<div class="${c || ''}" ${t ? `title="${t}" aria-disabled="true"` : ''} ${href ? `data-href="${href}"` : ''}><span class="mi">${i}</span>${l}</div>`).join('')}</div>`;
+  };
+  const tico = (p) => { const c = M.TYPES[p.type].card; return `<span class="tico" style="background:${c.iconBg};color:${c.iconColor}"><span class="mi">${M.cardIcon(p.type)}</span></span>`; };
+  const chip = (p) => { const T = M.TYPES[p.type]; return `<span class="typechip" style="background:${T.tag.wash};color:${T.tag.label}">${T.label}</span>`; };
+
+  const card = (p, i) => { const c = M.TYPES[p.type].card; return `<div class="pc" style="border-color:${c.border}">
+      <div class="pc-hd" style="background:${c.headerBg};border-color:${c.divider}">${tico(p)}<div class="ttl"><div class="nm"><b>${esc(p.name)}</b><span class="v">v${p.v}</span></div>${chip(p)}</div><button class="ibtn" data-menu="${i}" aria-label="More"><span class="mi">more_vert</span></button></div>
+      <div class="pc-bd">
+        <div class="ctx"><div class="l">Belongs to</div><div class="vrow"><span class="mi">folder</span><b>${esc(p.project)}</b></div></div>
+        ${p.classes.length ? `<div class="asg"><div class="hd"><span class="mi">groups</span>Assigned to ${p.classes.length} ${p.classes.length === 1 ? 'class' : 'classes'}</div>${sortedClasses(p).map(classRow).join('')}</div>`
+          : `<div class="asg"><button class="assignnow"><span class="mi">groups</span>Assign Now</button></div>`}
+      </div>
+      <div class="pc-ft"><button class="test" style="color:${c.btn};border-color:${c.border}"><span class="mi">science</span>Test</button><button class="res" style="background:${c.btn}" ${noResult(p) ? `disabled title="${noResult(p)}"` : `data-href="${resHref(p)}"`}><span class="mi">grading</span>Result</button></div>
+      ${S.menu === i ? menu(p, false) : ''}
+    </div>`; };
+  const row = (p, i) => `<div class="card prow">${tico(p)}
+      <div class="c"><div class="t"><b>${esc(p.name)}</b><span class="v">v${p.v}</span>${chip(p)}</div><div class="meta"><span class="mi" style="font-size:14px">folder</span>${esc(p.project)} · ${p.created}</div></div>
+      <div class="asgcol">${p.classes.length ? sortedClasses(p).map((k) => `<div class="row"><span class="cls">${esc(k.name)}</span><span class="achip ${k.optional ? 'o' : 'm'}">${k.optional ? 'Optional' : 'Mandatory'}</span>${k.ended ? `<span class="st ended">Ended ${M.fmtDay(k.due)} · <span class="sub num">${k.submitted}/${k.total}</span></span>` : `<span class="st">${k.due ? `Due ${M.fmtDay(k.due)}` : 'No due date'}</span>`}</div>`).join('') : '<span class="none">Not assigned</span>'}</div>
+      <div class="acts"><button class="btn outlined sm" ${noResult(p) ? `disabled title="${noResult(p)}"` : `data-href="${resHref(p)}"`}><span class="mi">grading</span>Result</button><button class="ibtn" data-menu="${i}" aria-label="More"><span class="mi">more_vert</span></button></div>
+      ${S.menu === i ? menu(p, true) : ''}</div>`;
+
+  const emptyFor = (tab) => ({
+    all: '<span class="mi">assignment</span><b>No data</b>Create a practice to see it here.',
+    progress: '<span class="mi">hourglass_empty</span><b>Nothing in progress</b>Assign a practice and it shows here until its due date passes.',
+    ended: '<span class="mi">grading</span><b>No ended assignments yet</b>A practice shows here once all of its classes pass their due date.',
+  }[tab]);
+
+  const render = () => {
+    const n = S.empty ? { all: 0, unassigned: 0, progress: 0, ended: 0 } : M.counts();
+    const tabs = TABS.filter(([k]) => k !== 'unassigned' || n.unassigned);   // 2026-11-17：沒有未指派的練習就不出這個 tab（使用者）
+    if (!tabs.some(([k]) => k === S.tab)) S.tab = 'all';
+    const list = S.empty ? [] : M.listFor(S.tab);
+    const pages = Math.max(1, Math.ceil(list.length / PER));
+    const shown = list.slice(S.page * PER, S.page * PER + PER);
+    document.getElementById('app').innerHTML = `
+      <div class="pagehd"><div class="h4"><span class="tico"><span class="mi">assignment</span></span><div>Practice List<div class="sub">Create and assign practice sessions.</div></div></div>
+        <div class="hdr-r"><button class="btn contained"><span class="mi">add</span>New practice</button><div class="seg icons"><button class="${S.view === 'card' ? 'on' : ''}" data-view="card" aria-label="Card view"><span class="mi">view_module</span></button><button class="${S.view === 'list' ? 'on' : ''}" data-view="list" aria-label="List view"><span class="mi">table_rows</span></button></div></div></div>
+      <div class="card">
+        <div class="filters one">
+          <div class="ftabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${S.tab === k}" class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${l}<span class="n num">${n[k]}</span></button>`).join('')}</div>
+          <span class="fsep"></span>
+          <span class="dd-trig">Type<span class="mi caret">expand_more</span></span>
+          <span class="dd-trig">Assignment<span class="mi caret">expand_more</span></span>
+          <span class="dd-trig">Class<span class="mi caret">expand_more</span></span>
+          <span class="fright"><span class="inp" style="width:200px"><span class="mi">search</span><span>Search…</span></span></span>
+        </div>
+        <div class="listwrap">
+          ${list.length ? (S.view === 'card' ? `<div class="grid">${shown.map(card).join('')}</div>` : `<div class="rows">${shown.map(row).join('')}</div>`)
+            + `<div class="pager"><span class="nav mi">chevron_left</span>${Array.from({ length: pages }, (_, k) => `<span class="${k === S.page ? 'on' : ''}">${k + 1}</span>`).join('')}<span class="nav mi">chevron_right</span></div>`
+          : `<div class="emptyc">${emptyFor(S.tab)}</div>`}
+        </div>
+      </div>`;
+    document.title = `Practice List · ${TABS.find(([k]) => k === S.tab)[1]} — v24 提案`;
+  };
+  document.getElementById('app').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-href]'); if (go) { location.href = go.dataset.href; return; }
+    const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; S.menu = -1; S.page = 0; render(); return; }
+    const v = e.target.closest('[data-view]'); if (v) { S.view = v.dataset.view; S.menu = -1; render(); return; }
+    const m = e.target.closest('[data-menu]'); if (m) { const i = Number(m.dataset.menu); S.menu = S.menu === i ? -1 : i; render(); return; }
+    if (S.menu >= 0 && !e.target.closest('.menu')) { S.menu = -1; render(); }
+  });
+  render();
+  const links = [['?tab=all', 'All'], ['?tab=unassigned', 'Unassigned'], ['?tab=progress', 'In progress'], ['?tab=ended', 'Ended'], ['?tab=ended&view=list', 'Ended 列表'], ['?tab=ended&longcls=1', '長班名'], ['?tab=all&menu=1', '卡片 ⋯'], ['?tab=all&view=list&menu=1', '列表 ⋯'], ['?tab=ended&empty=1', 'Ended 空']];
+  document.getElementById('blinks').innerHTML = links.map(([q, l]) => `<a href="${q}" class="${location.search === q ? 'cur' : ''}">${l}</a>`).join(' · ');
+}());
+</script>
+</body>
+</html>

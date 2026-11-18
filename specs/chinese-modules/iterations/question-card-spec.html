@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>題卡骨架（Question card）· Chinese Modules</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; font-size: 13px; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; }
+    .sidebar a.sub { padding-left: 34px; font-size: 12.5px; font-weight: 400; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 10px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #00A749; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 9px 12px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .callout-q    { background: #fefce8; border-left: 4px solid #eab308; color: #854d0e; }
+    .tag { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+    .t-done { background:#dcfce7; color:#166534; } .t-open { background:#fef3c7; color:#92400e; } .t-new { background:#e0e7ff; color:#3730a3; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 14px 0 6px; background: #eef0f3; height: 560px; position: relative; }
+    .preview iframe { width: 1440px; height: 820px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #00A749; font-weight: 600; text-decoration: none; }
+    .story { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-bottom:10px; }
+    .story b { color:#0f172a; }
+    .story .who { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:6px; margin-right:8px; }
+    .who.t { background:#dcfce7; color:#166534; } .who.s { background:#ffedd5; color:#9a3412; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; } .main-content { padding: 24px; } }
+    /* 預覽只看頁面的一段：--y 從原型頁第幾 px 開始、--h 看多高（都是 1440 寬時量的） */
+    .preview.at { height: calc(var(--h) * .685px); }
+    .preview.at iframe { height: 1900px; top: calc(var(--y) * -.685px); }
+    .now { color:#64748b; } .to { color:#0f172a; }
+    table.fix { table-layout: fixed; } table.fix code { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../index.html">Home</a><span class="sep">/</span>
+    <a href="index.html"><span class="num">2.4</span> Versions &amp; Iteration</a><span class="sep">/</span>
+    <a href="practice-components.html#final">Practice 共用元件總表</a><span class="sep">/</span>
+    <span class="current">題卡骨架（Question card）</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">目錄</div>
+      <ol>
+        <li><a href="#files">1 原型與檔案</a></li>
+        <li><a href="#scope">2 範圍</a></li>
+        <li><a href="#spec">3 設計規格</a></li>
+        <li><a class="sub" href="#frame">3.1 題卡的骨架</a></li>
+        <li><a class="sub" href="#reorder">3.2 換序</a></li>
+        <li><a class="sub" href="#each">3.3 其他三種的樣子</a></li>
+        <li><a class="sub" href="#sizes">3.4 尺寸與顏色</a></li>
+        <li><a href="#changes">4 要改的地方</a></li>
+        <li><a href="#open">5 待工程回的問題</a></li>
+        <li><a href="#accept">6 驗收</a></li>
+        <li><a href="#terms">7 名詞對照</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>題卡骨架（Question card）</h1>
+        <p class="subtitle">老師建立練習時，看生成出來的句子或題目的那一步，一題一張卡。七種練習的卡用同一副骨架：左邊換序、灰色題號、右上最後一顆是垃圾桶。請工程一起改齊。</p>
+        <div class="meta"><span>共用元件</span><span>2026-11-06</span><span>狀態：設計定案，等工程排程</span><span>只改畫面，不用動後端</span><span>程式碼基準：dahua-dash origin/develop @ e57f4a03</span></div>
+      </div>
+
+      <h2 id="files"><span class="num">1</span> 原型與檔案</h2>
+      <table>
+        <tr><th>檔案</th><th>是什麼</th><th>看什麼</th></tr>
+        <tr><td><a class="inline" href="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12">v20 proposal.html</a></td><td>Sentence 四種的第二步（提案）</td><td><code>type=scramble|fillin|response|building</code>，都帶 <code>&amp;step=2</code></td></tr>
+        <tr><td><a class="inline" href="v6-vocabulary-quiz/proposal.html?step=3">v6 proposal.html</a></td><td>Vocabulary Quiz 的第三步（提案）</td><td><code>?step=3</code> 題目清單</td></tr>
+        <tr><td><a class="inline" href="v17-comprehension-quiz-generate/proposal.html?step=2&amp;proj=0">v17 proposal.html</a></td><td>Comprehension Quiz 的第二步（設計稿）</td><td><code>?step=2&amp;proj=0</code>。只看題卡的左欄、題號、刪除鈕</td></tr>
+        <tr><td><a class="inline" href="v18-open-ended-generate/proposal.html?step=2&amp;proj=0">v18 proposal.html</a></td><td>Open-ended Questions 的第二步（設計稿）</td><td><code>?step=2&amp;proj=0</code>。只看題卡的左欄、題號、刪除鈕</td></tr>
+        <tr><td><a class="inline" href="../../../handoff/question-card/HANDOFF.md">handoff/question-card/HANDOFF.md</a></td><td>這份規格的 Markdown 版，同一個資料夾裡有四份原型複本</td><td>在 GitHub 上讀、或要離線看原型時</td></tr>
+        <tr><td><a class="inline" href="practice-components.html#qcard">practice-components.html §9</a></td><td>Practice 共用元件總表裡題卡的那一節</td><td>跟其他共用元件的關係</td></tr>
+      </table>
+
+      <h2 id="scope"><span class="num">2</span> 範圍</h2>
+      <p>七種練習都有一步是「一題一張卡」讓老師換順序、刪題。但產品裡<strong>五個檔各做各的</strong>：有的只能按上下鈕、有的只能拖、有的不能換序；題號有粉紅字、綠字、綠膠囊、<i>1.</i> 四種寫法；刪除有空心垃圾桶、實心垃圾桶、× 三種（逐條見第 4 節的「現在」欄）。這一版把骨架改成同一副。</p>
+      <h3>哪些練習有題卡</h3>
+      <table>
+        <tr><th>練習</th><th style="width:70px">第幾步</th><th>題卡的檔案</th><th>現在的樣子</th></tr>
+        <tr><td><strong>Sentence Scramble</strong></td><td>2</td><td><code>steps/sentence-scramble-preview.js</code></td><td>∧ ∨ 疊在題號左邊，沒有把手、不能拖；題號是粉紅字 <i>Q1</i>；刪除是空心垃圾桶</td></tr>
+        <tr><td><strong>Sentence Cloze</strong></td><td>2</td><td>同上</td><td>同上</td></tr>
+        <tr><td><strong>Sentence Response</strong></td><td>2</td><td><code>steps/follow-pattern-preview.js</code></td><td>同上，題號是綠字</td></tr>
+        <tr><td><strong>Sentence Building</strong></td><td>2</td><td>同上</td><td>同上</td></tr>
+        <tr><td><strong>Vocabulary Quiz</strong></td><td>3</td><td><code>src/sections/practice/components/mc-questions-preview.js</code></td><td>把手在標頭那一列最左邊，只能拖、沒有 ∧ ∨；題號是綠色膠囊；刪除是實心垃圾桶</td></tr>
+        <tr><td><strong>Comprehension Quiz</strong></td><td>2</td><td><code>steps/mc-step-two-section.js</code>（<code>CombinedView</code>、<code>ConfigureView</code>）</td><td>把手在標頭那一列最左邊，只能拖；題號寫 <i>1.</i>；刪除是 ×</td></tr>
+        <tr><td><strong>Open-ended Questions</strong></td><td>2</td><td><code>steps/qa-question-list.js</code></td><td>全部題目擠在一張卡裡、用橫線隔開；不能換序；題號寫 <i>1</i>；刪除是灰色 ×</td></tr>
+      </table>
+      <p>沒寫完整路徑的都在 <code>src/sections/practice/view/unified/</code> 底下。Content Mirroring、Vocabulary Mirroring 沒有這種題卡，不在範圍內。</p>
+
+      <h2 id="spec"><span class="num">3</span> 設計規格</h2>
+      <p>下面四小節是定案的樣子與行為。用詞和程式裡的名字對照在第 7 節。</p>
+      <h3 id="frame">3.1 題卡的骨架</h3>
+      <p>一題一張卡。卡片分左右兩塊：左邊一條窄的直欄專門換序，右邊是內容。</p>
+      <div class="preview at" style="--y:455; --h:320"><iframe src="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" title="Sentence Scramble 的題卡" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Sentence Scramble 第二步的前兩張卡：左欄 ∧ 把手 ∨、灰色題號 Q1、教學點 chip、右上剪刀／Edit／垃圾桶</span><a href="v20-sentence-practices/proposal.html?type=scramble&amp;step=2&amp;n=12" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:130px">區塊</th><th>規則</th></tr>
+        <tr><td>左欄</td><td>卡片最左邊一條直欄，由上到下：<strong>∧、把手、∨</strong>。整條在卡片的高度上置中，卡片再高也只有一組</td></tr>
+        <tr><td>題號</td><td><strong>灰色膠囊</strong>，寫 <i>Q1</i>、<i>Q2</i>…，在右邊內容第一列的最左邊。七種同一個顏色，不跟練習的色系走</td></tr>
+        <tr><td>題號後面</td><td>各練習自己的 chip，不改：Sentence 四種是教學點；Vocabulary Quiz 是詞 ＋ 題型；Comprehension Quiz、Open-ended 是題型</td></tr>
+        <tr><td>右上動作鈕</td><td>各練習自己的鈕照現在，<strong>刪除永遠排最後一顆</strong></td></tr>
+        <tr><td>刪除鈕</td><td><strong>空心垃圾桶</strong>圖示、紅色。七種都一樣，不用 ×、不用實心垃圾桶</td></tr>
+      </table>
+
+      <h3 id="reorder">3.2 換序</h3>
+      <p>七種都有兩個方法換序：按上下鈕，或是拖。</p>
+      <table>
+        <tr><th style="width:130px">動作</th><th>規則</th></tr>
+        <tr><td>∧、∨</td><td>按一下，這一題跟上一題／下一題交換位置，題號照新的位置重排。<strong>第一題的 ∧、最後一題的 ∨ 淡掉、不能按</strong></td></tr>
+        <tr><td>拖</td><td>整張卡都可以拖（照 Vocabulary Quiz 現在的做法），把手是告訴老師「這張可以拖」。拖到另一張卡上放開，就移到那個位置。拖的時候這張卡變淡，游標底下那張卡的框變主色</td></tr>
+        <tr><td>存檔</td><td>換完順序怎麼存，照各練習現在的做法（Sentence 四種按 ∧ ∨ 現在就會存，拖也走同一條）</td></tr>
+        <tr><td>忙碌中</td><td>正在存檔或生成的時候，∧ ∨ 和刪除停用、不能拖，照各練習現在的判斷</td></tr>
+      </table>
+
+      <h3 id="each">3.3 其他三種的樣子</h3>
+      <p>骨架一樣，差別只在題號後面的 chip 和右上的鈕。</p>
+      <div class="preview at" style="--y:262; --h:345"><iframe src="v6-vocabulary-quiz/proposal.html?step=3" title="Vocabulary Quiz 的題卡" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Vocabulary Quiz 第三步：左欄 ＋ 灰色 Q1 ＋ 詞 ＋ 題型 ＋ Swap type；右上 Preview、垃圾桶</span><a href="v6-vocabulary-quiz/proposal.html?step=3" target="_blank">開原型 ↗</a></p>
+      <div class="preview at" style="--y:387; --h:240"><iframe src="v17-comprehension-quiz-generate/proposal.html?step=2&amp;proj=0" title="Comprehension Quiz 的題卡" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Comprehension Quiz（v17 設計稿）：左欄 ＋ 灰色 Q1 ＋ 題型 chip；右上最後一顆是垃圾桶。鉛筆和選項直接展開不在這份範圍</span><a href="v17-comprehension-quiz-generate/proposal.html?step=2&amp;proj=0" target="_blank">開原型 ↗</a></p>
+      <div class="preview at" style="--y:282; --h:250"><iframe src="v18-open-ended-generate/proposal.html?step=2&amp;proj=0" title="Open-ended Questions 的題卡" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Open-ended Questions（v18 設計稿）：一題一張卡，左欄 ＋ 灰色 Q1 ＋ 題型 chip；右上最後一顆是垃圾桶。鉛筆不在這份範圍</span><a href="v18-open-ended-generate/proposal.html?step=2&amp;proj=0" target="_blank">開原型 ↗</a></p>
+
+      <h3 id="sizes">3.4 尺寸與顏色</h3>
+      <table>
+        <tr><th style="width:190px">東西</th><th>值</th></tr>
+        <tr><td>左欄</td><td>寬 26px；跟右邊內容隔 12px；卡片左邊內距 10px（其他三邊照各練習現在的）；∧、把手、∨ 之間隔 2px；整條垂直置中</td></tr>
+        <tr><td>∧、∨</td><td>按鈕 26×22px、圓角 6px、沒有底色；圖示 <code>ic:round-keyboard-arrow-up</code>／<code>-down</code> 22px；次要文字色 <code>#637381</code>；滑過底 <code>#F4F6F8</code>、圖示變主文字色；不能按時透明度 .25</td></tr>
+        <tr><td>把手</td><td>圖示 <code>ic:round-drag-indicator</code> 20px；淡色 <code>#919EAB</code>；游標 grab</td></tr>
+        <tr><td>題號膠囊</td><td>高 24px、左右內距 8px、兩端全圓；底 <code>#F1F5F9</code>、框 1px <code>#E2E8F0</code>、字 <code>#475569</code> 12px／700</td></tr>
+        <tr><td>刪除鈕</td><td>圖示 <code>ic:round-delete-outline</code> 18px，<code>IconButton size="small"</code>。紅色照各檔現在的值（Sentence 四種 <code>#EF4444</code>；Vocabulary Quiz、Comprehension Quiz <code>error.main</code>）；Open-ended 從灰色改成 <code>error.main</code></td></tr>
+        <tr><td>拖曳中</td><td>被拖的卡透明度 .4；游標底下那張卡的框變 <code>primary.main</code>；過場 0.15 秒（照 <code>mc-questions-preview.js</code> 現在的值）</td></tr>
+      </table>
+
+      <h2 id="changes"><span class="num">4</span> 要改的地方</h2>
+      <p>給工程的清單。對的是 <code>e57f4a03</code>（2026-11-05）的程式；「不用改的」列在表後面。</p>
+      <table class="fix">
+        <tr><th style="width:38px">#</th><th style="width:132px">改什麼</th><th>現在</th><th>改成</th><th style="width:210px">改哪個檔</th><th style="width:104px">哪幾種</th></tr>
+        <tr><td>1</td><td><strong>換序的東西收到左欄</strong></td><td class="now">Sentence 四種：∧ ∨ 上下疊著、擠在題號左邊，沒有把手。Vocabulary Quiz、Comprehension Quiz：把手在標頭那一列的最左邊，沒有 ∧ ∨。Open-ended：都沒有</td><td class="to">卡片最左邊一條直欄，由上到下 ∧、把手、∨，在卡片高度上置中。標頭那一列從題號開始</td><td><code>sentence-scramble-preview.js</code>、<code>follow-pattern-preview.js</code>、<code>mc-questions-preview.js</code>、<code>mc-step-two-section.js</code>、<code>qa-question-list.js</code></td><td>七種</td></tr>
+        <tr><td>2</td><td><strong>Sentence 四種可以拖</strong></td><td class="now">只能按 ∧ ∨，一次移一格</td><td class="to">整張卡可以拖。放開時呼叫現有的 <code>handleReorder(from, to)</code>（它本來就收任意兩個位置）。拖曳的寫法照 <code>mc-questions-preview.js</code>。按了 Edit 或剪刀、卡片展開的時候不能拖</td><td><code>sentence-scramble-preview.js</code>、<code>follow-pattern-preview.js</code></td><td>Sentence 四種</td></tr>
+        <tr><td>3</td><td><strong>Vocabulary Quiz、Comprehension Quiz 加 ∧ ∨</strong></td><td class="now">只能拖</td><td class="to">左欄多 ∧ ∨，按一下呼叫現有的 <code>onReorder(idx, idx − 1)</code>／<code>(idx, idx + 1)</code>。第一題的 ∧、最後一題的 ∨ 停用</td><td><code>mc-questions-preview.js</code>、<code>mc-step-two-section.js</code>（兩個 View 都改）</td><td>Vocabulary Quiz、Comprehension Quiz</td></tr>
+        <tr><td>4</td><td><strong>題號改灰色膠囊</strong></td><td class="now">Sentence Scramble／Cloze：粉紅字 <i>Q1</i>（<code>#EC4899</code>）。Response／Building：綠字 <i>Q1</i>（<code>#10B981</code>）。Vocabulary Quiz：綠色 <code>Chip color="primary"</code>。Comprehension Quiz：灰字 <i>1.</i>。Open-ended：淡灰小字 <i>1</i></td><td class="to">七種都是灰色膠囊 <i>Q1</i>、<i>Q2</i>…（尺寸顏色見 3.4）</td><td>同第 1 條的五個檔</td><td>七種</td></tr>
+        <tr><td>5</td><td><strong>刪除鈕統一成空心垃圾桶</strong></td><td class="now">Vocabulary Quiz：實心垃圾桶 <code>ic:round-delete</code>。Comprehension Quiz：紅色 × <code>ic:round-close</code>。Open-ended：灰色 × <code>ic:round-close</code>。Sentence 四種已經是空心垃圾桶</td><td class="to">都用 <code>ic:round-delete-outline</code>。Open-ended 的顏色改成 <code>error.main</code></td><td><code>mc-questions-preview.js</code>、<code>mc-step-two-section.js</code>、<code>qa-question-list.js</code></td><td>Vocabulary Quiz、Comprehension Quiz、Open-ended</td></tr>
+        <tr><td>6</td><td><strong>Open-ended 一題一張卡</strong></td><td class="now">全部題目在同一張 <code>SectionCard</code> 裡，題與題之間一條橫線</td><td class="to">一題一張卡，卡與卡之間隔 12px。卡的外框照 Comprehension Quiz <code>CombinedView</code> 的那張（<code>Card variant="outlined"</code>，圓角、內距照它）。卡裡的題型 chip、題目、拼音、Suggested answer、播放鍵照現在</td><td><code>qa-question-list.js</code></td><td>Open-ended</td></tr>
+        <tr><td>7</td><td><strong>Open-ended 可以換序</strong></td><td class="now">不能換序，只能刪</td><td class="to">跟其他六種一樣：左欄 ∧ ∨ ＋ 整張卡可以拖</td><td><code>qa-question-list.js</code>、<code>qa-step-two-section.js</code></td><td>Open-ended</td></tr>
+        <tr><td>8</td><td><strong>Vocabulary Quiz 的提示句</strong></td><td class="now">題目清單標題右邊寫 <i>In this order · drag a card to reorder</i></td><td class="to"><i>In this order · drag a card or use the arrows to reorder</i></td><td><code>mc-questions-preview.js</code></td><td>Vocabulary Quiz</td></tr>
+      </table>
+      <div class="callout-warn callout"><strong>卡住的一條。</strong>第 7 條：Open-ended 現在沒有換序的程式，要先確認題目的順序改得動（第 5 節）。Open-ended 的第 1、4、5、6 條不用等它，左欄先放把手、∧ ∨ 等第 7 條一起上也可以。</div>
+      <h3>不用改的</h3>
+      <ul>
+        <li>Sentence 四種的刪除圖示、∧ ∨ 在第一題／最後一題停用的判斷：已經對，只是搬位置。</li>
+        <li>Vocabulary Quiz、Comprehension Quiz 的拖曳：已經有，照留。</li>
+        <li>各練習刪到剩一題的擋法（Sentence 跳提示、Vocabulary Quiz 與 Open-ended 把鈕停用）、刪除鈕的提示文字：不動。</li>
+        <li>題號後面的 chip、卡片中間的內容、Edit 展開後的欄位：不動。</li>
+      </ul>
+
+      <h2 id="open"><span class="num">5</span> 待工程回的問題</h2>
+      <table>
+        <tr><th>#</th><th>問誰</th><th>問題</th><th>影響</th></tr>
+        <tr><td>1</td><td>前端（查程式碼）</td><td>Open-ended 的題目是 <code>qa-step-two-section.js</code> 裡的 <code>articles</code> 陣列，現在只有刪除（<code>handleRequestDelete</code>）。換序能不能照 Sentence 的做法，用 <code>moveItem()</code> 改陣列順序再照原本的路存？學生端是不是照這個陣列的順序出題？</td><td>第 4 節第 7 條</td></tr>
+      </table>
+
+      <h2 id="accept"><span class="num">6</span> 驗收</h2>
+      <p>照下面九步走一次，畫面都對就算過。</p>
+      <table>
+        <tr><th style="width:28px">#</th><th style="width:300px">老師做什麼</th><th>畫面應該怎樣</th></tr>
+        <tr><td>1</td><td>建一個 Sentence Scramble，走到第二步</td><td>每張卡最左邊一條直欄：∧、把手、∨，垂直置中。題號是灰色膠囊 <i>Q1</i>，不是粉紅字。右上最後一顆是紅色空心垃圾桶</td></tr>
+        <tr><td>2</td><td>看第一張和最後一張</td><td>第一張的 ∧ 淡掉按不動，最後一張的 ∨ 淡掉按不動</td></tr>
+        <tr><td>3</td><td>按第二張的 ∧</td><td>它移到第一個位置，題號變 <i>Q1</i>；原本的第一張變 <i>Q2</i></td></tr>
+        <tr><td>4</td><td>把第一張拖到第三張上放開</td><td>拖的時候那張卡變淡、第三張的框變綠；放開後它在第三個位置，題號重排</td></tr>
+        <tr><td>5</td><td>按任一張的垃圾桶</td><td>那一題消失，後面的題號往前補</td></tr>
+        <tr><td>6</td><td>換成 Sentence Cloze、Response、Building 各看一次第二步</td><td>左欄、題號、垃圾桶都跟第 1 步一樣；Response／Building 的題號不是綠字</td></tr>
+        <tr><td>7</td><td>Vocabulary Quiz 走到第三步</td><td>左欄有 ∧、把手、∨（把手不在標頭那一列了）；題號是灰色膠囊；垃圾桶是空心的；標題右邊寫 <i>In this order · drag a card or use the arrows to reorder</i>。∧ ∨ 和拖都能換序</td></tr>
+        <tr><td>8</td><td>Comprehension Quiz 走到第二步</td><td>左欄同上；題號是灰色膠囊 <i>Q1</i>，不是 <i>1.</i>；刪除是垃圾桶，不是 ×。∧ ∨ 和拖都能換序</td></tr>
+        <tr><td>9</td><td>Open-ended Questions 走到第二步</td><td>一題一張卡；左欄同上；題號是灰色膠囊 <i>Q1</i>；刪除是紅色垃圾桶。∧ ∨ 和拖都能換序（第 7 條做完之後）</td></tr>
+      </table>
+      <p>另外兩條：</p>
+      <ul>
+        <li>七種練習的題卡截圖並排，左欄、題號、刪除鈕看不出差別。</li>
+        <li>第 2 節那五個檔裡，刪除鈕找不到 <code>ic:round-close</code> 和 <code>ic:round-delete</code>（實心）。</li>
+      </ul>
+
+      <h2 id="terms"><span class="num">7</span> 名詞對照</h2>
+      <p>這份文件一律用左欄的詞。</p>
+      <table>
+        <tr><th style="width:130px">用詞</th><th style="width:330px">程式裡是什麼</th><th>意思</th></tr>
+        <tr><td><strong>題卡</strong></td><td>第 2 節那五個檔裡，每一題外面的那張 <code>Card</code></td><td>一題（或一句）一張的卡片。老師在這裡看內容、換順序、刪題</td></tr>
+        <tr><td><strong>左欄</strong></td><td>新做的</td><td>題卡最左邊那條直欄，放 ∧、把手、∨</td></tr>
+        <tr><td><strong>∧、∨</strong></td><td><code>ic:round-keyboard-arrow-up</code>／<code>-down</code></td><td>往上、往下移一題的按鈕</td></tr>
+        <tr><td><strong>把手</strong></td><td><code>ic:round-drag-indicator</code></td><td>六個小點的圖示，表示這張卡可以拖</td></tr>
+        <tr><td><strong>題號</strong></td><td>現在各檔寫法不同（第 4 節第 4 條）</td><td><i>Q1</i>、<i>Q2</i>…，照卡片現在的位置編</td></tr>
+        <tr><td><strong>動作鈕</strong></td><td>標頭那一列右邊的 <code>IconButton</code>／<code>Button</code></td><td>剪刀、Edit、Preview、刪除這些</td></tr>
+        <tr><td><strong>換序</strong></td><td><code>moveItem()</code>（<code>steps/shared/reorder.js</code>）</td><td>改題目的先後順序</td></tr>
+      </table>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · Question card · November 2026</footer>
+    </main>
+  </div>
+</body>
+</html>

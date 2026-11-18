@@ -7,7 +7,7 @@
 - **日期**：2026-10-23
 - **範圍與理由**：`../v16-remove-question-bank/spec.html`（整個「拿掉題庫」的提案）。這一版只畫 Comprehension Quiz 那條流程
 - **設計檔**：`proposal.html`（`?step=` 從 1 數；參數見檔頭）。基準檔沿用 v14 `create-comprehension-quiz.html`，不重做
-- **狀態**：**2026-11-12 第三步三塊分開 Settings → Test Mode → Preview；Test Mode 六條定案、一張卡（開關在上、開了才展開秒數）**（見「這一版定了什麼」最後一條）；同日 Content Base 題卡加 Answer conditions（跟 v18 同一套）。2026-11-04 起 Comprehension Quiz 的唯一版本（v14 併進來；v14 的 `create-comprehension-quiz.html` 是基準）。提案第一輪，未部署、未 commit
+- **狀態**：**2026-11-16 Content Base 題卡的 Answer conditions 打開時可以改（跟 v18 同一套）**。2026-11-12 第三步三塊分開 Settings → Test Mode → Preview；Test Mode 六條定案、一張卡（開關在上、開了才展開秒數）**（見「這一版定了什麼」最後一條）；同日 Content Base 題卡加 Answer conditions（跟 v18 同一套）。2026-11-04 起 Comprehension Quiz 的唯一版本（v14 併進來；v14 的 `create-comprehension-quiz.html` 是基準）。提案第一輪，未部署、未 commit
 
 ## 這一版定了什麼
 
@@ -17,7 +17,7 @@
 - Generate 灰著的原因寫在格子底列（R9）：沒選專案／總數 0／有字彙題但沒勾教學點。
 - 生成中整頁換 Generating；生成後回第一步主鈕變 Next，回頭多勾、多填只補新的（掛 New）、取消勾的點它的題跟著離開（v12 的做法）。
 - 第二步：Test Mode 卡照 v14；一題一張卡，**展開＝編輯**（題目一欄、選項四欄、正解單選點；True/False 只選 True／False），改過的掛 Edited；字彙題多一顆教學點 chip；**Generate more** 鈕打開同一張 4×2 格子（預設 0）、Add N questions 接在最後掛 New。「Edit in Question Bank」那顆鈕拿掉。
-- Content Base 題卡上有 **Answer conditions**（2026-11-12 加）：產品題庫頁 Q&A 區塊兩類（Content Base＝程式裡的 shortAnswer、Extension）每一題都在 Suggested Answer 底下掛同一個 `answer-conditions.js`，後端從題目＋建議答案生成、分 Must cover／Not required、老師只能看。搬進 Quiz 之後照 v18 同一套畫：收起時在建議答案底下、鉛筆打開一樣唯讀＋一行說明（AI 對著它評學生口說答案、改題目或建議答案會重寫、不能直接改）；手寫題存檔前只有一行說明。True/False、Multiple choice 沒有。
+- Content Base 題卡上有 **Answer conditions**（2026-11-12 加）：產品題庫頁 Q&A 區塊兩類（Content Base＝程式裡的 shortAnswer、Extension）每一題都在 Suggested Answer 底下掛同一個 `answer-conditions.js`，後端從題目＋建議答案生成、分 Must cover／Not required、老師只能看。搬進 Quiz 之後照 v18 同一套畫：收起時在建議答案底下唯讀；**鉛筆打開時可以改（2026-11-16，使用者「要可以修改」）**：Must cover／Not required 每條一個輸入框、✕ 刪、各組底下 Add，底下一行「The AI grades the student’s spoken answer against these」；手寫題還沒有條件時兩組都空著只有 Add，一行「留空的話存檔時 AI 從你的題目和建議答案寫出來」；收起時空白條丟掉；改了條件的 AI 題掛 Edited。True/False、Multiple choice 沒有。
 - 第三步 Assign 照 v3／v14（S8）。
 - **Test Mode（2026-11-12 使用者一題一題定）**：①Content Base 在 Quiz 裡照 Free response 一樣對話式，追問、重錄都留著，倒數只管總時間。②**每種題型各一格「每題幾秒」**（True/False、Multiple choice、Content Base；有題的才列），**總時間＝秒數 × 題數加總**，產品的 1–60 分滑桿與「題數 × 30 秒」建議值拿掉；預設 30／30／120 秒待 PM。③Test Mode 開著學生先看到**開始頁**（幾題幾分鐘、題型拆分、要麥克風／Audio only 要耳機、「按 Start 才倒數、時間到交卷」），按 Start 才開始倒數——產品現在進頁面就跑、沒有開始頁。④時間到讓進行中的那題收尾（錄完、評完）才交卷，不能再開新題——待工程。⑤**一張卡，開關在上、開了才展開**（使用者「test mode 集合在一張卡片，先用一個 toggle 打開再顯示」；同日一度併進工具列第二行 Off｜On ＋ 第三行秒數格，使用者要回一張卡）：Settings 卡底下照產品那張卡的外殼（timer icon ＋ Test Mode ＋ 說明 ＋ 開關），開了虛線底下一列：每種題型一格 −／秒數／＋（10 秒一格、下限 10）＋ TIME LIMIT 總時間（一度有一行小字講總時間怎麼來、按 Start 才倒數，使用者「拿掉」）；學生視窗標題右邊照產品放倒數 chip（mm:ss）。⑥提 PM：Test Mode 開著**不顯示每題對錯**，交卷後在成績頁看（產品現在不管開不開都立刻顯示；沒畫，等 PM 定）。demo：`&exam=1`、`&exam=1&start=1`。
 
@@ -27,14 +27,19 @@
 2. 第一步 Generate 之後建 practice 的 ProcessingDialog 沒畫（MC 建完 status 是不是直接 COMPLETE 無法確認，v14 E1）。
 3. 已指派後回來改題、追加題的版本確認沒畫（走練習本身的 draft／發布影響，v16 待定 4）。
 4. 「Add 0 questions」那顆鈕：Generate more 面板全 0 時灰著、原因在格子底列（R9）。
-5. Answer conditions 現在存在題庫題目上（`answerConditions.requiredConditions／notRequiredConditions`），Quiz 的 `mcQuestions` 快照沒有這個欄位；Content Base 題進 Quiz 之後條件要跟著存、改題後重產的時機要定（跟 v18 查到的第 4 條同一題）。改完題目後「條件更新中」的等待狀態沒畫。
+5. Answer conditions 現在存在題庫題目上（`answerConditions.requiredConditions／notRequiredConditions`），Quiz 的 `mcQuestions` 快照沒有這個欄位；Content Base 題進 Quiz 之後條件要跟著存、改題後重產的時機要定（跟 v18 查到的第 4 條同一題）。改完題目後「條件更新中」的等待狀態沒畫。2026-11-16 起老師可以改條件：老師改過的條件，改題目或建議答案時後端重產會不會蓋掉，待問工程（跟 v18 同一題；建議老師改過就不再自動重產）。
 6. Test Mode 待工程三條：(a) 時間到時進行中的那題怎麼收尾（定案 ④：錄完、評完才交卷）；(b) 總時間由前端算好存 `timeLimit`，還是各題型秒數也要存（老師回來改題數時要重算）；(c) Content Base 對話式在 Quiz 裡的追問、重錄次數是否沿用 Free response 的上限。待 PM 兩條：預設秒數 30／30／120；Test Mode 開著不顯示對錯（定案 ⑥）。
 7. **要問工程**：題數上限拿掉之後，後端一次能生多少題 True/False／Multiple choice？題庫頁每類最多 10 是前端擋的，生成 API（commerce-api `getGenerateQuestions` → dash-py）有沒有自己的上限、題數多時要多久，無法確認。
+
+8. **要問工程**：課文只用聽的（Audio only 底下 ARTICLE 選 Audio only）要存在練習設定上，課文音檔有沒有現成的（專案朗讀音檔）還是要另外產；學生可不可以重播、播放時能不能同時答題，沒畫。
 
 ## Change log
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-16 | 第三步 Practice mode 選 **Audio only** 時，右邊多一格 **ARTICLE**（Text visible｜Audio only）：課文也只聽時，學生視窗左欄課文換成一顆大播放鈕 *Listen to the article · Normal · Xiaorou*（同題目那顆的樣子），開始頁那句改 *The article and questions are read aloud*；Text visible 時跟以前一樣 | 使用者「Audio only 可以再選擇課文是不是也只用聽的」。原本 Audio only 時那格是一句說明（*Questions are read aloud…*），換成這個控制項；Practice mode 回 Text visible 課文一定看得到。Speed／Voice 課文跟題目共用。demo `&audio=1&artaudio=1`。待問工程見第 8 條 |
+| 2026-11-16 | 第二步 Content Base 題卡打開時 **Answer conditions 可以改**：每條一個輸入框、✕ 刪、Must cover／Not required 各一顆 Add；收起時照舊唯讀清單、空白條丟掉；改了的 AI 題掛 Edited；拿掉「you can’t edit them directly」那句 | 使用者「New Comprehension Quiz 的 Answer conditions 要可以修改」。直接搬 v18 11/13 那套（CSS、renderConds、closeQ、condadd／condrm、輸入）；Suggested answer 標題旁的口說版說明句沒動。待問工程：老師改過的條件，改題後重產會不會蓋掉 |
+| 2026-11-13 | 第二步的 **Generate more** 從眉標右邊搬到題目清單最底下（置中；打開的面板也在底下，上面一條虛線） | 使用者「兩個題型的 Generate more 都改到放在最底下」（v17、v18 一起）。新題本來就接在清單最後，按鈕就在新題會出現的地方 |
 | 2026-11-12 | 學生視窗 Question N of M 清單每列加型別 chip | 使用者貼清單截圖「在這裡的也放上是什麼題型的 tag」。題號、播放鍵之後放同題卡的 tchip（True/False 綠、Multi-Choice 藍、Content Base 紫＋麥克風），22px 小一號。同日另兩條小改：Test Mode 卡底下那行小字拿掉、標籤從 10px 小標改 14px（使用者「這列太小了」） |
 | 2026-11-12 | 第三步拆成三塊：**Settings（工具列）→ Test Mode → Preview（Student view）**，各隔 32px | 使用者「放在 setting 底下但是 UI 有間隔一點」→「setting test mode content」→（Content 不是課文）→「preview」。工具列自己一張卡（底線拿掉）、Test Mode 卡在中間、Student view ＋ 底下那行小字自己一張卡（灰地板跟著圓角）。R5「預覽和設定同一張卡」在這張卡上讓位給使用者的順序；工具列改哪格、底下視窗照樣跟著變 |
 | 2026-11-12 | Test Mode 回到一張卡：開關在上，開了才展開每種題型的秒數格 ＋ 總時間 | 使用者「test mode 集合在一張卡片，先用一個 toggle 打開再顯示」。工具列第二行的 TEST MODE 格與第三行拿掉，卡回到 Settings 卡底下（外殼照產品 ExamModeCard）；展開區＝同一組秒數格 ＋ 總時間 ＋ 一行小字；視窗倒數 chip、開始頁不變 |

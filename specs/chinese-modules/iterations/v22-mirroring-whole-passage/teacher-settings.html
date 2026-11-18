@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Content Mirroring — v22 老師端基準（現行複刻）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<script src="steps-content.js"></script>
+<style>
+/* ===========================================================================
+   基準檔 —— 現行 New Content Mirroring 第三步 Settings（/dashboard/practice/create/?type=MIRRORING&step=2）
+   逐項照 sx 複刻，不做自由發揮。對照組：proposal-teacher.html 是提案。假資料共用 mock.js。
+
+   v3 的基準檔（create-mirroring.html）是 2026-09 的舊產品；v3 提案的工具列＋Student view
+   已經在 #1072 上線，所以這一版重新複刻現在的產品，不沿用 v3 那份。
+
+   出處（dahua-dash origin/develop @ 0e16a0c5，2026-11-04 fetch）：
+     src/sections/practice/view/unified/practice-unified-view.js              頁殼：Container lg py 32 · 40px 型別 icon ＋ h4 · Stepper mb 32 · 內容 minHeight 320 · 頁腳 Back／Save
+     src/utils/practice-step-gating.js  resolvePrimaryActionLabel            倒數第二步主鈕寫 Save
+     src/utils/practice-type-labels.js  CONTENT_MIRRORING.tag                 標題 icon ic:round-mic、label #15803D（底色 label+18）
+     src/sections/practice/view/unified/components/practice-stepper.js       24px 圓點、done／active 主綠、active 4px 光暈、2px 連接線走過變綠
+     src/sections/practice/view/unified/steps/mirroring-step-two-section.js  工具列兩行：Practice mode ‖ Pinyin｜Translation ／ Translation first｜Speed｜Voice ‖ Max tries；Audio only 時第一行換成一句 note
+     src/sections/practice/view/unified/components/settings-toolbar/*.js      SettingsToolbar（Paper outlined r16）、ToolbarRow（py 8 pl 16 pr 8）、ToolbarGroup（細直線隔開）、ToolbarControl（10px 大寫小標）、ToolbarSegmented（grey.200 底、白色選中）、Speed chip ＋ Voice 選單、MaxTriesStepper（− n ＋、1–5）
+     src/sections/practice/view/unified/components/settings-toolbar/student-view-window.js   灰地板 #DFE5EC p 24 · 900px 視窗 r14 · 34px 視窗列 desktop_windows ＋ Student view · 底下一行計數
+     src/sections/practice/view/unified/steps/mirroring-student-preview.js   視窗裡：標題列＋齒輪 48px、PRACTICE SENTENCE 卡（#F0FAF4／#D1FAE5 r24 p32）、Play · Normal · Xiaorou (Female) 主綠藥丸、Sentence 1 of N 展開清單
+     src/theme/palette.js                                                     primary #00CB61／dark #00A749；grey 200 #F4F6F8、300 #DFE3E8；divider rgba(145,158,171,.2)
+   側欄與頁首照 v3 基準檔（config-layout.js：Sidebar 240 ＋ Header 80）。
+
+   2026-11-16：補上第一、二步（Content、Edit Sentences）——使用者「現在 demo 只有 Settings 頁，把前一步也補齊」。
+   兩步的畫面與互動在 steps-content.js（基準與提案共用，出處列在那支檔頭；fetch 到 1c1870bb）。
+   一路點：選專案 → Next → Splitting sentences... → 切／合／藏句子 → Next → Settings（預覽吃改過的句子）。
+
+   網址參數：
+     ?step=1|2|3  從 1 數；沒給＝第一步。第一步 &proj=1 已選專案 · &proj=2 沒內容的專案 · &dd=1 選單打開
+                  第二步 &gen=1 生成中 · &cut=N 第 N 句在切 · &hid=N 第 N 句藏起來
+     ?step=3      Settings 預設：Text visible · Pinyin Shown · Translation Choice by student · Translation first No · Normal · Xiaorou · Max tries 3
+     &audio=1   Audio only（Pinyin／Translation 換成一句 note）
+     &list=1    Sentence 1 of 6 清單展開
+     &gear=1    學生齒輪面板打開
+     &sent=N    預覽第 N 句
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; display:inline-block; }
+button{ font-family:inherit; cursor:pointer; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80（同 v3 基準檔） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* ---------- 標題：40px icon 方塊 ＋ h4 ---------- */
+.h4row{ display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+.h4row .tic{ width:40px; height:40px; border-radius:8px; background:#15803D18; color:#15803D; display:flex; align-items:center; justify-content:center; flex:none; }
+.h4row .tic .mi{ font-size:22px; }
+.h4{ font-size:24px; font-weight:700; line-height:1.5; }
+
+/* ---------- Stepper（practice-stepper.js） ---------- */
+.stepper{ display:flex; align-items:center; margin-bottom:32px; }
+.step{ display:flex; align-items:center; gap:8px; padding:0 8px; }
+.step-dot{ width:24px; height:24px; border-radius:50%; background:var(--grey300); color:var(--text2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+.step.active .step-dot, .step.done .step-dot{ background:var(--primary); color:#fff; }
+.step.active .step-dot{ box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.step-label{ font-size:14px; font-weight:400; color:var(--text3); }
+.step.active .step-label{ font-weight:600; color:var(--text); }
+.step.done .step-label{ color:var(--text); }
+.step-line{ flex:1; height:2px; border-radius:2px; background:var(--divider); }
+.step-line.on{ background:var(--primary); }
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- 工具列（settings-toolbar.js） ---------- */
+.toolbar{ border:1px solid var(--divider); border-radius:16px; background:#fff; overflow:hidden; }
+.trow{ display:flex; flex-wrap:wrap; align-items:stretch; padding:8px 8px 8px 16px; }
+.trow + .trow{ border-top:1px solid var(--divider); }
+.tgroup{ display:flex; flex-wrap:wrap; align-items:flex-end; column-gap:20px; row-gap:8px; padding:4px 20px 4px 0; }
+.tgroup + .tgroup{ padding-left:20px; border-left:1px solid var(--divider); }
+.tctl{ display:flex; flex-direction:column; gap:5px; }
+.tctl .lab{ display:flex; align-items:center; gap:4px; font-size:10px; font-weight:800; letter-spacing:.7px; line-height:1; text-transform:uppercase; color:var(--text3); }
+.tctl .lab .mi{ font-size:14px; cursor:help; }
+.tnote{ display:inline-flex; align-items:center; align-self:flex-end; gap:6px; height:28px; font-size:12px; color:var(--text2); }
+.tnote .mi{ font-size:16px; color:var(--text3); }
+/* ToolbarSegmented */
+.seg{ display:inline-flex; padding:2px; border-radius:8px; background:var(--grey200); }
+.seg button{ height:26px; padding:0 10px; border:0; border-radius:6px; background:transparent; font-size:12px; font-weight:600; white-space:nowrap; color:var(--text2); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+/* Speed chip / Voice pill */
+.chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.pill{ display:inline-flex; align-items:center; gap:4px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--divider); background:#fff; font-size:12px; font-weight:600; color:var(--text2); white-space:nowrap; }
+.pill.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.pill .pp{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-left:-6px; }
+.pill .pp .mi{ font-size:15px; }
+.pill.voice{ color:var(--text); padding:0 8px 0 10px; }
+.pill.voice .mi.pl{ font-size:15px; color:var(--primary); }
+.pill.voice .mi.dn{ font-size:18px; color:var(--text2); }
+/* MaxTriesStepper */
+.mt{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:8px; overflow:hidden; }
+.mt button{ width:28px; height:28px; border:0; background:none; color:var(--text2); display:flex; align-items:center; justify-content:center; }
+.mt button .mi{ font-size:18px; }
+.mt span{ width:40px; line-height:28px; text-align:center; font-size:13px; font-weight:700; border-left:1px solid var(--divider); border-right:1px solid var(--divider); }
+
+/* ---------- Student view 視窗（student-view-window.js） ---------- */
+.floor{ background:#DFE5EC; padding:24px; border-top:1px solid var(--divider); }
+.win{ max-width:900px; margin:0 auto; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.winbar{ position:relative; height:34px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--divider); font-size:12px; font-weight:700; letter-spacing:.2px; color:var(--text2); }
+.winbar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.wfoot{ padding:10px 16px; font-size:12px; color:var(--text3); border-top:1px solid var(--divider); }
+
+/* ---------- 視窗裡的學生主欄（mirroring-student-preview.js） ---------- */
+.sv{ min-height:420px; }
+.sv .trow2{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; }
+.sv .ttl{ font-size:16px; font-weight:800; color:#1E293B; }
+.gearwrap{ position:relative; }
+.gear{ width:48px; height:48px; border-radius:12px; border:0; background:#fff; color:#64748B; box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.gear .mi{ font-size:20px; }
+.gpanel{ position:absolute; top:56px; right:0; width:220px; border-radius:12px; background:#fff; box-shadow:0 12px 32px rgba(148,163,184,.18); z-index:20; overflow:hidden; }
+.gpanel .gh{ padding:12px 16px; font-size:14px; font-weight:700; color:#334155; border-bottom:1px solid #EEF2F7; }
+.gpanel .gr{ display:flex; align-items:center; justify-content:space-between; padding:4px 16px; font-size:14px; font-weight:600; color:#475569; }
+.gpanel .gr.sp{ padding:10px 16px; } .gpanel .gr.sp small{ font-size:13px; font-weight:500; }
+.sw{ width:30px; height:18px; border-radius:9px; background:#C4CDD5; position:relative; flex:none; margin:8px 0; }
+.sw::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.sw.on{ background:#00CB61; } .sw.on::after{ left:14px; }
+.sv .body{ padding:8px 24px 24px; }
+.scard{ background:#F0FAF4; border:1px solid #D1FAE5; border-radius:24px; padding:32px; min-height:190px; display:flex; align-items:center; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+.scard .inner{ width:100%; display:flex; flex-direction:column; gap:18px; }
+.scard .meta{ display:flex; align-items:center; gap:8px; }
+.scard .meta .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; color:#22C55E; }
+.scard .meta .ic .mi{ font-size:20px; }
+.scard .meta .lbl{ font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:#22C55E; }
+.scard .txt{ text-align:center; overflow-wrap:anywhere; }
+.scard .py{ font-size:16px; font-style:italic; color:var(--text2); margin-bottom:8px; }
+.scard .zh{ font-size:40px; font-weight:800; color:#0F172A; line-height:1.55; }
+.scard .tr{ font-size:14px; color:var(--text2); margin-top:4px; }
+.scard .hid{ font-size:16px; font-style:italic; color:#94A3B8; line-height:1.6; }
+.playbtn{ margin:16px auto 0; height:44px; padding:0 22px 0 16px; border:0; border-radius:999px; background:var(--primary); color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; box-shadow:0 6px 16px rgba(0,203,97,.28); }
+.playbtn .mi{ font-size:24px; }
+.pick{ margin:12px auto 0; height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.pick .mi{ font-size:18px; color:var(--text2); }
+.plist{ margin-top:12px; padding:4px; border:1px solid var(--divider); border-radius:12px; max-height:698px; overflow:auto; }
+.plist .r{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; font-size:14px; cursor:pointer; }
+.plist .r:hover{ background:var(--grey200); }
+.plist .r .n{ width:18px; flex:none; font-size:12px; color:var(--text3); font-variant-numeric:tabular-nums; }
+.plist .r.on .n{ color:var(--primary-dark); font-weight:700; }
+.plist .r .pb{ width:26px; height:26px; flex:none; border:0; border-radius:50%; background:rgba(0,203,97,.1); color:var(--primary); display:flex; align-items:center; justify-content:center; }
+.plist .r .pb .mi{ font-size:16px; }
+.plist .r .s{ flex:1; min-width:0; }
+.plist .r.on .s{ font-weight:600; }
+.plist .r .ck{ font-size:18px; color:var(--primary); }
+
+/* ---------- 頁腳 ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ height:36px; padding:0 16px; border-radius:8px; font-size:14px; font-weight:700; border:0; }
+.btn.text{ background:none; color:var(--text); }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px rgba(0,203,97,.24); }
+
+/* ---------- 提案說明條（跟 v20／v21 同一條：回 Index ＋ 狀態連結） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:44px; }
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div><a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div><a href="#"><span class="mi">folder</span>Projects</a><a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div><a href="#" class="on"><span class="mi">assignment</span>Practice List</a><a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div><a href="#"><span class="mi">people</span>Students</a><a href="#"><span class="mi">school</span>Classes</a><a href="#"><span class="mi">emoji_events</span>Leaderboard</a><a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="container">
+    <div class="h4row"><span class="tic"><span class="mi">mic</span></span><div class="h4">New Content Mirroring</div></div>
+    <div class="stepper" id="stepper"></div>
+    <div class="content" id="content"></div>
+    <div class="footer" id="footer"></div>
+  </div></div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v22 · 老師端 Content → Edit Sentences → Settings · 現行複刻 · 對照組 <a href="proposal-teacher.html">提案 ↗</a> · <a href="student-practice.html">學生端基準 ↗</a></span><span id="devbar"></span></div>
+
+<script>
+const M = window.V22;
+const qs = new URLSearchParams(location.search);
+const S = { audio: qs.get('audio') === '1', list: qs.get('list') === '1', gear: qs.get('gear') === '1', sent: Math.min(M.SENTENCES.length, Math.max(1, parseInt(qs.get('sent') || '1', 10) || 1)) };
+let N = M.SENTENCES.length;   // 2026-11-16：第二步改過句子後會變
+const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const STEPS = ['Content', 'Edit Sentences', 'Settings', 'Assign Practice'];
+const SETTINGS_KEYS = ['audio', 'list', 'gear', 'sent'];   // 舊連結（沒有 step）帶這些＝Settings
+let STEP = Math.min(3, Math.max(1, parseInt(qs.get('step') || (SETTINGS_KEYS.some((k) => qs.has(k)) ? '3' : '1'), 10) || 1));   // 2026-11-16：?step= 從 1 數
+const V = window.V22Steps; V.init(qs);
+if (STEP > 1 && !V.hasProject()) V.init(new URLSearchParams('proj=1&' + qs.toString()));   // 直接開第二、三步：當作已選了課文那個專案
+// &gen=1 停在 Splitting 第一段不動（截圖用）；按 Next 進來才會跑完
+
+const drawStepper = () => { const A = STEP - 1; document.getElementById('stepper').innerHTML = STEPS.map((l, i) => {
+  const st = i < A ? 'done' : i === A ? 'active' : '';
+  return `${i ? `<div class="step-line ${i <= A ? 'on' : ''}"></div>` : ''}<div class="step ${st}"><span class="step-dot">${i + 1}</span><span class="step-label">${l}</span></div>`;
+}).join(''); };
+
+function renderSettings(){
+const seg = (opts, on) => `<div class="seg">${opts.map((o) => `<button class="${o === on ? 'on' : ''}">${o}</button>`).join('')}</div>`;
+const ctl = (label, inner, tip) => `<div class="tctl"><span class="lab">${label}${tip ? `<span class="mi" title="${tip}">info</span>` : ''}</span>${inner}</div>`;
+const CHOICE = 'Choice by student';
+
+/* ---------- 工具列 ---------- */
+const row1 = `<div class="trow">
+  <div class="tgroup">${ctl('Practice mode', seg(['Text visible', 'Audio only'], S.audio ? 'Audio only' : 'Text visible'))}</div>
+  <div class="tgroup">${S.audio
+    ? `<span class="tnote"><span class="mi">pan_tool_alt</span>Pinyin and translation are up to the student</span>`
+    : ctl('Pinyin', seg(['Shown', 'Hidden', CHOICE], 'Shown')) + ctl('Translation', seg(['Shown', 'Hidden', CHOICE], CHOICE))}</div>
+</div>`;
+const speedChips = `<div class="chips">${M.SPEEDS.map(([l]) => `<span class="pill ${l === 'Normal' ? 'on' : ''}"><span class="pp"><span class="mi">play_arrow</span></span>${l}</span>`).join('')}<span class="pill">${CHOICE}</span></div>`;
+const voicePill = `<span class="pill voice"><span class="mi pl">play_arrow</span>${M.VOICES[0]}<span class="mi dn">expand_more</span></span>`;
+const row2 = `<div class="trow">
+  <div class="tgroup">${ctl('Translation first', seg(['Yes', 'No', CHOICE], 'No'))}${ctl('Speed', speedChips)}${ctl('Voice', voicePill)}</div>
+  <div class="tgroup">${ctl('Max tries', `<div class="mt"><button><span class="mi">remove</span></button><span>3</span><button><span class="mi">add</span></button></div>`, 'How many times a student may retry one sentence before it is let through — the sentence then counts as passed (auto pass, default 3).')}</div>
+</div>`;
+
+/* ---------- 視窗裡的學生主欄 ---------- */
+S.sent = Math.min(S.sent, N);
+const cur = M.SENTENCES[S.sent - 1];
+const gearRows = S.audio ? ['Pinyin', 'Translation'] : ['Translation'];
+const studentView = `<div class="sv">
+  <div class="trow2"><span class="ttl">${esc(M.PROJECT.name)}</span>
+    <span class="gearwrap"><button class="gear"><span class="mi">settings</span></button>
+    ${S.gear ? `<div class="gpanel"><div class="gh">Settings</div>${gearRows.map((r) => `<div class="gr">${r}<span class="sw ${r === 'Pinyin' ? 'on' : ''}"></span></div>`).join('')}</div>` : ''}</span></div>
+  <div class="body">
+    <div class="scard"><div class="inner">
+      <div class="meta"><span class="ic"><span class="mi">chat</span></span><span class="lbl">Practice Sentence</span></div>
+      <div class="txt">${S.audio ? `<div class="hid">Listen carefully and repeat the sentence.</div>` : `<div class="py">${cur.py}</div><div class="zh">${esc(cur.zh)}</div>`}</div>
+    </div></div>
+    <button class="playbtn"><span class="mi">play_arrow</span>Play · Normal · ${M.VOICES[0]}</button>
+    <button class="pick">Sentence ${S.sent} of ${N}<span class="mi">${S.list ? 'expand_less' : 'expand_more'}</span></button>
+    ${S.list ? `<div class="plist">${M.SENTENCES.map((s, k) => `<div class="r ${k + 1 === S.sent ? 'on' : ''}"><span class="n">${k + 1}</span><button class="pb"><span class="mi">play_arrow</span></button><span class="s">${esc(s.zh)}</span>${k + 1 === S.sent ? '<span class="mi ck">check</span>' : ''}</div>`).join('')}</div>` : ''}
+  </div>
+</div>`;
+
+document.getElementById('content').innerHTML = `<div class="toolbar">${row1}${row2}
+  <div class="floor"><div class="win"><div class="winbar"><span class="mi">desktop_windows</span>Student view</div>${studentView}</div></div>
+  <div class="wfoot">${S.audio ? 'Audio only' : `${N} sentences`}</div>
+</div>`;
+
+}
+
+const links = [['1 從頭', '?'], ['1 已選專案', '?step=1&proj=1'], ['1 選單打開', '?step=1&proj=1&dd=1'], ['1 沒內容', '?step=1&proj=2'], ['2 Splitting', '?step=2&gen=1'], ['2 Edit Sentences', '?step=2'], ['2 切句中', '?step=2&cut=3'], ['2 藏一句', '?step=2&hid=5'], ['3 Settings', '?step=3'], ['3 Audio only', '?step=3&audio=1'], ['3 清單展開', '?step=3&list=1'], ['3 齒輪', '?step=3&gear=1'], ['3 第 3 句', '?step=3&sent=3']];
+document.getElementById('devbar').innerHTML = links.map(([t, h]) => `<a href="${h}" class="${(location.search || '?') === h ? 'cur' : ''}">${t}</a>`).join(' · ');
+
+/* ---------- 換步（2026-11-16） ---------- */
+const renderPage = () => {
+  drawStepper();
+  if (STEP < 3){ document.getElementById('content').innerHTML = V.render(STEP); document.getElementById('footer').innerHTML = V.footer(STEP); return; }
+  N = M.SENTENCES.length; renderSettings();
+  document.getElementById('footer').innerHTML = '<button class="btn text" data-nav="back">Back</button><button class="btn contained">Save</button>';
+};
+V.setRerender(renderPage);
+document.addEventListener('input', (e) => V.onInput(e));
+document.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-nav]');
+  if (nav){
+    if (nav.dataset.nav === 'back'){ STEP = Math.max(1, STEP - 1); }
+    else if (V.next(STEP)){ if (STEP === 2) V.apply(); STEP += 1; if (STEP === 2) V.startSplitting(); }
+    window.scrollTo(0, 0); renderPage(); return;
+  }
+  if (STEP < 3) V.onClick(e, STEP);
+});
+renderPage();
+</script>
+</body>
+</html>

@@ -65,6 +65,7 @@
 
 | 端 | 改了什麼 | 說明 |
 |---|---|---|
+| 老師 | 2026-11-05：教學點方框套第二版 | 使用者「把現在這個設計規範套在全部有 teaching point 的 practice」。開合列改成有框的一列、箭頭在右，打開跟詞池連成一塊淺綠、已在清單的詞綠框綠字；專案名前面的全選框拿掉；語法點掛 Grammar 標（第八輪連詞性一起拿掉，現在跟 Sentence 四種一致）；選進來的專案教學點預設全勾。規格在 `handoff/teaching-points/`。 |
 | 老師 | 2026-11-02：From project 那列右邊的 N to add · M words 拿掉 | 使用者「拿掉」。那行是 v4 第二輪我自己加的，產品沒有。摺疊列只剩箭頭＋Add teaching points from project。v4／v6／v17／v20／v21 一起改。 |
 | 老師 | 2026-11-02：From project 池子裡已在清單的點改綠色 | 使用者指示（「已經選取過的灰色改成綠色的」）。原本 opacity .5 灰掉，改成跟勾選 chip 同一套綠框淡綠底、綠勾，仍不能點。v4／v6／v17／v20／v21 一起改。 |
 | 老師 | **2026-11-02：frame 底下兩行併一行** | 使用者指示（2026-11-02「這裡改成一句就好」，指 ADD TEACHING POINTS 小標 ＋ From Project 摺疊列）。小標拿掉，摺疊列改寫 **Add teaching points from project**（右邊 N to add · M words 不變），底下 Custom teaching point 輸入欄不變。v4／v6／v17／v20／v21 一起改；凍結的 v7／v12／v15／v19 不動。 |

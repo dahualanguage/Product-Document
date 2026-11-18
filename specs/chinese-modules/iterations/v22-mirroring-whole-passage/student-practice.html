@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Mirroring — v22 學生端基準（現行複刻）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<style>
+/* ===========================================================================
+   基準檔 —— 現行學生端 Content Mirroring（/student/assignments/content?type=MIRRORING）
+   逐項照 sx 複刻，不做自由發揮。對照組：proposal-student.html 是提案。假資料共用 mock.js。
+
+   出處（dahua-dash origin/develop @ 0e16a0c5，2026-11-04 fetch）：
+     src/sections/assignments/content/index.js                        頁面：calc(100vh-80) · #E8EEF4 · 進度條 · p16 · Card radius 24 · 左欄（開始後自動收成 64px）＋右欄
+     src/sections/assignments/content/shared/practice-progress-bar.js   6px 進度條 ＋ 1 / 6
+     src/sections/assignments/content/shared/practice-list-mirroring-start-card.js   開始卡（440px · SENTENCES／MIN · 開關列 · Start Practice 漸層鈕）
+     src/sections/assignments/content/content-window.js                左欄句子清單（正在唸的那句左 4px #22C55E ＋ #E8FFF0；每列一顆喇叭；翻譯眼睛）
+     src/sections/assignments/content/practice-content-list.js         標題列（Practice／Listen & Repeat ＋ Attempt n/3 ＋ 齒輪）、錄音五態 C/D/E
+     src/sections/assignments/content/message-list.js                  句卡（PRACTICE SENTENCE／LISTEN & REPEAT 三組色票、44px 播放鈕、拼音在字上）、評分卡、固定動作列
+     src/components/record-button/record-button.js                     錄音鈕四態：idle 綠漸層 64px／recording 深綠＋計時／uploading・scoring 琥珀＋白色聲波
+     src/components/record-button/scoring-match-game.js                評分等待時蓋上來的配對小遊戲（Modal）——這裡只畫殼，卡片素材 repo 沒有
+     src/sections/assignments/content/shared/practice-list-mirroring-complete-card.js  完成卡（Average x / 5 ＋ 三顆鈕）
+     src/sections/assignments/content/vocabulary/settings-panel.js     齒輪面板（220px，Pinyin／Translation／Speed）
+     src/layouts/dashboard/student-game-nav/                           側欄照 v8 基準複刻；頁首 80px（HEADER.H_DESKTOP）只畫空的——**殼待實機對**
+   repo 沒有的素材：vocab-practice-bg.svg（開始卡背景）、headphones.png（純聽力卡）、配對遊戲卡背——用 icon 或留白代。
+
+   網址參數：
+     ?screen=start                 開始卡（預設）        &audio=1 純聽力版
+     ?screen=practice&state=playing|idle|recording|recorded|uploading|scoring|scored
+                                   練習中的七個狀態      &sent=N 第幾句（1 起）  &panel=1 左欄展開  &gear=1 齒輪面板打開  &tfirst=1 正在播英文
+     ?screen=done                  完成卡
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#22C55E; --green-d:#16A34A; --wash:#E8FFF0; --ink:#0F172A; --ink2:#1E293B; --slate:#334155; --slate2:#475569; --muted:#64748B; --faint:#94A3B8;
+  --line:#E2E8F0; --line2:#EEF2F7; --divider:rgba(145,158,171,.2); --text2:#637381; --text3:#919EAB;
+  --g50:#F9FAFB; --g200:#E5E7EB; --g300:#D1D5DB; --g400:#9CA3AF; --g500:#6B7280; --g600:#4B5563;
+  /* v8 學生殼 */
+  --sgreen:#12A150; --sgreen-d:#0B7A3B; --sgreen-l:#DCF7E6; --sgreen-ink:#0B5B30; --gold:#FFC219; --coral:#FF5A6E;
+  --sink:#243B2E; --sink-soft:#5B7266; --sline:#E4EDE7; --font-d:'Fredoka',system-ui,sans-serif; --font-b:'Nunito',system-ui,sans-serif;
+}
+html,body{ height:100%; }
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#212B36; line-height:1.5; -webkit-font-smoothing:antialiased; overflow:hidden;
+  background:radial-gradient(1200px 600px at 80% -10%, #DDEBFF 0%, transparent 60%), radial-gradient(900px 500px at -10% 110%, #E7F7EC 0%, transparent 55%), linear-gradient(160deg,#EFF5FB 0%, #EAF4EE 100%); }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; -webkit-font-feature-settings:'liga'; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+
+/* ---------- 殼：v8 學生側欄（student-game-nav）＋ 80px 頁首 ---------- */
+.shell{ display:grid; grid-template-columns:250px 1fr; gap:16px; height:100vh; padding:16px; }
+.side{ background:#fff; border-radius:20px; box-shadow:0 12px 26px -14px rgba(11,91,48,.45); display:flex; flex-direction:column; padding:20px 16px 16px; position:relative; overflow:hidden; font-family:var(--font-b); color:var(--sink); }
+.side::before{ content:""; position:absolute; inset:0 0 auto 0; height:120px; background:radial-gradient(120% 90% at 20% 0%, rgba(18,161,80,.10), transparent 70%); pointer-events:none; }
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 22px; position:relative; }
+.brand .logo{ width:40px; height:40px; border-radius:13px; flex:none; background:#fff; display:grid; place-items:center; box-shadow:0 6px 14px -4px rgba(18,161,80,.35), inset 0 0 0 1.5px var(--sline); }
+.brand .logo img{ width:30px; height:30px; object-fit:contain; display:block; }
+.brand b{ font-family:var(--font-d); font-weight:700; font-size:21px; letter-spacing:.3px; background:linear-gradient(90deg,var(--sgreen-d),#2CB763); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.nav{ display:flex; flex-direction:column; gap:4px; position:relative; }
+.nav a{ display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:16px; color:var(--sink-soft); font-weight:800; font-size:14.5px; text-decoration:none; position:relative; }
+.nav a .ic{ width:24px; display:flex; justify-content:center; filter:grayscale(.4); }
+.nav a .ic .mi{ font-size:20px; color:var(--sgreen); }
+.nav a.on{ background:linear-gradient(100deg,var(--sgreen-l),#EAF9EF); color:var(--sgreen-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.nav a.on .ic{ filter:none; }
+.nav a.on::before{ content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:5px; height:22px; border-radius:0 6px 6px 0; background:var(--sgreen); }
+.side .grow{ flex:1; min-height:14px; }
+.stats{ display:flex; flex-direction:column; gap:9px; }
+.stat{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:16px; font-weight:900; }
+.stat .mi{ font-size:23px; }
+.stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; }
+.stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+.stat .col{ display:flex; flex-direction:column; gap:2px; }
+.stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; } .stat.gold .mi{ color:var(--gold); }
+.stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#B23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; } .stat.coral .mi{ color:var(--coral); }
+.report{ margin-top:12px; text-align:center; font-size:12px; font-weight:800; color:#C0576A; text-decoration:none; }
+
+.mainwrap{ display:flex; flex-direction:column; min-width:0; border-radius:20px; overflow:hidden; box-shadow:0 26px 60px -24px rgba(11,60,35,.55); background:#E8EEF4; }
+.hdr{ height:80px; flex:none; display:flex; align-items:center; justify-content:flex-end; padding:0 24px; background:rgba(255,255,255,.6); }
+.hdr .av{ width:36px; height:36px; border-radius:50%; background:#BBF1D0; color:#00A749; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+/* ---------- 練習區：index.js 最外層 ---------- */
+.area{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:#E8EEF4; }
+/* 進度條：px 24 · pb 8 · bg paper · border-bottom */
+.prog{ display:flex; align-items:center; gap:8px; padding:0 24px 8px; background:#fff; border-bottom:1px solid var(--divider); flex:none; }
+.prog .track{ flex:1; height:6px; border-radius:999px; background:#E2E8F0; overflow:hidden; }
+.prog .fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,#77ED8B 0%,#22C55E 100%); }
+.prog .num{ font-size:14px; color:#64748B; flex:none; }
+.prog .num b{ font-weight:800; font-size:18px; color:#22C55E; }
+.prog .num i{ font-style:normal; font-weight:700; color:#0F172A; }
+.pad{ flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; }
+.card{ flex:1; min-height:0; overflow:hidden; border-radius:24px; background:#fff; display:flex; flex-direction:row;
+  box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+
+/* ---------- 左欄（開始後才有；首次開始自動收成 64px） ---------- */
+.left{ position:relative; height:100%; flex:none; width:64px; overflow:hidden; border-right:1px solid var(--divider); background:#fff; }
+.left.open{ width:360px; }
+.left .tog{ position:absolute; top:20px; z-index:30; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.98); border:1px solid var(--divider); box-shadow:0 8px 18px rgba(15,23,42,.08); display:flex; align-items:center; justify-content:center; color:#64748B; }
+.left:not(.open) .tog{ left:50%; transform:translateX(-50%); border-color:#BBF7D0; color:#22C55E; }
+.left.open .tog{ right:12px; }
+.left .tog .mi{ font-size:22px; }
+.left .vlabel{ position:absolute; top:82px; left:50%; transform:translateX(-50%) rotate(180deg); writing-mode:vertical-rl; font-size:12px; color:#64748B; font-weight:800; letter-spacing:.4px; text-transform:uppercase; }
+.left .cw{ height:100%; overflow:auto; display:none; }
+.left.open .cw{ display:block; }
+.cw .pyrow{ display:flex; justify-content:flex-end; padding:12px 64px 0 16px; font-size:14px; }
+.cw .body{ padding:24px; }
+.cw .ttl{ font-size:18px; font-weight:700; color:#22C55E; border-bottom:1px solid var(--divider); padding-bottom:12px; margin-bottom:16px; }
+.cw .srow{ display:flex; align-items:flex-start; gap:8px; margin-bottom:4px; padding:8px 8px 8px 12px; border-left:4px solid transparent; }
+.cw .srow.on{ border-left-color:#22C55E; background:#E8FFF0; border-radius:8px; }
+.cw .srow .py{ color:gray; font-style:italic; font-size:.85rem; }
+.cw .srow .zh{ font-size:1.1rem; font-weight:700; line-height:1.5; }
+.cw .srow .trr{ display:flex; align-items:center; gap:8px; margin-top:4px; font-size:12px; }
+.cw .srow .eye{ width:26px; height:26px; border:0; background:none; color:#637381; display:flex; align-items:center; justify-content:center; }
+.cw .srow .eye .mi{ font-size:16px; }
+.cw .srow .spk{ margin-top:2px; flex:none; width:30px; height:30px; border:0; background:none; color:#637381; display:flex; align-items:center; justify-content:center; }
+.cw .srow.on .spk{ color:#22C55E; }
+.cw .srow .spk .mi{ font-size:20px; }
+
+/* ---------- 右欄 ---------- */
+.right{ flex:1; min-width:0; height:100%; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+.rwrap{ width:100%; height:100%; overflow:auto; display:flex; flex-direction:column; }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; }
+.trow .t{ font-size:16px; font-weight:800; color:#1E293B; }
+.trow .r{ display:flex; align-items:center; gap:8px; }
+.attempt{ font-size:14px; color:#64748B; font-weight:600; }
+.attempt b{ color:#16A34A; font-weight:800; } .attempt i{ font-style:normal; font-weight:800; }
+.gearwrap{ position:relative; }
+.gear{ width:48px; height:48px; border-radius:24px; border:0; background:#fff; color:#64748B; box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.gear .mi{ font-size:20px; }
+.gpanel{ position:absolute; top:56px; right:0; width:220px; border-radius:24px; background:#fff; box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; z-index:20; }
+.gpanel .gh{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7; font-size:14px; font-weight:700; color:#334155; }
+.gpanel .gh .mi{ font-size:18px; color:#94A3B8; }
+.gpanel .gr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #EEF2F7; font-size:14px; font-weight:600; color:#475569; }
+.gpanel .gr:last-child{ border-bottom:0; }
+.sw{ width:30px; height:18px; border-radius:9px; background:#C4CDD5; position:relative; flex:none; }
+.sw::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.sw.on{ background:#00CB61; } .sw.on::after{ left:14px; }
+.sw.lg{ width:46px; height:26px; border-radius:13px; } .sw.lg::after{ width:22px; height:22px; } .sw.lg.on::after{ left:22px; }
+
+/* 句卡：message-list.js A */
+.msgs{ flex:1; min-height:0; overflow:auto; padding:8px 24px 24px; display:flex; flex-direction:column; gap:20px; }
+.scard{ border-radius:24px; padding:32px; min-height:190px; display:flex; align-items:center; border:1px solid; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+.scard.active{ min-height:240px; box-shadow:0 18px 42px rgba(15,23,42,.08); }
+.scard.practice{ background:#F0FAF4; border-color:#D1FAE5; --c:#22C55E; }
+.scard.repeat{ background:#F0FAF4; border-color:#86EFAC; --c:#16A34A; }
+.scard.meaning{ background:#EFF6FF; border-color:#BFDBFE; --c:#2563EB; }
+.scard .inner{ width:100%; display:flex; flex-direction:column; gap:18px; }
+.scard .meta{ display:flex; align-items:center; gap:8px; }
+.scard .meta .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; color:var(--c); }
+.scard .meta .ic .mi{ font-size:20px; }
+.scard .meta .lbl{ font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.6px; color:var(--c); line-height:1.2; }
+.scard .meta .hlp{ font-size:12px; color:#637381; font-weight:600; margin-top:2px; }
+.scard .mid{ display:flex; align-items:center; justify-content:center; gap:16px; min-width:0; }
+.scard .play{ flex:none; width:44px; height:44px; border-radius:50%; border:0; background:var(--c); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px color-mix(in srgb, var(--c) 30%, transparent); }
+.scard .play .mi{ font-size:24px; }
+.words{ display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-end; gap:4px; }
+.words .w{ display:flex; flex-direction:column; align-items:center; line-height:1; }
+.words .w .py{ font-size:22px; font-style:italic; color:#637381; line-height:1.2; white-space:nowrap; }
+.words .w .zh{ font-size:40px; font-weight:800; color:#0F172A; line-height:1.55; white-space:pre; }
+.scard .tr{ font-size:14px; color:#637381; text-align:center; margin-top:4px; }
+.scard .enbig{ font-size:32px; font-weight:800; color:#1E3A8A; line-height:1.55; text-align:center; }
+.scard .hidden{ font-size:16px; font-style:italic; color:#C4CDD5; text-align:center; line-height:1.6; }
+
+/* 評分卡：message-list.js B（V1） */
+.fb{ border:1px solid var(--divider); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(15,23,42,.04); overflow:hidden; display:flex; min-height:120px; }
+.fb .score{ padding:20px 24px; min-width:150px; flex:none; border-right:1px solid var(--divider); background:#FAFAFA; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+.fb .score .big{ display:flex; align-items:baseline; gap:4px; }
+.fb .score .big b{ font-size:32px; font-weight:800; color:#22C55E; line-height:1; }
+.fb .score .big span{ font-size:17px; font-weight:700; color:#637381; }
+.stars{ display:flex; gap:2px; color:#FFC107; }
+.stars .mi{ font-size:18px; }
+.fb .score .verdict{ font-size:14px; font-weight:800; margin-top:4px; }
+.fb .detail{ flex:1; min-width:0; padding:20px; display:flex; flex-direction:column; justify-content:center; gap:12px; }
+.legend{ display:flex; align-items:center; gap:14px; font-size:12px; color:#637381; }
+.legend i{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.gw{ display:flex; flex-wrap:wrap; justify-content:center; gap:16px; }
+.gw .w{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.gw .w .py{ font-size:12px; color:#637381; line-height:1.2; }
+.gw .w .zh{ font-size:18px; font-weight:700; }
+.gw .w .dot{ width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; }
+.gw .w .dot .mi{ font-size:11px; }
+.st-correct{ color:#22C55E; } .st-warning{ color:#F59E0B; } .st-incorrect{ color:#EF4444; }
+.bg-correct{ background:#22C55E; } .bg-warning{ background:#F59E0B; } .bg-incorrect{ background:#EF4444; }
+
+/* 固定動作列：message-list.js D */
+.actions{ flex:none; padding:12px 24px; background:rgba(255,255,255,.96); border-top:1px solid var(--divider); box-shadow:0 -10px 24px rgba(15,23,42,.06); display:flex; justify-content:center; gap:16px; }
+.pill{ height:46px; padding:0 32px; border-radius:25px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; border:1px solid transparent; }
+.pill .mi{ font-size:18px; }
+.pill.ghost{ background:#fff; border-color:var(--g200); color:var(--g500); }
+.pill.mine{ background:#fff; border-color:#10b981; color:#059669; }
+.pill.go{ background:linear-gradient(180deg,#77ED8B 0%,#22C55E 100%); color:#fff; font-weight:700; box-shadow:0 4px 12px rgba(34,197,94,.3); position:relative; }
+.pulse{ position:relative; display:inline-flex; }
+.pulse::before{ content:""; position:absolute; inset:-6px; border-radius:999px; border:2px solid rgba(34,197,94,.35); animation:nextPulse 1.8s ease-out infinite; pointer-events:none; }
+@keyframes nextPulse{ 0%{ opacity:.55; transform:scale(.95);} 100%{ opacity:0; transform:scale(1.22);} }
+
+/* 錄音區：practice-content-list.js C/D/E */
+.recarea{ padding:8px 0 12px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.instr{ padding:16px 0; font-size:14px; font-weight:600; color:#637381; }
+.instr.zh{ color:#16A34A; font-weight:800; }
+.wavez{ display:flex; align-items:center; justify-content:center; gap:3px; }
+.bars{ display:flex; align-items:center; gap:3px; }
+.bars i{ display:block; width:4px; border-radius:2px; background:#BBF7D0; }
+.bars.on i{ background:#22C55E; animation:recWave .8s ease-in-out infinite; }
+.bars.grey i{ background:var(--g300); } .bars.grey.on i{ background:var(--g400); }
+@keyframes recWave{ 0%,100%{ transform:scaleY(1);} 50%{ transform:scaleY(.45);} }
+.rbwrap{ position:relative; width:88px; height:88px; margin:0 12px; display:flex; align-items:center; justify-content:center; }
+.rb{ width:64px; height:64px; border-radius:50%; border:0; color:#fff; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#4ADE80 0%,#22C55E 100%); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.rb .mi{ font-size:32px; }
+.rb.rec{ background:linear-gradient(180deg,#22C55E 0%,#118D57 100%); }
+.rb.proc{ background:linear-gradient(180deg,#FDE68A 0%,#F59E0B 100%); box-shadow:0 4px 12px rgba(245,158,11,.32); }
+.rb.grey{ background:linear-gradient(180deg,#D1D5DB 0%,#9CA3AF 100%); box-shadow:0 4px 12px rgba(107,114,128,.3); }
+.rb .wv{ display:flex; align-items:center; gap:3px; height:32px; }
+.rb .wv i{ display:block; width:4px; background:#fff; border-radius:2px; animation:recWave .8s ease-in-out infinite; }
+.rings{ position:absolute; inset:0; border-radius:50%; border:3px solid rgba(34,197,94,.5); border-top-color:#22C55E; animation:spin 1.2s linear infinite; }
+.rings.amber{ border-color:rgba(251,191,36,.35); border-top-color:#FBBF24; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.bounce{ animation:recBounce 1.8s ease-in-out infinite; }
+@keyframes recBounce{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+.cap{ font-size:12px; color:#637381; }
+.cap.ok{ color:#22C55E; font-weight:600; }
+.tip{ width:380px; min-height:120px; padding:20px 24px; border:1px dashed #FDE68A; border-radius:24px; background:#FFFEF5; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.tip .emo{ font-size:40px; margin-bottom:8px; }
+.tip .dk{ font-size:14px; font-weight:600; color:#92400E; margin-bottom:4px; }
+.tip .tx{ font-size:16px; color:#637381; }
+
+/* 開始卡：practice-list-mirroring-start-card.js */
+.startbg{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#E8EEF4; }
+.start{ width:100%; max-width:440px; margin:0 16px; padding:32px; border-radius:32px; background:rgba(255,255,255,.96); box-shadow:0 24px 60px rgba(148,163,184,.22); display:flex; flex-direction:column; align-items:center; gap:20px; }
+.start .pname{ font-size:28px; font-weight:700; color:#22C55E; text-align:center; line-height:1.5; }
+.start .mode{ font-size:22px; font-weight:800; color:#0F172A; text-align:center; }
+.start .sub{ font-size:14px; font-weight:500; color:#64748B; text-align:center; }
+.start .statcard{ width:100%; padding:18px; border-radius:24px; border:1px solid #E2E8F0; display:flex; }
+.start .statcard > div{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px 0; }
+.start .statcard .n{ display:flex; align-items:center; gap:6px; }
+.start .statcard .n .ic{ width:32px; height:32px; border-radius:50%; background:rgba(34,197,94,.1); color:#22C55E; display:flex; align-items:center; justify-content:center; }
+.start .statcard .n .ic .mi{ font-size:16px; }
+.start .statcard .n b{ font-size:20px; font-weight:800; color:#22C55E; }
+.start .statcard .k{ font-size:12px; font-weight:600; color:#94A3B8; letter-spacing:.04em; }
+.start .setcard{ width:100%; border-radius:24px; border:1px solid #E2E8F0; overflow:hidden; }
+.start .setcard .sr{ display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--divider); }
+.start .setcard .sr:last-child{ border-bottom:0; }
+.start .setcard .sr .a{ font-size:14px; font-weight:700; }
+.start .setcard .sr .b{ font-size:12px; color:#94A3B8; }
+.start .audiocard{ width:100%; padding:16px; border-radius:24px; background:#F0FDF4; border:1px solid #D1FAE5; display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; font-weight:600; color:#059669; }
+.start .audiocard .mi{ font-size:20px; }
+.startbtn{ width:100%; height:52px; border:0; border-radius:20px; color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px;
+  background:linear-gradient(135deg,#65E482 0%,#18B95D 100%); box-shadow:0 8px 18px rgba(34,197,94,.2); }
+.startbtn .mi{ font-size:24px; }
+
+/* 完成卡：practice-list-mirroring-complete-card.js（absolute inset 0，蓋住整個練習區） */
+.doneov{ position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:#E8EEF4; }
+.done{ width:100%; max-width:440px; margin:0 16px; border-radius:24px; background:#fff; box-shadow:0 20px 48px rgba(148,163,184,.24); overflow:hidden; }
+.done .top{ padding:28px 28px 20px; display:flex; flex-direction:column; align-items:center; }
+.done .pn{ font-size:24px; font-weight:700; color:#22C55E; margin-bottom:4px; }
+.done .h{ font-size:20px; font-weight:800; color:#1E293B; margin-bottom:20px; }
+.done .box{ width:100%; background:#FFFEFB; border:1px solid #FDE7B0; border-radius:24px; padding:20px 24px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.done .box .stars .mi{ font-size:34px; }
+.done .avg{ font-size:17px; font-weight:800; color:#1E293B; } .done .avg b{ color:#16A34A; }
+.done .enc{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; background:#DCFCE7; color:#15803D; font-size:14px; font-weight:700; }
+.done .enc .mi{ font-size:16px; }
+.done .btns{ padding:0 24px 28px; display:flex; flex-direction:column; gap:16px; }
+.done .submit{ height:56px; border:0; border-radius:24px; color:#fff; font-size:16px; font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg,#60A5FA 0%,#2563EB 100%); box-shadow:0 8px 18px rgba(59,130,246,.32); }
+.done .again{ height:48px; border:1px solid var(--g200); background:#fff; border-radius:20px; color:#334155; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; }
+.done .back{ height:40px; border:0; background:none; color:#64748B; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
+.done .btns .mi{ font-size:18px; }
+
+/* 配對小遊戲 Modal（scoring-match-game.js）—— 只畫殼 */
+.scrim{ position:absolute; inset:0; z-index:40; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; }
+.mg{ width:420px; border-radius:24px; background:#fff; padding:24px; box-shadow:0 24px 60px rgba(15,23,42,.3); }
+.mg .mh{ font-size:16px; font-weight:800; color:#1E293B; text-align:center; margin-bottom:4px; }
+.mg .ms{ font-size:12px; color:#64748B; text-align:center; margin-bottom:16px; }
+.mg .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.mg .c{ aspect-ratio:1; border-radius:16px; background:linear-gradient(135deg,#A78BFA,#60A5FA); display:flex; align-items:center; justify-content:center; font-size:28px; color:#fff; }
+.mg .c.up{ background:#F8FAFC; border:1.5px solid var(--line); color:#0F172A; font-size:22px; font-weight:800; flex-direction:column; gap:2px; }
+.mg .c.up small{ font-size:11px; color:#64748B; font-weight:500; }
+.mg .lp{ height:4px; border-radius:2px; background:#E2E8F0; margin-top:16px; overflow:hidden; }
+.mg .lp i{ display:block; width:45%; height:100%; background:#22C55E; }
+
+/* 狀態列（開發用，不是產品） */
+/* ---------- 提案說明條（跟 v20／v21 同一條：回 Index ＋ 狀態連結） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+.shell{ height:calc(100vh - 44px); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#" class="on"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+
+  <div class="mainwrap">
+    <div class="hdr"><div class="av">L</div></div>
+    <div class="area" id="area"></div>
+  </div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v22 · 學生端 · 現行一句一句 · 對照組 <a href="proposal-student.html">提案 ↗</a> · <a href="teacher-settings.html">老師端基準 ↗</a></span><span id="devbar"></span></div>
+
+<script>
+const M = window.V22;
+const qs = new URLSearchParams(location.search);
+const S = {
+  screen: qs.get('screen') || 'start',
+  state: qs.get('state') || 'idle',
+  audio: qs.get('audio') === '1',
+  panel: qs.get('panel') === '1',
+  gear: qs.get('gear') === '1',
+  tfirst: qs.get('tfirst') === '1',
+  sent: Math.min(M.SENTENCES.length, Math.max(1, parseInt(qs.get('sent') || '2', 10) || 2)),
+};
+const N = M.SENTENCES.length;
+const cur = M.SENTENCES[S.sent - 1];
+const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ---------- 零件 ---------- */
+const starsHtml = (r, cls = '') => {
+  let h = `<span class="stars ${cls}">`;
+  for (let i = 1; i <= 5; i++) {
+    const ic = r >= i ? 'star' : (r >= i - .5 ? 'star_half' : 'star_border');
+    h += `<span class="mi" style="${ic==='star_border'?'color:#DFE3E8':''}">${ic}</span>`;
+  }
+  return h + '</span>';
+};
+const wordsHtml = (s, pinyin = true) => `<div class="words">${s.words.map(([w, py]) =>
+  `<span class="w">${pinyin && py ? `<span class="py">${py}</span>` : ''}<span class="zh">${esc(w)}</span></span>`).join('')}</div>`;
+const barsHtml = (cls, hs) => `<span class="bars ${cls}">${hs.map((h, i) => `<i style="height:${h}px;animation-delay:${i * .08}s"></i>`).join('')}</span>`;
+const WL = [10, 16, 24, 18, 12], WR = [12, 18, 24, 16, 10];
+
+const progress = () => {
+  const curN = S.screen === 'done' ? N : (S.screen === 'practice' ? S.sent : 1);
+  return `<div class="prog"><div class="track"><div class="fill" style="width:${curN / N * 100}%"></div></div><div class="num"><b>${curN}</b> / <i>${N}</i></div></div>`;
+};
+
+/* ---------- 開始卡 ---------- */
+const startCard = () => `
+<div class="startbg"><div class="start">
+  <div class="pname">${esc(M.PROJECT.name)}</div>
+  <div class="mode">${S.audio ? 'Audio Mode' : 'Content Mirroring'}</div>
+  <div class="sub">${S.audio ? 'Listen and repeat — text is hidden' : 'Listen and repeat each sentence'}</div>
+  <div class="statcard">
+    <div><span class="n"><span class="ic"><span class="mi">chat_bubble_outline</span></span><b>${N}</b></span><span class="k">SENTENCES</span></div>
+    <div><span class="n"><span class="ic"><span class="mi">schedule</span></span><b>~${N}</b></span><span class="k">MIN</span></div>
+  </div>
+  ${S.audio ? `<div class="audiocard"><span class="mi">headphones</span>Audio Mode — text will be hidden during practice</div>` : `
+  <div class="setcard">
+    <div class="sr"><div><div class="a">Show Pinyin</div><div class="b">Show Chinese pronunciation (Pinyin)</div></div><span class="sw lg on"></span></div>
+    <div class="sr"><div><div class="a">Show Translation</div><div class="b">Show English meaning</div></div><span class="sw lg"></span></div>
+  </div>`}
+  <button class="startbtn"><span class="mi">${S.audio ? 'headphones' : 'mic'}</span>Start Practice<span class="mi">arrow_forward</span></button>
+</div></div>`;
+
+/* ---------- 左欄 ---------- */
+const leftPanel = () => `
+<div class="left ${S.panel ? 'open' : ''}">
+  <button class="tog"><span class="mi">${S.panel ? 'chevron_left' : 'chevron_right'}</span></button>
+  ${S.panel ? '' : '<span class="vlabel">Text</span>'}
+  <div class="cw">
+    <div class="pyrow"><label style="display:flex;align-items:center;gap:8px">Pinyin <span class="sw on"></span></label></div>
+    <div class="body">
+      <div class="ttl">${esc(M.PROJECT.name)}</div>
+      ${M.SENTENCES.map((s, i) => `
+      <div class="srow ${i + 1 === S.sent ? 'on' : ''}">
+        <div style="flex:1;min-width:0">
+          <div class="py">${s.py}</div>
+          <div class="zh">${esc(s.zh)}</div>
+          <div class="trr"><button class="eye"><span class="mi">visibility_off</span></button></div>
+        </div>
+        <button class="spk"><span class="mi">volume_up</span></button>
+      </div>`).join('')}
+    </div>
+  </div>
+</div>`;
+
+/* ---------- 句卡 ---------- */
+const sentenceCard = () => {
+  const playing = S.state === 'playing';
+  let kind = 'practice', label = 'Practice Sentence', helper = '', icon = 'chat', body;
+  if (playing && S.tfirst) { kind = 'meaning'; label = 'Meaning'; helper = 'Listen to the English meaning first.'; icon = 'translate'; body = `<div class="enbig">${esc(cur.tr)}</div>`; }
+  else if (playing) { kind = 'repeat'; label = 'Listen & Repeat'; helper = 'Now repeat the Chinese sentence.'; icon = 'record_voice_over'; }
+  if (!body) {
+    body = S.audio ? `<div class="hidden">Listen carefully and repeat the sentence.</div>` : wordsHtml(cur);
+  }
+  return `<div class="scard ${kind} ${playing ? 'active' : ''}"><div class="inner">
+    <div class="meta"><span class="ic"><span class="mi">${icon}</span></span><div><div class="lbl">${label}</div>${helper ? `<div class="hlp">${helper}</div>` : ''}</div></div>
+    <div class="mid"><button class="play"><span class="mi">play_arrow</span></button><div style="min-width:0">${body}</div></div>
+  </div></div>`;
+};
+
+/* ---------- 評分卡（V1） ---------- */
+const feedbackCard = () => {
+  const r = M.SENTENCE_SCORES[S.sent - 1];
+  const verdict = r >= 4.5 ? ['Excellent!', '#059669'] : r >= 3.5 ? ['Great!', '#22C55E'] : r >= 2.5 ? ['Good effort!', '#F59E0B'] : ['Keep trying!', '#EF4444'];
+  const si = S.sent - 1;
+  return `<div class="fb">
+    <div class="score"><div class="big"><b>${r}</b><span>/5</span></div>${starsHtml(r)}<div class="verdict" style="color:${verdict[1]}">${verdict[0]}</div></div>
+    <div class="detail">
+      <div class="legend"><span><i class="bg-correct"></i>Good</span><span><i class="bg-warning"></i>Needs attention</span><span><i class="bg-incorrect"></i>Needs practice</span></div>
+      <div class="gw">${cur.words.map(([w, py], wi) => M.isPunct(w) ? '' : (() => { const st = M.wordStatus(si, wi); const ic = st === 'correct' ? 'check' : st === 'warning' ? 'priority_high' : 'close';
+        return `<span class="w"><span class="py">${py}</span><span class="zh st-${st}">${esc(w)}</span><span class="dot bg-${st}"><span class="mi">${ic}</span></span></span>`; })()).join('')}</div>
+    </div>
+  </div>`;
+};
+
+/* ---------- 錄音區 ---------- */
+const recArea = () => {
+  const st = S.state;
+  if (st === 'playing') return `<div class="recarea"><div class="instr ${S.tfirst ? '' : 'zh'}">${S.tfirst ? 'Listen to the English meaning first.' : 'Listen & repeat the Chinese sentence.'}</div></div>`;
+  if (st === 'idle' || st === 'recording') {
+    const rec = st === 'recording';
+    return `<div class="recarea"><div class="wavez">${barsHtml(rec ? 'on' : '', WL)}
+      <div class="rbwrap ${rec ? '' : 'bounce'}">${rec ? '<span class="rings"></span>' : ''}<button class="rb ${rec ? 'rec' : ''}"><span class="mi">mic</span></button></div>
+      ${barsHtml(rec ? 'on' : '', WR)}</div>
+      <div class="cap">${rec ? '00:04' : 'Tap to start recording'}</div></div>`;
+  }
+  if (st === 'recorded') {
+    return `<div class="recarea"><div class="wavez">${barsHtml('grey', WL)}<div class="rbwrap bounce"><button class="rb grey"><span class="mi">play_arrow</span></button></div>${barsHtml('grey', WR)}</div>
+      <div class="cap">Tap to play your recording</div>
+      <div style="display:flex;gap:16px;margin-top:4px"><button class="pill ghost" style="height:44px;padding:0 24px"><span class="mi">refresh</span>Retry</button><span class="pulse"><button class="pill go" style="height:44px;padding:0 24px">Submit</button></span></div></div>`;
+  }
+  if (st === 'uploading' || st === 'scoring') {
+    const scoring = st === 'scoring';
+    const wv = `<span class="wv"><i style="height:16px"></i><i style="height:24px;animation-delay:.1s"></i><i style="height:32px;animation-delay:.2s"></i><i style="height:20px;animation-delay:.3s"></i></span>`;
+    return `<div class="recarea">${scoring ? `<div class="tip"><div class="emo">🐼</div><div class="dk">Did you know?</div><div class="tx">The Chinese word for "panda" (熊猫) literally means "bear cat".</div></div>` : ''}
+      <div class="rbwrap"><span class="rings amber"></span><button class="rb proc">${wv}</button></div>
+      <div class="cap">${scoring ? 'Analyzing your pronunciation...' : 'Uploading...'}</div></div>`;
+  }
+  return '';
+};
+
+/* ---------- 右欄 ---------- */
+const rightPanel = () => {
+  const playing = S.state === 'playing';
+  const title = playing ? (S.tfirst ? 'Understand the Meaning' : 'Listen & Repeat') : 'Practice';
+  const scored = S.state === 'scored';
+  const used = scored ? 1 : 0;
+  return `<div class="right"><div class="rwrap">
+    <div class="trow"><div class="t">${title}</div><div class="r">
+      <span class="attempt">Attempt <b>${used}</b> / <i>3</i></span>
+      <span class="gearwrap"><button class="gear"><span class="mi">settings</span></button>
+      ${S.gear ? `<div class="gpanel"><div class="gh">Settings <span class="mi">close</span></div>
+        <div class="gr">Pinyin <span class="sw on"></span></div><div class="gr">Translation <span class="sw"></span></div></div>` : ''}</span>
+    </div></div>
+    <div class="msgs">${sentenceCard()}${scored ? feedbackCard() : ''}</div>
+    ${scored ? `<div class="actions"><button class="pill mine"><span class="mi">play_arrow</span>My recording</button><button class="pill ghost"><span class="mi">refresh</span>Redo</button><span class="pulse"><button class="pill go">${S.sent >= N ? 'End Practice' : 'Next'}</button></span></div>` : recArea()}
+  </div>
+  ${S.state === 'scoring' ? `<div class="scrim"><div class="mg"><div class="mh">Match the pairs while we score</div><div class="ms">Scoring takes a few seconds</div>
+    <div class="grid"><div class="c up">🌍</div><div class="c">?</div><div class="c up">地球<small>dì qiú</small></div><div class="c">?</div><div class="c">?</div><div class="c">?</div></div><div class="lp"><i></i></div></div></div>` : ''}
+  </div>`;
+};
+
+/* ---------- 完成卡 ---------- */
+const doneCard = () => {
+  const avg = (M.SENTENCE_SCORES.reduce((a, b) => a + b, 0) / N).toFixed(1);
+  return `<div class="doneov"><div class="done">
+    <div class="top"><div class="pn">${esc(M.PROJECT.name)}</div><div class="h">Practice Complete!</div>
+      <div class="box">${starsHtml(Math.round(avg * 2) / 2)}<div class="avg">Average: <b>${avg}</b> / 5</div><span class="enc"><span class="mi">trending_up</span>Great progress! Keep practicing!</span></div></div>
+    <div class="btns"><button class="submit"><span class="mi">send</span>Submit To Teacher</button><button class="again"><span class="mi">refresh</span>Practice Again</button><button class="back"><span class="mi">arrow_back</span>Back to Assignments</button></div>
+  </div></div>`;
+};
+
+/* ---------- 組頁 ---------- */
+const render = () => {
+  let inner;
+  if (S.screen === 'start') inner = `<div class="card">${startCard()}</div>`;
+  else inner = `<div class="card">${S.audio ? '' : leftPanel()}${rightPanel()}</div>`;
+  document.getElementById('area').innerHTML = progress() + `<div class="pad">${inner}</div>` + (S.screen === 'done' ? doneCard() : '');
+  const links = [['開始', '?screen=start'], ['開始·純聽力', '?screen=start&audio=1'], ['播放中', '?screen=practice&state=playing'], ['英文先', '?screen=practice&state=playing&tfirst=1'], ['待錄音', '?screen=practice&state=idle'], ['左欄展開', '?screen=practice&state=idle&panel=1'], ['錄音中', '?screen=practice&state=recording'], ['錄好了', '?screen=practice&state=recorded'], ['上傳中', '?screen=practice&state=uploading'], ['評分中', '?screen=practice&state=scoring'], ['評完', '?screen=practice&state=scored'], ['最後一句評完', '?screen=practice&state=scored&sent=6'], ['齒輪', '?screen=practice&state=idle&gear=1'], ['完成', '?screen=done']];
+  document.getElementById('devbar').innerHTML = links.map(([t, h]) => `<a href="${h}" class="${location.search === h ? 'cur' : ''}">${t}</a>`).join(' · ');
+};
+render();
+</script>
+</body>
+</html>

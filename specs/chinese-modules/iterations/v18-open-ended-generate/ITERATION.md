@@ -7,7 +7,7 @@
 - **日期**：2026-10-23
 - **範圍與理由**：`../v16-remove-question-bank/spec.html`。這一版只畫 Open-ended Questions 那條流程；Comprehension Quiz 在 v17
 - **設計檔**：`proposal.html`（`?step=` 從 1 數；參數見檔頭）。基準檔沿用 v13 `create-qa.html`，不重做
-- **狀態**：**2026-11-12 題卡加回 Answer conditions**（產品題庫頁就有的、後端生成的唯讀條件；題庫拿掉後只剩這張卡能看到）。2026-11-11 改名 Free response、只剩 Extension（Content Base 搬去 v17 Comprehension Quiz）。2026-11-04 起 Open-ended Questions 的唯一版本（v13 併進來；v13 的 `create-qa.html` 是基準）。提案第一輪，未部署、未 commit
+- **狀態**：**2026-11-13 多一條「沒有專案」的路（A 路：選單最後一項 No project → Language 欄 → 名稱自己填 → 只有 You write；`&proj=none`）**。2026-11-13 What to ask 改成 v17 的卡（一張卡、AI writes／You write 兩列）。2026-11-12 題卡加回 Answer conditions（產品題庫頁就有的、後端生成的唯讀條件；題庫拿掉後只剩這張卡能看到）。2026-11-11 改名 Free response、只剩 Extension（Content Base 搬去 v17 Comprehension Quiz）。2026-11-04 起 Open-ended Questions 的唯一版本（v13 併進來；v13 的 `create-qa.html` 是基準）。提案第一輪，未部署、未 commit
 
 ## 這一版定了什麼
 
@@ -15,21 +15,29 @@
 - 第一步：專案單選 → Practice name → **What to ask**（兩列：Content Base／Extension，題庫頁 Q&A 區塊的兩個 radio；icon 照 CATEGORY_ICONS；一欄題數 0–10；預設全 0、底列「Use a suggested mix」帶入 5＋2）→ **Article** → Generate。**沒有教學點**（第二輪拿掉；第一輪原本照 v17 畫了黃底 frame）。
 - 沒課文的專案：Generate 灰、原因在格子底列「This project has no article content yet」，課文 frame 裡一條黃色提醒。
 - 第二步 Edit Questions：一題一張卡（類別 chip 用 v13 的 .qtype、題目＋拼音、播放、編輯、✕、拖曳）。展開＝編輯題目與建議答案；拼音唯讀，改了題目重產拼音與音檔。Generate more 同一張格子接在最後掛 New。現行「Edit Questions & Answers in Question Bank」鈕沒了。
-- 題卡上有 **Answer conditions**（2026-11-12 加回）：產品題庫頁每題 Q&A 的 Suggested Answer 底下本來就有這塊（`questionsBank/view/generate/questions/answer-conditions.js`，PR #978，2026-09-23）——後端從題目＋建議答案生成，分 **Must cover**（綠勾）／**Not required**（灰圈）兩組，老師只能看不能改，改了題目或建議答案後端會重產；AI 批改學生答案的「完整度」就是對著它。題庫拿掉之後這塊唯一的入口就是這張卡，所以照產品的樣子搬過來：收起時在建議答案那條底下，鉛筆打開時一樣唯讀、底下一行講「AI 用它評分、改題目或建議答案會重寫、不能直接改」；手寫題存檔前只有一行「存檔時 AI 從你的題目和建議答案寫出來」。沒課文的佔位卡不顯示。學生端不顯示（產品也沒有）。
+- 題卡上有 **Answer conditions**（2026-11-12 加回）：產品題庫頁每題 Q&A 的 Suggested Answer 底下本來就有這塊（`questionsBank/view/generate/questions/answer-conditions.js`，PR #978，2026-09-23）——後端從題目＋建議答案生成，分 **Must cover**（綠勾）／**Not required**（灰圈）兩組，老師只能看不能改，改了題目或建議答案後端會重產；AI 批改學生答案的「完整度」就是對著它。題庫拿掉之後這塊唯一的入口就是這張卡，所以照產品的樣子搬過來：收起時在建議答案那條底下唯讀；**鉛筆打開時可以改（2026-11-13，使用者「要可以編輯」）**：Must cover／Not required 每條一個輸入框、✕ 刪、各組底下 Add，底下一行「The AI grades the student’s answer against these」；手寫題還沒有條件時兩組都空著只有 Add，一行「留空的話存檔時 AI 從你的題目和建議答案寫出來」。改了條件的 AI 題掛 Edited。沒課文的佔位卡不顯示。學生端不顯示（產品也沒有）。
 - 第三步：v13 第二步的工具列＋學生視窗原封不動，底下的課文與題目清單拿掉（題目在第二步處理完；要看哪一題用視窗裡的 Question x of N）。
 - 第四步 Assign：S8。
+- **沒有專案也能建（2026-11-13，A 路）**：Project 選單最後一項 **No project · Write the questions yourself**。選了之後：多一個 **Language** 欄（Simplified／Traditional Chinese，產品現在是從專案的 targetLanguage 查，這裡要練習自己存）、Practice name 不帶入要老師填、Article 區不顯示、What to ask 那張卡的 **AI writes 那列停用**（右邊寫 *Needs a project with an article*）只能填 You write、主鈕是 Next 不跑 Generating。第二步同樣的空白手寫卡；Generate more 改叫 **Add questions**（同一張面板）。第三步學生預覽左欄 Content 收掉（跟 Audio only 一樣只剩題目），Voice 清單照老師選的語言。為什麼只開手寫不開 AI：產品的生成都以課文為輸入、Extension 題的定義是 building on the article，沒課文就沒得生；要 AI 出題得另寫一條「給主題＋語言＋等級」的 prompt，之後再疊（B 路）。
 
 ## 查到的、沒畫的
 
 1. Open-ended 的題目沒有「對應到哪個教學點」的欄位（後端只把專案的教學點當提示塞進 prompt），所以第一步不勾點、卡上也沒有教學點 chip，跟 v17 不同。後端照舊會拿專案的教學點當提示，老師不用管。
 2. Generate 之後建 practice 的 ProcessingDialog 沒畫（照現行「Processing content...」）。
 3. 已指派後回來改題的版本確認沒畫（v16 待定 4）；學生答題時建議答案怎麼進評分（v16 待定 2）。
+5. **沒有專案的練習，要問工程四條**（2026-11-13）：①練習要能自己存 targetLanguage（現在語音、拼音、評分語言全從第一題的 projectConfigSk 查專案；`assignments/content/index.js` 的 getTargetLanguageFromProjectConfig 沒 sk 就回 undefined）②評分那條沒課文能不能跑（現在送 projectConfigSk＋questionSk，建議答案後端從題庫查；Extension 題本來就不從課文找答案）③Answer conditions 的生成有沒有吃課文 ④音檔的 voice 是依 targetLanguage 選，練習帶語言之後 voice library 那條能不能照舊。另外學生端 `qa/content-window.js` 沒有專案內容時會把題目文字當課文印在左欄，要改成不顯示左欄。產品已有沒專案的練習（ESL Mirroring、Reading Challenge），upsertPractice 的 projectConfigSk 本來就是選填，資料模型不擋。
 4. Answer conditions 現在存在題庫的題目上（`question.answerConditions`，`requiredConditions`／`notRequiredConditions` 兩個字串陣列），練習本身（`updatedArticleArray`）沒有這個欄位；題目改存在練習上之後，條件要跟著搬過去、改題後重產的時機也要定——v16 的 spec 已劃掉不再更新，這條待工程的問題記在這裡。重產要幾秒（產品手動加題時把表單鎖住就是在等它）——改完題目關掉鉛筆之後，條件要不要先顯示「更新中」，沒畫，等工程回時間再說。QA pipeline 那套拿條件去測 prompt 的工具 2026-10-26 已搬去 dahua-admin-dash，不在老師端。
 
 ## Change log
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-13 | 第二步題卡打開時 **Answer conditions 可以編輯**：每條一個輸入框、✕ 刪、Must cover／Not required 各一顆 Add；收起時照舊唯讀清單；收起時空白的條目丟掉；改了的 AI 題掛 Edited | 使用者「Answer conditions 要可以編輯」。產品題庫頁是唯讀、後端生成，這裡改成老師可改——**待問工程**：老師改過的條件，改題目或建議答案時後端重產會不會蓋掉（建議：老師改過就不再自動重產，或重產後標示 New 讓老師看）；手寫題留空存檔才由 AI 寫 |
+| 2026-11-13 | 第二步題卡打開時 Suggested answer 標題旁那句「the AI compares the student’s answer against this」拿掉 | 使用者「拿掉這句」。標題只剩 Suggested answer；v17 的 Content Base 卡還有 spoken 版那句，沒動 |
+| 2026-11-13 | **沒有專案也能建（A 路）**：Project 選單最後一項 No project；選了多 Language 欄、名稱自己填、Article 不顯示、AI writes 停用只留 You write、第二步 Generate more 改叫 Add questions、第三步預覽左欄收掉 | 使用者「現在可以沒有 project 的新增 practice 嗎？分析可行性」→ 查產品碼：QA 綁兩層（練習→題庫→專案），語言、評分、學生端左欄都從專案查，但資料模型不擋（ESL／Reading Challenge 已是沒專案的練習）→ 給 A（只開手寫）／B（沒課文也 AI 出題）兩條路，建議 A → 使用者「A」。demo `&proj=none`（第二、三步帶三題寫好的 Extension 題「My weekend」）、`&lang=zh-TW`。待問工程四條見上面第 5 點 |
+| 2026-11-13 | 第二步的 **Generate more** 從眉標右邊搬到題目清單最底下（置中；打開的面板也在底下，上面一條虛線） | 使用者「兩個題型的 Generate more 都改到放在最底下」（v17、v18 一起）。新題本來就接在清單最後，按鈕就在新題會出現的地方 |
+| 2026-11-13 | 第二步眉標上「N of your own questions still need a question and a suggested answer before you can continue」那句拿掉 | 使用者「拿掉」。手寫題沒寫完 Next 照樣停用，跟 v17 一樣不另外說明 |
+| 2026-11-13 | **What to ask 改成跟 v17 同一個模組**：一張 Extension 卡，示意只畫 AI 那張，卡底下兩列題數 `AI writes`（從課文出）／`You write`（老師自己寫）；Write an Extension question 那張卡拿掉、副標拿掉 | 使用者「Free response 的題型 UI 模組改成跟 Comprehension Quiz 一樣，上欄是根據原來課文、下欄是自己寫」。題數的狀態沒變（`counts.extension`／`counts.own_extension`、`&own=EX`），第二步照舊出對應的卡 |
 | 2026-11-12 | 第二步題卡加回 **Answer conditions**（Must cover／Not required，唯讀） | 使用者問「現在哪些練習有 Answer conditions」→ 查到只有題庫頁的 Q&A 題有、題庫拿掉就沒入口 → 「對 要加回去」。照產品 `answer-conditions.js` 的樣子（#FAF5FF 底、#E9D5FF 框、紫標題、綠勾／灰圈）放在建議答案底下，收起、打開都顯示；打開時底下多一行講它會跟著題目／建議答案重寫、不能直接改；手寫題存檔前只有說明一行。mock 八題 Extension 各寫了 1–2 條 Must cover、1–2 條 Not required（`rc`／`nr`）。**沒畫**：改完題目後「條件更新中」的等待狀態（等工程回要幾秒） |
 | 2026-11-11 | 練習改名 **Free response**；Content Base 搬去 v17，只剩 Extension | 使用者「把 Open-ended Questions 的 content based question 也改到 Comprehension Quiz，因為都是考 Comprehension 的內容」→「v18 的練習名改成 Free response」→「剩下 Extension 只有一種題型」。標題 *New Free response*；What to ask 剩兩張（**Extension** *About the student’s own life, building on the article*｜**Write an Extension question**）、總數兩格相加；Article 區提示改 *Extension questions build on this*；`&own=EX` 一個數。mock 的 content 題留在檔裡沒用。**還沒改**：Choose practice type 那張卡的名字與說明、側欄／產品的 practice type label、index 以外提到 Open-ended Questions 的頁（planning、元件總表）——改名要整套走，等定案後一起 |
 | 2026-11-11 | Write a … 卡的示意改虛線灰條（同 v17） | 使用者在 v17 說「像是讓用戶直接在這頁打，會帶出錯誤的意圖」，這裡一起改：鉛筆＋題目虛線、學生回答虛線，不再畫輸入框和 placeholder |

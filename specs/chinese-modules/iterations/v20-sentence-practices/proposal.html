@@ -118,7 +118,7 @@ button{ font-family:inherit; }
 .side .logo img{ height:37px; width:auto; }
 .side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
 .side .logo b i{ font-style:normal; color:var(--primary); }
-.nav{ flex:1; overflow-y:auto; }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
 .nav .grp{ padding:0 16px; margin-top:16px; }
 .nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
   color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
@@ -1164,6 +1164,26 @@ body.t-fp .pchip{ background:#CCFBF1; color:#0F766E; } body.t-fp .pchip.cnt .n{ 
 .srow{ display:flex; align-items:center; gap:12px; } .srow .n{ font-size:14px; font-weight:700; color:var(--text2); min-width:22px; } .srow .chunk{ flex:1; min-width:0; }
 .play.xs{ width:30px; height:30px; color:var(--primary); } .play.xs .mi{ font-size:20px; }
 
+/* ===== 2026-11-02 教學點 frame 第二版 =====
+   ① 開合列改成 accordion 樣：整列有框、hover 變底、箭頭在右邊、開了轉 180° 並跟底下的池子接成一塊
+   ② 全選框拿掉（renderTeachingPoints 不再印 .cb）
+   ③ 例句清單搬到 chip 底下、Add teaching points from project 之上；清單標題貼上緣 */
+.vp-head{ padding:10px 12px 10px 14px; border:1px solid var(--divider); border-radius:10px; background:#fff; font-weight:700; gap:8px; }
+.vp-head:hover{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); }   /* 2026-11-02：灰底改淺綠（跟勾選 chip 同色） */
+.vp-head .lbl{ flex:1; }
+.vp-head .mi{ color:var(--text); transition:transform .15s; }
+.vp-head[aria-expanded="true"]{ border-bottom-left-radius:0; border-bottom-right-radius:0; border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); }
+.vp-head[aria-expanded="true"] .mi{ color:var(--primary); }
+.vp-head[aria-expanded="true"] .mi{ transform:rotate(180deg); }
+.pool{ padding:10px 12px 12px; border:1px solid rgba(0,203,97,.45); border-top:0; border-radius:0 0 10px 10px; background:rgba(0,203,97,.06); }   /* 打開時底色跟標頭同一塊淺綠，不留白 */
+.exhd{ margin:0 0 8px; }
+.exlist{ margin-top:0; }
+/* 2026-11-03：池子底色變淺綠之後，已在清單的點要更跳——實線主色框、深一點的綠底、粗字、主色勾 */
+.pool .tpchip.dim, .pool .tpchip.dim:hover{ border:1.5px solid var(--primary); background:rgba(0,203,97,.16); color:var(--primary-dark, #00A749); font-weight:700; }
+.pool .tpchip.dim .mi{ color:var(--primary-dark, #00A749); }
+.exw.exchip{ width:auto; min-width:128px; padding-top:0; }
+.exmuted{ display:block; padding-top:9px; font-size:12px; color:var(--text3); }
+
 /* 2026-11-04：題卡共同骨架（使用者「題卡的共同骨架都吃這個設定」，照 v17／v18）——Q 膠囊灰階；左邊一條直欄 ∧ 把手 ∨ 換序 */
 .sqcard.rail{ display:grid; grid-template-columns:26px minmax(0,1fr); column-gap:12px; padding-left:10px; }
 .sqcard.rail > .mv-rail{ grid-column:1; grid-row:1 / span 40; align-self:center; }
@@ -1173,7 +1193,7 @@ body.t-fp .pchip{ background:#CCFBF1; color:#0F766E; } body.t-fp .pchip.cnt .n{ 
 .mv-rail .mv{ border:0; background:transparent; padding:0; width:26px; height:22px; border-radius:6px; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .mv-rail .mv .mi{ font-size:22px; } .mv-rail .mv:hover{ background:var(--grey200); color:var(--text); }
 .mv-rail .mv:disabled{ opacity:.25; cursor:default; background:transparent; }
-.sqcard .chip.sm.primary.filled{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; }
+.sqcard .chip.sm.primary.filled{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; font-weight:700; }   /* 2026-11-06：字重對齊 v17／v18 的 700 */
 </style>
 </head>
 <body>
@@ -1297,6 +1317,34 @@ const WORDS = [
     ex:[['我一起床就喝水。','wǒ yì qǐ chuáng jiù hē shuǐ.','I drink water as soon as I get up.'],
         ['他一下课就回家。','tā yí xià kè jiù huí jiā.','He goes home as soon as class ends.']] },
 ];
+/* 2026-11-05：第二個專案「环境保护与可持续发展」的 12 個教學點（原本是自動產生的 词1…词12；使用者「第二組也要有真的詞」）。
+   只供第一步的 frame 用（chip、例句、From project）；第二步的句子 mock 仍只有「我的一天」。 */
+const WORDS_ENV = [
+  { w:'环境', type:'NOUN', ex:[['我们要保护环境。','wǒ men yào bǎo hù huán jìng.','We must protect the environment.'],
+                               ['这里的环境很好。','zhè lǐ de huán jìng hěn hǎo.','The environment here is very good.']] },
+  { w:'保护', type:'VERB', ex:[['保护动物是大家的责任。','bǎo hù dòng wù shì dà jiā de zé rèn.','Protecting animals is everyone’s responsibility.'],
+                               ['我们应该保护森林。','wǒ men yīng gāi bǎo hù sēn lín.','We should protect the forests.']] },
+  { w:'污染', type:'NOUN', ex:[['这条河的污染很严重。','zhè tiáo hé de wū rǎn hěn yán zhòng.','The pollution in this river is serious.'],
+                               ['汽车太多会污染空气。','qì chē tài duō huì wū rǎn kōng qì.','Too many cars pollute the air.']] },
+  { w:'垃圾', type:'NOUN', ex:[['请不要乱扔垃圾。','qǐng bú yào luàn rēng lā jī.','Please do not litter.'],
+                               ['垃圾应该分类。','lā jī yīng gāi fēn lèi.','Garbage should be sorted.']] },
+  { w:'节约', type:'VERB', ex:[['我们要节约用水。','wǒ men yào jié yuē yòng shuǐ.','We should save water.'],
+                               ['节约用电从我做起。','jié yuē yòng diàn cóng wǒ zuò qǐ.','Saving electricity starts with me.']] },
+  { w:'能源', type:'NOUN', ex:[['太阳能是一种干净的能源。','tài yáng néng shì yì zhǒng gān jìng de néng yuán.','Solar power is a clean source of energy.'],
+                               ['我们需要新的能源。','wǒ men xū yào xīn de néng yuán.','We need new sources of energy.']] },
+  { w:'塑料袋', type:'NOUN', ex:[['我去超市不用塑料袋。','wǒ qù chāo shì bú yòng sù liào dài.','I do not use plastic bags at the supermarket.'],
+                                 ['塑料袋对环境不好。','sù liào dài duì huán jìng bù hǎo.','Plastic bags are bad for the environment.']] },
+  { w:'减少', type:'VERB', ex:[['我们应该减少污染。','wǒ men yīng gāi jiǎn shǎo wū rǎn.','We should reduce pollution.'],
+                               ['骑自行车可以减少堵车。','qí zì xíng chē kě yǐ jiǎn shǎo dǔ chē.','Cycling can reduce traffic jams.']] },
+  { w:'浪费', type:'VERB', ex:[['不要浪费食物。','bú yào làng fèi shí wù.','Do not waste food.'],
+                               ['浪费水是不对的。','làng fèi shuǐ shì bú duì de.','Wasting water is wrong.']] },
+  { w:'气候', type:'NOUN', ex:[['这里的气候越来越热。','zhè lǐ de qì hòu yuè lái yuè rè.','The climate here is getting hotter.'],
+                               ['气候变化影响每个人。','qì hòu biàn huà yǐng xiǎng měi gè rén.','Climate change affects everyone.']] },
+  { w:'严重', type:'ADJECTIVE', ex:[['空气污染越来越严重。','kōng qì wū rǎn yuè lái yuè yán zhòng.','Air pollution is getting more serious.'],
+                                    ['这个问题很严重。','zhè ge wèn tí hěn yán zhòng.','This problem is serious.']] },
+  { w:'不但……而且', type:'GRAMMAR', ex:[['骑自行车不但环保，而且健康。','qí zì xíng chē bú dàn huán bǎo, ér qiě jiàn kāng.','Cycling is not only green but also healthy.'],
+                                        ['这样做不但省钱，而且保护环境。','zhè yàng zuò bú dàn shěng qián, ér qiě bǎo hù huán jìng.','Doing this not only saves money but also protects the environment.']] },
+];
 /* teaching point chip 上的短型別標（照 teacher-planning 的 TPT）；卡片上仍用產品的長標籤 */
 const TYPE_SHORT = { WORD:'Word', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adj', GRAMMAR:'Grammar', PHRASE:'Phrase', MEASURE_WORD:'Measure', OTHER:'Other' };
 /* From Project 的池子：專案課文（splitArticleArray）裡的詞，去重、去標點。
@@ -1304,6 +1352,8 @@ const TYPE_SHORT = { WORD:'Word', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adj', GRA
 const POOL = {
   '我的一天': ['我','每天','早上','七点','起床','以后','先','刷牙','洗脸','然后','吃','早饭','八点半','骑','自行车','去','学校',
              '下午','四点','放学','常常','和','同学','一起','打','篮球','晚上','做完','作业','就','早点','睡觉'],
+  '环境保护与可持续发展': ['现在','环境','污染','越来越','严重','我们','应该','保护','地球','少','用','塑料袋','垃圾','分类','节约','水','电',
+             '能源','减少','浪费','气候','变化','影响','每个人','骑','自行车','不但','环保','而且','健康','可持续','发展'],
 };
 const TYPE_LABEL = { WORD:'Word / Vocabulary', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adjective',
   GRAMMAR:'Grammar / Structure', PHRASE:'Phrase / Idiom', MEASURE_WORD:'Measure Word', OTHER:'Other' };
@@ -1541,6 +1591,7 @@ function renderPracticeName(){
    邏輯照 teacher-planning 的 renderVocPointsPanel，樣式沿 v3。 */
 function tpOf(name){
   if (name === '我的一天') return WORDS.map(w => ({ w:w.w, type:w.type }));
+  if (name === '环境保护与可持续发展') return WORDS_ENV.map(w => ({ w:w.w, type:w.type }));
   const proj = PROJECTS.find(p => p[0] === name);
   return Array.from({ length: proj[3] }, (_, i) => ({ w:`词${i + 1}`, type:'WORD' }));
 }
@@ -1570,20 +1621,17 @@ function renderTeachingPoints(){
 
     return `<div class="frame">
       <div class="frame-hd sel">
-        <button class="cb ${some ? '' : 'none'}" data-tpall="${esc(name)}" aria-label="Select all in ${esc(name)}">
-          <span class="mi">${all ? 'check_box' : some ? 'indeterminate_check_box' : 'check_box_outline_blank'}</span></button>
         <div class="ttl"><div class="frame-ttl">${esc(name)}</div><div class="frame-desc">Teaching points</div></div>
         <span class="cnt">${picked}/${tps.length}</span>
       </div>
-      <div class="frame-panel">${chips}</div>
+      ${exReplacesChips(tps) ? '' : `<div class="frame-panel">${chips}</div>`}
       ${(() => { const newN = tps.filter(t => S.tp.has(t.w) && !S.genWords.has(t.w)).length, dropN = tps.filter(t => !S.tp.has(t.w) && S.genWords.has(t.w)).length;
         return !S.loaded ? '' : `<div class="frame-hd"><div class="frame-desc">${newN || dropN
           ? [newN ? `${newN} new teaching ${newN === 1 ? 'point gets' : 'points get'} ${UNITS} when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'point leaves' : 'points leave'} the practice with its ${UNITS}` : ''].filter(Boolean).join(' · ')
           : 'Generated. Tick more points or untick some — the sentences you already have stay as they are.'}</div></div>`; })()}
+      ${renderExamples(name, tps)}
       <div class="frame-panel" style="display:block; overflow:visible">
-                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
-          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>Add teaching points from project
-        </button>
+                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}"><span class="lbl">Add teaching points from project</span><span class="mi">expand_more</span></button>
         ${poolHtml}
         <div class="tp-add">
           <input class="inp" type="text" placeholder="Custom teaching point" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
@@ -1597,23 +1645,26 @@ function renderTeachingPoints(){
           <button class="btn contained" data-addcustom="${esc(name)}">Add</button>
         </div>
       </div>
-      ${renderExamples(name, tps)}
     </div>`;
   }).join('');
 }   // 第十九輪後半：例句清單搬到 Add teaching points 之下（使用者：例句在 Add teaching points 之下）
 
 /* 第四輪（方案 A）：勾了的點底下列出專案裡現成的例句，每句一個 checkbox，預設不勾——勾了就直接當題目帶進去（後端切詞、生音檔跟生成的走同一條）。
    摺疊起來，像 From Project；標頭寫 N picked · M available。Custom 的點沒有例句。 */
-function exOfPoint(w){ const v = WORDS.find(x => x.w === w); return v ? v.ex : []; }
+function exOfPoint(w){ const v = WORDS.find(x => x.w === w) || WORDS_ENV.find(x => x.w === w); return v ? v.ex : []; }
 function pickedEx(){ return S.projects.length && S.exOpen ? [...S.exPick].filter(k => S.tp.has(k.split('|')[0])) : []; }   // 開關關掉，勾過的也不算
 function exAutoFill(){ const sh = S.exMode === 'replace' ? shares() : null; S.exPick = new Set(tickedPts().flatMap(w => exOfPoint(w).slice(0, sh ? (sh[w] || 0) : S.exPer).map((_, i) => `${w}|${i}`))); }   // 第二十二輪：取代版照每點分到的份額勾   // 第十二輪：每個勾的點勾前 N 句   // 取消勾的點，它的例句也不算
+/* 2026-11-03：選了例句卡時，上面那排 chip 不再重複——chip 直接當例句清單的左欄（勾／取消在這裡做）；沒例句的點右邊寫一句 */
+function exReplacesChips(tps){ return S.exMode === 'replace' && S.exOpen && tps.some(t => S.tp.has(t.w) && exOfPoint(t.w).length); }
+function exChip(t){ const on = S.tp.has(t.w); const ty = (t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '') + ((t.type === 'GRAMMAR' || t.ptype === 'GRAMMAR') ? '<span class="ty gram">Grammar</span>' : ''); const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';
+  return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}"><span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`; }
 function renderExamples(name, tps){
   const pts = tps.filter(t => S.tp.has(t.w) && exOfPoint(t.w).length);
   const avail = pts.reduce((n, t) => n + exOfPoint(t.w).length, 0);
   if (!avail) return '';
   const picked = pickedEx().filter(k => pts.some(t => t.w === k.split('|')[0])).length;
-  const rows = S.exOpen ? `<div class="exlist">${pts.map(t => `<div class="exgrp"><div class="exw">${esc(t.w)}</div><div class="exrows">${exOfPoint(t.w).map((e, i) => { const k = `${t.w}|${i}`, on = S.exPick.has(k);
-      return `<button class="exrow ${on ? 'on' : ''}" data-ex="${esc(k)}" aria-pressed="${on}"><span class="cb ${on ? 'on' : ''}"><span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span></span><span class="ext"><span class="zh">${esc(e[0])}</span><span class="py">${esc(e[1])}</span><span class="tr">${esc(e[2])}</span></span></button>`; }).join('')}</div></div>`).join('')}</div>` : '';
+  const rows = S.exOpen ? `<div class="exlist">${(S.exMode === 'replace' ? tps : pts).map(t => `<div class="exgrp"><div class="exw exchip">${exChip(t)}</div><div class="exrows">${(S.tp.has(t.w) ? exOfPoint(t.w) : []).map((e, i) => { const k = `${t.w}|${i}`, on = S.exPick.has(k);
+      return `<button class="exrow ${on ? 'on' : ''}" data-ex="${esc(k)}" aria-pressed="${on}"><span class="cb ${on ? 'on' : ''}"><span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span></span><span class="ext"><span class="zh">${esc(e[0])}</span><span class="py">${esc(e[1])}</span><span class="tr">${esc(e[2])}</span></span></button>`; }).join('') || (S.tp.has(t.w) ? '<span class="exmuted">No examples · will be generated</span>' : '')}</div></div>`).join('')}</div>` : '';
   /* 第十九輪：取代版——「用不用例句」搬到上面的選項卡，這裡只剩清單（選了例句才出現），清單上一行小標 */
   if (S.exMode === 'replace') { if (!S.exOpen) return '';
     const none = exNoneList();   // 第二十輪：沒有例句的點列在清單底下，說會照每點幾句生
@@ -1722,7 +1773,6 @@ const perMax = () => PER_MAX;
 const MAX_TOTAL = 20;
 function genTotal(){ const pts = nPts(); if (!pts) return 0; const n = S.nTotal ?? pts; return Math.min(MAX_TOTAL, Math.max(Math.min(pts, MAX_TOTAL), n)); }
 function shares(){ const pts = tickedPts(), t = genTotal(), m = {}; if (!pts.length) return m; const lo = Math.floor(t / pts.length); let extra = t - lo * pts.length; pts.forEach(w => { m[w] = lo + (extra > 0 ? 1 : 0); if (extra > 0) extra--; }); return m; }   // 第二十二輪：總句數輪流分給勾的點
-function spreadText(t, pts){ const lo = Math.floor(t / pts), hi = Math.ceil(t / pts); return lo === hi ? `${lo} each` : `${lo}–${hi} each`; }
 /* 第二十輪：例句模式＝有例句的點用勾的例句，沒有例句的點照「每點幾句」生 */
 const exTotal = () => Math.max(genTotal(), pickedEx().length);   // 第二十二輪：例句模式也是問到的總數；老師多勾了就跟著多
 const exNoneList = () => { const m = pickedByPoint(); return tickedPts().filter(w => !m[w]); };
@@ -1744,7 +1794,7 @@ function renderSource(){
   const B = (x) => `<b>${x}</b>`;
   const gT = genTotal(), atCap = gT >= MAX_TOTAL;
   const howMany = `<div class="qp-calc"><span class="qin"><input id="ntotal" type="number" min="${Math.min(pts, MAX_TOTAL) || 1}" max="${MAX_TOTAL}" value="${S.nDraft ?? (gT || '')}" ${pts ? '' : 'disabled'} aria-label="Number of ${UNITS}"></span>
-      ${UNITS} <span class="dot">·</span> ${S.nDraft != null && parseInt(S.nDraft, 10) < Math.min(pts, MAX_TOTAL) ? `<b class="cap-hit">at least ${Math.min(pts, MAX_TOTAL)} · one per teaching point</b>` : `<b class="${atCap ? 'cap-hit' : ''}">up to ${MAX_TOTAL}</b>`}${pts ? ` <span class="dot">·</span> across ${B(pts)} teaching ${pts === 1 ? 'point' : 'points'} <span class="dot">·</span> ${spreadText(gT, pts)}` : ` <span class="dot">·</span> tick teaching points below`}</div>`;
+      ${UNITS} <span class="dot">·</span> ${S.nDraft != null && parseInt(S.nDraft, 10) < Math.min(pts, MAX_TOTAL) ? `<b class="cap-hit">at least ${Math.min(pts, MAX_TOTAL)} · one per teaching point</b>` : `<b class="${atCap ? 'cap-hit' : ''}">up to ${MAX_TOTAL}</b>`}${pts ? ` <span class="dot">·</span> across ${B(pts)} teaching ${pts === 1 ? 'point' : 'points'}` : ` <span class="dot">·</span> tick teaching points below`}</div>`;   // 2026-11-05：「1–2 each」拿掉（使用者）
   const genBody = `<small>AI writes new ${UNITS} for the teaching points you tick</small>`;
   const exBody = `<small>${avail ? `${avail} available${isBld() ? ' · each one becomes a suggested answer' : ''}` : 'Pick projects to see what is available'}</small>`;
   return `<div class="eyebrow" style="margin-top:28px"><b>How many ${UNITS}</b><span class="rule"></span></div>
@@ -2700,7 +2750,10 @@ document.addEventListener('click', (e) => {
   if (pj){
     // 多選：切換勾選、選單不關。practiceName：選到的專案用「 + 」串起來（第二十六輪；產品是第一個專案），老師自己改過就不再動
     const val = pj.dataset.proj;
-    S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+    const adding = !S.projects.includes(val);
+    S.projects = adding ? [...S.projects, val] : S.projects.filter(p => p !== val);
+    tpOf(val).forEach(t => adding ? S.tp.add(t.w) : S.tp.delete(t.w));   // 2026-11-05：選進來的專案教學點預設全勾（使用者「第二組也全選」），拿掉專案就一起退
+    if (S.exOpen && S.exMode === 'replace') exAutoFill();
     S.empty = S.projects.length === 0;
     if (!S.nameEdited) S.practiceName = S.projects.join(' + ');
     render(); return;

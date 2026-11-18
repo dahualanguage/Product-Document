@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results — v23 提案（套其他頁的 token）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<style>
+/* ===========================================================================
+   提案 —— v23：Practice Results 頁套上 Versions & Iteration 線上其他提案頁的 token（2026-11-12 使用者「先把其他頁的 design token 套到這一頁中」）。
+   不是現行產品。對照組 results-baseline.html（現行複刻）。假資料共用 mock.js，兩邊一模一樣。
+
+   這一輪只換「長相」，不動資訊架構、不加產品沒有的東西：
+     左欄還是三個數字 ＋ 每個班級指派一組名單；右欄還是照型別換 panel；Quiz／Scramble 照舊沒有改分、沒有評語；
+     能改分的照舊只有 Mirroring／Vocabulary／QA／Follow Pattern。
+
+   套了哪些 token（出處都是 v17／v20／v22 的 proposal.html 與 practice-components.html §13）：
+     色票        :root 同一組（--primary／--text／--text2／--text3／--divider／--grey100–300）；型別 icon 與 chip 照 practice-type-labels.js 的 tag
+     卡片        .card：1px divider 框、圓角 16、白底、沒有 MUI 的投影（整頁只有一層卡，卡裡不再疊卡）
+     眉標        .eyebrow：11px／800／字距 1.2／大寫／text3 ＋ 一條 rule；右邊可以放控制項（Question details 的 All｜Wrong）
+     分段控制    .seg：All｜Wrong、Conversation｜AI Feedback（R3 控制項三選一；MUI ToggleButtonGroup／Tabs 都換成它）
+     題號        灰色膠囊（question-card-spec.html 3.4：高 24、#F1F5F9 底、#E2E8F0 框、#475569 12px／700）——七種題卡同一顆，結果頁的句卡／題卡也用它
+     小標籤      .tag（v17 Assign 名冊的 ok／new／bad／warn 四色）：Late、Old version、Adjusted、Auto Pass、Passed／Not passed 都走這一組；.pill.mand 灰膠囊給分類、計數、Pinyin／Translation 狀態
+     題型 chip   .tchip：True/False 綠、Multi-Choice 藍（MC_TYPE_COLORS），Vocabulary Quiz 的 VOCAB_MC_* 產品沒給色、用灰
+     按鈕        .btn：text／outlined／contained（Back、AI Feedback、播放、Send Comment、對話框）
+     輸入欄      .fld 標籤在上 ＋ .inp（c-input-2）：評語框、Edit Score
+     教學點      Follow Pattern 題卡的 Pattern／Teaching Point 參考框用教學點容器的黃（#FFF8E7／#8F6209，2026-10-21 定）
+     選中        名單選中＝側欄 nav 選中的寫法（淡綠底 ＋ 粗體），不另外發明
+     評分語意色  逐詞三色、V2 欄色、分數環三階、criteria 紅綠灰照產品——這些是「分數的意思」，不是版面 token，不動
+
+   跟基準不一樣、但不是 token 的三處（寫在 ITERATION.md 待定）：
+     ① QA 頭像拿掉（五個 panel 只有它有頭像）② 四個 emoji 標題換成眉標 ＋ icon ③ Scramble 的 Student order 只把放錯位置的字標紅，正確順序不上色
+
+   2026-11-12 第二輪「UI 重新調整一遍」（/frontend-design）：
+     版面  拿掉 78vh 的大卡與左右兩個內捲動；左欄名單變成一張貼頂（sticky）的卡，右欄細節照頁面自然捲。卡裡不再疊卡：圖表框、字詞回饋框改成灰底內嵌（grey100、沒框線）
+     名單  每個班級指派＝一個段落：班名 ＋ 到期，底下一行三個數字（Submitted／Avg score／Perfect，沒框）；學生列右邊多一條 4px 分數軌（tier 色：≥80 綠／≥60 黃／其餘紅，照 scoreTierPalette）——
+           整欄讀起來像一張全班分布圖，一眼看到誰低、誰沒交。這條軌是「現有分數的畫法」不是新資料，要不要留寫在 ITERATION 待定
+     右欄  五種 panel 同一個學生標頭（名字 20px／800 ＋ 班級與題數；右邊 28px 大分數 ＋ 星或標籤 ＋ 鉛筆）；Quiz／Scramble 不再另做分數環卡
+     評語  Teacher comment 從一張卡改成眉標段落
+   2026-11-12 第三輪「參考現在 student 頁的 UI」（/school/teacher-students，src/sections/teacher/students/*）：整頁照那一頁的語言重做——
+     外殼  跟 Students 一樣藏掉 dashboard 的 header，整頁兩欄滿版（380px｜1fr、100vh）：左欄白底名單自己捲，右欄灰底自己捲、頂上一條貼頂的 bar（毛玻璃）放學生頭像 ＋ 名字 ＋ 分數 ＋ 帳號
+     色票  照那頁的 slate／emerald：墨 #0f172a、字 #475569／#64748b／#94a3b8、線 #e6ebf1／#eef2f7、hover #f6f9fc；綠 #6ee7b7／#ecfdf5／#d1fae5／#047857／#059669。評分語意色不動
+     名單  照 student-roster.js：頭像 40px r11（getAvatarColor 漸層 ＋ getInitials）、名字 14/700、第二行 12/600；選中 1.5px #6ee7b7 框 ＋ #ecfdf5 底、hover #f6f9fc；列 r13
+           班級＝一段：班名 13/800 ＋ 到期 ＋ 開合鈕（Students 的 SectionHeader 寫法）；底下兩顆小 tile（Submitted／Avg score；Perfect 2026-11-12 使用者「拿掉這個欄位」，照那頁 Word Game 的 tile：數字 16/800、標籤 10.5/800 大寫）
+           列是一行：名字｜分數｜tag 欄（Late／Old version／Adjusted，沒有就空著；2026-11-12 使用者「重新排列」、Submitted 不放；11/13 分數靠左對齊首位數字、名單 tag 放大、列上只留 Late）；分數照 practice-detail-popup 的三階色（good #047857／fair #d97706／poor #e11d48）。第二輪的分數軌拿掉（三階色改由數字帶）
+     右欄  貼頂 bar 照 student-detail.js：46px 頭像 ＋ 名字 19/800 ＋「Class 7A · 15 cards」13/600；分數照 practice-detail-popup：22/800 三階色 ＋「/ 100」＋ Late chip；Edit score 用那頁的綠框小鈕（Adjust 那顆的樣子）
+           內容照 SectionHeader：30px icon 方塊 ＋ 標題 13/800 ＋ 灰計數 pill ＋ 右邊 32px 開合鈕；每段一張 r14 #e6ebf1 卡。題卡也換成 r14 #e6ebf1
+     按鈕  綠框小鈕（#6ee7b7 框、#ecfdf5 底、#047857 字、12/700、r8）＝ Send comment／Edit score／Save；白框小鈕（#e6ebf1 框、#475569 字）＝ AI Feedback／View recordings／Cancel；播放鍵 #ecfdf5／#047857
+     沒加  Students 的搜尋框與班級下拉（Results 產品沒有；要加先寫待問）
+   2026-11-13 使用者「result 頁也放上 send reminder」：每個班級指派的兩顆 tile 底下多一行「N not submitted ＋ Send reminder」（全交就沒有這行）→ 確認框（照 Dashboard 的 reminder-popup：
+     N students in Class who have not submitted、Cancel｜Send reminder）→ 送出後同一班 3 秒 cooldown、snackbar「Reminder sent to N students in Class」。寄的對象＝這個班級指派裡還沒交的人，跟 Dashboard 那顆一樣一人一封。
+   網址參數同基準：?type=vocab|mirroring|vocabquiz|quiz|scramble|building|response|openended · &stu= · &unsub=1 · &empty=1 · &remind=1（打開第一個有人沒交的班的確認框）
+                   &ai=1 · &rt=1 · &wrong=1 · &tab=feedback · &edit=1 · &noedit=1 · &grp=b1
+   2026-11-12 跟 v24 接起來（使用者「把 v23 v24 互動連貫再一起」）：v24 的 Result 帶 &name=練習名 &cls=班名|到期;班名|到期 &back=all|progress|ended&view=card|list 進來，
+   這頁的標題、左欄兩組的班名與到期小字照著換（名單裡的人和分數還是這頁自己的假資料）；Back 回 v24 原來的 tab。沒帶參數就回 v24 的 All。
+   =========================================================================== */
+*{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  /* Students 頁（teacher/students）的 slate／emerald */
+  --primary:#059669; --primary-dark:#047857; --primary-lighter:#d1fae5; --g-line:#6ee7b7; --g-wash:#ecfdf5;
+  --text:#0f172a; --text1:#475569; --text2:#64748b; --text3:#94a3b8;
+  --divider:#e6ebf1; --line2:#eef2f7; --hover:#f6f9fc;
+  --grey100:#f8fafc; --grey200:#f1f5f9; --grey300:#e2e8f0;
+  --good:#047857; --fair:#d97706; --poor:#e11d48;
+  --tp-wash:#FFF8E7; --tp-label:#8F6209;
+  --tf:#10B981; --tf-bg:#F0FDF4; --tf-bd:#A7F3D0;
+  --mc:#3B82F6; --mc-bg:#EFF6FF; --mc-bd:#BFDBFE;
+  --ok:#22C55E; --ok-bg:#F0FDF4; --ok-bd:#A7F3D0; --ok-ink:#15803D;
+  --warn:#F59E0B; --warn-bg:#FFF5CC; --warn-ink:#7A4100;
+  --bad:#EF4444; --bad-bg:#FFE9D5; --bad-bd:rgba(255,86,48,.24); --bad-ink:#B71D18;
+  --error:#FF5630;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; overflow:hidden; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+.num{ font-variant-numeric:tabular-nums; }
+
+/* ---------- 外殼（跟基準同一套，config-layout.js） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed rgba(145,158,171,.2); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:#00CB61; }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:#637381; text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:rgba(145,158,171,.08); }
+.nav a.on{ color:#00CB61; background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; height:100vh; }
+/* Students 頁的兩欄：380px 名單｜細節，各自捲（index.js 的 grid） */
+.split{ display:grid; grid-template-columns:380px minmax(0,1fr); height:100vh; }
+@media (max-width:1100px){ .split{ grid-template-columns:330px minmax(0,1fr); } }
+@media (max-width:900px){ .split{ grid-template-columns:1fr; height:auto; } .lp{ height:auto; border-right:0; border-bottom:1px solid var(--divider); } .lp .roster{ max-height:50vh; } .rp{ height:auto; } body{ overflow:auto; } }
+.acct{ width:40px; height:40px; border-radius:50%; background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; flex:none; }
+.acct .av{ width:36px; height:36px; border-radius:50%; background:#BBF1D0; color:#00A749; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+/* ---------- 共用 token ---------- */
+.btn{ border:0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:inherit; line-height:20px; }
+.btn.contained{ background:var(--primary); color:#fff; }
+.btn.contained:hover{ background:var(--primary-dark); }
+.btn.contained:disabled, .btn.contained.dis{ background:var(--grey300); color:var(--text3); box-shadow:none; cursor:default; }
+.btn.text{ background:transparent; color:var(--text); } .btn.text:hover{ background:var(--grey200); }
+.btn.outlined{ background:transparent; border:1px solid rgba(145,158,171,.32); color:var(--text); }
+.btn.outlined:hover{ background:rgba(145,158,171,.08); border-color:var(--text); }
+.btn.sm{ padding:4px 10px; font-size:13px; } .btn .mi{ font-size:18px; }
+.btn.outwarn{ color:var(--warn-ink); }
+/* student-detail.js 的小鈕：綠框（Remind／Adjust）、白框（Skip／Detail） */
+.gbtn{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--g-line); background:var(--g-wash); border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; color:var(--good); line-height:1.4; font-family:inherit; cursor:pointer; white-space:nowrap; }
+.gbtn:hover{ background:var(--primary-lighter); } .gbtn:disabled{ opacity:.45; cursor:default; }
+.gbtn.solid{ background:var(--primary); border-color:var(--primary); color:#fff; } .gbtn.solid:hover{ background:var(--good); }
+.wbtn{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--divider); background:#fff; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; color:var(--text1); line-height:1.4; font-family:inherit; cursor:pointer; white-space:nowrap; }
+.wbtn:hover{ background:var(--grey100); border-color:#cbd5e1; } .wbtn .mi, .gbtn .mi{ font-size:15px; }
+.ibtn{ width:30px; height:30px; border:0; background:transparent; border-radius:8px; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; }
+.ibtn:hover{ background:var(--grey200); color:var(--text); } .ibtn .mi{ font-size:18px; }
+.card{ border:1px solid var(--divider); border-radius:14px; background:#fff; }
+.card.empty{ padding:24px; text-align:center; color:var(--text2); font-size:14px; }
+.eyebrow{ display:flex; align-items:center; gap:12px; margin:0 0 12px; }
+.eyebrow b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); white-space:nowrap; }
+.eyebrow .rule{ flex:1; height:1px; background:var(--divider); min-width:16px; }
+.eyebrow .hint{ font-size:12px; color:var(--text3); white-space:nowrap; }
+.seg{ display:inline-flex; background:var(--grey200); border-radius:9px; padding:3px; }
+.seg button{ border:0; background:transparent; border-radius:7px; padding:0 12px; height:26px; font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; white-space:nowrap; }
+.seg button:hover{ color:var(--text); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.qpill{ height:24px; padding:0 8px; border-radius:999px; background:#F1F5F9; border:1px solid #E2E8F0; color:#475569; font-size:12px; font-weight:700; display:inline-flex; align-items:center; flex:none; }
+.pill{ font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; flex:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.pill.mand{ background:#F1F5F9; color:#475569; }
+.pill.ghost{ border:1px solid var(--divider); color:var(--text3); background:#fff; }
+.tag{ font-size:10px; font-weight:800; letter-spacing:.3px; padding:1px 6px; border-radius:5px; white-space:nowrap; display:inline-flex; align-items:center; }
+.tag.ok{ background:#D3FCD2; color:#118D57; } .tag.new{ background:#DCECFE; color:#193592; } .tag.bad{ background:#FFE9D5; color:#B71D18; } .tag.warn{ background:#FFF5CC; color:#7A4100; } .tag.off{ background:var(--grey200); color:var(--text2); }
+.tchip{ display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 8px; border-radius:999px; border:1px solid var(--divider); background:#fff; font-size:11px; font-weight:600; color:var(--text2); }
+.tchip .mi{ font-size:14px; }
+.tchip.tf{ background:var(--tf-bg); border-color:rgba(16,185,129,.45); color:var(--tf); }
+.tchip.mc{ background:var(--mc-bg); border-color:rgba(59,130,246,.45); color:var(--mc); }
+.play{ width:36px; height:36px; border:0; border-radius:50%; background:var(--g-wash); color:var(--good); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.play:hover{ background:var(--primary-lighter); } .play .mi{ font-size:20px; }
+.play.sm{ width:28px; height:28px; } .play.sm .mi{ font-size:16px; }
+.divider{ height:1px; background:var(--divider); border:0; }
+.cap{ font-size:12px; color:var(--text2); }
+.sub1{ font-size:16px; font-weight:600; } .sub2{ font-size:14px; font-weight:600; }
+.fld{ display:flex; flex-direction:column; gap:8px; }
+.fld > label{ font-size:14px; font-weight:600; color:var(--text); }
+.fld .help{ font-size:12px; color:var(--text2); }
+.inp{ width:100%; border:1px solid var(--divider); border-radius:11px; background:#fff; padding:0 12px; font-family:inherit; font-size:14px; color:var(--text); height:40px; }
+textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical; line-height:1.6; }
+.inp::placeholder{ color:var(--text3); }
+.inp:focus{ outline:0; border-color:var(--g-line); box-shadow:0 0 0 3px var(--primary-lighter); }
+
+/* ---------- 頁殼 ---------- */
+/* ---------- 左欄（student-roster.js） ---------- */
+.lp{ background:#fff; border-right:1px solid var(--divider); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+.lhd{ padding:18px 20px 14px; }
+.back{ display:inline-flex; align-items:center; gap:4px; font-size:12.5px; font-weight:700; color:var(--text2); text-decoration:none; margin:0 0 12px -4px; padding:2px 6px 2px 2px; border-radius:7px; }
+.back:hover{ background:var(--hover); color:var(--text); } .back .mi{ font-size:17px; }
+.ptitle{ display:flex; align-items:center; gap:10px; min-width:0; }
+.ptitle .tico{ width:36px; height:36px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center; }
+.ptitle .tico .mi{ font-size:20px; }
+.ptitle .nm{ font-size:20px; font-weight:800; color:var(--text); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tbadge{ display:inline-block; font-size:11px; font-weight:800; border-radius:7px; padding:2px 9px; line-height:1.5; white-space:nowrap; }
+.rp{ min-width:0; height:100vh; overflow-y:auto; background:rgba(244,247,251,.85); }
+@media (prefers-reduced-motion:no-preference){ .rbody{ animation:rp-in .18s ease; } }
+@keyframes rp-in{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+
+/* ---------- 左欄 ---------- */
+.roster{ flex:1; overflow-y:auto; padding:4px 10px 72px; }
+.grp{ padding-top:10px; }
+.grp + .grp{ margin-top:8px; border-top:1px solid var(--line2); }
+/* 班級段頭＝ student-detail.js 的 SectionHeader（標題 13/800 ＋ 灰計數 pill ＋ 32px 開合鈕） */
+.grp-hd{ width:100%; display:flex; align-items:center; gap:8px; padding:4px 2px 4px 6px; border:0; background:transparent; color:var(--text); text-align:left; }
+.grp-hd .nm{ font-size:13px; font-weight:800; white-space:nowrap; }
+.grp-hd .due{ font-size:12px; font-weight:600; color:var(--text2); white-space:nowrap; }
+.grp-hd .cnt{ font-size:11px; font-weight:800; color:var(--text2); background:var(--line2); border-radius:999px; padding:2px 9px; line-height:1.5; white-space:nowrap; }
+.grp-hd .tog{ margin-left:auto; width:28px; height:28px; border:1px solid var(--divider); border-radius:8px; background:#fff; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.grp-hd:hover .tog{ background:var(--hover); } .grp-hd .tog .mi{ font-size:17px; transition:transform .2s; } .grp-hd.closed .tog .mi{ transform:rotate(180deg); }
+/* 每班三顆 tile（照 Word Game 的 tile：數字大、標籤 10.5/800 大寫） */
+.gstats{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:8px 2px 6px; }   /* 2026-11-12 Perfect 拿掉，剩兩顆 */
+.gstat{ background:var(--hover); border:1px solid var(--divider); border-radius:10px; padding:9px 10px 8px; text-align:center; }
+.gstat .v{ font-size:16px; font-weight:800; line-height:1.2; color:var(--text); }
+.gstat .v small{ font-size:11px; font-weight:700; color:var(--text3); }
+.gstat .l{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--text2); margin-top:3px; white-space:nowrap; }
+.grp-bd{ display:flex; flex-direction:column; gap:2px; padding:2px 0 4px; }
+/* 2026-11-13 Send reminder：tile 底下一行，左邊沒交人數、右邊綠框小鈕 */
+.gremind{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 2px 6px; padding:0 4px; }
+.gremind .n{ font-size:12px; font-weight:700; color:var(--text2); } .gremind .n b{ color:var(--poor); font-weight:800; }
+.gremind .gbtn.cooling{ opacity:.5; pointer-events:none; }
+/* 2026-11-16 沒交的人：紅框，標題列人數＋Send reminder，底下頭像＋名字 */
+.dlg .who{ display:flex; flex-wrap:wrap; gap:6px; }
+.mchip{ display:inline-flex; align-items:center; gap:7px; background:#fff; border:1px solid #FFD6CC; border-radius:999px; padding:5px 12px; font-size:13.5px; font-weight:700; color:var(--text); }
+.mchip .ava{ width:26px; height:26px; font-size:10.5px; border-radius:50%; }
+.toast{ position:fixed; left:50%; bottom:64px; transform:translate(-50%,20px); opacity:0; background:#0f172a; color:#fff; font-size:13px; font-weight:700; padding:11px 18px; border-radius:10px; z-index:1100; pointer-events:none; transition:.2s; }
+.toast.on{ opacity:1; transform:translate(-50%,0); }
+/* 學生列＝ student-roster.js 的列：p12 r13、40px 頭像、名字 14/700、第二行 12/600 */
+.srow{ width:100%; display:flex; align-items:center; gap:10px; padding:8px 12px; border:1.5px solid transparent; border-radius:13px; background:transparent; text-align:left; color:var(--text); transition:background .15s; }
+.srow:hover{ background:var(--hover); }
+.srow.sel, .srow.sel:hover{ background:var(--g-wash); border-color:var(--g-line); }
+.ava{ width:40px; height:40px; border-radius:11px; flex:none; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; line-height:1; user-select:none; }
+.ava.sm{ width:40px; height:40px; } .ava.lg{ width:46px; height:46px; border-radius:13px; font-size:16px; }
+.srow.dis .ava{ opacity:.4; }
+.srow .nm{ flex:1; min-width:0; font-size:14px; font-weight:700; line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.srow.dis .nm{ color:var(--text3); }
+.srow .sc{ font-size:15px; font-weight:800; min-width:34px; text-align:left; flex:none; margin-left:6px; }   /* 靠左：首位數字對齊 */
+.srow .dash{ font-size:13px; font-weight:700; color:var(--text3); min-width:34px; text-align:left; flex:none; margin-left:6px; }
+/* tag 欄：固定寬，沒 tag 也佔位，分數才對得齊 */
+.srow .tags{ width:110px; flex:none; display:flex; flex-wrap:wrap; gap:3px; justify-content:flex-start; }
+.srow .tag{ font-size:11.5px; padding:3px 8px; border-radius:6px; letter-spacing:.2px; }   /* 名單裡的 tag 放大（別處的 .tag 不動） */
+@media (max-width:1100px){ .srow .tags{ width:96px; } }
+
+/* ---------- 右欄 ---------- */
+.rtop{ position:sticky; top:0; z-index:5; background:rgba(244,247,251,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--divider); padding:16px 30px; display:flex; align-items:center; gap:14px; }
+.rtop .who{ flex:1; min-width:0; }
+.rtop h2{ font-size:19px; font-weight:800; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rtop .meta{ font-size:13px; font-weight:600; color:var(--text2); line-height:1.3; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rtop .acct{ margin-left:4px; }
+/* 分數照 practice-detail-popup：22/800 三階色 ＋ / 100 ＋ Late chip */
+.sfield{ flex:none; min-width:220px; background:#fff; border:1px solid #e6ebf1; border-radius:12px; padding:8px 14px 10px; display:flex; flex-direction:column; gap:2px; }
+.sf-hd{ display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:24px; }
+.sf-lbl{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; }   /* 跟左欄 NOT SUBMITTED／SUBMITTED 同一套 */
+.sf-edit{ display:inline-flex; align-items:center; gap:4px; border:0; background:transparent; color:var(--good); font-family:inherit; font-size:12px; font-weight:700; padding:3px 6px; margin-right:-6px; border-radius:6px; cursor:pointer; }
+.sf-edit .mi{ font-size:15px; } .sf-edit:hover{ background:var(--g-wash); }
+.sf-edit:focus-visible{ outline:2px solid var(--good); outline-offset:1px; }
+.sf-main{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.sf-num{ font-size:28px; font-weight:800; line-height:1.1; letter-spacing:-.5px; }
+.sf-num small{ font-size:13px; font-weight:700; color:var(--text3); margin-left:3px; letter-spacing:0; }
+.sf-tags{ display:inline-flex; gap:6px; flex-wrap:wrap; }
+/* 2026-11-18：重交的每一次交卷（直接排在分數卡上）＋ 舊那次的說明 */
+.sf-r{ display:inline-flex; align-items:center; gap:8px; }
+.sf-note{ margin-top:6px; font-size:12.5px; color:var(--text2); }
+.attlist{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid #eef2f7; }
+.attlist button{ display:inline-flex; align-items:center; gap:10px; height:40px; padding:0 14px; border:1.5px solid #e6ebf1; border-radius:10px; background:#fff; font-family:inherit; font-size:13px; color:var(--text); }
+.attlist button:hover{ border-color:#cbd5e1; }
+.attlist button.on{ background:var(--g-wash); border-color:var(--g-line); }
+.attlist b{ font-weight:700; } .attlist .d{ color:var(--text2); } .attlist .sc{ font-weight:800; font-size:15px; }
+.attlist i{ font-style:normal; font-size:10.5px; font-weight:800; padding:1px 6px; border-radius:5px; background:#D3FCD2; color:#118D57; }
+.sfield .stars{ margin-top:2px; }
+.sfield.big{ min-width:0; width:100%; border-radius:14px; border-color:var(--divider); padding:16px 20px 18px; gap:6px; margin-bottom:24px; }
+.sfield.big .sf-lbl{ font-size:11px; }
+.sfield.big .sf-edit{ font-size:13px; padding:5px 8px; margin-right:-8px; }
+.sfield.big .sf-edit .mi{ font-size:16px; }
+.sfield.big .sf-main{ gap:14px; }
+.sfield.big .sf-num{ font-size:48px; letter-spacing:-1.5px; line-height:1; }
+.sfield.big .sf-num small{ font-size:18px; margin-left:5px; }
+.sfield.big .tag{ font-size:12px; padding:4px 10px; }
+.soc{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none; }
+.soc .l1{ display:flex; align-items:center; gap:8px; }
+.soc .big{ font-size:22px; font-weight:800; line-height:1.1; } .soc .big small{ font-size:12px; font-weight:600; color:var(--text3); margin-left:3px; }
+.rbody{ padding:24px 30px 96px; max-width:1000px; }
+.panel{ display:flex; flex-direction:column; gap:24px; }
+.emptyst{ min-height:60vh; display:flex; align-items:center; justify-content:center; padding:32px; color:var(--text2); font-size:13px; font-weight:600; }
+/* SectionHeader：30px icon 方塊 ＋ 標題 13/800 ＋ 灰計數 pill ＋ 右邊 32px 開合鈕 */
+.sech{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.sech .ic{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; } .sech .ic .mi{ font-size:19px; }
+.sech b{ font-size:13px; font-weight:800; color:var(--text); white-space:nowrap; }
+.sech .cnt{ font-size:11px; font-weight:800; color:var(--text2); background:var(--line2); border-radius:999px; padding:2px 9px; line-height:1.5; white-space:nowrap; }
+.sech .r{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+.sech .tog{ width:32px; height:32px; border:1px solid var(--divider); border-radius:9px; background:#fff; color:var(--text2); display:inline-flex; align-items:center; justify-content:center; }
+.sech .tog:hover{ background:#f5f8fb; } .sech .tog .mi{ font-size:18px; transition:transform .2s; } .sech.closed .tog .mi{ transform:rotate(180deg); }
+.sech.closed{ margin-bottom:0; }
+.secbox{ padding:16px 18px; }
+.rub{ display:flex; flex-direction:column; gap:10px; }
+/* 2026-11-18：Score breakdown 改成數字並排（使用者「這裡不用用 bar 來呈現」） */
+.rub:has(.rubstat){ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:0; }
+.rubstat{ display:flex; flex-direction:column; gap:4px; padding:2px 16px; }
+.rubstat + .rubstat{ border-left:1px solid #eef2f7; }
+.rubstat .l{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; }
+.rubstat .v{ font-size:26px; font-weight:800; line-height:1.1; letter-spacing:-.3px; }
+.rubstat .v small{ font-size:14px; font-weight:700; margin-left:1px; }
+.cards{ display:flex; flex-direction:column; gap:12px; }
+
+/* ---------- 句卡（Mirroring V1 ＋ Vocabulary V2 同一副骨架：題號膠囊 ＋ 標頭列 ＋ 內容） ---------- */
+.qcard{ overflow:hidden; }
+.qcard.ap{ box-shadow:inset 4px 0 0 var(--warn); }
+.qc-hd{ display:flex; align-items:center; gap:10px; padding:12px 16px; flex-wrap:wrap; }
+.qc-hd .grow{ flex:1; }
+.qc-hd .r{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+.qc-bd{ padding:4px 16px 16px; }
+.sent{ display:flex; flex-wrap:wrap; gap:14px 18px; align-items:flex-end; }
+.gw{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+.gw .py{ font-size:11px; line-height:1.2; color:var(--text3); }
+.gw .zh{ font-size:22px; font-weight:700; line-height:1.3; }
+.gw .en{ font-size:12px; color:var(--text2); }
+.sent-en{ font-size:13px; color:var(--text2); margin-top:8px; }
+.stars{ display:inline-flex; align-items:center; }
+.starnum{ font-size:15px; font-weight:800; white-space:nowrap; } .starnum small{ font-size:11px; font-weight:700; color:var(--text3); margin-left:1px; }
+.ai-bd{ border-top:1px solid var(--divider); padding:16px; display:flex; flex-direction:column; gap:16px; background:var(--grey100); }
+.fbsecs{ display:flex; gap:12px; align-items:stretch; }
+.fbsec{ flex:1; min-width:0; border-radius:12px; background:#fff; overflow:hidden; display:flex; flex-direction:column; }
+.fbsec .hd{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--divider); }
+.fbsec .hd .mi{ font-size:18px; color:var(--text2); } .fbsec .hd b{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); }
+.fbsec .hd .pill{ margin-left:auto; }
+.fbsec .bd{ padding:14px; display:flex; flex-direction:column; gap:12px; }
+.fbsec .sum{ font-size:14px; font-weight:600; }
+.fbitem{ display:flex; flex-direction:column; gap:4px; }
+.fbitem .w{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; }
+.fbitem .w u{ text-decoration:none; background-image:linear-gradient(transparent 60%, #FDE68A 60%); }
+.fbitem .w u.red{ background-image:linear-gradient(transparent 60%, #FECACA 60%); }
+.fbitem p{ font-size:13px; line-height:1.6; padding-left:22px; color:var(--text2); }
+.fbitem p.tip{ color:var(--text); }
+.legend{ display:flex; gap:16px; margin-bottom:8px; }
+.legend span{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); }
+.legend i{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+.wordrow{ display:flex; flex-wrap:wrap; gap:8px; }
+.wbox{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 12px; border-radius:10px; background:#fff; border:1.5px solid var(--divider); min-width:56px; }
+.wbox .py{ font-size:11px; line-height:1.2; color:var(--text3); white-space:nowrap; }
+.wbox .zh{ font-size:16px; font-weight:700; line-height:1.2; }
+.pitchbox{ border-radius:12px; background:#fff; padding:8px; }
+
+/* V2 */
+.v2-top{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 0 12px; }
+.v2-top .lf{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.v2-top .res{ font-size:18px; font-weight:800; }
+.v2-top .res.ok{ color:var(--text); } .v2-top .res.perfect{ color:var(--ok); } .v2-top .res.retry{ color:var(--bad); }
+.part{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text2); }
+.part i{ width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-style:normal; }
+.part i .mi{ font-size:11px; } .part b{ font-size:14px; font-weight:800; }
+.chartbox{ padding:12px 12px 8px; border-radius:12px; background:var(--grey100); }
+.cols{ display:flex; padding:0 20px 0 40px; margin-bottom:4px; }
+.col{ flex:1; min-width:44px; text-align:center; padding:4px 0; border-left:1px dashed var(--divider); border-radius:10px; cursor:pointer; }
+.col:first-child{ border-left:0; }
+.col .py{ display:block; font-size:12px; line-height:1.2; color:var(--text3); white-space:nowrap; }
+.col .zh{ font-size:20px; font-weight:700; line-height:1.2; }
+.col .ic{ display:flex; justify-content:center; margin-top:2px; }
+.col.sel{ outline:2px solid currentColor; } .col.dim{ opacity:.45; }
+.clegend{ display:flex; justify-content:center; align-items:center; gap:20px; margin-top:6px; font-size:12px; color:var(--text2); }
+.clegend span{ display:inline-flex; align-items:center; gap:8px; }
+.clegend .solid{ width:24px; height:3px; background:#6b7280; border-radius:2px; }
+.clegend .dash{ width:24px; border-top:3px dashed #9ca3af; } .clegend .mi{ font-size:14px; }
+.wfb{ display:flex; border-radius:12px; padding:16px; background:var(--grey100); margin-top:12px; }
+.wfb .lf{ min-width:96px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-right:20px; border-right:1px solid var(--divider); }
+.wfb .lf .zh{ font-size:44px; font-weight:800; line-height:1; } .wfb .lf .py{ font-size:14px; font-weight:600; color:var(--text3); margin-top:4px; }
+.wfb .rt2{ flex:1; display:flex; gap:12px; padding-left:16px; }
+.tonecard{ flex:1; background:#fff; border-radius:10px; padding:12px 14px; }
+.tonecard .t{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.tonecard .two{ display:flex; gap:12px; }
+.tonecard .one{ flex:1; display:flex; flex-direction:column; align-items:center; }
+.tonecard .one .lb{ font-size:11px; color:var(--text2); } .tonecard .one .pz{ font-size:26px; font-weight:800; margin-bottom:2px; } .tonecard .one .tl{ font-size:11px; font-weight:600; margin-top:4px; }
+.tonecard .vd{ width:1px; background:var(--divider); }
+.tonecard .hint{ text-align:center; font-size:12px; color:var(--text2); margin-top:10px; }
+.nodet{ flex:1; display:flex; align-items:center; gap:14px; padding:4px; }
+.nodet .ic{ width:40px; height:40px; border-radius:50%; background:var(--grey200); display:flex; align-items:center; justify-content:center; color:var(--text3); }
+.nodet b{ display:block; font-size:15px; font-weight:700; } .nodet span{ font-size:13px; color:var(--text2); }
+
+/* 重錄歷史 */
+.rt{ border-top:1px solid var(--divider); padding:8px 16px 10px; }
+.rt .notes{ font-size:12px; color:var(--text2); margin-bottom:2px; }
+.rt .rows{ display:flex; flex-direction:column; gap:2px; padding-top:6px; }
+.rt .row{ display:flex; align-items:center; gap:8px; border-radius:8px; padding-right:6px; }
+.rt .row.sel{ background:var(--g-wash); }
+.rt .row .pick{ flex:1; display:flex; align-items:center; gap:16px; padding:7px 10px; border:0; background:transparent; border-radius:8px; text-align:left; color:var(--text); }
+.rt .row .pick:disabled{ cursor:default; } .rt .row .pick:not(:disabled):hover{ background:var(--hover); }
+.rt .row .an{ font-size:13px; color:var(--text2); min-width:72px; }
+.rt .row .sc{ font-size:14px; font-weight:700; } .rt .row .sc small{ font-size:12px; font-weight:400; color:var(--text2); }
+.rt .row .ns{ font-size:13px; color:var(--warn-ink); }
+
+/* ---------- Quiz／Scramble ---------- */
+.qtext{ font-size:16px; font-weight:600; line-height:1.6; }
+.ans{ margin-top:10px; padding:10px 12px; border-radius:8px; border:1px solid; display:flex; align-items:center; gap:8px; font-size:14px; }
+.ans + .ans{ margin-top:8px; }
+.ans.ok{ background:var(--ok-bg); border-color:var(--ok-bd); color:var(--ok-ink); }
+.ans.bad{ background:var(--bad-bg); border-color:var(--bad-bd); color:var(--bad-ink); }
+.ans .mi{ font-size:16px; } .ans b{ font-weight:700; }
+.ordlbl{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); display:block; margin-bottom:6px; }
+.tiles{ display:flex; flex-wrap:wrap; gap:6px; }
+.tile{ height:30px; padding:0 10px; border-radius:8px; border:1px solid var(--divider); background:#fff; font-size:14px; font-weight:600; display:inline-flex; align-items:center; }
+.tile.bad{ border-color:rgba(255,86,48,.45); background:var(--bad-bg); color:var(--bad-ink); }
+.ordblk + .ordblk{ margin-top:12px; }
+
+/* ---------- Follow Pattern ---------- */
+.refbox{ margin-top:12px; padding:10px 12px; background:var(--tp-wash); border-radius:10px; }
+.refbox .lb{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--tp-label); }
+.refbox .v{ font-size:15px; font-weight:600; margin-top:2px; }
+.ansbox{ margin-top:12px; padding:10px 12px; background:var(--grey100); border-radius:10px; }
+.ansbox .lb{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.ansbox .row{ display:flex; align-items:center; gap:12px; }
+.ansbox .a{ font-size:16px; font-weight:700; } .ansbox .heard{ font-size:12px; color:var(--text2); margin-top:2px; }
+.crits{ display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:12px; }
+.crit{ display:flex; gap:6px; align-items:flex-start; }
+.crit .mi{ font-size:18px; margin-top:1px; }
+.crit b{ display:block; font-size:13px; font-weight:700; } .crit span{ font-size:12px; color:var(--text2); }
+.corrbox{ margin-top:12px; padding:10px 12px; background:var(--warn-bg); border-radius:10px; box-shadow:inset 3px 0 0 #FFAB00; }
+.corrbox .lb{ font-size:11px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--warn-ink); } .corrbox .v{ font-size:15px; font-weight:600; margin-top:2px; color:var(--warn-ink); }
+.fpfb{ margin-top:10px; font-size:13px; color:var(--text2); font-style:italic; }
+.noans{ font-size:14px; color:var(--text2); margin-top:12px; }
+.rep{ border-top:1px solid var(--divider); padding:12px 16px; background:var(--grey100); }
+.rep .s{ font-size:15px; font-weight:700; } .rep .tr{ font-size:12px; color:var(--text2); } .rep .sm{ font-size:12px; color:var(--text2); margin-top:4px; }
+
+/* ---------- QA ---------- */
+.qabd{ padding:16px; }
+.convo{ display:flex; flex-direction:column; gap:20px; }
+.turn{ display:flex; flex-direction:column; gap:6px; }
+.turn.t{ align-items:flex-start; } .turn.s{ align-items:flex-end; }
+.turn .line{ display:flex; gap:8px; align-items:flex-start; }
+.tbub{ background:var(--grey200); border-radius:12px; padding:10px 14px; font-size:15px; max-width:560px; }
+.sbub{ border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; align-items:flex-start; border:1px solid; }
+.sbub.hi{ background:var(--ok-bg); border-color:var(--ok-bd); } .sbub.mid{ background:var(--warn-bg); border-color:#FFE49E; } .sbub.lo{ background:var(--bad-bg); border-color:var(--bad-bd); }
+.checks{ display:flex; flex-direction:column; gap:4px; max-width:420px; }
+.check{ background:var(--bad-bg); border-radius:8px; padding:6px 12px; }
+.check b{ display:block; font-size:12px; font-weight:700; color:var(--bad-ink); } .check span{ font-size:12px; color:var(--text2); }
+.aifb{ display:flex; flex-direction:column; gap:20px; }
+.statrow{ display:flex; gap:24px; font-size:13px; color:var(--text2); }
+.statrow b{ color:var(--text); font-weight:700; }
+.aifb p{ font-size:14px; line-height:1.6; }
+.fblist{ display:flex; flex-direction:column; gap:6px; }
+.fblist li{ list-style:none; display:flex; gap:8px; align-items:flex-start; font-size:14px; }
+.fblist li .mi{ font-size:18px; flex:none; margin-top:1px; }
+.fblist li .n{ width:18px; font-weight:700; color:var(--text2); flex:none; }
+
+/* ---------- 對話框 ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(33,43,54,.48); display:flex; align-items:center; justify-content:center; z-index:100; padding:24px; }
+.dlg{ background:#fff; border-radius:16px; width:100%; max-width:420px; overflow:hidden; box-shadow:0 24px 48px rgba(33,43,54,.24); }
+.dlg-hd{ padding:20px 24px 0; } .dlg-hd h3{ font-size:18px; font-weight:700; } .dlg-hd p{ font-size:13px; color:var(--text2); margin-top:4px; }
+.dlg-bd{ padding:16px 24px; }
+.dlg-ft{ padding:16px 24px; display:flex; justify-content:flex-end; gap:8px; border-top:1px solid var(--divider); }
+.dlg-ft .spacer{ flex:1; }
+/* 2026-11-16 第二輪整理左欄（使用者「這塊排版很亂」→「其他的先照你的改」）：同一條左邊線、型別小字、平均分進班名下、箭頭沒框、沒交只留紅標題 */
+.ptitle{ align-items:flex-start; }
+.ptitle .tt{ display:flex; flex-direction:column; min-width:0; }
+.ptitle .tsub{ font-size:12.5px; font-weight:600; color:var(--text2); margin-top:1px; }
+.grp-hd .ginfo{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.grp-hd .ginfo .l1{ display:flex; align-items:baseline; gap:6px; }
+.grp-hd .ginfo .avg{ margin-left:0 !important; font-size:12.5px; font-weight:600; }
+.grp-hd .ginfo .avg b{ font-size:14px; }
+.grp-hd .tog{ margin-left:auto !important; border:0 !important; background:transparent !important; color:var(--text2); }
+.grp-hd:hover .tog{ background:var(--hover) !important; }
+.tbtn{ display:inline-flex; align-items:center; gap:4px; border:0; background:transparent; color:var(--good); font:inherit; font-size:12.5px; font-weight:700; padding:4px 6px; margin-right:-6px; border-radius:6px; cursor:pointer; }
+.tbtn .mi{ font-size:16px; } .tbtn:hover{ background:var(--g-wash); } .tbtn.cooling{ opacity:.5; pointer-events:none; }
+/* 2026-11-16 第三輪：階級層次（使用者「重新排版這塊、要有階級層次」）
+   第 1 層 練習（22/800 ＋ 13 灰小字）→ 細線 → 第 2 層 班級（18/800 ＋ 14 灰 meta 行）→ 第 3 層 區段標籤（11/800 大寫字距）→ 第 4 層 名單
+   班與班之間細線分隔；只用字級、粗細、留白、線，不加色 */
+.lhd{ padding-bottom:18px; border-bottom:1px solid var(--divider); }
+.ptitle .nm{ font-size:22px; line-height:1.25; }
+.ptitle .tsub{ font-size:13px; margin-top:3px; }
+.roster{ padding-top:0; }
+.grp{ padding-top:18px; }
+.grp + .grp{ margin-top:14px; border-top:1px solid var(--divider); }
+.grp-hd{ align-items:flex-start; padding-top:0; padding-bottom:0; }
+.grp-hd .ginfo{ gap:3px; }
+.grp-hd .ginfo .nm{ font-size:18px; font-weight:800; line-height:1.3; }
+.grp-hd .gmeta{ display:flex; align-items:baseline; gap:6px; font-size:14px; font-weight:600; color:var(--text2); }
+.grp-hd .gmeta .dot{ color:var(--text3); }
+.grp-hd .gmeta b{ font-size:14px; font-weight:800; margin-left:3px; }
+.grp-hd .tog{ margin-top:-2px; }
+.eyebrow{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); display:inline-flex; align-items:center; gap:6px; }
+.eyebrow .num{ letter-spacing:0; }
+.eyebrow.bad{ color:var(--poor); }
+.eyebrow.sub{ display:flex; padding:0 13.5px; margin:18px 0 6px; font-size:10.5px; letter-spacing:.4px; color:#94a3b8; }   /* 跟 .notsub .lbl 同一套 */
+/* 2026-11-16 使用者「跟 dashboard UI 一樣」：沒交區照抄 v25 Dashboard 的 .notsub ＋ .remind（白底灰框、灰色大寫小標、白底灰框名字、綠色實心按鈕） */
+.notsub{ margin:16px 10px 4px; background:#fff; border:1px solid #e6ebf1; border-radius:12px; padding:12px 14px; }
+.notsub .lbl{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; margin-bottom:8px; }
+.notsub .inner{ display:flex; align-items:center; gap:12px; }
+.notsub .names{ flex:1; display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
+.notsub .names span{ font-size:11.5px; font-weight:700; color:#334155; background:#fff; border:1px solid #e6ebf1; border-radius:7px; padding:4px 9px; white-space:nowrap; }
+.remind{ flex-shrink:0; background:linear-gradient(145deg,#10b981,#059669); color:#fff; border:0; border-radius:9px; padding:9px 16px; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.notsub .hd{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.notsub .hd .lbl{ margin-bottom:0; }
+/* 2026-11-16 對齊（使用者「排版對齊」）：框邊＝學生列選取框邊（roster 內 0）；字邊＝頭像左緣（框內 13.5＝列的 1.5 框＋12 內距）；標題、班名、標籤同一條 */
+.notsub{ margin:16px 0 4px !important; padding:12px 12px 12px 12.5px !important; }
+.grp-hd{ padding-left:13.5px !important; padding-right:12.5px !important; }
+.grp-hd .tog{ margin-right:-6px; }   /* 箭頭圖示本身有留白，往右推讓圖示右緣＝按鈕右緣 */
+.lhd{ padding-left:23.5px !important; padding-right:16px !important; }
+/* 2026-11-16 每班一張淺灰底卡（使用者「class 欄位新增容器底色，折疊起來時看得出來區分」）
+   卡內：學生列 hover 改白；沒交框白底在灰卡上；班與班之間用卡距分、不用細線
+   對齊：卡內距 8 → 框邊＝列選取框邊＝卡內 8；字邊（班名、標籤、名字、頭像）＝卡內 8＋13.5；練習標題跟著往右對到同一條 */
+.roster .grp{ background:#F4F6F9; border:1px solid #E6EBF1; border-radius:14px; padding:14px 8px 8px !important; margin-top:12px; }
+.roster .grp + .grp{ border-top:1px solid #E6EBF1 !important; margin-top:12px !important; }
+.grp-hd{ padding-left:13.5px !important; }
+.roster .grp.closed{ padding-bottom:14px !important; }
+.roster .grp .srow:hover{ background:#fff; }
+.roster .grp .notsub{ margin-top:14px !important; }
+.roster .grp .grp-bd{ padding-bottom:0; }
+.roster{ padding-top:12px !important; scrollbar-gutter:stable; }   /* 捲軸位置一直留著：展開（有捲軸）跟收起（沒捲軸）卡片一樣寬 */
+.lhd{ padding-left:32.5px !important; }
+.remind:hover{ filter:brightness(.96); } .remind .mi{ font-size:15px; } .remind.cooling{ opacity:.6; pointer-events:none; }
+/* 2026-11-16 確認框列出會收到的人；標頭平均分 */
+.dlg-hd p{ margin-top:6px; line-height:1.5; }
+.dlg .dlg-bd{ padding:14px 24px 18px; }
+.dlg .mchip{ border-color:var(--divider); background:var(--hover); }
+.grp-hd .avg{ margin-left:auto; font-size:12px; font-weight:700; color:var(--text2); white-space:nowrap; }
+.grp-hd .avg b{ font-size:15px; font-weight:800; margin-left:4px; color:var(--text); }
+.grp-hd .avg + .tog{ margin-left:10px; }
+/* 2026-11-16 使用者「放大 Class 7A · Due Nov 18」：班名 13→17、到期 12→14；左邊跟標題對齊 */
+.grp-hd{ padding-left:10px; }
+.grp-hd .nm{ font-size:17px; }
+.grp-hd .due{ font-size:14px; }
+
+/* ---------- 說明條 ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px; padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="../v25-teacher-dashboard/proposal.html"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" class="on"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap"><div class="split" id="app"></div></div>
+
+<div class="toast" id="toast"></div>
+<div class="baseline">
+  <span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v23 · 套其他頁的 token · 對照組 <a href="results-baseline.html" id="blbase">現行複刻 ↗</a></span>
+  <span id="blinks"></span>
+</div>
+
+<script>
+(function(){
+  const M = window.V23; const esc = M.esc;
+  const qs = new URLSearchParams(location.search);
+  const typeKey = M.PRACTICES[qs.get('type')] ? qs.get('type') : 'vocab';
+  const P = { ...M.PRACTICES[typeKey], ...(qs.get('name') ? { name: qs.get('name') } : {}) };
+  // v24 帶進來的班級（班名|到期;班名|到期）：換掉前兩組的班名與到期小字
+  (qs.get('cls') || '').split(';').filter(Boolean).forEach((item, i) => { const [nm, due] = item.split('|'); if (M.GROUPS[i] && !M.GROUPS[i].left) { M.GROUPS[i].className = nm || M.GROUPS[i].className; M.GROUPS[i].due = due || ''; } });
+    // back=dashboard：從 v25 Teacher Dashboard 的 View results 進來的，Back 回 Dashboard（2026-11-13）；其餘回 v24 的 tab
+  const backHref = qs.get('back') === 'dashboard' ? '../v25-teacher-dashboard/proposal.html' : `../v24-practice-list-ended/proposal.html?tab=${['all', 'unassigned', 'progress', 'ended'].includes(qs.get('back')) ? qs.get('back') : 'all'}${qs.get('view') === 'list' ? '&view=list' : ''}`;
+  const S = {
+    stu: qs.get('unsub') === '1' ? 'noah' : (qs.get('stu') || M.firstSubmitted()),
+    remind: null, cooling: new Set(),   // Send reminder：開著確認框的班 key；3 秒 cooldown 的班
+    empty: qs.get('empty') === '1',
+    canEdit: qs.get('noedit') !== '1',
+    ai: qs.get('ai') === '1', rt: qs.get('rt') === '1', wrong: qs.get('wrong') === '1',
+    tab: qs.get('tab') === 'feedback' ? 'feedback' : 'conversation',
+    edit: qs.get('edit') === '1',
+    collapsed: new Set((qs.get('grp') || '').split(',').filter(Boolean)),
+    closed: new Set(),   // 右欄收起的段（SectionHeader 的開合鈕）
+    comment: '',
+    att: null,   // 2026-11-18：看第幾次交卷（null＝最新；數字＝prev 的 index）
+  };
+  if (S.empty) { M.GROUPS.forEach((g) => g.students.forEach((s) => { s.base = null; })); S.stu = null; }   // 沒人交：產品 findFirstSubmitted 回 null，左欄沒有選中
+  document.getElementById('blbase').href = `results-baseline.html${location.search}`;
+
+  /* ---------- 左欄（student-roster.js 的名單） ---------- */
+  const AVATAR_COLORS = ['#2563EB', '#0B7A3B', '#EA7A21', '#7C3AED', '#e11d48', '#0369a1'];   // utils/name.js
+  const avatarColor = (name) => AVATAR_COLORS[(name.charCodeAt(0) + name.length) % AVATAR_COLORS.length];
+  const initials = (name) => { const p = name.trim().split(/\s+/); return (p.length === 1 ? p[0].slice(0, 2) : p[0][0] + p[1][0]).toUpperCase(); };
+  const avatar = (name, cls = '') => `<span class="ava ${cls}" style="background:linear-gradient(145deg, ${avatarColor(name)}cc, ${avatarColor(name)})">${initials(name)}</span>`;
+  const tier = (score) => (score >= 80 ? 'var(--good)' : score >= 60 ? 'var(--fair)' : 'var(--poor)');   // practice-detail-popup SCORE_TIER_COLORS
+  const lateLabel = (d) => (d ? `Late ${d} day${d === 1 ? '' : 's'}` : 'Late');   // 2026-11-18：寫出遲交幾天（使用者）
+  const renderRow = (s) => {
+    const submitted = s.base != null; const score = M.scoreOf(s);
+    // 列上只放 Late（2026-11-13 使用者「先只留下 late 的 tag」）；Old version／Adjusted 進右欄標頭才看
+    const flags = (submitted && M.lateOf(s) != null ? `<span class="tag bad" title="${lateLabel(s.lateDays)} · ×${M.lateOf(s)}%">${s.lateDays ? `Late ${s.lateDays}d` : 'Late'} · ×${M.lateOf(s)}%</span>` : '')   // 名單窄：寫 2d，滑過看全句
+      + (submitted && s.prev && s.prev.length ? `<span class="tag off" title="${s.prev.length} earlier attempt${s.prev.length > 1 ? 's' : ''} before submitting — the last one scored ${s.prev[s.prev.length - 1].base}">Attempt ${s.prev.length} · ${s.prev[s.prev.length - 1].base}</span>` : '');   // 2026-11-18：重交過——寫上一次的分數，不寫差幾分（使用者）
+    const adj = '';
+    // 2026-11-12 使用者「重新排列：學生名、成績、tag（如果有）；Submitted 不用」→ 一行：名字｜分數｜tag 欄（沒 tag 留空，分數才對得齊）
+    return `<button class="srow ${s.id === S.stu ? 'sel' : ''} ${submitted ? '' : 'dis'}" data-stu="${s.id}">${avatar(s.name)}<span class="nm">${esc(s.name)}</span>${submitted ? `<span class="sc num" style="color:${tier(score)}">${score}</span>` : '<span class="dash">—</span>'}<span class="tags">${flags}${adj}</span></button>`;
+  };
+  const renderGroup = (g) => {
+    // 2026-11-16 使用者「not submitted 的學生名字要明顯一點、跟 send reminder 放在一起、not submitted 的資訊出現一次就好」
+    //   → 沒交的人移出名單，進數字框底下的紅框（標題列＝人數＋Send reminder，底下頭像＋名字）；標頭的 8/10 submitted 小標拿掉（數字框已有）
+    const open = !S.collapsed.has(g.key); const all = M.sortedStudents(g);
+    const rows = all.filter((x) => x.base != null); const missing = all.filter((x) => x.base == null);
+    return `<div class="grp ${open ? '' : 'closed'}"><button class="grp-hd ${open ? '' : 'closed'}" data-grp="${g.key}" aria-expanded="${open}"><span class="ginfo"><span class="nm">${esc(g.className)}</span>${g.due ? `<span class="gmeta"><span>${esc(g.due)}</span></span>` : ''}</span><span class="tog"><span class="mi">expand_less</span></span></button>
+      ${missing.length ? `<div class="notsub"><div class="hd"><div class="lbl">Not submitted (${missing.length})</div>
+        <button class="remind ${S.cooling.has(g.key) ? 'cooling' : ''}" data-remind="${g.key}"><span class="mi">email</span>Send reminder</button></div>
+        <div class="names">${missing.map((x) => `<span>${esc(x.name)}</span>`).join('')}</div></div>` : ''}
+      ${open && rows.length ? `<div class="grp-bd"><div class="eyebrow sub">Submitted</div>${rows.map(renderRow).join('')}</div>` : ''}</div>`;
+  };
+  const renderLeft = () => `<aside class="lp" aria-label="Students">
+      <div class="lhd">
+        <a class="back" href="${backHref}"><span class="mi">arrow_back</span>Back</a>
+        <div class="ptitle"><span class="tico" style="background:${P.tag.wash};color:${P.tag.label}"><span class="mi">${P.tag.icon}</span></span><span class="tt"><span class="nm">${esc(P.name)}</span><span class="tsub">${P.label}</span></span></div>
+      </div>
+      <div class="roster">${M.GROUPS.filter((g) => !(g.left && S.empty)).map(renderGroup).join('')}</div>
+    </aside>`;
+
+  /* ---------- 右欄共用 ---------- */
+  const overrideCtl = (h) => {
+    const canOverride = S.canEdit && !h.student.group.left && M.OVERRIDABLE.has(P.practiceType);
+    // 2026-11-16 使用者「放在分數欄位、重新排版這些資訊」→ 白底分數欄：第 1 層 SCORE 小標＋文字鈕 Edit score；第 2 層 大分數；第 3 層 狀態 tag 貼在分數右邊；星（V1）在最下
+    const tags = `${h.override != null && M.OVERRIDABLE.has(P.practiceType) ? '<span class="tag warn">Adjusted</span>' : ''}${h.old ? `<span class="tag off" title="This student answered an older version of the practice">v${h.old} · Old version</span>` : ''}${h.late != null ? `<span class="tag bad">${lateLabel(h.student.lateDays)} · ×${h.late}%</span>` : ''}`;
+    // 2026-11-16 使用者「直接放在 Score breakdown 上面、變成一個大欄位」→ 從貼頂列移到右欄內容最上面，全寬大卡
+    // 2026-11-18：交出去之前練過的學生——每次作答一顆：之前的叫 Attempt N、交出去的叫 Submission（使用者「第一次是 attempt，第二次才是 submission」）；看 Attempt 不能改分
+    const s0 = M.studentById(S.stu), subs = s0 && s0.prev && s0.prev.length ? [...s0.prev, { base: s0.base, on: s0.on }] : null;
+    const viewing = subs ? (S.att == null ? subs.length - 1 : S.att) : 0, earlier = subs && viewing < subs.length - 1;
+    // 2026-11-18：每一次交卷直接排在分數卡上（使用者「讓這些內容直接顯示在第一層」），不再收在下拉裡
+    const attList = subs ? `<div class="attlist" role="tablist" aria-label="Submissions">${subs.map((x, k) => { const sc = k === subs.length - 1 ? M.scoreOf(s0) : x.base;
+      return `<button role="tab" aria-selected="${k === viewing}" class="${k === viewing ? 'on' : ''}" data-att="${k === subs.length - 1 ? -1 : k}"><b>${k === subs.length - 1 ? 'Submission' : `Attempt ${k + 1}`}</b><span class="d">${x.on}</span><span class="num sc" style="color:${tier(sc)}">${sc}</span></button>`; }).join('')}</div>` : '';
+    const tagsShown = earlier ? '<span class="tag off">Attempt</span>' : tags;
+    return `<div class="sfield big">
+      <div class="sf-hd"><span class="sf-lbl">Score</span><span class="sf-r">${canOverride && !earlier ? '<button class="sf-edit" data-act="edit"><span class="mi">edit</span>Edit score</button>' : ''}</span></div>
+      <div class="sf-main"><span class="sf-num num" style="color:${tier(h.score)}">${h.score}<small>/100</small></span>${tagsShown ? `<span class="sf-tags">${tagsShown}</span>` : ''}</div>
+      ${earlier ? `<div class="sf-note">Practice attempt on ${subs[viewing].on}, not submitted. The submission (${M.scoreOf(s0)}) is the score on the list.</div>` : ''}
+      ${attList}
+</div>`;   // 2026-11-18：分數卡底下的星星拿掉（使用者）——只看 /100
+  };
+  // 右欄貼頂 bar（student-detail.js 的 sticky top bar）：頭像 ＋ 名字 ＋「班級 · 題數」＋ 分數 ＋ 帳號
+  const topbar = (h, meta) => `<div class="rtop">${avatar(h.student.name, 'lg')}<div class="who"><h2>${esc(h.student.name)}</h2><div class="meta"><span>${h.student.group.className}</span>${meta ? `<span>·</span><span>${meta}</span>` : ''}</div></div><div class="acct"><div class="av">L</div></div></div>`;
+  // SectionHeader（student-detail.js）：icon 方塊 ＋ 標題 ＋ 計數 pill ＋ 右邊控制項 ＋ 開合鈕
+  const sech = (key, icon, bg, color, title, count, right = '') => { const closed = S.closed.has(key);
+    return `<div class="sech ${closed ? 'closed' : ''}"><span class="ic" style="background:${bg};color:${color}"><span class="mi">${icon}</span></span><b>${title}</b>${count ? `<span class="cnt">${count}</span>` : ''}<span class="r">${right}<button class="tog" data-sec="${key}" aria-expanded="${!closed}" aria-label="${closed ? 'Expand' : 'Collapse'} ${title}"><span class="mi">expand_less</span></button></span></div>`; };
+  const section = (key, icon, bg, color, title, count, body, right = '') => `<div>${sech(key, icon, bg, color, title, count, right)}${S.closed.has(key) ? '' : body}</div>`;
+  const commentBox = (h) => {
+    if (!S.canEdit || h.student.group.left) return '';
+    const val = S.comment || h.comment || '';
+    return section('comment', 'rate_review', 'var(--g-wash)', 'var(--good)', 'Teacher comment', '', `<div class="card secbox"><div class="fld">
+      <textarea id="tc" class="inp" aria-label="Teacher comment" placeholder="Leave your comment for the student here..." maxlength="2000" data-comment>${esc(val)}</textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between"><span class="help">${val.length} / 2000 characters</span><button class="gbtn" ${val.trim() ? '' : 'disabled'}><span class="mi">send</span>${h.comment ? 'Update comment' : 'Send comment'}</button></div></div></div>`);
+  };
+  const playBtn = (sm) => `<button class="play ${sm ? 'sm' : ''}" aria-label="Play student recording" title="Student recording"><span class="mi">play_arrow</span></button>`;
+  const retakeList = (total, engine, opts = {}) => {
+    if (!total || total < 1) return '';
+    const open = opts.open; const rows = [];
+    for (let i = 1; i <= total; i += 1) {
+      const last = i === total; const unscored = opts.unscoredAt === i;
+      const sc = unscored ? '<span class="ns">Not scored · too short</span>'
+        : engine === 'V2' ? `<span class="sc num">${Math.max(40, opts.base - (total - i) * 9)}<small> / 100</small></span>`
+        : starNum(Math.max(1, opts.base - (total - i) * 0.5));
+      rows.push(`<div class="row ${last ? 'sel' : ''}"><button class="pick" ${unscored ? 'disabled' : ''} aria-pressed="${last}"><span class="an">Attempt ${i}</span>${sc}</button>${playBtn(true)}</div>`);
+    }
+    return `<div class="rt">${opts.notes ? `<div class="notes">${opts.notes}</div>` : ''}
+      <button class="wbtn" data-act="rt"><span class="mi">${open ? 'expand_less' : 'expand_more'}</span>${open ? 'Hide recordings' : `View all ${total} recording${total === 1 ? '' : 's'}`}</button>
+      ${open ? `<div class="rows">${rows.join('')}</div>` : ''}</div>`;
+  };
+  const rubricRows = (r) => [['Fluency', r.fluency], ['Accuracy', r.accuracy], ['Pronunciation', r.pronunciation], ['Vocabulary', r.vocabulary]]
+    .filter(([, v]) => v).map(([l, v]) => { const c = v >= 85 ? '#047857' : v >= 70 ? '#B45309' : '#B91C1C';   // 門檻照產品 85／70，字用深一階才讀得清楚
+      return `<div class="rubstat"><span class="l">${l}</span><span class="v num" style="color:${c}">${v}<small>%</small></span></div>`; }).join('');   // 2026-11-18：不用長條，只寫數字（使用者）
+  // 2026-11-18：頁面上的星星全部拿掉（使用者「拿掉星星」），舊引擎的 0–5 星換成 /100（×20），跟分數卡同一套
+  const starNum = (v) => `<span class="starnum num" style="color:${tier(Math.round(v * 20))}">${Math.round(v * 20)}<small>/100</small></span>`;
+  const eyebrow = (label, right) => `<div class="eyebrow"><b>${label}</b><span class="rule"></span>${right || ''}</div>`;
+
+  /* ---------- 句卡 ---------- */
+  const sentence = (words) => `<div class="sent">${words.map((w) => `<div class="gw"><span class="py">${w.pinyin}</span><span class="zh" style="color:${M.STATUS[w.status]}">${w.word}</span>${M.svgStatus(w.status, 12)}</div>`).join('')}</div>`;
+  const fbSection = (sec, kind) => {
+    if (!sec) return '';
+    const icon = kind === 'pron' ? 'record_voice_over' : 'graphic_eq'; const label = kind === 'pron' ? 'Pronunciation' : 'Tone';
+    const items = sec.items || [];
+    return `<div class="fbsec"><div class="hd"><span class="mi">${icon}</span><b>${label}</b>${items.length ? `<span class="pill mand">${items.length} word${items.length > 1 ? 's' : ''}</span>` : ''}</div>
+      <div class="bd">${sec.summary ? `<div class="sum">${esc(sec.summary)}</div>` : ''}
+      ${items.map((it) => `<div class="fbitem"><div class="w">${M.svgStatus(it.color === 'red' ? 'incorrect' : 'warning', 14)}<u class="${it.color}">${it.word}（${it.pinyin}）</u></div><p>${esc(it.issue)}</p><p class="tip"><b>Tip:</b> ${esc(it.tip)}</p></div>`).join('')}</div></div>`;
+  };
+  const v1Card = (c, i, h) => {
+    const aiOpen = S.ai && c.fb && h.cards.findIndex((x) => x.fb) === i;
+    const rtOpen = S.rt && c.retakes > 1 && h.cards.findIndex((x) => x.retakes > 1) === i;
+    const inter = c.interaction;
+    return `<div class="card qcard ${c.autoPass ? 'ap' : ''}">
+      <div class="qc-hd"><span class="qpill">#${i + 1}</span>
+        ${c.autoPass ? `<span class="tag warn" title="Original: ${Math.round(c.overall * 20)}/100 · Attempts: ${c.attempts}">Auto Pass · ${c.attempts} tries</span>` : ''}
+        ${inter ? `<span class="pill ${inter.pinyin ? 'mand' : 'ghost'}">Pinyin ${inter.pinyin ? 'on' : 'off'}</span><span class="pill ${inter.translation ? 'mand' : 'ghost'}">Translation ${inter.translation ? 'on' : 'off'}</span>` : ''}
+        <span class="r">${starNum(c.overall)}
+          ${c.fb ? `<button class="wbtn" data-act="ai"><span class="mi">psychology</span>AI Feedback<span class="mi">${aiOpen ? 'expand_less' : 'expand_more'}</span></button>` : ''}
+          ${playBtn()}</span></div>
+      <div class="qc-bd">${sentence(c.words)}${inter && inter.translation ? `<div class="sent-en">${esc(c.en)}</div>` : ''}</div>
+      ${aiOpen ? `<div class="ai-bd">
+        <div class="fbsecs">${fbSection(c.fb.pron, 'pron')}${fbSection(c.fb.tone, 'tone')}</div>
+        <div><div class="legend"><span><i style="background:#22C55E"></i>Good</span><span><i style="background:#F59E0B"></i>Needs work</span><span><i style="background:#EF4444"></i>Incorrect</span></div>
+          <div class="wordrow">${c.words.map((w) => `<div class="wbox" style="${w.status === 'correct' ? '' : `border-color:${M.STATUS[w.status]}`}"><span class="py">${w.pinyin}</span><span class="zh" style="color:${M.STATUS[w.status]}">${w.word}</span>${M.svgStatus(w.status, 12)}</div>`).join('')}</div></div>
+        <div class="pitchbox">${M.svgPitch(c.words.map((w) => ({ word: w.word, color: w.status === 'correct' ? 'green' : w.status === 'warning' ? 'yellow' : 'red' })), 640, 140)}</div>
+      </div>` : ''}
+      ${retakeList(c.retakes > 1 ? c.retakes : 0, 'V1', { open: rtOpen, base: c.overall, unscoredAt: c.retakes === 5 ? 2 : 0 })}
+    </div>`;
+  };
+  const wordFeedback = (c) => {
+    const order = ['red', 'grey', 'yellow'];
+    const sel = order.map((col) => c.cols.findIndex((x) => x.color === col)).find((i) => i >= 0);
+    if (sel == null) return { sel: -1, html: '' };
+    const col = c.cols[sel]; const color = M.ROW[col.color]; const t = c.tone;
+    let right;
+    if (col.color === 'grey') right = `<div class="nodet"><span class="ic"><span class="mi" style="font-size:22px">mic_off</span></span><div><b>Word not detected</b><span>Try saying it clearly.</span></div></div>`;
+    else if (t) right = `<div class="tonecard"><div class="t">Tone</div><div class="two">
+        ${t.heard != null ? `<div class="one"><span class="lb">Student’s tone</span><span class="pz" style="color:#9ca3af">${M.applyTone(t.pinyin, t.heard)}</span>${M.svgTone(t.heard, '#9ca3af')}<span class="tl" style="color:#9ca3af">Tone ${t.heard} · ${M.TONE_LABELS[t.heard]}</span></div><div class="vd"></div>` : ''}
+        <div class="one"><span class="lb">Target tone</span><span class="pz" style="color:#EF4444">${M.applyTone(t.pinyin, t.expected)}</span>${M.svgTone(t.expected, '#EF4444')}<span class="tl" style="color:#EF4444">Tone ${t.expected} · ${M.TONE_LABELS[t.expected]}</span></div></div>
+        ${t.heard == null ? '<div class="hint">No wrong tone was named — only the target is shown.</div>' : ''}</div>`;
+    else right = '<div class="tonecard"><div class="hint">Listen again and compare.</div></div>';
+    return { sel, html: `<div class="wfb"><div class="lf"><span class="zh" style="color:${color}">${col.word}</span><span class="py">${col.pinyin}</span></div><div class="rt2">${right}</div></div>` };
+  };
+  const v2Card = (c, i, h) => {
+    const rtOpen = S.rt && c.retakes > 1 && h.cards.findIndex((x) => x.retakes > 1) === i;
+    const cnt = (k) => c.cols.filter((x) => x.color === k).length;
+    const reds = cnt('red'), yels = cnt('yellow'), greys = cnt('grey');
+    const parts = [];
+    if (reds) parts.push(`<span class="part"><i style="background:#EF4444"><span class="mi">close</span></i><b style="color:#EF4444">${reds}</b> word${reds > 1 ? 's' : ''} to correct</span>`);
+    if (yels) parts.push(`<span class="part"><i style="background:#F59E0B"><span class="mi">priority_high</span></i><b style="color:#F59E0B">${yels}</b> word${yels > 1 ? 's' : ''} to review</span>`);
+    if (greys) parts.push(`<span class="part"><i style="background:#9ca3af"><span class="mi">mic_off</span></i><b style="color:#9ca3af">${greys}</b> word${greys > 1 ? 's' : ''} not detected</span>`);
+    const resTxt = { perfect: 'Perfect!', ok: 'Good job!', retry: 'Try again!' }[c.result];
+    const wf = wordFeedback(c);
+    return `<div class="card qcard">
+      <div class="qc-hd"><span class="qpill">#${i + 1}</span>${c.kind === 'sentence' ? '' : `<span class="pill ${c.kind === 'word' ? 'mand' : 'ghost'}">${c.kind === 'word' ? 'Word' : 'Example'}</span>`}${c.autoPass ? `<span class="tag warn" title="Attempts: ${c.attempts}">Auto Pass · ${c.attempts} tries</span>` : ''}
+        <span class="r"><span class="num" style="font-size:18px;font-weight:800;color:${c.result === 'retry' ? '#EF4444' : 'var(--text)'}">${c.overall}<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:2px">/100</span></span>${playBtn()}</span></div>
+      <div class="qc-bd">
+        <div class="sent" style="margin-bottom:12px">${c.cols.map((col) => `<div class="gw"><span class="py">${col.pinyin}</span><span class="zh" style="color:${M.ROW[col.color]}">${col.word}</span>${M.svgRow(col.color, 12)}</div>`).join('')}${c.en ? `<span class="gw"><span class="en">${esc(c.en)}</span></span>` : ''}</div>
+        <div class="v2-top"><div class="lf"><span class="res ${c.result}">${resTxt}</span>${parts.join('')}</div></div>
+        <div class="chartbox">
+          <div class="cols">${c.cols.map((col, k) => `<div class="col ${k === wf.sel ? 'sel' : wf.sel >= 0 ? 'dim' : ''}" style="color:${M.ROW[col.color]};${k === wf.sel ? `background:${M.ROW[col.color]}18` : ''}"><span class="py">${col.pinyin}</span><span class="zh">${col.word}</span><span class="ic">${M.svgRow(col.color, 12)}</span></div>`).join('')}</div>
+          ${M.svgPitch(c.cols, 640, 140, wf.sel)}
+          <div class="clegend">${wf.sel >= 0 ? '<span><span class="mi">north_west</span>Tap a word for details</span>' : ''}<span><i class="solid"></i>Student</span><span><i class="dash"></i>Model</span></div>
+        </div>${wf.html}
+      </div>
+      ${retakeList(c.retakes > 1 ? c.retakes : 0, 'V2', { open: rtOpen, base: c.overall })}
+    </div>`;
+  };
+  const sentencePanel = (h) => `<div class="panel">
+    ${section('rubric', 'bar_chart', '#e0f2fe', '#0284c7', 'Score breakdown', '', `<div class="card secbox"><div class="rub">${rubricRows(h.rubric)}</div></div>`)}
+    ${section('cards', P.tag.icon, P.tag.wash, P.tag.label, P.practiceType === 'MIRRORING' ? 'Sentences' : 'Recordings', `${h.cards.length}`, `<div class="cards">${h.cards.map((c, i) => (c.engine === 'V2' ? v2Card(c, i, h) : v1Card(c, i, h))).join('')}</div>`)}
+    ${commentBox(h)}</div>`;
+
+  /* ---------- Quiz／Scramble ---------- */
+  const filterSeg = (all, wrong) => `<span class="seg"><button class="${S.wrong ? '' : 'on'}" data-act="all">All · ${all}</button><button class="${S.wrong ? 'on' : ''}" data-act="wrong" ${wrong ? '' : 'disabled'}>Wrong · ${wrong}</button></span>`;
+  const mark = (ok) => `<span class="mi" style="font-size:22px;color:${ok ? 'var(--ok)' : 'var(--bad)'}">${ok ? 'check_circle' : 'cancel'}</span>`;
+  const mcPanel = (h) => {
+    const wrong = h.mc.answers.filter((a) => !a.isCorrect);
+    const shown = S.wrong ? wrong : h.mc.answers;
+    const typeChip = (q) => { const cls = q.type === 'true_or_false' ? 'tf' : q.type === 'multi_choice' ? 'mc' : ''; const icon = q.type === 'true_or_false' ? 'rule' : q.type === 'multi_choice' ? 'format_list_bulleted' : q.type.includes('AUDIO') ? 'volume_up' : q.type.includes('IMAGE') ? 'image' : 'translate';
+      return `<span class="tchip ${cls}"><span class="mi">${icon}</span>${M.MC_TYPE_LABELS[q.type] || q.type}</span>`; };
+    return `<div class="panel">
+      ${sech('q', P.tag.icon, P.tag.wash, P.tag.label, 'Questions', `${wrong.length} wrong`, filterSeg(h.mc.answers.length, wrong.length))}${S.closed.has('q') ? '' : `
+      <div class="cards">${shown.map((a) => { const q = h.questions[a.questionIndex]; const ok = a.isCorrect;
+        return `<div class="card qcard"><div class="qc-hd"><span class="qpill">Q${a.questionIndex + 1}</span>${typeChip(q)}<span class="pill mand">${M.MC_CATEGORY_LABELS[q.cat] || q.cat}</span><span class="r">${mark(ok)}</span></div>
+          <div class="qc-bd">${q.q ? `<div class="qtext">${esc(q.q)}</div>` : `<div class="cap">${q.type.includes('AUDIO') ? 'Audio stem — the student heard the word' : 'Image stem — the student saw the picture'}</div>`}
+          ${ok ? `<div class="ans ok"><span class="mi">check</span><span>Correct: <b>${a.correct}. ${esc(q.choice[a.correct])}</b></span></div>`
+               : `<div class="ans bad"><span class="mi">close</span><span>Student answer: <b>${a.selected}. ${esc(q.choice[a.selected])}</b></span></div><div class="ans ok"><span class="mi">check</span><span>Correct answer: <b>${a.correct}. ${esc(q.choice[a.correct])}</b></span></div>`}</div></div>`; }).join('')}</div>`}</div>`;
+  };
+  const scramblePanel = (h) => {
+    const wrong = h.sc.answers.filter((a) => !a.isCorrect);
+    const shown = S.wrong ? wrong : h.sc.answers;
+    const tiles = (ws, ref) => `<div class="tiles">${ws.map((w, k) => `<span class="tile ${ref && ref[k] !== w ? 'bad' : ''}">${w}</span>`).join('')}</div>`;
+    return `<div class="panel">
+      ${sech('q', P.tag.icon, P.tag.wash, P.tag.label, 'Sentences', `${wrong.length} wrong`, filterSeg(h.sc.answers.length, wrong.length))}${S.closed.has('q') ? '' : `
+      <div class="cards">${shown.map((a) => `<div class="card qcard"><div class="qc-hd"><span class="qpill">#${a.questionIndex + 1}</span><span class="r">${mark(a.isCorrect)}</span></div>
+        <div class="qc-bd"><div class="ordblk"><span class="ordlbl">Correct order</span>${tiles(a.correctOrder)}</div>
+        ${a.isCorrect ? '' : `<div class="ordblk"><span class="ordlbl">Student order</span>${tiles(a.submittedOrder, a.correctOrder)}</div>`}</div></div>`).join('')}</div>`}</div>`;
+  };
+
+  /* ---------- Follow Pattern ---------- */
+  const fpPanel = (h) => {
+    const isB = h.review.practiceSubType === 'SENTENCE_BUILDING';
+    const statusOf = (q) => (q.stale ? ['Question changed', 'warn'] : !q.attemptCount ? ['Not answered', 'off'] : q.passed ? ['Passed', 'ok'] : ['Not passed', 'bad']);
+    const critStyle = (st, key) => (st === 'PENDING' ? ['#94A3B8', 'remove_circle_outline', M.CRITERIA.PENDING[key]] : st === 'PASS' ? ['#16A34A', 'check_circle', M.CRITERIA.PASS[key]] : ['#D97706', 'info', M.CRITERIA.FAIL[key]]);
+    return `<div class="panel">
+      ${sech('q', P.tag.icon, P.tag.wash, P.tag.label, 'Questions', `${h.review.questions.filter((q) => q.passed).length} passed`)}${S.closed.has('q') ? '' : `
+      <div class="cards">${h.review.questions.map((q, i) => { const [sl, sc] = statusOf(q); const answered = q.attemptCount > 0;
+        return `<div class="card qcard"><div class="qc-hd"><span class="qpill">Q${i + 1}</span><span class="tag ${sc}">${sl}</span>
+            ${answered ? `<span class="r">${starNum(q.stars)}<span class="cap num">${q.attemptCount} ${q.attemptCount === 1 ? 'attempt' : 'attempts'}</span></span>` : ''}</div>
+          <div class="qc-bd"><div class="qtext">${esc(q.question)}</div>
+            ${q.reference ? `<div class="refbox"><div class="lb">${isB ? 'Teaching point' : 'Pattern'}</div><div class="v">${esc(q.reference)}</div></div>` : ''}
+            ${answered ? `<div class="ansbox"><div class="lb">Student answer</div><div class="row">${q.s3 ? playBtn() : ''}<div><div class="a">${esc(q.answer || q.transcript)}</div>${q.transcript && q.answer && q.transcript !== q.answer ? `<div class="heard">Heard as: ${esc(q.transcript)}</div>` : ''}</div></div></div>
+              ${q.criteria.length ? `<div class="crits">${q.criteria.map((c) => { const [col, ic, lb] = critStyle(c.status, c.criterion); return `<div class="crit"><span class="mi" style="color:${col}">${ic}</span><div><b style="color:${col}">${lb}</b>${c.reason ? `<span>${esc(c.reason)}</span>` : ''}</div></div>`; }).join('')}</div>` : ''}
+              ${q.correction ? `<div class="corrbox"><div class="lb">Correction</div><div class="v">${esc(q.correction)}</div></div>` : ''}
+              ${q.feedback ? `<div class="fpfb">${esc(q.feedback)}</div>` : ''}`
+            : '<div class="noans">The student did not answer this question.</div>'}
+          </div>
+          ${q.repeat ? `<div class="rep">${eyebrow(`Repeat practice · ${q.repeat.source === 'PATTERN' ? 'from the pattern' : 'from the answer'}`)}<div class="s">${q.repeat.sentence}</div><div class="tr">${esc(q.repeat.translation)}</div><div class="sm">${q.repeat.text}</div></div>${retakeList(q.repeat.count, 'V2', { open: S.rt && i === 1, base: 88 })}` : ''}
+        </div>`; }).join('')}</div>`}
+      ${commentBox(h)}</div>`;
+  };
+
+  /* ---------- QA ---------- */
+  const qaPanel = (h) => {
+    const bub = (ov) => (ov * 20 >= 80 ? 'hi' : ov * 20 >= 50 ? 'mid' : 'lo');
+    const convo = `<div class="convo">${h.conversations.map((t) => (t.user === 'teacher'
+      ? `<div class="turn t"><div class="line"><div class="tbub">${t.content}</div>${playBtn(true)}</div></div>`
+      : `<div class="turn s"><div class="line">${playBtn(true)}<div class="sbub ${bub(t.overall)}">${starNum(t.overall)}${sentence(t.words.map(([word, pinyin, status]) => ({ word, pinyin, status })))}</div></div>
+          ${t.checks ? `<div class="checks">${t.checks.map((c) => `<div class="check"><b>${c.name}</b><span>${esc(c.reason)}</span></div>`).join('')}</div>` : ''}</div>`)).join('')}</div>`;
+    const a = h.aiSummary;
+    const fb = `<div class="aifb">
+      <div>${eyebrow('Statistics')}<div class="statrow"><span><b>${a.stats.totalQuestions}</b> questions</span><span><b>${a.stats.totalAttempts}</b> attempts</span><span><b>${a.stats.mirroringCount}</b> repeat${a.stats.mirroringCount === 1 ? '' : 's'}</span>${a.stats.hasAIAssistance ? '<span><b>AI</b> assistance used</span>' : ''}</div></div>
+      <div>${eyebrow('AI summary')}<p>${esc(a.feedbackForStudent)}</p></div>
+      <div>${eyebrow('Highlights')}<ul class="fblist">${a.studentHighlights.map((x) => `<li><span class="mi" style="color:var(--ok)">check_circle</span><span>${esc(x)}</span></li>`).join('')}</ul></div>
+      <div>${eyebrow('Practice areas')}<ul class="fblist">${a.practiceAreas.map((x) => `<li><span class="mi" style="color:var(--warn)">flag</span><span>${esc(x)}</span></li>`).join('')}</ul></div>
+      <div>${eyebrow('Recommendations')}<ul class="fblist">${a.personalizedRecommendations.map((x, i) => `<li><span class="n num">${i + 1}.</span><span>${esc(x)}</span></li>`).join('')}</ul></div></div>`;
+    return `<div class="panel">
+      ${sech('q', P.tag.icon, P.tag.wash, P.tag.label, 'Conversation', `${h.conversations.filter((t) => t.user === 'teacher').length} questions`)}${S.closed.has('q') ? '' : `
+      <div class="card"><div style="padding:12px 16px;border-bottom:1px solid var(--divider)"><span class="seg"><button class="${S.tab === 'conversation' ? 'on' : ''}" data-tab="conversation">Conversation</button><button class="${S.tab === 'feedback' ? 'on' : ''}" data-tab="feedback">AI Feedback</button></span></div>
+        <div class="qabd">${S.tab === 'conversation' ? convo : fb}</div></div>`}
+      ${commentBox(h)}</div>`;
+  };
+
+  /* ---------- 右欄 ---------- */
+  // 2026-11-16 使用者「拿掉 card 這個詞」：貼頂列只留班名，張數看底下 Cards 段標頭
+  const metaOf = (h) => (P.panel === 'sentence' ? '' : P.panel === 'mc' ? `${h.mc.totalCount} questions · ${h.mc.answers.filter((a) => !a.isCorrect).length} wrong`
+    : P.panel === 'scramble' ? `${h.sc.totalCount} sentences · ${h.sc.answers.filter((a) => !a.isCorrect).length} wrong` : P.panel === 'fp' ? `${h.review.questions.length} questions` : `${h.conversations.filter((t) => t.user === 'teacher').length} questions`);
+  const renderRight = () => {
+    const s = M.studentById(S.stu);
+    if (!s || S.empty) return `<div class="emptyst">${S.empty || !M.allStudents().some((x) => x.base != null) ? 'No submissions yet' : 'Select a student to view results'}</div>`;
+    if (s.base == null) return `${topbar({ student: s }, 'Not submitted')}<div class="emptyst">This student has not submitted yet</div>`;
+    const sv = s.prev && S.att != null && s.prev[S.att] ? { ...s, base: s.prev[S.att].base, override: undefined, late: undefined } : s;   // 2026-11-18：看舊的那次
+    const h = M.historyFor(P, sv);
+    if (sv !== s && h.rubric) { const r = sv.base / s.base; ['fluency', 'accuracy', 'pronunciation'].forEach((k) => { h.rubric = { ...h.rubric, [k]: Math.max(0, Math.min(100, Math.round(h.rubric[k] * r))) }; }); }   // mock：舊那次的細項照分數比例縮放，看得出是另一次
+    const body = P.panel === 'sentence' ? sentencePanel(h) : P.panel === 'mc' ? mcPanel(h) : P.panel === 'scramble' ? scramblePanel(h) : P.panel === 'fp' ? fpPanel(h) : qaPanel(h);
+    return `${topbar(h, metaOf(h))}<div class="rbody">${overrideCtl(h)}${body}</div>`;
+  };
+  // Send reminder 確認框（Dashboard 的 reminder-popup 同一段字，套這頁的 .dlg）
+  const remindDialog = () => {
+    const g = M.GROUPS.find((x) => x.key === S.remind); if (!g) return '';
+    const n = M.summaryFor(g).total - M.summaryFor(g).submitted;
+    return `<div class="scrim" data-scrim="remind-close"><div class="dlg">
+      <div class="dlg-hd"><h3>Send reminder</h3><p>${n} student${n === 1 ? '' : 's'} in ${esc(g.className)} who have not submitted</p></div>
+      <div class="dlg-bd"><div class="who">${M.sortedStudents(g).filter((x) => x.base == null).map((x) => `<span class="mchip">${esc(x.name)}</span>`).join('')}</div></div>
+      <div class="dlg-ft"><span class="spacer"></span><button class="wbtn" data-act="remind-close">Cancel</button><button class="gbtn solid" data-act="remind-send"><span class="mi">email</span>Send reminder</button></div></div></div>`;
+  };
+  let toastTimer;
+  const toast = (msg) => { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2400); };
+  const dialog = () => {
+    if (S.remind) return remindDialog();
+    const s = M.studentById(S.stu); if (!S.edit || !s) return '';
+    const h = M.historyFor(P, s);
+    return `<div class="scrim" data-scrim="close"><div class="dlg">
+      <div class="dlg-hd"><h3>Edit score</h3><p>The system gave ${esc(s.name)} ${h.student.base}/100. Your score replaces it on the list and for the student.</p></div>
+      <div class="dlg-bd"><div class="fld"><label for="sc">Score (0–100)</label><input id="sc" class="inp" type="number" min="0" max="100" value="${h.override != null ? h.override : ''}" placeholder="${h.student.base}"></div></div>
+      <div class="dlg-ft">${h.override != null ? '<button class="wbtn" style="color:var(--fair)">Revert to system</button>' : ''}<span class="spacer"></span><button class="wbtn" data-act="close">Cancel</button><button class="gbtn solid">Save</button></div></div></div>`;
+  };
+
+  const render = () => {
+    document.getElementById('app').innerHTML = `${renderLeft()}<div class="rp">${renderRight()}</div>${dialog()}`;
+    document.title = `${P.name} · Results — v23 提案（${P.label}）`;
+  };
+
+  document.getElementById('app').addEventListener('click', (e) => {
+    // 2026-11-16 修：框原本 stopPropagation，框裡的 Cancel／Send 點了都到不了這裡 → 改成只有點到灰底才關
+    const sc = e.target.dataset && e.target.dataset.scrim; if (sc) { if (sc === 'close') S.edit = false; else S.remind = null; render(); return; }
+    const row = e.target.closest('[data-stu]'); if (row) { S.stu = row.dataset.stu; S.ai = false; S.rt = false; S.edit = false; S.comment = ''; S.att = null; render(); document.querySelector('.rp').scrollTop = 0; return; }
+    const rm = e.target.closest('[data-remind]'); if (rm) { S.remind = rm.dataset.remind; render(); return; }
+    const g = e.target.closest('[data-grp]'); if (g) { const k = g.dataset.grp; if (S.collapsed.has(k)) S.collapsed.delete(k); else S.collapsed.add(k); render(); return; }
+    const sec = e.target.closest('[data-sec]'); if (sec) { const k = sec.dataset.sec; if (S.closed.has(k)) S.closed.delete(k); else S.closed.add(k); render(); return; }
+    const tab = e.target.closest('[data-tab]'); if (tab) { S.tab = tab.dataset.tab; render(); return; }
+    const at = e.target.closest('[data-att]'); if (at) { const k = +at.dataset.att; S.att = k < 0 ? null : k; render(); return; }   // 2026-11-18：切換第幾次交卷
+    const act = e.target.closest('[data-act]'); if (!act) return;
+    const a = act.dataset.act;
+    if (a === 'ai') S.ai = !S.ai;
+    if (a === 'rt') S.rt = !S.rt;
+    if (a === 'all') S.wrong = false;
+    if (a === 'wrong') S.wrong = true;
+    if (a === 'edit') S.edit = true;
+    if (a === 'close') S.edit = false;
+    if (a === 'remind-close') S.remind = null;
+    if (a === 'remind-send') {   // index.js handleRemindConfirm：關框 → 同一班 3 秒 cooldown → 一人一封 → snackbar
+      const g = M.GROUPS.find((x) => x.key === S.remind); const n = M.summaryFor(g).total - M.summaryFor(g).submitted; S.remind = null;
+      if (!S.cooling.has(g.key)) { S.cooling.add(g.key); setTimeout(() => { S.cooling.delete(g.key); render(); }, 3000); toast(`Reminder sent to ${n} student${n === 1 ? '' : 's'} in ${g.className}`); }
+    }
+    render();
+  });
+  document.getElementById('app').addEventListener('input', (e) => {
+    const ta = e.target.closest('[data-comment]'); if (!ta) return;
+    S.comment = ta.value;
+    const fld = ta.closest('.fld'); fld.querySelector('.help').textContent = `${ta.value.length} / 2000 characters`;
+    fld.querySelector('.btn').disabled = !ta.value.trim();
+  });
+  if (qs.get('remind') === '1') { const g = M.GROUPS.find((x) => !x.left && M.summaryFor(x).total > M.summaryFor(x).submitted); if (g) S.remind = g.key; }
+  render();
+
+  const links = [['vocab', 'Vocabulary Mirroring'], ['vocab&rt=1', '重錄展開'], ['mirroring', 'Content Mirroring'], ['vocabquiz', 'Vocabulary Quiz'], ['quiz', 'Comprehension Quiz'], ['quiz&wrong=1', '只看答錯'], ['scramble', 'Scramble'], ['building', 'Building'], ['response', 'Response'], ['openended', 'Open-ended'], ['openended&tab=feedback', 'AI Feedback tab'], ['vocab&edit=1', 'Edit Score'], ['vocab&noedit=1', '不能改'], ['vocab&empty=1', '沒人交'], ['vocab&remind=1', 'Send reminder'], ['vocab&stu=emma', '重交過']];
+  document.getElementById('blinks').innerHTML = links.map(([q, l]) => `<a href="?type=${q}" class="${location.search === `?type=${q}` ? 'cur' : ''}">${l}</a>`).join(' · ');
+}());
+</script>
+</body>
+</html>

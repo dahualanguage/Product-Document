@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Mirroring · Whole passage — v22 學生端提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<style>
+/* ===========================================================================
+   提案 —— 學生端 Content Mirroring 的「Whole passage」（老師在 Settings 把 Reading unit
+   切成 Whole passage 之後，學生看到的流程）。對照組：student-practice.html（現行一句一句）。
+   假資料共用 mock.js。殼、色票、句卡、錄音鈕、評分卡、完成卡全部沿用基準檔的 CSS，
+   這一版不動視覺識別；動的是「練習的單位」。
+
+   一句話：整篇課文攤開，正在唸的地方跟著亮（Karaoke）；聽一遍是學生自己選的，
+   錄的時候高亮照參考速度往前走（提詞機），唸完一次送出、一次評分。
+
+   流程（網址 ?screen=）：
+     start      開始卡 —— 多一列 Listen first（預設開；&listen=0 關掉）
+     listen     聽整篇 —— 高亮跟參考音檔走；&t=秒 停在那一刻（0–52）
+     ready      聽完了／跳過 —— YOUR TURN，錄音鈕待命
+     record     錄整篇 —— 提詞機在跑、錄音中；&t=秒
+     recorded   錄好了 —— 聽自己的、Retry／Submit
+     scoring    送出後等評分 —— 整篇比一句久，所以有說明 ＋ 產品本來就有的配對小遊戲（&game=0 關掉遊戲看底下）
+     result     結果 —— 六句精簡清單（編號・分數・一行句子・低分句 Practice），點一句展開拼音與逐詞三色（&open=N）＋ 平均 ＋ My recording／Redo／End Practice
+     drill      單練一句（從結果頁的 Practice 進來）
+     done       完成卡（Average ＝ 各句平均）
+   其他：&tr=1 翻譯開 · &py=0 拼音關 · &gear=1 齒輪面板
+   Translation first（2026-11-05 定）：&tfirst=1 開著 → 聽整篇分兩段：先整篇英文（&phase=meaning，藍色 Meaning 色票、英文整篇 Karaoke），
+   再整篇中文（phase 省略）。不是每句交替。開始卡與齒輪多一列 Translation first（Choice by student 時）。
+
+   **互動版（2026-11-05）**：不靠網址參數也能一路點過去——開始卡的開關、Start、暫停／跳過、錄音鈕（3 2 1）、停、
+   Retry／Submit、Redo／End、Practice Again 都是真的；聲音用瀏覽器 TTS（&tts=0 關）、錄音用 MediaRecorder；
+   評分是假的（等 4 秒）。網址參數留著當截圖深連結；底下的說明條有連結。
+
+   高亮（2026-11-16 改）：**一次亮一整句**，不逐詞——產品沒有字級時間軸（ai_word_boundaries 只在評分結果裡），
+   做不到斷詞逐一亮（使用者定）。還沒唸到的句子 #94A3B8（灰）、唸過 #0F172A（墨）、正在唸的整句 #16A34A 字 ＋ #E8FFF0 底
+   （現行左欄「正在唸的那句」同一個色票，content-window.js）。句的秒數在 mock.js 的 dur；提詞機的速度 ＝ 學生選的 Speed 或老師定的。
+
+   結果（2026-11-16 改，使用者定）：一句一個分數，大分數＝各句平均（完成卡寫 Average）。
+   整篇只能一起唸；結果頁分數低於 4 的句子旁邊有 Practice，點了只練那一句（聽 → 錄 → 送出 → 新分數），
+   回到結果頁那句換成新分數、平均重算。&screen=drill&s=N 第 N 句（1 起算）、&d=ready|record|recorded|scoring|scored。
+   =========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --green:#22C55E; --green-d:#16A34A; --wash:#E8FFF0; --ink:#0F172A; --ink2:#1E293B; --slate:#334155; --slate2:#475569; --muted:#64748B; --faint:#94A3B8;
+  --line:#E2E8F0; --line2:#EEF2F7; --divider:rgba(145,158,171,.2); --text2:#637381; --text3:#919EAB;
+  --g50:#F9FAFB; --g200:#E5E7EB; --g300:#D1D5DB; --g400:#9CA3AF; --g500:#6B7280;
+  --sgreen:#12A150; --sgreen-d:#0B7A3B; --sgreen-l:#DCF7E6; --sgreen-ink:#0B5B30; --gold:#FFC219; --coral:#FF5A6E;
+  --sink:#243B2E; --sink-soft:#5B7266; --sline:#E4EDE7; --font-d:'Fredoka',system-ui,sans-serif; --font-b:'Nunito',system-ui,sans-serif;
+}
+html,body{ height:100%; }
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#212B36; line-height:1.5; -webkit-font-smoothing:antialiased; overflow:hidden;
+  background:radial-gradient(1200px 600px at 80% -10%, #DDEBFF 0%, transparent 60%), radial-gradient(900px 500px at -10% 110%, #E7F7EC 0%, transparent 55%), linear-gradient(160deg,#EFF5FB 0%, #EAF4EE 100%); }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; display:inline-block; -webkit-font-feature-settings:'liga'; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+
+/* ---------- 殼（同基準檔） ---------- */
+.shell{ display:grid; grid-template-columns:250px 1fr; gap:16px; height:100vh; padding:16px; }
+.side{ background:#fff; border-radius:20px; box-shadow:0 12px 26px -14px rgba(11,91,48,.45); display:flex; flex-direction:column; padding:20px 16px 16px; position:relative; overflow:hidden; font-family:var(--font-b); color:var(--sink); }
+.side::before{ content:""; position:absolute; inset:0 0 auto 0; height:120px; background:radial-gradient(120% 90% at 20% 0%, rgba(18,161,80,.10), transparent 70%); pointer-events:none; }
+.brand{ display:flex; align-items:center; gap:9px; padding:4px 8px 22px; position:relative; }
+.brand .logo{ width:40px; height:40px; border-radius:13px; flex:none; background:#fff; display:grid; place-items:center; box-shadow:0 6px 14px -4px rgba(18,161,80,.35), inset 0 0 0 1.5px var(--sline); }
+.brand .logo img{ width:30px; height:30px; object-fit:contain; display:block; }
+.brand b{ font-family:var(--font-d); font-weight:700; font-size:21px; letter-spacing:.3px; background:linear-gradient(90deg,var(--sgreen-d),#2CB763); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.nav{ display:flex; flex-direction:column; gap:4px; position:relative; }
+.nav a{ display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:16px; color:var(--sink-soft); font-weight:800; font-size:14.5px; text-decoration:none; position:relative; }
+.nav a .ic{ width:24px; display:flex; justify-content:center; filter:grayscale(.4); }
+.nav a .ic .mi{ font-size:20px; color:var(--sgreen); }
+.nav a.on{ background:linear-gradient(100deg,var(--sgreen-l),#EAF9EF); color:var(--sgreen-ink); box-shadow:inset 0 0 0 1.5px #BEEBCE; }
+.nav a.on .ic{ filter:none; }
+.nav a.on::before{ content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:5px; height:22px; border-radius:0 6px 6px 0; background:var(--sgreen); }
+.side .grow{ flex:1; min-height:14px; }
+.stats{ display:flex; flex-direction:column; gap:9px; }
+.stat{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:16px; font-weight:900; }
+.stat .mi{ font-size:23px; }
+.stat .k{ font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; opacity:.75; }
+.stat .v{ font-family:var(--font-d); font-weight:600; font-size:20px; line-height:1; }
+.stat .col{ display:flex; flex-direction:column; gap:2px; }
+.stat.gold{ background:linear-gradient(100deg,#FFF6DC,#FFEFC0); color:#8A6300; box-shadow:inset 0 0 0 1.5px #FCE29A; } .stat.gold .mi{ color:var(--gold); }
+.stat.coral{ background:linear-gradient(100deg,#FFE9EC,#FFDCE1); color:#B23146; box-shadow:inset 0 0 0 1.5px #FFC3CC; } .stat.coral .mi{ color:var(--coral); }
+.report{ margin-top:12px; text-align:center; font-size:12px; font-weight:800; color:#C0576A; text-decoration:none; }
+.mainwrap{ display:flex; flex-direction:column; min-width:0; border-radius:20px; overflow:hidden; box-shadow:0 26px 60px -24px rgba(11,60,35,.55); background:#E8EEF4; }
+.hdr{ height:80px; flex:none; display:flex; align-items:center; justify-content:flex-end; padding:0 24px; background:rgba(255,255,255,.6); }
+.hdr .av{ width:36px; height:36px; border-radius:50%; background:#BBF1D0; color:#00A749; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
+.area{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:#E8EEF4; }
+.prog{ display:flex; align-items:center; gap:8px; padding:0 24px 8px; background:#fff; border-bottom:1px solid var(--divider); flex:none; }
+.prog .track{ flex:1; height:6px; border-radius:999px; background:#E2E8F0; overflow:hidden; }
+.prog .fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,#77ED8B 0%,#22C55E 100%); }
+.prog .num{ font-size:14px; color:#64748B; flex:none; }
+.prog .num b{ font-weight:800; font-size:18px; color:#22C55E; }
+.prog .num i{ font-style:normal; font-weight:700; color:#0F172A; }
+.pad{ flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; }
+.card{ flex:1; min-height:0; overflow:hidden; border-radius:24px; background:#fff; display:flex; flex-direction:row; box-shadow:0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+
+/* ---------- 主欄（整篇模式沒有左欄：課文本身就是主欄） ---------- */
+.right{ flex:1; min-width:0; height:100%; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+.rwrap{ width:100%; height:100%; display:flex; flex-direction:column; min-height:0; }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; flex:none; }
+.trow .t{ font-size:16px; font-weight:800; color:#1E293B; }
+.trow .r{ display:flex; align-items:center; gap:8px; }
+.attempt{ font-size:14px; color:#64748B; font-weight:600; }
+.attempt b{ color:#16A34A; font-weight:800; } .attempt i{ font-style:normal; font-weight:800; }
+.gearwrap{ position:relative; }
+.gear{ width:48px; height:48px; border-radius:24px; border:0; background:#fff; color:#64748B; box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.gear .mi{ font-size:20px; }
+.gpanel{ position:absolute; top:56px; right:0; width:220px; border-radius:24px; background:#fff; box-shadow:0 12px 32px rgba(148,163,184,.18); overflow:hidden; z-index:20; }
+.gpanel .gh{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #EEF2F7; font-size:14px; font-weight:700; color:#334155; }
+.gpanel .gh .mi{ font-size:18px; color:#94A3B8; }
+.gpanel .gr{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #EEF2F7; font-size:14px; font-weight:600; color:#475569; }
+.gpanel .gr:last-child{ border-bottom:0; }
+.gpanel .gr small{ font-size:13px; font-weight:500; }
+.sw{ width:30px; height:18px; border-radius:9px; background:#C4CDD5; position:relative; flex:none; }
+.sw::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.sw.on{ background:#00CB61; } .sw.on::after{ left:14px; }
+.sw.lg{ width:46px; height:26px; border-radius:13px; } .sw.lg::after{ width:22px; height:22px; } .sw.lg.on::after{ left:22px; }
+
+/* ---------- 課文卡：句卡的殼（message-list.js A 的色票與圓角）裝整篇 ---------- */
+.msgs{ flex:1; min-height:0; overflow:hidden; padding:8px 24px 16px; display:flex; flex-direction:column; gap:16px; }
+.pcard{ flex:1; min-height:0; border-radius:24px; border:1px solid; display:flex; flex-direction:column; box-shadow:0 8px 20px rgba(15,23,42,.04); overflow:hidden; }
+.pcard.active{ box-shadow:0 18px 42px rgba(15,23,42,.08); }
+.pcard.practice{ background:#F0FAF4; border-color:#D1FAE5; --c:#22C55E; }
+.pcard.repeat{ background:#F0FAF4; border-color:#86EFAC; --c:#16A34A; }
+.pcard.listen{ background:#EFF6FF; border-color:#BFDBFE; --c:#2563EB; }
+.pcard.result{ background:#fff; border-color:var(--divider); --c:#22C55E; }
+.pcard .meta{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:24px 32px 0; flex:none; }
+.pcard .meta .l{ display:flex; align-items:center; gap:8px; }
+.pcard .meta .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; color:var(--c); }
+.pcard.result .meta .ic{ background:#F0FAF4; }
+.pcard .meta .ic .mi{ font-size:20px; }
+.pcard .meta .lbl{ font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.6px; color:var(--c); line-height:1.2; }
+.pcard .meta .hlp{ font-size:12px; color:#637381; font-weight:600; margin-top:2px; }
+.pcard .meta .cnt{ font-size:12px; color:#637381; font-weight:600; white-space:nowrap; }
+.pcard .meta .cnt b{ color:var(--c); }
+.passage{ position:relative; flex:1; min-height:0; overflow:auto; padding:20px 32px 28px; }
+.passage::-webkit-scrollbar{ width:6px; } .passage::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.15); border-radius:3px; }
+.sen{ display:block; padding:6px 10px; margin:0 -10px; border-radius:12px; transition:background .2s; }
+.sen.cur{ background:#E8FFF0; }
+.sen .ws{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:0 6px; }
+.w{ display:inline-flex; flex-direction:column; align-items:center; line-height:1; }
+.w .py{ font-size:13px; font-style:italic; color:#637381; line-height:1.2; white-space:nowrap; min-height:15px; }
+.w .zh{ font-size:28px; font-weight:800; line-height:1.5; white-space:pre; color:#0F172A; border-bottom:3px solid transparent; }
+.w.punct .zh{ color:#94A3B8; }
+.sen.todo .w .zh{ color:#94A3B8; }
+.sen.todo .w .py{ color:#C4CDD5; }
+.sen.cur .w .zh{ color:#16A34A; }   /* 2026-11-16：整句一起亮，不逐詞 */
+.sen.cur .w.punct .zh{ color:#86EFAC; }
+.sen .tr{ display:block; font-size:13px; color:#637381; margin:2px 0 4px; }
+/* 先聽英文：整篇英文的 Karaoke（message-list.js 的 Meaning 色票 #1E3A8A） */
+.sen.en{ font-size:24px; font-weight:800; line-height:1.55; color:#1E3A8A; padding:8px 12px; margin:0 -12px 4px; }
+.sen.en.todo{ color:#94A3B8; }
+.sen.en.cur{ background:#DBEAFE; }
+.sen.todo .tr{ color:#C4CDD5; }
+/* 結果：逐詞三色（graded-sentence.js） */
+.pcard.result .w .zh{ color:#374151; }
+.pcard.result .w.punct .zh{ color:#94A3B8; }
+.pcard.result .w.correct .zh{ color:#22C55E; }
+.pcard.result .w.warning .zh{ color:#F59E0B; }
+.pcard.result .w.incorrect .zh{ color:#EF4444; }
+.pcard.result .w .dot{ width:12px; height:12px; border-radius:50%; margin-top:2px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.pcard.result .w .dot .mi{ font-size:9px; }
+.bg-correct{ background:#22C55E; } .bg-warning{ background:#F59E0B; } .bg-incorrect{ background:#EF4444; }
+/* 2026-11-16：結果頁每句一個分數 ＋ 低分句的 Practice */
+/* 2026-11-16 方案 B：先看六句的精簡清單（編號・分數・一行句子・Practice），點一列才展開拼音與逐詞三色 */
+.rlist{ display:flex; flex-direction:column; gap:6px; }
+.rrow{ border-radius:14px; border:1px solid var(--line2); background:#fff; overflow:hidden; }
+.rrow.weak{ background:#FFF7F7; border-color:#FECACA; }
+.rrow.redone{ background:#F0FDF4; border-color:#BBF7D0; }
+.rrow.open{ box-shadow:0 8px 20px rgba(15,23,42,.06); }
+.rhead{ width:100%; display:flex; align-items:center; gap:12px; padding:10px 12px 10px 14px; border:0; background:transparent; text-align:left; cursor:pointer; }
+.rhead:hover{ background:rgba(15,23,42,.02); }
+.rhead .num{ width:22px; flex:none; text-align:right; font-size:13px; font-weight:800; color:#94A3B8; font-variant-numeric:tabular-nums; }
+.rhead .line{ flex:1; min-width:0; font-size:18px; font-weight:700; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rhead .chev{ flex:none; font-size:22px; color:#94A3B8; transition:transform .15s; }
+.rrow.open .rhead .chev{ transform:rotate(180deg); }
+.rdetail{ padding:2px 16px 14px 48px; border-top:1px dashed var(--line); }
+.rdetail .sen{ display:block; padding:10px 0 0; margin:0; }
+.rdetail .tr{ margin-top:6px; }
+/* B：六句要一眼看完——列再緊、平均卡壓成一條（2026-11-16） */
+.rlist{ gap:5px; }
+.rhead{ padding:7px 12px 7px 14px; }
+.rhead .line{ font-size:17px; }
+.rhead .schip{ height:26px; width:72px; flex:none; font-size:14px; }   /* 固定寬：單練過多一個箭頭也對齊 */
+.rhead .drillbtn{ height:30px; }
+.pcard.result .passage{ padding:12px 32px 16px; }
+.pcard.result .meta{ padding-top:18px; }
+.fb.compact{ min-height:0; }
+.fb.compact .score{ flex-direction:row; gap:12px; padding:10px 20px; }
+.fb.compact .score .big b{ font-size:26px; }
+.fb.compact .score .verdict{ margin-top:0; }
+.fb.compact .detail{ padding:10px 20px; gap:6px; }
+.sscore{ flex:none; display:flex; align-items:center; gap:8px; }
+.schip{ min-width:52px; height:30px; padding:0 10px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:3px; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; }
+.schip small{ font-size:11px; font-weight:700; opacity:.7; }
+.schip.hi{ background:#DCFCE7; color:#15803D; } .schip.mid{ background:#FEF3C7; color:#B45309; } .schip.lo{ background:#FEE2E2; color:#B91C1C; }
+.schip .mi{ font-size:14px; }
+.drillbtn{ height:32px; padding:0 12px; border-radius:999px; border:1.5px solid #22C55E; background:#fff; color:#16A34A; font-size:13px; font-weight:800; display:inline-flex; align-items:center; gap:4px; }
+.drillbtn .mi{ font-size:17px; } .drillbtn:hover{ background:#F0FDF4; }
+.fb .score .avglbl{ font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#94A3B8; }
+/* 單練一句 */
+.dtop{ flex:none; padding:4px 24px 0; }
+.backlink{ border:0; background:none; display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:700; color:#637381; padding:4px 8px 4px 2px; border-radius:8px; }
+.backlink .mi{ font-size:18px; } .backlink:hover{ color:#1E293B; }
+.pcard.drill .passage{ display:flex; flex-direction:column; justify-content:center; }
+.pcard.drill .w .zh{ font-size:36px; }
+.pcard.drill .w .py{ font-size:15px; min-height:18px; }
+.pcard.drill.result .sen{ display:block; }
+.was{ display:flex; align-items:center; gap:10px; font-size:13px; color:#637381; font-weight:600; }
+.was .arrow{ font-size:18px; color:#94A3B8; }
+.pcard.dim .passage{ opacity:.45; }
+
+/* ---------- 聽整篇的播放列 ---------- */
+.player{ flex:none; display:flex; align-items:center; gap:14px; padding:12px 24px 4px; }
+.player .pbtn{ flex:none; width:44px; height:44px; border-radius:50%; border:0; background:#2563EB; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(37,99,235,.3); }
+.player .pbtn .mi{ font-size:24px; }
+.player .ptrack{ flex:1; height:6px; border-radius:999px; background:#E2E8F0; overflow:hidden; }
+.player .ptrack i{ display:block; height:100%; border-radius:999px; background:#2563EB; }
+.player .ptime{ font-size:13px; color:#64748B; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.player .ptime b{ color:#1E293B; font-weight:700; }
+.chip{ display:inline-flex; align-items:center; gap:4px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--divider); background:#fff; font-size:12px; font-weight:600; color:#637381; white-space:nowrap; }
+.chip .mi{ font-size:16px; }
+
+/* ---------- 錄音區（基準檔同一套） ---------- */
+.recarea{ flex:none; padding:4px 24px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.wavez{ display:flex; align-items:center; justify-content:center; gap:3px; }
+.bars{ display:flex; align-items:center; gap:3px; }
+.bars i{ display:block; width:4px; border-radius:2px; background:#BBF7D0; }
+.bars.on i{ background:#22C55E; animation:recWave .8s ease-in-out infinite; }
+.bars.grey i{ background:var(--g300); }
+@keyframes recWave{ 0%,100%{ transform:scaleY(1);} 50%{ transform:scaleY(.45);} }
+.rbwrap{ position:relative; width:88px; height:88px; margin:0 12px; display:flex; align-items:center; justify-content:center; }
+.rb{ width:64px; height:64px; border-radius:50%; border:0; color:#fff; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#4ADE80 0%,#22C55E 100%); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.rb .mi{ font-size:32px; }
+.rb.rec{ background:linear-gradient(180deg,#22C55E 0%,#118D57 100%); }
+.rb.proc{ background:linear-gradient(180deg,#FDE68A 0%,#F59E0B 100%); box-shadow:0 4px 12px rgba(245,158,11,.32); }
+.rb.grey{ background:linear-gradient(180deg,#D1D5DB 0%,#9CA3AF 100%); box-shadow:0 4px 12px rgba(107,114,128,.3); }
+.rb .wv{ display:flex; align-items:center; gap:3px; height:32px; }
+.rb .wv i{ display:block; width:4px; background:#fff; border-radius:2px; animation:recWave .8s ease-in-out infinite; }
+.rings{ position:absolute; inset:0; border-radius:50%; border:3px solid rgba(34,197,94,.5); border-top-color:#22C55E; animation:spin 1.2s linear infinite; }
+.rings.amber{ border-color:rgba(251,191,36,.35); border-top-color:#FBBF24; }
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.bounce{ animation:recBounce 1.8s ease-in-out infinite; }
+@keyframes recBounce{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+.cap{ font-size:12px; color:#637381; text-align:center; }
+.cap b{ color:#16A34A; font-weight:700; }
+.linkbtn{ border:0; background:none; font-size:13px; font-weight:600; color:#2563EB; display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:8px; }
+.linkbtn .mi{ font-size:16px; }
+.pill{ height:44px; padding:0 24px; border-radius:25px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; border:1px solid transparent; }
+.pill .mi{ font-size:18px; }
+.pill.ghost{ background:#fff; border-color:var(--g200); color:var(--g500); }
+.pill.mine{ background:#fff; border-color:#10b981; color:#059669; }
+.pill.go{ background:linear-gradient(180deg,#77ED8B 0%,#22C55E 100%); color:#fff; font-weight:700; box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.pulse{ position:relative; display:inline-flex; }
+.pulse::before{ content:""; position:absolute; inset:-6px; border-radius:999px; border:2px solid rgba(34,197,94,.35); animation:nextPulse 1.8s ease-out infinite; pointer-events:none; }
+@keyframes nextPulse{ 0%{ opacity:.55; transform:scale(.95);} 100%{ opacity:0; transform:scale(1.22);} }
+.tip{ width:380px; min-height:100px; padding:16px 24px; border:1px dashed #FDE68A; border-radius:24px; background:#FFFEF5; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.tip .emo{ font-size:32px; margin-bottom:6px; }
+.tip .dk{ font-size:14px; font-weight:600; color:#92400E; margin-bottom:2px; }
+.tip .tx{ font-size:15px; color:#637381; }
+
+/* ---------- 結果：分數卡（message-list.js B 的左半）＋ 固定動作列（D） ---------- */
+.fb{ flex:none; border:1px solid var(--divider); border-radius:18px; background:#fff; box-shadow:0 8px 20px rgba(15,23,42,.04); overflow:hidden; display:flex; min-height:100px; }
+.fb .score{ padding:16px 24px; min-width:150px; flex:none; border-right:1px solid var(--divider); background:#FAFAFA; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+.fb .score .big{ display:flex; align-items:baseline; gap:4px; }
+.fb .score .big b{ font-size:32px; font-weight:800; color:#22C55E; line-height:1; }
+.fb .score .big span{ font-size:17px; font-weight:700; color:#637381; }
+.stars{ display:flex; gap:2px; color:#FFC107; }
+.stars .mi{ font-size:18px; }
+.fb .score .verdict{ font-size:14px; font-weight:800; margin-top:4px; }
+.fb .detail{ flex:1; min-width:0; padding:16px 20px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+.legend{ display:flex; align-items:center; gap:14px; font-size:12px; color:#637381; flex-wrap:wrap; }
+.legend i{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.legend .hint{ margin-left:auto; font-size:11px; }
+.summ{ display:flex; gap:16px; font-size:13px; color:#475569; }
+.summ b{ font-weight:800; }
+.actions{ flex:none; padding:12px 24px; background:rgba(255,255,255,.96); border-top:1px solid var(--divider); box-shadow:0 -10px 24px rgba(15,23,42,.06); display:flex; justify-content:center; gap:16px; }
+.actions .pill{ height:46px; padding:0 32px; }
+
+/* ---------- 開始卡（基準檔同一套，多一列） ---------- */
+.startbg{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#E8EEF4; }
+.start{ width:100%; max-width:440px; margin:0 16px; padding:32px; border-radius:32px; background:rgba(255,255,255,.96); box-shadow:0 24px 60px rgba(148,163,184,.22); display:flex; flex-direction:column; align-items:center; gap:20px; }
+.start .pname{ font-size:28px; font-weight:700; color:#22C55E; text-align:center; line-height:1.5; }
+.start .mode{ font-size:22px; font-weight:800; color:#0F172A; text-align:center; }
+.start .sub{ font-size:14px; font-weight:500; color:#64748B; text-align:center; }
+.start .statcard{ width:100%; padding:18px; border-radius:24px; border:1px solid #E2E8F0; display:flex; }
+.start .statcard > div{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px 0; }
+.start .statcard .n{ display:flex; align-items:center; gap:6px; }
+.start .statcard .n .ic{ width:32px; height:32px; border-radius:50%; background:rgba(34,197,94,.1); color:#22C55E; display:flex; align-items:center; justify-content:center; }
+.start .statcard .n .ic .mi{ font-size:16px; }
+.start .statcard .n b{ font-size:20px; font-weight:800; color:#22C55E; }
+.start .statcard .k{ font-size:12px; font-weight:600; color:#94A3B8; letter-spacing:.04em; }
+.start .setcard{ width:100%; border-radius:24px; border:1px solid #E2E8F0; overflow:hidden; }
+.start .setcard .sr{ display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--divider); gap:12px; }
+.start .setcard .sr:last-child{ border-bottom:0; }
+.start .setcard .sr .a{ font-size:14px; font-weight:700; }
+.start .setcard .sr .b{ font-size:12px; color:#94A3B8; }
+.startbtn{ width:100%; height:52px; border:0; border-radius:20px; color:#fff; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; background:linear-gradient(135deg,#65E482 0%,#18B95D 100%); box-shadow:0 8px 18px rgba(34,197,94,.2); }
+.startbtn .mi{ font-size:24px; }
+
+/* ---------- 完成卡（基準檔同一套） ---------- */
+.doneov{ position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:#E8EEF4; }
+.done{ width:100%; max-width:440px; margin:0 16px; border-radius:24px; background:#fff; box-shadow:0 20px 48px rgba(148,163,184,.24); overflow:hidden; }
+.done .top{ padding:28px 28px 20px; display:flex; flex-direction:column; align-items:center; }
+.done .pn{ font-size:24px; font-weight:700; color:#22C55E; margin-bottom:4px; }
+.done .h{ font-size:20px; font-weight:800; color:#1E293B; margin-bottom:20px; }
+.done .box{ width:100%; background:#FFFEFB; border:1px solid #FDE7B0; border-radius:24px; padding:20px 24px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.done .box .stars .mi{ font-size:34px; }
+.done .avg{ font-size:17px; font-weight:800; color:#1E293B; } .done .avg b{ color:#16A34A; }
+.done .enc{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; background:#DCFCE7; color:#15803D; font-size:14px; font-weight:700; }
+.done .enc .mi{ font-size:16px; }
+.done .btns{ padding:0 24px 28px; display:flex; flex-direction:column; gap:16px; }
+.done .submit{ height:56px; border:0; border-radius:24px; color:#fff; font-size:16px; font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg,#60A5FA 0%,#2563EB 100%); box-shadow:0 8px 18px rgba(59,130,246,.32); }
+.done .again{ height:48px; border:1px solid var(--g200); background:#fff; border-radius:20px; color:#334155; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; }
+.done .back{ height:40px; border:0; background:none; color:#64748B; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
+.done .btns .mi{ font-size:18px; }
+
+/* ---------- 配對小遊戲 Modal（產品本來就有，評分中蓋上來） ---------- */
+.scrim{ position:absolute; inset:0; z-index:40; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; }
+.mg{ width:420px; border-radius:24px; background:#fff; padding:24px; box-shadow:0 24px 60px rgba(15,23,42,.3); }
+.mg .mh{ font-size:16px; font-weight:800; color:#1E293B; text-align:center; margin-bottom:4px; }
+.mg .ms{ font-size:12px; color:#64748B; text-align:center; margin-bottom:16px; }
+.mg .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.mg .c{ aspect-ratio:1; border-radius:16px; background:linear-gradient(135deg,#A78BFA,#60A5FA); display:flex; align-items:center; justify-content:center; font-size:28px; color:#fff; }
+.mg .c.up{ background:#F8FAFC; border:1.5px solid var(--line); color:#0F172A; font-size:22px; font-weight:800; flex-direction:column; gap:2px; }
+.mg .c.up small{ font-size:11px; color:#64748B; font-weight:500; }
+.mg .lp{ height:4px; border-radius:2px; background:#E2E8F0; margin-top:16px; overflow:hidden; }
+.mg .lp i{ display:block; width:45%; height:100%; background:#22C55E; }
+
+.toast{ position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px); opacity:0; z-index:120; padding:10px 16px; border-radius:12px; background:#1E293B; color:#fff; font-size:13px; font-weight:600; transition:.2s; pointer-events:none; }
+.toast.on{ opacity:1; transform:translateX(-50%); }
+.speedchips{ display:inline-flex; gap:4px; }
+.speedchips .sc{ height:24px; padding:0 8px; border-radius:999px; border:1px solid var(--divider); background:#fff; font-size:12px; font-weight:600; color:#637381; }
+.speedchips .sc.on{ border-color:#00CB61; background:rgba(0,203,97,.08); color:#00A749; }
+.mg .c{ cursor:pointer; user-select:none; }
+.mg .c.ok{ border-color:#22C55E; background:#F0FDF4; }
+.sw{ cursor:pointer; }
+/* ---------- 提案說明條（跟 v20／v21 同一條：回 Index ＋ 狀態連結） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+.shell{ height:calc(100vh - 44px); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#" class="on"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <div class="mainwrap">
+    <div class="hdr"><div class="av">L</div></div>
+    <div class="area" id="area"></div>
+  </div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v22 · 學生端 · Whole passage（互動版，直接點） · 對照組 <a href="student-practice.html">現行複刻 ↗</a> · <a href="proposal-teacher.html?unit=whole">老師端提案 ↗</a></span><span id="devbar"></span></div>
+
+<script>
+/* ===========================================================================
+   互動版（2026-11-05）：不靠網址參數，照流程一路點：
+   開始卡 → 聽整篇（先英文再中文，如果 Translation first 開著）→ 輪到你 → 錄（提詞機）→ 錄好了 → 評分中 → 結果 → 完成。
+   聲音：瀏覽器 speechSynthesis（產品的英文翻譯本來就是用它唸的；中文這裡也用它代替參考音檔，&tts=0 關掉改用計時器）。
+   錄音：MediaRecorder 真的錄，My recording 放自己的聲音；拒絕麥克風就只跑提詞機、不錄。
+   評分：假的，等 4 秒進結果（產品是上傳後輪詢）。
+   網址參數仍然可用（?screen=… &t=… 等），當截圖用的深連結；&dev=1 顯示狀態列。
+   =========================================================================== */
+const M = window.V22;
+const qs = new URLSearchParams(location.search);
+const N = M.SENTENCES.length;
+const TOTAL = M.TOTAL_DUR;
+const SPEED_VAL = { Slow: 0.6, Normal: 0.8, Fast: 1.0 };
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+const S = {
+  screen: qs.get('screen') || 'start',
+  listen: qs.get('listen') !== '0',
+  tr: qs.get('tr') === '1',
+  py: qs.get('py') !== '0',
+  gear: qs.get('gear') === '1',
+  game: qs.get('game') !== '0',
+  speed: qs.get('speed') || 'Normal',
+  tfirst: qs.get('tfirst') === '1',
+  tts: qs.get('tts') !== '0' && 'speechSynthesis' in window,
+  phase: qs.get('phase') === 'meaning' ? 'meaning' : 'chinese',
+  attempt: 0,
+  recUrl: null,
+  recSecs: 0,
+  // 播放／提詞機的位置
+  si: 0, f: 0, ended: false, paused: false, t: 0,
+  // 2026-11-16：每句分數（可被單練更新）、單練哪一句、單練的步驟
+  scores: M.SENTENCE_SCORES.slice(), redone: {}, open: (parseInt(qs.get('open') || '0', 10) || 0) - 1,   // &open=N 展開第 N 句 ds: Math.max(0, Math.min(N - 1, (parseInt(qs.get('s') || '4', 10) || 4) - 1)), d: qs.get('d') || 'ready', dPrev: null,
+};
+// 深連結：&t=秒 → 停在那一刻（不自動播）
+const deepT = qs.has('t') ? Math.max(0, parseFloat(qs.get('t')) || 0) : null;
+
+/* ---------- 工具 ---------- */
+const starsHtml = (r) => { let h = '<span class="stars">'; for (let i = 1; i <= 5; i++) { const ic = r >= i ? 'star' : (r >= i - .5 ? 'star_half' : 'star_border'); h += `<span class="mi" style="${ic === 'star_border' ? 'color:#DFE3E8' : ''}">${ic}</span>`; } return h + '</span>'; };
+const barsHtml = (cls, hs) => `<span class="bars ${cls}">${hs.map((h, i) => `<i style="height:${h}px;animation-delay:${i * .08}s"></i>`).join('')}</span>`;
+const WL = [10, 16, 24, 18, 12], WR = [12, 18, 24, 16, 10];
+const speedFactor = () => 0.8 / SPEED_VAL[S.speed];                 // Normal=1、Slow 慢 1.33、Fast 快 0.8
+const senDur = (si) => M.SENTENCES[si].dur * speedFactor();          // 中文一句幾秒
+const enDur = (si) => Math.max(2, M.SENTENCES[si].tr.length * 0.055) * speedFactor();   // 英文一句估幾秒
+const totalDur = () => M.SENTENCES.reduce((a, s, i) => a + senDur(i), 0);
+const elapsed = () => { let t = 0; for (let i = 0; i < S.si; i++) t += (S.phase === 'meaning' ? enDur(i) : senDur(i)); return t + S.f * (S.si < N ? (S.phase === 'meaning' ? enDur(S.si) : senDur(S.si)) : 0); };
+const phaseTotal = () => M.SENTENCES.reduce((a, s, i) => a + (S.phase === 'meaning' ? enDur(i) : senDur(i)), 0);
+
+const positionAt = (t) => {   // 秒 → 句、句內比例（深連結用）
+  let acc = 0;
+  for (let i = 0; i < N; i++) { const d = senDur(i); if (t < acc + d) return { si: i, f: (t - acc) / d, ended: false }; acc += d; }
+  return { si: N, f: 0, ended: true };
+};
+/* 2026-11-16：sungCount（逐詞亮）不再用——整句一起亮。留著當紀錄
+const sungCount = (si, f) => {     // 句內比例 → 唸到第幾個詞（按字數線性、跳過標點）
+  const s = M.SENTENCES[si];
+  const chars = s.words.reduce((a, w) => a + w[0].length, 0);
+  let sung = 0, cnt = 0;
+  for (let k = 0; k < s.words.length; k++) { cnt += s.words[k][0].length; if (cnt / chars <= f) sung = k + 1; }
+  sung = Math.min(sung, s.words.length - 1);
+  while (sung < s.words.length - 1 && M.isPunct(s.words[sung][0])) sung += 1;
+  return sung;
+};
+*/
+
+/* ---------- 課文 ---------- */
+const passageHtml = (mode) => M.SENTENCES.map((s, si) => {
+  let cls = '';
+  if (mode === 'karaoke') cls = si < S.si ? 'past' : si === S.si ? 'cur' : 'todo';
+  const words = wordsHtml(si, mode === 'result');
+  if (mode === 'result') return resultSen(si, words);
+  return `<span class="sen ${cls}" data-si="${si}"><span class="ws">${words}</span>${S.tr ? `<span class="tr">${esc(s.tr)}</span>` : ''}</span>`;
+}).join('');
+// 2026-11-16：一句的詞（graded＝結果三色）；整句亮靠 .sen.cur，不逐詞
+const wordStatus = (si, wi) => { const st = M.wordStatus(si, wi); return S.redone[si] && st === 'incorrect' ? 'correct' : st; };   // 單練過：紅字改好
+const wordsHtml = (si, graded) => M.SENTENCES[si].words.map(([w, py], wi) => {
+    const punct = M.isPunct(w);
+    let wc = punct ? 'punct' : '';
+    if (graded && !punct) wc += ' ' + wordStatus(si, wi);
+    const dot = graded && !punct ? (() => { const st = wordStatus(si, wi); return `<span class="dot bg-${st}"><span class="mi">${st === 'correct' ? 'check' : st === 'warning' ? 'priority_high' : 'close'}</span></span>`; })() : '';
+    return `<span class="w ${wc}" data-si="${si}" data-wi="${wi}"><span class="py">${S.py && !punct ? py : ''}</span><span class="zh">${esc(w)}</span>${dot}</span>`;
+  }).join('');
+// 2026-11-16：結果頁一句＝詞 ＋ 右邊分數；低於 4 分有 Practice
+const WEAK = 4;
+const tier = (v) => (v >= 4 ? 'hi' : v >= 3 ? 'mid' : 'lo');
+const avgScore = () => S.scores.reduce((a, v) => a + v, 0) / N;
+const resultSen = (si, words) => {
+  const v = S.scores[si], weak = v < WEAK, re = S.redone[si] !== undefined, open = S.open === si;
+  const chip = `<span class="schip ${tier(v)}" title="${re ? `Was ${S.redone[si].toFixed(1)}` : ''}">${re ? '<span class="mi">north</span>' : ''}${v.toFixed(1)}<small>/5</small></span>`;
+  return `<div class="rrow ${weak ? 'weak' : ''} ${re ? 'redone' : ''} ${open ? 'open' : ''}" data-si="${si}">
+    <div class="rhead" data-act="rowtoggle" data-si="${si}" role="button" tabindex="0" aria-expanded="${open}" aria-label="Sentence ${si + 1}, score ${v.toFixed(1)}. ${open ? 'Hide' : 'Show'} each word">
+      <span class="num">${si + 1}</span>${chip}<span class="line">${esc(M.SENTENCES[si].zh)}</span>
+      ${weak ? `<button class="drillbtn" data-act="drill" data-si="${si}" aria-label="Practice sentence ${si + 1} on its own"><span class="mi">mic</span>Practice</button>` : ''}<span class="mi chev">expand_more</span></div>
+    ${open ? `<div class="rdetail"><span class="sen" data-si="${si}"><span class="ws">${words}</span>${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div>` : ''}
+  </div>`;
+};
+const englishHtml = () => M.SENTENCES.map((s, si) => `<span class="sen en ${si < S.si ? 'past' : si === S.si ? 'cur' : 'todo'}" data-si="${si}">${esc(s.tr)}</span>`).join('');
+
+// 播放中只改 class，不重畫整頁
+const updateKaraoke = () => {
+  const live = S.screen === 'listen' || S.screen === 'record';   // 只有在播／在錄才動高亮；ready／recorded 的課文是靜態的
+  if (live) document.querySelectorAll('.sen').forEach((el) => {
+    const si = +el.dataset.si;
+    el.classList.remove('past', 'cur', 'todo');
+    el.classList.add(si < S.si ? 'past' : si === S.si ? 'cur' : 'todo');
+  });
+  const cnt = live ? document.getElementById('sentcnt') : null; if (cnt) cnt.innerHTML = `Sentence <b>${Math.min(N, S.si + 1)}</b> of ${N}`;
+  const tm = document.getElementById('ptime'); if (tm) tm.innerHTML = `<b>${M.mmss(Math.min(elapsed(), phaseTotal()))}</b> / ${M.mmss(phaseTotal())}`;
+  const fill = document.getElementById('pfill'); if (fill) fill.style.width = `${Math.min(100, elapsed() / phaseTotal() * 100)}%`;
+  const rt = document.getElementById('rectime'); if (rt) rt.textContent = M.mmss(S.recSecs);
+  const prog = live ? document.getElementById('progfill') : null; if (prog) { const c = Math.min(N, S.si + 1); prog.style.width = `${c / N * 100}%`; document.getElementById('prognum').innerHTML = `<b>${c}</b> / <i>${N}</i>`; }
+  const cur = document.querySelector('.sen.cur'), box = document.getElementById('passage');
+  if (cur && box) box.scrollTop = Math.max(0, cur.offsetTop - box.offsetTop - box.clientHeight / 2 + cur.offsetHeight / 2);
+};
+
+/* ---------- 播放引擎：一句一句，TTS 或計時器 ---------- */
+let raf = null, senTimer = null, senStart = 0, run = 0;
+const synth = S.tts ? window.speechSynthesis : null;
+const pickVoice = (lang) => { const vs = synth ? synth.getVoices() : []; return vs.find((v) => v.lang.replace('_', '-').toLowerCase() === lang) || vs.find((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2))) || null; };
+if (synth) synth.getVoices();   // 第一次呼叫才會載入
+
+const stopEngine = () => { run += 1; if (raf) cancelAnimationFrame(raf); raf = null; if (senTimer) clearTimeout(senTimer); senTimer = null; if (synth) synth.cancel(); };
+
+const sweep = (myRun, dur) => {   // 句內線性掃
+  const tick = () => {
+    if (myRun !== run) return;
+    S.f = Math.min(0.98, (performance.now() - senStart) / 1000 / dur);
+    updateKaraoke();
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+};
+
+const playSentence = (si, onDone) => {
+  stopEngine();
+  const myRun = run;
+  S.si = si; S.f = 0; S.ended = false;
+  const meaning = S.phase === 'meaning';
+  const dur = meaning ? enDur(si) : senDur(si);
+  senStart = performance.now();
+  updateKaraoke();
+  sweep(myRun, dur);
+  const finish = () => { if (myRun !== run) return; if (raf) cancelAnimationFrame(raf); raf = null; onDone(); };
+  if (synth) {
+    const u = new SpeechSynthesisUtterance(meaning ? M.SENTENCES[si].tr : M.SENTENCES[si].zh);
+    u.lang = meaning ? 'en-US' : 'zh-CN';
+    const v = pickVoice(meaning ? 'en-us' : 'zh-cn'); if (v) u.voice = v;
+    u.rate = meaning ? 0.92 / speedFactor() : 0.95 / speedFactor();
+    u.onend = finish; u.onerror = finish;
+    synth.speak(u);
+    senTimer = setTimeout(finish, (dur + 3) * 1000);   // 保險：TTS 沒回 onend 也往下走
+  } else {
+    senTimer = setTimeout(finish, dur * 1000);
+  }
+};
+
+const playFrom = (si) => {   // 聽整篇：從第 si 句接著播到底
+  S.paused = false;
+  const next = (i) => {
+    if (i >= N) {
+      if (S.phase === 'meaning') { S.phase = 'chinese'; render(); playFrom(0); return; }   // 英文唸完 → 中文整篇
+      S.si = N; S.f = 0; S.ended = true; updateKaraoke(); renderPlayerBtn();
+      setTimeout(() => { if (S.screen === 'listen' && S.ended) go('ready'); }, 900);   // 聽完自動進「輪到你」
+      return;
+    }
+    playSentence(i, () => next(i + 1));
+  };
+  next(si);
+  renderPlayerBtn();
+};
+
+const teleprompter = (si) => {   // 錄的時候：只掃不出聲
+  const next = (i) => {
+    if (i >= N) { S.si = N; S.f = 0; S.ended = true; updateKaraoke(); const h = document.getElementById('rechelp'); if (h) h.textContent = 'The highlight has finished — tap stop when you are done.'; return; }
+    stopEngine();
+    const myRun = run;
+    S.si = i; S.f = 0; senStart = performance.now(); updateKaraoke();
+    sweep(myRun, senDur(i));
+    senTimer = setTimeout(() => { if (myRun === run) next(i + 1); }, senDur(i) * 1000);
+  };
+  next(si);
+};
+
+/* ---------- 錄音 ---------- */
+let recorder = null, chunks = [], stream = null, recTimer = null, recAudio = null;
+const startRecording = async () => {
+  chunks = [];
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.start();
+  } catch (e) { recorder = null; toast('Microphone not available — the prompter runs, nothing is recorded.'); }
+  S.recSecs = 0;
+  recTimer = setInterval(() => { S.recSecs += 1; const rt = document.getElementById('rectime'); if (rt) rt.textContent = M.mmss(S.recSecs); }, 1000);
+};
+const stopRecording = () => new Promise((resolve) => {
+  clearInterval(recTimer);
+  if (!recorder || recorder.state === 'inactive') { resolve(); return; }
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+    if (S.recUrl) URL.revokeObjectURL(S.recUrl);
+    S.recUrl = URL.createObjectURL(blob);
+    stream?.getTracks().forEach((t) => t.stop());
+    resolve();
+  };
+  recorder.stop();
+});
+const playRecording = (btn) => {
+  if (recAudio) { recAudio.pause(); recAudio = null; render(); return; }
+  if (!S.recUrl) { toast('Nothing was recorded.'); return; }
+  recAudio = new Audio(S.recUrl);
+  recAudio.onended = () => { recAudio = null; render(); };
+  recAudio.play();
+  render();
+};
+
+/* ---------- 小零件 ---------- */
+const toast = (msg) => { let t = document.getElementById('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove('on'), 2600); };
+const progress = () => { const c = S.screen === 'start' ? 1 : S.screen === 'listen' || S.screen === 'record' ? Math.min(N, S.si + 1) : S.screen === 'ready' ? 1 : N; return `<div class="prog"><div class="track"><div class="fill" id="progfill" style="width:${c / N * 100}%"></div></div><div class="num" id="prognum"><b>${c}</b> / <i>${N}</i></div></div>`; };
+const metaHtml = (icon, label, helper, right = '') => `<div class="meta"><div class="l"><span class="ic"><span class="mi">${icon}</span></span><div><div class="lbl">${label}</div>${helper ? `<div class="hlp" id="rechelp">${helper}</div>` : ''}</div></div>${right ? `<span class="cnt" id="sentcnt">${right}</span>` : ''}</div>`;
+const sw = (key, on, lg = false) => `<span class="sw ${lg ? 'lg' : ''} ${on ? 'on' : ''}" data-toggle="${key}" role="switch" aria-checked="${on}"></span>`;
+
+const titleRow = (title) => `<div class="trow"><div class="t">${title}</div><div class="r">
+  <span class="attempt">Attempt <b>${S.attempt}</b> / <i>3</i></span>
+  <span class="gearwrap"><button class="gear" data-act="gear"><span class="mi">settings</span></button>
+  ${S.gear ? `<div class="gpanel"><div class="gh">Settings <span class="mi" data-act="gear" style="cursor:pointer">close</span></div>
+    <div class="gr">Pinyin ${sw('py', S.py)}</div><div class="gr">Translation ${sw('tr', S.tr)}</div><div class="gr">Translation first ${sw('tfirst', S.tfirst)}</div>
+    <div class="gr">Speed <span class="speedchips">${Object.keys(SPEED_VAL).map((k) => `<button class="sc ${k === S.speed ? 'on' : ''}" data-speed="${k}">${k}</button>`).join('')}</span></div></div>` : ''}</span>
+</div></div>`;
+
+const renderPlayerBtn = () => { const b = document.getElementById('pbtn'); if (b) b.innerHTML = `<span class="mi">${S.ended ? 'replay' : S.paused ? 'play_arrow' : 'pause'}</span>`; };
+
+/* ---------- 各畫面 ---------- */
+const screens = {
+  start: () => `<div class="card"><div class="startbg"><div class="start">
+    <div class="pname">${esc(M.PROJECT.name)}</div>
+    <div class="mode">Content Mirroring</div>
+    <div class="sub">Read the whole passage aloud</div>
+    <div class="statcard">
+      <div><span class="n"><span class="ic"><span class="mi">chat_bubble_outline</span></span><b>${N}</b></span><span class="k">SENTENCES</span></div>
+      <div><span class="n"><span class="ic"><span class="mi">schedule</span></span><b>~${Math.max(1, Math.round(TOTAL / 60))}</b></span><span class="k">MIN</span></div>
+    </div>
+    <div class="setcard">
+      <div class="sr"><div><div class="a">Listen first</div><div class="b">Hear the whole passage before you read</div></div>${sw('listen', S.listen, true)}</div>
+      <div class="sr"><div><div class="a">Show Pinyin</div><div class="b">Show Chinese pronunciation (Pinyin)</div></div>${sw('py', S.py, true)}</div>
+      <div class="sr"><div><div class="a">Show Translation</div><div class="b">Show English meaning</div></div>${sw('tr', S.tr, true)}</div>
+      <div class="sr"><div><div class="a">Translation First</div><div class="b">Hear the English meaning before the Chinese passage</div></div>${sw('tfirst', S.tfirst, true)}</div>
+    </div>
+    <button class="startbtn" data-act="start"><span class="mi">${S.listen ? 'headphones' : 'mic'}</span>Start Practice<span class="mi">arrow_forward</span></button>
+  </div></div></div>`,
+
+  listen: () => {
+    const meaning = S.phase === 'meaning';
+    return `<div class="card"><div class="right"><div class="rwrap">${titleRow(meaning ? 'Understand the meaning' : 'Listen to the passage')}
+      <div class="msgs"><div class="pcard listen active">
+        ${meaning ? metaHtml('translate', 'Meaning', 'Listen to the English meaning first — the Chinese passage plays next.', `Sentence <b>${Math.min(N, S.si + 1)}</b> of ${N}`)
+                  : metaHtml('headphones', 'Listen', 'Follow along — the highlight shows where the reader is.', `Sentence <b>${Math.min(N, S.si + 1)}</b> of ${N}`)}
+        <div class="passage" id="passage">${meaning ? englishHtml() : passageHtml('karaoke')}</div>
+      </div></div>
+      <div class="player">
+        <button class="pbtn" id="pbtn" data-act="playpause"><span class="mi">${S.ended ? 'replay' : S.paused ? 'play_arrow' : 'pause'}</span></button>
+        <div class="ptrack"><i id="pfill" style="width:${Math.min(100, elapsed() / phaseTotal() * 100)}%"></i></div>
+        <span class="ptime" id="ptime"><b>${M.mmss(Math.min(elapsed(), phaseTotal()))}</b> / ${M.mmss(phaseTotal())}</span>
+        ${S.tfirst ? `<span class="chip"><span class="mi">translate</span>English first</span>` : ''}<span class="chip"><span class="mi">speed</span>${S.speed}</span><span class="chip"><span class="mi">record_voice_over</span>Xiaorou</span>
+      </div>
+      <div class="recarea"><button class="linkbtn" data-act="skip">Skip to reading<span class="mi">arrow_forward</span></button></div>
+    </div></div></div>`;
+  },
+
+  ready: () => `<div class="card"><div class="right"><div class="rwrap">${titleRow('Read the passage')}
+    <div class="msgs"><div class="pcard practice">
+      ${metaHtml('record_voice_over', 'Your turn', `Read the whole passage aloud. The highlight moves one sentence at a time at ${S.speed} speed.`, `${N} sentences · ~${M.mmss(totalDur())}`)}
+      <div class="passage" id="passage">${passageHtml('static')}</div>
+    </div></div>
+    <div class="recarea"><div class="wavez">${barsHtml('', WL)}<div class="rbwrap bounce"><button class="rb" data-act="rec"><span class="mi">mic</span></button></div>${barsHtml('', WR)}</div>
+      <div class="cap" id="readycap">Tap to start recording</div>
+      <button class="linkbtn" data-act="listenagain"><span class="mi">replay</span>Listen again</button></div>
+  </div></div></div>`,
+
+  record: () => `<div class="card"><div class="right"><div class="rwrap">${titleRow('Read the passage')}
+    <div class="msgs"><div class="pcard repeat active">
+      ${metaHtml('record_voice_over', 'Read aloud', 'Read the highlighted sentence — it moves on by itself.', `Sentence <b>${Math.min(N, S.si + 1)}</b> of ${N}`)}
+      <div class="passage" id="passage">${passageHtml('karaoke')}</div>
+    </div></div>
+    <div class="recarea"><div class="wavez">${barsHtml('on', WL)}<div class="rbwrap"><span class="rings"></span><button class="rb rec" data-act="stop"><span class="mi">stop</span></button></div>${barsHtml('on', WR)}</div>
+      <div class="cap"><b id="rectime">${M.mmss(S.recSecs)}</b> · Tap to stop when you finish</div></div>
+  </div></div></div>`,
+
+  recorded: () => `<div class="card"><div class="right"><div class="rwrap">${titleRow('Read the passage')}
+    <div class="msgs"><div class="pcard practice">
+      ${metaHtml('record_voice_over', 'Your reading', 'Listen back, then submit — the whole passage is scored at once.', `Recorded · ${M.mmss(S.recSecs)}`)}
+      <div class="passage" id="passage">${passageHtml('static')}</div>
+    </div></div>
+    <div class="recarea"><div class="wavez">${barsHtml(recAudio ? 'grey on' : 'grey', WL)}<div class="rbwrap ${recAudio ? '' : 'bounce'}"><button class="rb grey" data-act="playrec"><span class="mi">${recAudio ? 'stop' : 'play_arrow'}</span></button></div>${barsHtml(recAudio ? 'grey on' : 'grey', WR)}</div>
+      <div class="cap">${recAudio ? 'Playing your recording...' : 'Tap to play your recording'}</div>
+      <div style="display:flex;gap:16px;margin-top:4px"><button class="pill ghost" data-act="retry"><span class="mi">refresh</span>Retry</button><span class="pulse"><button class="pill go" data-act="submit">Submit</button></span></div></div>
+  </div></div></div>`,
+
+  scoring: () => `<div class="card"><div class="right"><div class="rwrap">${titleRow('Read the passage')}
+    <div class="msgs"><div class="pcard practice dim">
+      ${metaHtml('record_voice_over', 'Your reading', '', `Recorded · ${M.mmss(S.recSecs)}`)}
+      <div class="passage" id="passage">${passageHtml('static')}</div>
+    </div></div>
+    <div class="recarea">
+      <div class="tip"><div class="emo">🐼</div><div class="dk">Did you know?</div><div class="tx">The Chinese word for "panda" (熊猫) literally means "bear cat".</div></div>
+      <div class="rbwrap"><span class="rings amber"></span><button class="rb proc"><span class="wv"><i style="height:16px"></i><i style="height:24px;animation-delay:.1s"></i><i style="height:32px;animation-delay:.2s"></i><i style="height:20px;animation-delay:.3s"></i></span></button></div>
+      <div class="cap">Analyzing your pronunciation...<br>A whole passage takes longer than one sentence — about a minute.</div></div>
+  </div>${S.game ? gameModal() : ''}</div></div>`,
+
+  result: () => {
+    const r = avgScore();   // 2026-11-16：各句平均
+    const weakN = S.scores.filter((v) => v < WEAK).length;
+    const verdict = r >= 4.5 ? ['Excellent!', '#059669'] : r >= 3.5 ? ['Great!', '#22C55E'] : r >= 2.5 ? ['Good effort!', '#F59E0B'] : ['Keep trying!', '#EF4444'];
+    let nw = 0, ni = 0; M.SENTENCES.forEach((s, si) => s.words.forEach((w, wi) => { if (M.isPunct(w[0])) return; const st = wordStatus(si, wi); if (st === 'warning') nw++; if (st === 'incorrect') ni++; }));
+    return `<div class="card"><div class="right"><div class="rwrap">${titleRow('Your result')}
+      <div class="msgs">
+        <div class="pcard result">${metaHtml('chat', 'Your reading', 'Each sentence has its own score. Tap a sentence to see each word.', `${N} sentences`)}<div class="passage" id="passage"><div class="rlist">${passageHtml('result')}</div></div></div>
+        <div class="fb compact">
+          <div class="score"><span class="avglbl">Average</span><div class="big"><b>${r.toFixed(1)}</b><span>/5</span></div>${starsHtml(r)}<div class="verdict" style="color:${verdict[1]}">${verdict[0]}</div></div>
+          <div class="detail"><div class="legend"><span><i class="bg-correct"></i>Good</span><span><i class="bg-warning"></i>Needs attention</span><span><i class="bg-incorrect"></i>Needs practice</span></div>
+          <div class="summ"><span><b style="color:#F59E0B">${nw}</b> words need attention</span><span><b style="color:#EF4444">${ni}</b> need practice</span>${weakN ? `<span><b style="color:#B91C1C">${weakN}</b> ${weakN === 1 ? 'sentence' : 'sentences'} below 4 — tap <b style="color:#16A34A">Practice</b> to redo just that one</span>` : '<span style="color:#15803D;font-weight:700">Every sentence is 4 or above</span>'}</div></div>
+        </div>
+      </div>
+      <div class="actions"><button class="pill mine" data-act="playrec"><span class="mi">${recAudio ? 'stop' : 'play_arrow'}</span>My recording</button><button class="pill ghost" data-act="redo"><span class="mi">refresh</span>Redo</button><span class="pulse"><button class="pill go" data-act="end">End Practice</button></span></div>
+    </div></div></div>`;
+  },
+};
+
+/* 2026-11-16：單練一句（結果頁 Practice 進來）——聽 → 錄 → 送出 → 新分數；整篇照樣只能一起唸 */
+const drillCard = (graded, lit) => {
+  const si = S.ds, prev = S.d === 'scored' && S.redone[si] !== undefined ? S.redone[si] : null;
+  const right = S.d === 'scored' ? `<span class="was">${prev !== null ? `<span class="schip ${tier(prev)}">${prev.toFixed(1)}<small>/5</small></span><span class="mi arrow">arrow_forward</span>` : ''}<span class="schip ${tier(S.scores[si])}">${S.scores[si].toFixed(1)}<small>/5</small></span></span>`
+    : `<span class="was">Last score <span class="schip ${tier(S.scores[si])}">${S.scores[si].toFixed(1)}<small>/5</small></span></span>`;
+  const label = { ready: ['record_voice_over', 'Practice this sentence', 'The red and amber words need work. Listen, then read it once.'], record: ['record_voice_over', 'Read aloud', ''], recorded: ['record_voice_over', 'Your reading', 'Listen back, then submit.'], scoring: ['record_voice_over', 'Your reading', ''], scored: ['chat', 'New score', 'This sentence’s score on the result page is updated.'] }[S.d];
+  return `<div class="msgs"><div class="pcard drill ${graded ? 'result' : S.d === 'record' ? 'repeat active' : 'practice'} ${S.d === 'scoring' ? 'dim' : ''}">
+    ${metaHtml(label[0], label[1], label[2], right)}
+    <div class="passage"><span class="sen ${lit ? 'cur' : ''}" data-si="${si}"><span class="ws">${wordsHtml(si, graded)}</span>${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div></div></div>`;
+};
+screens.drill = () => {
+  const head = `<div class="dtop"><button class="backlink" data-act="drillback"><span class="mi">arrow_back</span>Back to result</button></div>`;
+  const ttl = titleRow(`Sentence ${S.ds + 1} of ${N}`);
+  let area = '';
+  if (S.d === 'ready') area = `<div class="recarea"><div class="wavez">${barsHtml('', WL)}<div class="rbwrap bounce"><button class="rb" data-act="drec"><span class="mi">mic</span></button></div>${barsHtml('', WR)}</div>
+      <div class="cap" id="readycap">Tap to record this sentence</div>
+      <button class="linkbtn" data-act="dplay"><span class="mi">${S.dPlaying ? 'stop' : 'volume_up'}</span>${S.dPlaying ? 'Playing…' : 'Listen to the reader'}</button></div>`;
+  else if (S.d === 'record') area = `<div class="recarea"><div class="wavez">${barsHtml('on', WL)}<div class="rbwrap"><span class="rings"></span><button class="rb rec" data-act="dstop"><span class="mi">stop</span></button></div>${barsHtml('on', WR)}</div>
+      <div class="cap"><b id="rectime">${M.mmss(S.recSecs)}</b> · Tap to stop when you finish</div></div>`;
+  else if (S.d === 'recorded') area = `<div class="recarea"><div class="wavez">${barsHtml(recAudio ? 'grey on' : 'grey', WL)}<div class="rbwrap ${recAudio ? '' : 'bounce'}"><button class="rb grey" data-act="playrec"><span class="mi">${recAudio ? 'stop' : 'play_arrow'}</span></button></div>${barsHtml(recAudio ? 'grey on' : 'grey', WR)}</div>
+      <div class="cap">${recAudio ? 'Playing your recording...' : 'Tap to play your recording'}</div>
+      <div style="display:flex;gap:16px;margin-top:4px"><button class="pill ghost" data-act="dretry"><span class="mi">refresh</span>Retry</button><span class="pulse"><button class="pill go" data-act="dsubmit">Submit</button></span></div></div>`;
+  else if (S.d === 'scoring') area = `<div class="recarea"><div class="rbwrap"><span class="rings amber"></span><button class="rb proc"><span class="wv"><i style="height:16px"></i><i style="height:24px;animation-delay:.1s"></i><i style="height:32px;animation-delay:.2s"></i><i style="height:20px;animation-delay:.3s"></i></span></button></div>
+      <div class="cap">Analyzing your pronunciation...</div></div>`;
+  const actions = S.d === 'scored' ? `<div class="actions"><button class="pill ghost" data-act="dagain"><span class="mi">refresh</span>Try again</button><span class="pulse"><button class="pill go" data-act="drillback"><span class="mi">arrow_back</span>Back to result</button></span></div>` : '';
+  return `<div class="card"><div class="right"><div class="rwrap">${ttl}${head}${drillCard(S.d === 'ready' || S.d === 'scored', S.d === 'record')}${area}${actions}</div></div></div>`;
+};
+const drillScore = () => { const si = S.ds; if (S.redone[si] === undefined) S.redone[si] = S.scores[si]; S.scores[si] = Math.min(5, S.scores[si] + 1); };   // 假評分：每次 +1，上限 5
+const goDrill = (d) => { stopEngine(); if (recAudio) { recAudio.pause(); recAudio = null; } S.screen = 'drill'; S.d = d; S.dPlaying = false;
+  if (d === 'record'){ render(); startRecording(); return; }
+  if (d === 'scoring'){ render(); setTimeout(() => { if (S.screen === 'drill' && S.d === 'scoring'){ drillScore(); goDrill('scored'); } }, 2000); return; }
+  render(); };
+
+const doneCard = () => `<div class="doneov"><div class="done">
+  <div class="top"><div class="pn">${esc(M.PROJECT.name)}</div><div class="h">Practice Complete!</div>
+    <div class="box">${starsHtml(avgScore())}<div class="avg">Average: <b>${avgScore().toFixed(1)}</b> / 5</div><span class="enc"><span class="mi">trending_up</span>Great progress! Keep practicing!</span></div></div>
+  <div class="btns"><button class="submit" data-act="submitteacher"><span class="mi">send</span>Submit To Teacher</button><button class="again" data-act="again"><span class="mi">refresh</span>Practice Again</button><button class="back" data-act="again"><span class="mi">arrow_back</span>Back to Assignments</button></div>
+</div></div>`;
+
+/* 配對小遊戲：三對，真的可以翻 */
+const GAME_PAIRS = [['🌍', '地球', 'dì qiú'], ['💡', '关灯', 'guān dēng'], ['🛍️', '购物袋', 'gòu wù dài']];
+let game = null;
+const newGame = () => { const cards = []; GAME_PAIRS.forEach((p, i) => { cards.push({ id: `e${i}`, pair: i, emoji: p[0] }); cards.push({ id: `t${i}`, pair: i, text: p[1], py: p[2] }); }); for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; } game = { cards, up: [], matched: new Set(), lock: false }; };
+const gameModal = () => { if (!game) newGame(); return `<div class="scrim"><div class="mg"><div class="mh">Match the pairs while we score</div><div class="ms">The whole passage takes a little longer</div>
+  <div class="grid">${game.cards.map((c) => { const open = game.up.includes(c.id) || game.matched.has(c.id); return `<div class="c ${open ? 'up' : ''} ${game.matched.has(c.id) ? 'ok' : ''}" data-card="${c.id}">${open ? (c.emoji || `${c.text}<small>${c.py}</small>`) : '?'}</div>`; }).join('')}</div><div class="lp"><i id="gamelp"></i></div></div></div>`; };
+const flipCard = (id) => {
+  if (!game || game.lock || game.up.includes(id) || game.matched.has(id)) return;
+  game.up.push(id);
+  if (game.up.length === 2) {
+    const [a, b] = game.up.map((x) => game.cards.find((c) => c.id === x));
+    game.lock = true;
+    setTimeout(() => { if (a.pair === b.pair) { game.matched.add(a.id); game.matched.add(b.id); } game.up = []; game.lock = false; if (game.matched.size === 6) newGame(); if (S.screen === 'scoring') render(); }, a.pair === b.pair ? 300 : 700);
+  }
+  render();
+};
+
+/* ---------- 換畫面 ---------- */
+const go = (screen) => {
+  stopEngine();
+  if (recAudio) { recAudio.pause(); recAudio = null; }
+  S.screen = screen; S.gear = false;
+  if (screen === 'listen') { S.si = 0; S.f = 0; S.ended = false; S.paused = false; S.phase = S.tfirst ? 'meaning' : 'chinese'; render(); playFrom(0); return; }
+  if (screen === 'record') { S.si = 0; S.f = 0; S.ended = false; render(); startRecording().then(() => teleprompter(0)); return; }
+  if (screen === 'scoring') { S.attempt += 1; newGame(); render(); let p = 0; const lp = setInterval(() => { p += 2; const el = document.getElementById('gamelp'); if (el) el.style.width = `${p}%`; if (p >= 100) clearInterval(lp); }, 80); setTimeout(() => { clearInterval(lp); if (S.screen === 'scoring') go('result'); }, 4200); return; }
+  render();
+};
+
+const render = () => {
+  const area = document.getElementById('area');
+  const body = (screens[S.screen === 'done' ? 'result' : S.screen] || screens.start)();
+  area.innerHTML = progress() + `<div class="pad">${body}</div>` + (S.screen === 'done' ? doneCard() : '');
+  updateKaraoke();
+  {
+    const links = [['開始', '?screen=start'], ['先聽英文', '?screen=listen&tfirst=1&phase=meaning&t=14'], ['聽·句3', '?screen=listen&t=20'], ['聽·翻譯', '?screen=listen&t=20&tr=1'], ['輪到你', '?screen=ready'], ['錄·句5', '?screen=record&t=40'], ['錄好了', '?screen=recorded'], ['評分中', '?screen=scoring'], ['結果', '?screen=result'], ['結果·展開句4', '?screen=result&open=4'], ['單練·句4', '?screen=drill&s=4'], ['單練·新分數', '?screen=drill&s=4&d=scored'], ['完成', '?screen=done']];
+    document.getElementById('devbar').innerHTML = links.map(([t, h]) => `<a href="${h}" class="${location.search.split('&tts')[0] === h ? 'cur' : ''}">${t}</a>`).join(' · ');
+  }
+};
+
+/* ---------- 事件：一個代理 ---------- */
+document.addEventListener('click', async (e) => {
+  const tg = e.target.closest('[data-toggle]');
+  if (tg) { const k = tg.dataset.toggle; S[k] = !S[k]; render(); return; }
+  const sp = e.target.closest('[data-speed]');
+  if (sp) { S.speed = sp.dataset.speed; render(); return; }
+  const card = e.target.closest('[data-card]');
+  if (card) { flipCard(card.dataset.card); return; }
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'gear') { S.gear = !S.gear; render(); }
+  else if (act === 'start') go(S.listen ? 'listen' : 'ready');
+  else if (act === 'playpause') {
+    if (S.ended) { S.phase = S.tfirst ? 'meaning' : 'chinese'; render(); playFrom(0); }
+    else if (S.paused) { playFrom(S.si); }
+    else { stopEngine(); S.paused = true; S.f = 0; updateKaraoke(); renderPlayerBtn(); }
+  }
+  else if (act === 'skip') go('ready');
+  else if (act === 'listenagain') go('listen');
+  else if (act === 'rec') {   // 產品：按下去先 Get ready… 3 2 1
+    const cap = document.getElementById('readycap'); const btn = el;
+    let n = 3; btn.innerHTML = `<b style="font-size:26px">${n}</b>`; cap.innerHTML = '<span style="color:#22C55E;font-weight:600">Get ready...</span>';
+    const cd = setInterval(() => { n -= 1; if (n <= 0) { clearInterval(cd); go('record'); } else btn.innerHTML = `<b style="font-size:26px">${n}</b>`; }, 500);
+  }
+  else if (act === 'stop') { stopEngine(); await stopRecording(); go('recorded'); }
+  else if (act === 'playrec') playRecording(el);
+  else if (act === 'retry') go('ready');
+  else if (act === 'submit') go('scoring');
+  else if (act === 'redo') go('ready');
+  else if (act === 'end') go('done');
+  else if (act === 'rowtoggle') { S.open = S.open === +el.dataset.si ? -1 : +el.dataset.si; render(); scrollOpenRow(); }
+  /* 2026-11-16：單練一句。整篇的錄音先收起來，回結果頁再放回（My recording 還是整篇那段） */
+  else if (act === 'drill') { S.wholeUrl = S.recUrl; S.recUrl = null; S.ds = +el.dataset.si; goDrill('ready'); }
+  else if (act === 'drillback') { stopEngine(); if (S.recUrl && S.recUrl !== S.wholeUrl) URL.revokeObjectURL(S.recUrl); S.recUrl = S.wholeUrl || null; go('result'); }
+  else if (act === 'dplay') { if (S.dPlaying) { stopEngine(); S.dPlaying = false; render(); } else { S.phase = 'chinese'; S.dPlaying = true; render(); playSentence(S.ds, () => { S.dPlaying = false; if (S.screen === 'drill') render(); }); } }
+  else if (act === 'drec') {
+    const cap = document.getElementById('readycap'); const btn = el;
+    let n = 3; btn.innerHTML = `<b style="font-size:26px">${n}</b>`; cap.innerHTML = '<span style="color:#22C55E;font-weight:600">Get ready...</span>';
+    const cd = setInterval(() => { n -= 1; if (n <= 0) { clearInterval(cd); goDrill('record'); } else btn.innerHTML = `<b style="font-size:26px">${n}</b>`; }, 500);
+  }
+  else if (act === 'dstop') { await stopRecording(); goDrill('recorded'); }
+  else if (act === 'dretry') goDrill('ready');
+  else if (act === 'dsubmit') goDrill('scoring');
+  else if (act === 'dagain') goDrill('ready');
+  else if (act === 'again') { S.attempt = 0; S.recUrl = null; go('start'); }
+  else if (act === 'submitteacher') { el.innerHTML = '<span class="mi">check_circle</span>Already Submitted'; el.style.background = '#DCFCE7'; el.style.color = '#15803D'; el.style.boxShadow = 'none'; }
+});
+
+const scrollOpenRow = () => { const r = document.querySelector('.rrow.open'), box = document.getElementById('passage'); if (!r || !box) return;
+  const top = r.offsetTop - box.offsetTop, bottom = top + r.offsetHeight;
+  if (bottom > box.scrollTop + box.clientHeight) box.scrollTop = Math.min(top - 8, bottom - box.clientHeight + 8);
+  else if (top < box.scrollTop) box.scrollTop = top - 8; };   // 展開的句子整列捲進來
+document.addEventListener('keydown', (e) => { const h = e.target.closest?.('.rhead'); if (h && (e.key === 'Enter' || e.key === ' ') && e.target === h) { e.preventDefault(); h.click(); } });   // 2026-11-16：列可用鍵盤展開
+
+/* ---------- 起步：深連結停在那一刻，否則從開始卡 ---------- */
+if (deepT !== null && (S.screen === 'listen' || S.screen === 'record')) {
+  const p = positionAt(deepT); S.si = p.si; S.f = p.f; S.ended = p.ended; S.paused = true; S.recSecs = Math.round(deepT);
+  render();
+} else if (S.screen === 'listen' || S.screen === 'record') {
+  go(S.screen);
+} else {
+  if (S.screen === 'drill' && S.d === 'scored') drillScore();
+  if (S.screen === 'result' && S.open >= 0) setTimeout(scrollOpenRow, 0);   // 2026-11-16：深連結直接看新分數
+  if (S.screen === 'drill') S.recSecs = 7;
+  if (S.screen === 'recorded' || S.screen === 'scoring' || S.screen === 'result' || S.screen === 'done') S.recSecs = 58;
+  if (S.screen === 'result' || S.screen === 'done' || S.screen === 'scoring' || S.screen === 'drill') S.attempt = 1;
+  render();
+}
+</script>
+</body>
+</html>

@@ -39,6 +39,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-05 | 教學點方框第二版定案、套回 proposal.html | 使用者「把現在這個設計規範套在全部有 teaching point 的 practice；spec 要統一請工程師修改」。原本另開在 proposal-frame.html 試的第二版（開合列有框、箭頭在右、打開跟詞池連成一塊淺綠；全選框拿掉；例句清單搬進框裡、chip 當左欄）併回 proposal.html。同日另三條：選進來的專案教學點預設全勾（拿掉專案一起退）、句數行拿掉 *1–2 each*、Add teaching points from project 預設收起。交接包 `handoff/teaching-points/`（六種練習一起改，程式碼基準 bcdf3d33） |
 | 2026-11-04 | 題卡骨架：Q 膠囊灰階、左邊 ∧ 把手 ∨ | 使用者「題卡的共同骨架都吃這個設定」（照 v17／v18）。句子卡與問答卡左邊一條直欄，上下鈕換一格、把手照舊拖曳；Q 膠囊從綠改灰。編輯中的卡不變 |
 | 2026-11-03 | 教學點 chip 語法點掛 Grammar 標 | 使用者「要」（元件總表 §7.4 待定那條）。原本只有 v17 掛；現在 frame 裡型別是 GRAMMAR 的點（專案的、或 Custom 選 Grammar / Structure 加的）都掛紫色 Grammar，跟 Added 可以並存。Vocabulary 兩張待定 |
 | 2026-11-03 | Custom teaching point 旁加型別下拉 | 使用者「所有的 add 應該都要有詞性」：Vocabulary 那顆型別下拉（八個型別、預設 Word / Vocabulary，照產品 CustomWordDialog）套到八張卡；v17／v20／v21 補上，加的點記 ptype。產品的 teaching-point-picker 沒有型別，交接時要提 |

@@ -139,7 +139,7 @@ button{ font-family:inherit; }
 .side .logo img{ height:37px; width:auto; }
 .side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
 .side .logo b i{ font-style:normal; color:var(--primary); }
-.nav{ flex:1; overflow-y:auto; }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
 .nav .grp{ padding:0 16px; margin-top:16px; }
 .nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
   color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
@@ -1161,6 +1161,7 @@ body{ padding-bottom:48px; }
 .dlg2-ft{ display:flex; justify-content:flex-end; gap:8px; padding:8px 0 12px; }
 .dlg2{ max-width:640px; }
 
+/* 2026-11-06：題卡的刪除鈕統一用垃圾桶 delete_outline（跟 v20 一樣；原本 v17／v18 是 ×、v6 是實心垃圾桶）。純換圖示 */
 /* 2026-11-04：題卡共同骨架（照 v17／v18／v20）——Q 膠囊灰階；左邊一條直欄 ∧ 把手 ∨。只改提案頁，交接包複本不動 */
 .mcq.rail{ display:grid; grid-template-columns:26px minmax(0,1fr); column-gap:12px; padding-left:10px; }
 .mcq.rail > .mv-rail{ grid-column:1; grid-row:1 / span 20; align-self:center; }
@@ -1171,7 +1172,23 @@ body{ padding-bottom:48px; }
 .mv-rail .mv{ border:0; background:transparent; padding:0; width:26px; height:22px; border-radius:6px; color:var(--text2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .mv-rail .mv .mi{ font-size:22px; } .mv-rail .mv:hover{ background:var(--grey200); color:var(--text); }
 .mv-rail .mv:disabled{ opacity:.25; cursor:default; background:transparent; }
-.mcq .chip.sm.primary.filled{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; }
+.mcq .chip.sm.primary.filled{ background:#F1F5F9; border-color:#E2E8F0; color:#475569; font-weight:700; }   /* 2026-11-06：字重對齊 v17／v18 的 700 */
+.mcq .iconbtn.err .mi{ font-size:18px; }   /* 2026-11-06：垃圾桶圖示原本沒設大小（13px），對齊其他題卡的 18px */
+/* ===== 2026-11-02 教學點 frame 第二版 =====
+   ① 開合列改成 accordion 樣：整列有框、hover 變底、箭頭在右邊、開了轉 180° 並跟底下的池子接成一塊
+   ② 全選框拿掉（renderTeachingPoints 不再印 .cb）；2026-11-05 從 v20 的第二版套過來，Vocabulary 沒有例句清單 */
+.vp-head{ padding:10px 12px 10px 14px; border:1px solid var(--divider); border-radius:10px; background:#fff; font-weight:700; gap:8px; }
+.vp-head:hover{ border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); }   /* 2026-11-02：灰底改淺綠（跟勾選 chip 同色） */
+.vp-head .lbl{ flex:1; }
+.vp-head .mi{ color:var(--text); transition:transform .15s; }
+.vp-head[aria-expanded="true"]{ border-bottom-left-radius:0; border-bottom-right-radius:0; border-color:rgba(0,203,97,.45); background:rgba(0,203,97,.06); }
+.vp-head[aria-expanded="true"] .mi{ color:var(--primary); }
+.vp-head[aria-expanded="true"] .mi{ transform:rotate(180deg); }
+.pool{ padding:10px 12px 12px; border:1px solid rgba(0,203,97,.45); border-top:0; border-radius:0 0 10px 10px; background:rgba(0,203,97,.06); }   /* 打開時底色跟標頭同一塊淺綠，不留白 */
+/* 2026-11-03：池子底色變淺綠之後，已在清單的點要更跳——實線主色框、深一點的綠底、粗字、主色勾 */
+.pool .tpchip.dim, .pool .tpchip.dim:hover{ border:1.5px solid var(--primary); background:rgba(0,203,97,.16); color:var(--primary-dark, #00A749); font-weight:700; }
+.pool .tpchip.dim .mi{ color:var(--primary-dark, #00A749); }
+
 </style>
 </head>
 <body>
@@ -1286,9 +1303,13 @@ const WORDS = [
 const TYPE_SHORT = { WORD:'Word', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adj', GRAMMAR:'Grammar', PHRASE:'Phrase', MEASURE_WORD:'Measure', OTHER:'Other' };
 /* From Project 的池子：專案課文（splitArticleArray）裡的詞，去重、去標點。
    「我的一天」的課文借 v3 CONTENT[1] 那五句。 */
+/* 2026-11-05：第二個專案「环境保护与可持续发展」的 12 個教學點（原本是自動產生的 词1…词12）。只供第一步的 frame 用；第二步的字卡 mock 仍只有「我的一天」。 */
+const WORDS_ENV = [['环境','NOUN'],['保护','VERB'],['污染','NOUN'],['垃圾','NOUN'],['节约','VERB'],['能源','NOUN'],['塑料袋','NOUN'],['减少','VERB'],['浪费','VERB'],['气候','NOUN'],['严重','ADJECTIVE'],['不但……而且','GRAMMAR']].map(([w, type]) => ({ w, type }));
 const POOL = {
   '我的一天': ['我','每天','早上','七点','起床','以后','先','刷牙','洗脸','然后','吃','早饭','八点半','骑','自行车','去','学校',
              '下午','四点','放学','常常','和','同学','一起','打','篮球','晚上','做完','作业','就','早点','睡觉'],
+  '环境保护与可持续发展': ['现在','环境','污染','越来越','严重','我们','应该','保护','地球','少','用','塑料袋','垃圾','分类','节约','水','电',
+             '能源','减少','浪费','气候','变化','影响','每个人','骑','自行车','不但','环保','而且','健康','可持续','发展'],
 };
 const TYPE_LABEL = { WORD:'Word / Vocabulary', VERB:'Verb', NOUN:'Noun', ADJECTIVE:'Adjective',
   GRAMMAR:'Grammar / Structure', PHRASE:'Phrase / Idiom', MEASURE_WORD:'Measure Word', OTHER:'Other' };
@@ -1501,12 +1522,13 @@ function renderPracticeName(){
    邏輯照 teacher-planning 的 renderVocPointsPanel，樣式沿 v3。 */
 function tpOf(name){
   if (name === '我的一天') return WORDS.map(w => ({ w:w.w, type:w.type }));
+  if (name === '环境保护与可持续发展') return WORDS_ENV.map(w => ({ w:w.w, type:w.type }));
   const proj = PROJECTS.find(p => p[0] === name);
   return Array.from({ length: proj[3] }, (_, i) => ({ w:`词${i + 1}`, type:'WORD' }));
 }
 function renderTeachingPoints(){
   return S.projects.map(name => {
-    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED' })));
+    const tps = tpOf(name).concat(S.added.filter(a => a.sk === name).map(a => ({ w:a.w, type:'ADDED', ptype:a.type })));   // ptype：自己加的點選的型別（Grammar 標要看）
     const picked = tps.filter(t => S.tp.has(t.w)).length;
     const all = tps.length > 0 && picked === tps.length, some = picked > 0;
 
@@ -1514,7 +1536,7 @@ function renderTeachingPoints(){
     const chips = tps.length ? tps.map(t => {
       const on = S.tp.has(t.w);
       // 詞性不印（第八輪拿掉）；只有第一步加進來的字掛 Added
-      const ty = t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '';
+      const ty = (t.type === 'ADDED' ? '<span class="ty added">Added</span>' : '') + ((t.type === 'GRAMMAR' || t.ptype === 'GRAMMAR') ? '<span class="ty gram">Grammar</span>' : '');   // 2026-11-05：語法點掛 Grammar（跟 Sentence 四種一致）
       const gen = S.loaded && on && !S.genWords.has(t.w) ? '<span class="ty new">New</span>' : '';   // 回頭多勾的：還沒生
       return `<button class="tpchip ${on ? 'on' : ''}" data-tp="${esc(t.w)}" aria-pressed="${on}">
         <span class="mi">${on ? 'check_box' : 'check_box_outline_blank'}</span>${esc(t.w)}${ty}${gen}</button>`;
@@ -1530,8 +1552,6 @@ function renderTeachingPoints(){
 
     return `<div class="frame">
       <div class="frame-hd sel">
-        <button class="cb ${some ? '' : 'none'}" data-tpall="${esc(name)}" aria-label="Select all in ${esc(name)}">
-          <span class="mi">${all ? 'check_box' : some ? 'indeterminate_check_box' : 'check_box_outline_blank'}</span></button>
         <div class="ttl"><div class="frame-ttl">${esc(name)}</div><div class="frame-desc">Teaching points</div></div>
         <span class="cnt">${picked}/${tps.length}</span>
       </div>
@@ -1541,9 +1561,7 @@ function renderTeachingPoints(){
           ? [newN ? `${newN} new teaching ${newN === 1 ? 'point is' : 'points are'} added to the Vocabulary step when you press Next` : '', dropN ? `${dropN} unticked ${dropN === 1 ? 'point leaves' : 'points leave'} the practice` : ''].filter(Boolean).join(' · ')
           : 'Generated. Tick more points or untick some — the cards you already have stay as they are.'}</div></div>`; })()}
       <div class="frame-panel" style="display:block; overflow:visible">
-                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}">
-          <span class="mi">${S.poolOpen ? 'expand_more' : 'chevron_right'}</span>Add teaching points from project
-        </button>
+                <button class="vp-head" data-act="pool" aria-expanded="${S.poolOpen}"><span class="lbl">Add teaching points from project</span><span class="mi">expand_more</span></button>
         ${poolHtml}
         <div class="tp-add">
           <input class="inp" type="text" placeholder="Custom teaching point" data-custom="${esc(name)}" value="${esc(S.custom || '')}">
@@ -1966,7 +1984,7 @@ function renderMcCard(q, i){
       ${isMust ? '' : `<button class="btn outlined xs swapt" data-qraffle="${esc(q.key)}" title="Swap to another text question type for this word (product: Raffle)"><span class="mi" style="font-size:16px">swap_horiz</span>Swap type</button>`}
       <span style="flex:1"></span>
       <button class="btn outlined xs" data-pvq="${i}" title="See this question the way the student gets it"><span class="mi" style="font-size:16px">desktop_windows</span>Preview</button>
-      <button class="iconbtn err" data-qdel="${esc(q.key)}" title="Remove this question"><span class="mi">delete</span></button>
+      <button class="iconbtn err" data-qdel="${esc(q.key)}" title="Remove this question"><span class="mi">delete_outline</span></button>
     </div>
     <div class="mcq-bd">${media}<div class="mc-opts">${q.opts.map(([l, v, ok]) => `<div class="mc-opt ${ok ? 'ok' : ''}"><strong>${l}.</strong> ${esc(v)} ${ok ? '✓' : ''}</div>`).join('')}</div>
   </div></div>`;
@@ -2374,7 +2392,9 @@ document.addEventListener('click', (e) => {
   if (pj){
     // 多選：切換勾選、選單不關。practiceName：選到的專案用「 + 」串起來（第二十六輪；產品是第一個專案），老師自己改過就不再動
     const val = pj.dataset.proj;
-    S.projects = S.projects.includes(val) ? S.projects.filter(p => p !== val) : [...S.projects, val];
+    const adding = !S.projects.includes(val);
+    S.projects = adding ? [...S.projects, val] : S.projects.filter(p => p !== val);
+    tpOf(val).forEach(t => adding ? S.tp.add(t.w) : S.tp.delete(t.w));   // 2026-11-05：選進來的專案教學點預設全勾（使用者「第二組也全選」），拿掉專案就一起退
     S.empty = S.projects.length === 0;
     if (!S.nameEdited) S.practiceName = S.projects.join(' + ');
     render(); return;

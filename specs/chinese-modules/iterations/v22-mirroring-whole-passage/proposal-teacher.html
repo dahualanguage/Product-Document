@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Content Mirroring — v22 老師端提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script src="mock.js"></script>
+<script src="steps-content.js"></script>
+<style>
+/* ===========================================================================
+   提案 —— New Content Mirroring 第三步 Settings 多一格 **Reading unit: Sentence｜Whole passage**。
+   對照組：teacher-settings.html（現行複刻）。假資料共用 mock.js。殼、工具列、Student view 視窗
+   全部沿用基準檔，這一版不動視覺識別；動的只有：
+
+   ① 第一行 Practice mode 旁邊多一格 Reading unit（跟 Practice mode 同一組，因為兩個都是「換練法」，
+      但它不換掉整個學生畫面——課文還在、拼音翻譯設定還有用——所以不併進 Practice mode，
+      照使用者 2026-11-04 定的方案 3：獨立一軸）。
+   ② Audio only 時 Reading unit 變灰並說原因（R9）：整篇朗讀要看得到課文。**這是我的假設，待定。**
+   ③ Translation first 照舊保留（2026-11-05 使用者定）：整篇模式下開著＝先把整篇英文唸一遍，再播中文整篇，
+      不是每句交替。Play 鈕的字照產品規則多 English first。（第一版曾換成一句 note 把它拿掉，作廢。）
+   ④ Max tries 的 tooltip 單位從 sentence 換成 passage（整篇算一次）。
+   ⑤ Student view：整篇時換成學生真正會看到的課文卡（照 proposal-student.html 的 ready 畫面），
+      Play 鈕照舊、Sentence x of N 選單拿掉（沒有「第幾句」可選）；底下計數寫 6 sentences · read as one passage。
+   「學生要不要先聽一遍」是學生自己在開始卡選的，老師端沒有對應設定——要不要讓老師鎖，見 ITERATION.md 待問。
+
+   **互動版（2026-11-05）**：工具列每格可切、Student view 跟著變；Play 用瀏覽器 TTS（Yes 先英文）、整篇一句一句亮；
+   底下的說明條（回 Index ＋ 狀態連結）一直在。
+
+   網址參數：
+     （無）        Reading unit = Sentence，跟基準檔一樣
+     ?unit=whole   Whole passage
+     &tfirst=1     Translation first = Yes（Play 鈕多 English first）
+     ?audio=1      Audio only（Reading unit 變灰）
+     &gear=1 / &list=1 / &sent=N 同基準檔
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2);
+  --grey100:#F9FAFB; --grey200:#F4F6F8; --grey300:#DFE3E8;
+}
+body{ font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f4f7fb; color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; }
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; display:inline-block; }
+button{ font-family:inherit; cursor:pointer; }
+
+/* ---------- 外殼：Sidebar 240 + Header 80（同 v3 基準檔） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:rgba(145,158,171,.08); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+.main{ padding:88px 40px; }
+.container{ max-width:1200px; margin:0 auto; padding:32px 24px; }
+
+/* ---------- 標題：40px icon 方塊 ＋ h4 ---------- */
+.h4row{ display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+.h4row .tic{ width:40px; height:40px; border-radius:8px; background:#15803D18; color:#15803D; display:flex; align-items:center; justify-content:center; flex:none; }
+.h4row .tic .mi{ font-size:22px; }
+.h4{ font-size:24px; font-weight:700; line-height:1.5; }
+
+/* ---------- Stepper（practice-stepper.js） ---------- */
+.stepper{ display:flex; align-items:center; margin-bottom:32px; }
+.step{ display:flex; align-items:center; gap:8px; padding:0 8px; }
+.step-dot{ width:24px; height:24px; border-radius:50%; background:var(--grey300); color:var(--text2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+.step.active .step-dot, .step.done .step-dot{ background:var(--primary); color:#fff; }
+.step.active .step-dot{ box-shadow:0 0 0 4px rgba(0,203,97,.2); }
+.step-label{ font-size:14px; font-weight:400; color:var(--text3); }
+.step.active .step-label{ font-weight:600; color:var(--text); }
+.step.done .step-label{ color:var(--text); }
+.step-line{ flex:1; height:2px; border-radius:2px; background:var(--divider); }
+.step-line.on{ background:var(--primary); }
+.content{ min-height:320px; margin-bottom:24px; }
+
+/* ---------- 工具列（settings-toolbar.js） ---------- */
+.toolbar{ border:1px solid var(--divider); border-radius:16px; background:#fff; overflow:hidden; }
+.trow{ display:flex; flex-wrap:wrap; align-items:stretch; padding:8px 8px 8px 16px; }
+.trow + .trow{ border-top:1px solid var(--divider); }
+.tgroup{ display:flex; flex-wrap:wrap; align-items:flex-end; column-gap:20px; row-gap:8px; padding:4px 20px 4px 0; }
+.tgroup + .tgroup{ padding-left:20px; border-left:1px solid var(--divider); }
+.tctl{ display:flex; flex-direction:column; gap:5px; }
+.tctl .lab{ display:flex; align-items:center; gap:4px; font-size:10px; font-weight:800; letter-spacing:.7px; line-height:1; text-transform:uppercase; color:var(--text3); }
+.tctl .lab .mi{ font-size:14px; cursor:help; }
+.tnote{ display:inline-flex; align-items:center; align-self:flex-end; gap:6px; height:28px; font-size:12px; color:var(--text2); }
+.tnote .mi{ font-size:16px; color:var(--text3); }
+/* ToolbarSegmented */
+.seg{ display:inline-flex; padding:2px; border-radius:8px; background:var(--grey200); }
+.seg button{ height:26px; padding:0 10px; border:0; border-radius:6px; background:transparent; font-size:12px; font-weight:600; white-space:nowrap; color:var(--text2); }
+.seg button.on{ background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(33,43,54,.12); }
+.seg.dis{ opacity:.5; }
+/* Speed chip / Voice pill */
+.chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.pill{ display:inline-flex; align-items:center; gap:4px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--divider); background:#fff; font-size:12px; font-weight:600; color:var(--text2); white-space:nowrap; }
+.pill.on{ border-color:var(--primary); background:rgba(0,203,97,.08); color:var(--primary-dark); }
+.pill .pp{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-left:-6px; }
+.pill .pp .mi{ font-size:15px; }
+.pill.voice{ color:var(--text); padding:0 8px 0 10px; }
+.pill.voice .mi.pl{ font-size:15px; color:var(--primary); }
+.pill.voice .mi.dn{ font-size:18px; color:var(--text2); }
+/* MaxTriesStepper */
+.mt{ display:inline-flex; align-items:center; border:1px solid var(--divider); border-radius:8px; overflow:hidden; }
+.mt button{ width:28px; height:28px; border:0; background:none; color:var(--text2); display:flex; align-items:center; justify-content:center; }
+.mt button .mi{ font-size:18px; }
+.mt span{ width:40px; line-height:28px; text-align:center; font-size:13px; font-weight:700; border-left:1px solid var(--divider); border-right:1px solid var(--divider); }
+
+/* ---------- Student view 視窗（student-view-window.js） ---------- */
+.floor{ background:#DFE5EC; padding:24px; border-top:1px solid var(--divider); }
+.win{ max-width:900px; margin:0 auto; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 16px 40px rgba(33,43,54,.18), 0 0 0 1px rgba(33,43,54,.06); }
+.winbar{ position:relative; height:34px; display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--divider); font-size:12px; font-weight:700; letter-spacing:.2px; color:var(--text2); }
+.winbar .mi{ position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:18px; color:var(--text3); }
+.wfoot{ padding:10px 16px; font-size:12px; color:var(--text3); border-top:1px solid var(--divider); }
+
+/* ---------- 視窗裡的學生主欄（mirroring-student-preview.js） ---------- */
+.sv{ min-height:420px; }
+.sv .trow2{ display:flex; align-items:center; justify-content:space-between; padding:12px 24px 4px; }
+.sv .ttl{ font-size:16px; font-weight:800; color:#1E293B; }
+.gearwrap{ position:relative; }
+.gear{ width:48px; height:48px; border-radius:12px; border:0; background:#fff; color:#64748B; box-shadow:0 12px 32px rgba(148,163,184,.18); display:flex; align-items:center; justify-content:center; }
+.gear .mi{ font-size:20px; }
+.gpanel{ position:absolute; top:56px; right:0; width:220px; border-radius:12px; background:#fff; box-shadow:0 12px 32px rgba(148,163,184,.18); z-index:20; overflow:hidden; }
+.gpanel .gh{ padding:12px 16px; font-size:14px; font-weight:700; color:#334155; border-bottom:1px solid #EEF2F7; }
+.gpanel .gr{ display:flex; align-items:center; justify-content:space-between; padding:4px 16px; font-size:14px; font-weight:600; color:#475569; }
+.gpanel .gr.sp{ padding:10px 16px; } .gpanel .gr.sp small{ font-size:13px; font-weight:500; }
+.sw{ width:30px; height:18px; border-radius:9px; background:#C4CDD5; position:relative; flex:none; margin:8px 0; }
+.sw::after{ content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.sw.on{ background:#00CB61; } .sw.on::after{ left:14px; }
+.sv .body{ padding:8px 24px 24px; }
+.scard{ background:#F0FAF4; border:1px solid #D1FAE5; border-radius:24px; padding:32px; min-height:190px; display:flex; align-items:center; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+.scard .inner{ width:100%; display:flex; flex-direction:column; gap:18px; }
+.scard .meta{ display:flex; align-items:center; gap:8px; }
+.scard .meta .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; color:#22C55E; }
+.scard .meta .ic .mi{ font-size:20px; }
+.scard .meta .lbl{ font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:#22C55E; }
+.scard .txt{ text-align:center; overflow-wrap:anywhere; }
+.scard .py{ font-size:16px; font-style:italic; color:var(--text2); margin-bottom:8px; }
+.scard .zh{ font-size:40px; font-weight:800; color:#0F172A; line-height:1.55; }
+.scard .tr{ font-size:14px; color:var(--text2); margin-top:4px; }
+.scard .hid{ font-size:16px; font-style:italic; color:#94A3B8; line-height:1.6; }
+.playbtn{ margin:16px auto 0; height:44px; padding:0 22px 0 16px; border:0; border-radius:999px; background:var(--primary); color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; box-shadow:0 6px 16px rgba(0,203,97,.28); }
+.playbtn .mi{ font-size:24px; }
+.pick{ margin:12px auto 0; height:34px; padding:0 10px 0 16px; border:1px solid var(--divider); border-radius:999px; background:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; gap:4px; box-shadow:0 1px 2px rgba(33,43,54,.06); }
+.pick .mi{ font-size:18px; color:var(--text2); }
+.plist{ margin-top:12px; padding:4px; border:1px solid var(--divider); border-radius:12px; max-height:698px; overflow:auto; }
+.plist .r{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; font-size:14px; cursor:pointer; }
+.plist .r:hover{ background:var(--grey200); }
+.plist .r .n{ width:18px; flex:none; font-size:12px; color:var(--text3); font-variant-numeric:tabular-nums; }
+.plist .r.on .n{ color:var(--primary-dark); font-weight:700; }
+.plist .r .pb{ width:26px; height:26px; flex:none; border:0; border-radius:50%; background:rgba(0,203,97,.1); color:var(--primary); display:flex; align-items:center; justify-content:center; }
+.plist .r .pb .mi{ font-size:16px; }
+.plist .r .s{ flex:1; min-width:0; }
+.plist .r.on .s{ font-weight:600; }
+.plist .r .ck{ font-size:18px; color:var(--primary); }
+
+/* ---------- 整篇：課文卡（照 proposal-student.html 的 ready 畫面縮尺寸） ---------- */
+.pcard{ background:#F0FAF4; border:1px solid #D1FAE5; border-radius:24px; box-shadow:0 8px 20px rgba(15,23,42,.04); --c:#22C55E; overflow:hidden; }
+.pcard .meta{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:24px 28px 0; }
+.pcard .meta .l{ display:flex; align-items:center; gap:8px; }
+.pcard .meta .ic{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; color:var(--c); }
+.pcard .meta .ic .mi{ font-size:20px; }
+.pcard .meta .lbl{ font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.6px; color:var(--c); line-height:1.2; }
+.pcard .meta .hlp{ font-size:12px; color:var(--text2); font-weight:600; margin-top:2px; }
+.pcard .meta .cnt{ font-size:12px; color:var(--text2); font-weight:600; white-space:nowrap; }
+.passage{ padding:16px 28px 24px; }
+.sen{ display:block; padding:4px 10px; margin:0 -10px; border-radius:12px; }
+.sen .ws{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:0 6px; }
+.w{ display:inline-flex; flex-direction:column; align-items:center; line-height:1; }
+.w .py{ font-size:12px; font-style:italic; color:var(--text2); line-height:1.2; white-space:nowrap; min-height:14px; }
+.w .zh{ font-size:24px; font-weight:800; line-height:1.5; white-space:pre; color:#0F172A; }
+.w.punct .zh{ color:#94A3B8; }
+
+/* ---------- 互動版補的零件 ---------- */
+.vmenu{ position:absolute; top:32px; left:0; min-width:220px; background:#fff; border-radius:8px; box-shadow:0 0 2px rgba(145,158,171,.24), -20px 20px 40px -4px rgba(145,158,171,.24); padding:4px; z-index:30; }
+.vrow{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:13px; cursor:pointer; white-space:nowrap; }
+.vrow:hover{ background:var(--grey200); } .vrow.on{ font-weight:700; }
+.vrow .vp{ font-size:16px; color:var(--primary); }
+.seg button{ cursor:pointer; } .seg.dis button{ cursor:default; }
+.pill .pp{ cursor:pointer; }
+.scard.meaning{ background:#EFF6FF; border-color:#BFDBFE; } .scard.meaning .meta .ic, .scard.meaning .meta .lbl{ color:#2563EB; }
+.scard.repeat{ border-color:#86EFAC; } .scard.repeat .meta .ic, .scard.repeat .meta .lbl{ color:#16A34A; }
+.scard.active{ min-height:240px; box-shadow:0 18px 42px rgba(15,23,42,.08); }
+.scard .meta .hlp{ font-size:12px; color:var(--text2); }
+.scard .enbig{ font-size:32px; font-weight:800; color:#1E3A8A; line-height:1.55; }
+.pcard.listen{ background:#EFF6FF; border-color:#BFDBFE; --c:#2563EB; }
+.pcard.repeat{ border-color:#86EFAC; --c:#16A34A; }
+.sen.cur{ background:#E8FFF0; }
+.sen.todo .w .zh{ color:#94A3B8; } .sen.todo .w .py{ color:#C4CDD5; }
+.sen.cur .w .zh{ color:#16A34A; }
+.sen .tr{ display:block; font-size:12px; color:var(--text2); margin:0 0 4px; }
+.sen.en{ font-size:20px; font-weight:800; line-height:1.55; color:#1E3A8A; padding:6px 10px; margin:0 -10px 4px; }
+.sen.en.todo{ color:#94A3B8; } .sen.en.cur{ background:#DBEAFE; }
+.playbtn, .pick, .gear, .mt button{ cursor:pointer; }
+
+/* ---------- 頁腳 ---------- */
+.footer{ display:flex; align-items:center; justify-content:space-between; }
+.btn{ height:36px; padding:0 16px; border-radius:8px; font-size:14px; font-weight:700; border:0; }
+.btn.text{ background:none; color:var(--text); }
+.btn.contained{ background:var(--primary); color:#fff; box-shadow:0 8px 16px rgba(0,203,97,.24); }
+
+/* ---------- 提案說明條（跟 v20／v21 同一條：回 Index ＋ 狀態連結） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px;
+  padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+body{ padding-bottom:44px; }
+</style>
+</head>
+<body>
+<aside class="side">
+  <div class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div><a href="#"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div><a href="#"><span class="mi">folder</span>Projects</a><a href="#"><span class="mi">quiz</span>Question Banks</a></div>
+    <div class="grp"><div class="sh">practice</div><a href="#" class="on"><span class="mi">assignment</span>Practice List</a><a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div><a href="#"><span class="mi">people</span>Students</a><a href="#"><span class="mi">school</span>Classes</a><a href="#"><span class="mi">emoji_events</span>Leaderboard</a><a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="container">
+    <div class="h4row"><span class="tic"><span class="mi">mic</span></span><div class="h4">New Content Mirroring</div></div>
+    <div class="stepper" id="stepper"></div>
+    <div class="content" id="content"></div>
+    <div class="footer" id="footer"></div>
+  </div></div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v22 · 老師端 Content → Edit Sentences → Settings · Reading unit（互動版，每格可切） · 對照組 <a href="teacher-settings.html">現行複刻 ↗</a> · <a href="proposal-student.html">學生端提案 ↗</a></span><span id="devbar"></span></div>
+
+<script>
+/* ===========================================================================
+   互動版（2026-11-05）：工具列每一格都能切，底下 Student view 跟著變；
+   Play 鈕用瀏覽器 TTS 唸（Translation first = Yes 先英文），整篇模式一句一句亮；
+   Sentence x of N 可以展開選句；齒輪面板的開關是學生那一側的（Choice by student 才出現）。
+   網址參數留著當截圖深連結：?unit=whole &tfirst=1 &audio=1 &list=1 &gear=1 &sent=N（帶這些沒給 step＝直接到 Settings）
+   2026-11-16：補上第一、二步（Content、Edit Sentences）——使用者「現在 demo 只有 Settings 頁，把前一步也補齊」。
+   兩步跟現行一樣（Reading unit 第三步才選），畫面與互動在 steps-content.js，基準與提案共用。
+   ?step=1|2|3 從 1 數；第一步 &proj=1|2 &dd=1；第二步 &gen=1 &cut=N &hid=N
+   =========================================================================== */
+const M = window.V22;
+const qs = new URLSearchParams(location.search);
+let N = M.SENTENCES.length;   // 2026-11-16：第二步改過句子後會變
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const CHOICE = 'Choice by student';
+const STEPS = ['Content', 'Edit Sentences', 'Settings', 'Assign Practice'];
+
+const T = {   // 老師的設定（practice 欄位）
+  audio: qs.get('audio') === '1',
+  unit: qs.get('unit') === 'whole' ? 'whole' : 'sentence',
+  pinyin: 'Shown', translation: CHOICE,
+  tfirst: qs.get('tfirst') === '1' ? 'Yes' : 'No',
+  speed: 'Normal', speedChoice: false,
+  voice: M.VOICES[0],
+  maxTries: 3,
+};
+const U = {   // 畫面狀態
+  list: qs.get('list') === '1', gear: qs.get('gear') === '1', voiceMenu: false,
+  sent: Math.min(N, Math.max(1, parseInt(qs.get('sent') || '1', 10) || 1)),
+  // 學生那一側的開關（Choice by student 時）
+  stuPinyin: true, stuTranslation: false, stuTfirst: false,
+  playing: false, phase: 'idle', playSi: -1, playingRow: -1,
+};
+const whole = () => T.unit === 'whole' && !T.audio;
+
+const SETTINGS_KEYS = ['unit', 'tfirst', 'audio', 'list', 'gear', 'sent'];   // 舊連結（沒有 step）帶這些＝Settings
+let STEP = Math.min(3, Math.max(1, parseInt(qs.get('step') || (SETTINGS_KEYS.some((k) => qs.has(k)) ? '3' : '1'), 10) || 1));   // 2026-11-16：?step= 從 1 數
+const V = window.V22Steps; V.init(qs);
+if (STEP > 1 && !V.hasProject()) V.init(new URLSearchParams('proj=1&' + qs.toString()));   // 直接開第二、三步：當作已選了課文那個專案
+// &gen=1 停在 Splitting 第一段不動（截圖用）；按 Next 進來才會跑完
+const drawStepper = () => { const A = STEP - 1; document.getElementById('stepper').innerHTML = STEPS.map((l, i) => {
+  const st = i < A ? 'done' : i === A ? 'active' : '';
+  return `${i ? `<div class="step-line ${i <= A ? 'on' : ''}"></div>` : ''}<div class="step ${st}"><span class="step-dot">${i + 1}</span><span class="step-label">${l}</span></div>`;
+}).join(''); };
+
+/* ---------- 零件 ---------- */
+const seg = (key, opts, on, dis = false) => `<div class="seg ${dis ? 'dis' : ''}">${opts.map((o) => `<button class="${o === on ? 'on' : ''}" ${dis ? 'disabled' : ''} data-set="${key}" data-val="${o}">${o}</button>`).join('')}</div>`;
+const ctl = (label, inner, tip) => `<div class="tctl"><span class="lab">${label}${tip ? `<span class="mi" title="${tip}">info</span>` : ''}</span>${inner}</div>`;
+const note = (icon, text) => `<span class="tnote"><span class="mi">${icon}</span>${text}</span>`;
+
+/* ---------- TTS ---------- */
+const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+if (synth) synth.getVoices();
+const pickVoice = (lang) => { const vs = synth ? synth.getVoices() : []; return vs.find((v) => v.lang.replace('_', '-').toLowerCase() === lang) || vs.find((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2))) || null; };
+let run = 0;
+const stopAll = () => { run += 1; if (synth) synth.cancel(); U.playing = false; U.phase = 'idle'; U.playSi = -1; U.playingRow = -1; };
+const speak = (text, lang) => new Promise((resolve) => {
+  if (!synth) { setTimeout(resolve, Math.max(800, text.length * 120)); return; }
+  const u = new SpeechSynthesisUtterance(text); u.lang = lang; const v = pickVoice(lang.toLowerCase()); if (v) u.voice = v;
+  u.rate = lang === 'en-US' ? 0.92 : 0.95 * ({ Slow: 0.6, Normal: 0.8, Fast: 1.0 }[T.speed] / 0.8);
+  u.onend = resolve; u.onerror = resolve; synth.speak(u);
+  setTimeout(resolve, text.length * 400 + 3000);
+});
+const effTfirst = () => (T.tfirst === CHOICE ? U.stuTfirst : T.tfirst === 'Yes');
+const playMain = async () => {
+  if (U.playing) { stopAll(); render(); return; }
+  stopAll(); const my = run; U.playing = true;
+  const list = whole() ? M.SENTENCES.map((s, i) => i) : [U.sent - 1];
+  if (effTfirst()) { U.phase = 'translation'; for (const i of list) { if (my !== run) return; U.playSi = i; render(); await speak(M.SENTENCES[i].tr, 'en-US'); } }
+  U.phase = 'chinese';
+  for (const i of list) { if (my !== run) return; U.playSi = i; render(); await speak(M.SENTENCES[i].zh, 'zh-CN'); }
+  if (my === run) { stopAll(); render(); }
+};
+const playRow = async (k) => {
+  if (U.playingRow === k) { stopAll(); render(); return; }
+  stopAll(); const my = run; U.playingRow = k; render();
+  await speak(M.SENTENCES[k].zh, 'zh-CN');
+  if (my === run) { U.playingRow = -1; render(); }
+};
+
+/* ---------- 工具列 ---------- */
+const toolbar = () => {
+  const row1 = `<div class="trow">
+    <div class="tgroup">${ctl('Practice mode', seg('mode', ['Text visible', 'Audio only'], T.audio ? 'Audio only' : 'Text visible'))}${ctl('Reading unit', seg('unit', ['Sentence', 'Whole passage'], T.unit === 'whole' ? 'Whole passage' : 'Sentence', T.audio))}${T.audio ? note('visibility_off', 'Whole passage needs the text on screen') : ''}</div>
+    <div class="tgroup">${T.audio ? note('pan_tool_alt', 'Pinyin and translation are up to the student')
+      : ctl('Pinyin', seg('pinyin', ['Shown', 'Hidden', CHOICE], T.pinyin)) + ctl('Translation', seg('translation', ['Shown', 'Hidden', CHOICE], T.translation))}</div>
+  </div>`;
+  const speedChips = `<div class="chips">${M.SPEEDS.map(([l]) => `<span class="pill ${!T.speedChoice && l === T.speed ? 'on' : ''}"><span class="pp" data-act="previewspeed" data-val="${l}"><span class="mi">play_arrow</span></span><span data-set="speed" data-val="${l}" style="cursor:pointer">${l}</span></span>`).join('')}<span class="pill ${T.speedChoice ? 'on' : ''}" data-set="speedChoice" style="cursor:pointer">${CHOICE}</span></div>`;
+  const voicePill = `<span style="position:relative;display:inline-block"><span class="pill voice" data-act="voicemenu" style="cursor:pointer"><span class="mi pl">play_arrow</span>${T.voice}<span class="mi dn">expand_more</span></span>
+    ${U.voiceMenu ? `<div class="vmenu">${M.VOICES.map((v) => `<div class="vrow ${v === T.voice ? 'on' : ''}" data-set="voice" data-val="${v}"><span class="mi vp">play_arrow</span><span style="flex:1">${v}</span>${v === T.voice ? '<span class="mi" style="color:var(--primary);font-size:18px">check</span>' : ''}</div>`).join('')}</div>` : ''}</span>`;
+  const unitWord = whole() ? 'the passage' : 'one sentence';
+  const row2 = `<div class="trow">
+    <div class="tgroup">${ctl('Translation first', seg('tfirst', ['Yes', 'No', CHOICE], T.tfirst))}${ctl('Speed', speedChips)}${ctl('Voice', voicePill)}</div>
+    <div class="tgroup">${ctl('Max tries', `<div class="mt"><button data-act="tries" data-val="-1" ${T.maxTries <= 1 ? 'disabled' : ''}><span class="mi">remove</span></button><span>${T.maxTries}</span><button data-act="tries" data-val="1" ${T.maxTries >= 5 ? 'disabled' : ''}><span class="mi">add</span></button></div>`, `How many times a student may retry ${unitWord} before it is let through — ${whole() ? 'it' : 'the sentence'} then counts as passed (auto pass, default ${T.maxTries}).`)}</div>
+  </div>`;
+  return row1 + row2;
+};
+
+/* ---------- Student view ---------- */
+const showPinyin = () => !T.audio && (T.pinyin === CHOICE ? U.stuPinyin : T.pinyin === 'Shown');
+const showTranslation = () => !T.audio && (T.translation === CHOICE ? U.stuTranslation : T.translation === 'Shown');
+const gearRows = () => [
+  (T.audio || T.pinyin === CHOICE) && ['Pinyin', 'stuPinyin', U.stuPinyin],
+  (T.audio || T.translation === CHOICE) && ['Translation', 'stuTranslation', U.stuTranslation],
+  T.tfirst === CHOICE && ['Translation first', 'stuTfirst', U.stuTfirst],
+].filter(Boolean);
+
+const passageHtml = () => M.SENTENCES.map((s, si) => {
+  const cls = U.playing && U.phase === 'chinese' ? (si < U.playSi ? 'past' : si === U.playSi ? 'cur' : 'todo') : '';
+  const enCls = U.playing && U.phase === 'translation' ? (si < U.playSi ? 'past' : si === U.playSi ? 'cur' : 'todo') : '';
+  if (U.playing && U.phase === 'translation') return `<span class="sen en ${enCls}">${esc(s.tr)}</span>`;
+  return `<span class="sen ${cls}"><span class="ws">${s.words.map(([w, py]) => `<span class="w ${M.isPunct(w) ? 'punct' : ''}"><span class="py">${showPinyin() && !M.isPunct(w) ? py : ''}</span><span class="zh">${esc(w)}</span></span>`).join('')}</span>${showTranslation() ? `<span class="tr">${esc(s.tr)}</span>` : ''}</span>`;
+}).join('');
+
+const sentenceCard = () => {
+  const cur = M.SENTENCES[U.sent - 1];
+  const tr = U.playing && U.phase === 'translation', zh = U.playing && U.phase === 'chinese';
+  const kind = tr ? 'meaning' : zh ? 'repeat' : 'practice';
+  const label = tr ? 'Meaning' : zh ? 'Listen & Repeat' : 'Practice Sentence';
+  const helper = tr ? 'Listen to the English meaning first.' : zh ? 'Now repeat the Chinese sentence.' : '';
+  const icon = tr ? 'translate' : zh ? 'record_voice_over' : 'chat';
+  let body;
+  if (tr) body = `<div class="enbig">${esc(cur.tr)}</div>`;
+  else if (T.audio) body = showPinyin() || showTranslation() ? `${showPinyin() ? `<div class="py" style="font-size:24px">${cur.py}</div>` : ''}${showTranslation() ? `<div class="tr">${esc(cur.tr)}</div>` : ''}` : `<div class="hid">Listen carefully and repeat the sentence.</div>`;
+  else body = `${showPinyin() ? `<div class="py">${cur.py}</div>` : ''}<div class="zh">${esc(cur.zh)}</div>${showTranslation() ? `<div class="tr">${esc(cur.tr)}</div>` : ''}`;
+  return `<div class="scard ${kind} ${U.playing ? 'active' : ''}"><div class="inner">
+    <div class="meta"><span class="ic"><span class="mi">${icon}</span></span><div><div class="lbl">${label}</div>${helper ? `<div class="hlp">${helper}</div>` : ''}</div></div>
+    <div class="txt">${body}</div></div></div>`;
+};
+const wholeCard = () => `<div class="pcard ${U.playing ? (U.phase === 'translation' ? 'listen' : 'repeat') : ''}"><div class="meta"><div class="l"><span class="ic"><span class="mi">${U.playing ? (U.phase === 'translation' ? 'translate' : 'headphones') : 'record_voice_over'}</span></span><div><div class="lbl">${U.playing ? (U.phase === 'translation' ? 'Meaning' : 'Listen') : 'Your turn'}</div><div class="hlp">${U.playing ? (U.phase === 'translation' ? 'Listen to the English meaning first — the Chinese passage plays next.' : 'Follow along — the highlight shows where the reader is.') : `Read the whole passage aloud. The highlight moves one sentence at a time at ${T.speed} speed.`}</div></div></div><span class="cnt">${U.playing ? `Sentence <b>${U.playSi + 1}</b> of ${N}` : `${N} sentences · ~${M.mmss(M.TOTAL_DUR)}`}</span></div><div class="passage">${passageHtml()}</div></div>`;
+
+const studentView = () => {
+  const rows = gearRows();
+  const hasGear = rows.length > 0 || T.speedChoice;
+  const playLabel = ['Play', effTfirst() && 'English first', T.speed, T.voice].filter(Boolean).join(' · ');
+  return `<div class="sv">
+    <div class="trow2"><span class="ttl">${esc(M.PROJECT.name)}</span>
+      ${hasGear ? `<span class="gearwrap"><button class="gear" data-act="gear"><span class="mi">settings</span></button>
+      ${U.gear ? `<div class="gpanel"><div class="gh">Settings</div>${rows.map(([l, k, on]) => `<div class="gr">${l}<span class="sw ${on ? 'on' : ''}" data-stu="${k}" style="cursor:pointer"></span></div>`).join('')}${T.speedChoice ? `<div class="gr sp">Speed<small>${T.speed}</small></div>` : ''}</div>` : ''}</span>` : ''}</div>
+    <div class="body">
+      ${whole() ? wholeCard() : sentenceCard()}
+      <button class="playbtn" data-act="play"><span class="mi">${U.playing ? 'graphic_eq' : 'play_arrow'}</span>${U.playing ? 'Playing' : playLabel}</button>
+      ${whole() ? '' : `<button class="pick" data-act="list">Sentence ${U.sent} of ${N}<span class="mi">${U.list ? 'expand_less' : 'expand_more'}</span></button>`}
+      ${U.list && !whole() ? `<div class="plist">${M.SENTENCES.map((s, k) => `<div class="r ${k + 1 === U.sent ? 'on' : ''}" data-act="pick" data-val="${k + 1}"><span class="n">${k + 1}</span><button class="pb" data-act="playrow" data-val="${k}"><span class="mi">${U.playingRow === k ? 'graphic_eq' : 'play_arrow'}</span></button><span class="s">${esc(s.zh)}</span>${k + 1 === U.sent ? '<span class="mi ck">check</span>' : ''}</div>`).join('')}</div>` : ''}
+    </div></div>`;
+};
+
+const renderSettings = () => {
+  document.getElementById('content').innerHTML = `<div class="toolbar">${toolbar()}
+    <div class="floor"><div class="win"><div class="winbar"><span class="mi">desktop_windows</span>Student view</div>${studentView()}</div></div>
+    <div class="wfoot">${T.audio ? 'Audio only' : whole() ? `${N} sentences · read as one passage` : `${N} sentences`}</div></div>`;
+};
+
+/* ---------- 換步（2026-11-16） ---------- */
+const LINKS = [['1 從頭', '?'], ['1 已選專案', '?step=1&proj=1'], ['1 沒內容', '?step=1&proj=2'], ['2 Splitting', '?step=2&gen=1'], ['2 Edit Sentences', '?step=2'], ['3 Sentence', '?step=3'], ['3 Whole passage', '?step=3&unit=whole'], ['3 Whole · English first', '?step=3&unit=whole&tfirst=1'], ['3 Audio only', '?step=3&audio=1&unit=whole'], ['3 清單展開', '?step=3&list=1']];
+const render = () => {
+  drawStepper();
+  if (STEP < 3){ document.getElementById('content').innerHTML = V.render(STEP); document.getElementById('footer').innerHTML = V.footer(STEP); }
+  else {
+    N = M.SENTENCES.length; U.sent = Math.min(U.sent, N);
+    renderSettings();
+    document.getElementById('footer').innerHTML = '<button class="btn text" data-nav="back">Back</button><button class="btn contained">Save</button>';
+  }
+  document.getElementById('devbar').innerHTML = LINKS.map(([t, h]) => `<a href="${h}" class="${(location.search || '?') === h ? 'cur' : ''}">${t}</a>`).join(' · ');
+};
+V.setRerender(render);
+document.addEventListener('input', (e) => V.onInput(e));
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-nav]');
+  if (nav){
+    stopAll();
+    if (nav.dataset.nav === 'back'){ STEP = Math.max(1, STEP - 1); }
+    else if (V.next(STEP)){ if (STEP === 2) V.apply(); STEP += 1; if (STEP === 2) V.startSplitting(); }
+    window.scrollTo(0, 0); render(); return;
+  }
+  if (STEP < 3){ V.onClick(e, STEP); return; }
+  const st = e.target.closest('[data-stu]');
+  if (st) { U[st.dataset.stu] = !U[st.dataset.stu]; render(); return; }
+  const set = e.target.closest('[data-set]');
+  if (set) {
+    const k = set.dataset.set, v = set.dataset.val;
+    stopAll();
+    if (k === 'mode') { T.audio = v === 'Audio only'; if (T.audio) { T.pinyin = CHOICE; T.translation = CHOICE; } }   // 產品：Audio only 強制 Choice by student
+    else if (k === 'unit') T.unit = v === 'Whole passage' ? 'whole' : 'sentence';
+    else if (k === 'speed') { T.speed = v; T.speedChoice = false; }
+    else if (k === 'speedChoice') T.speedChoice = true;
+    else if (k === 'voice') { T.voice = v; U.voiceMenu = false; }
+    else T[k] = v;
+    render(); return;
+  }
+  const el = e.target.closest('[data-act]');
+  if (!el) { if (U.voiceMenu) { U.voiceMenu = false; render(); } return; }
+  const act = el.dataset.act, val = el.dataset.val;
+  if (act === 'gear') { U.gear = !U.gear; render(); }
+  else if (act === 'list') { U.list = !U.list; render(); }
+  else if (act === 'pick') { if (e.target.closest('[data-act="playrow"]')) return; stopAll(); U.sent = +val; U.list = false; render(); }
+  else if (act === 'play') playMain();
+  else if (act === 'playrow') { e.stopPropagation(); playRow(+val); }
+  else if (act === 'voicemenu') { U.voiceMenu = !U.voiceMenu; render(); }
+  else if (act === 'previewspeed') { stopAll(); const keep = T.speed; T.speed = val; speak(M.SENTENCES[0].zh, 'zh-CN'); T.speed = keep; }   // ▶ 只試聽那個速度，不選它（產品規則）
+  else if (act === 'tries') { T.maxTries = Math.min(5, Math.max(1, T.maxTries + (+val))); render(); }
+});
+render();
+</script>
+</body>
+</html>
