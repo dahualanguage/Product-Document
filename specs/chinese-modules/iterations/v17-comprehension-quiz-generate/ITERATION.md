@@ -37,6 +37,7 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-18 | 第二步只剩一題時，眉標右邊那句 *Last question — a … needs at least one, so it can’t be removed* 拿掉；那題的刪除鈕照樣停用 | 使用者「拿掉」。v17 同一句一起拿掉 |
 | 2026-11-16 | 第三步 Practice mode 選 **Audio only** 時，右邊多一格 **ARTICLE**（Text visible｜Audio only）：課文也只聽時，學生視窗左欄課文換成一顆大播放鈕 *Listen to the article · Normal · Xiaorou*（同題目那顆的樣子），開始頁那句改 *The article and questions are read aloud*；Text visible 時跟以前一樣 | 使用者「Audio only 可以再選擇課文是不是也只用聽的」。原本 Audio only 時那格是一句說明（*Questions are read aloud…*），換成這個控制項；Practice mode 回 Text visible 課文一定看得到。Speed／Voice 課文跟題目共用。demo `&audio=1&artaudio=1`。待問工程見第 8 條 |
 | 2026-11-16 | 第二步 Content Base 題卡打開時 **Answer conditions 可以改**：每條一個輸入框、✕ 刪、Must cover／Not required 各一顆 Add；收起時照舊唯讀清單、空白條丟掉；改了的 AI 題掛 Edited；拿掉「you can’t edit them directly」那句 | 使用者「New Comprehension Quiz 的 Answer conditions 要可以修改」。直接搬 v18 11/13 那套（CSS、renderConds、closeQ、condadd／condrm、輸入）；Suggested answer 標題旁的口說版說明句沒動。待問工程：老師改過的條件，改題後重產會不會蓋掉 |
 | 2026-11-13 | 第二步的 **Generate more** 從眉標右邊搬到題目清單最底下（置中；打開的面板也在底下，上面一條虛線） | 使用者「兩個題型的 Generate more 都改到放在最底下」（v17、v18 一起）。新題本來就接在清單最後，按鈕就在新題會出現的地方 |
