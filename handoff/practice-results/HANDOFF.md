@@ -20,7 +20,7 @@
 | Results 頁 | `/dashboard/assignments/submissions`，`src/sections/assignments/view/history/index.js` | 老師看一份指派全班成果的頁 |
 | 班級卡 | `src/utils/assignment/submission-roster.js` 的 `buildRoster` 一組 | Results 左欄一個班一張卡；同一班指派兩次出兩張 |
 | 貼頂列 | 新做的，照 `src/sections/teacher/students/student-detail.js` 的 sticky top bar | 右欄最上面、捲動時貼著的那條：學生頭像、名字、班名 |
-| 分數卡 | 新做的，取代 `score-override-control.js` 現在畫的那一塊 | 右欄內容最上面的大卡：分數、狀態 tag、Edit score、每次作答（Attempt、Submission） |
+| 分數卡 | 新做的，取代 `score-override-control.js` 現在畫的那一塊 | 右欄內容最上面的大卡：分數、狀態 tag、Edit score |
 | 三階色 | `src/utils/score.js` 的 `scoreTier`（80／60） | 分數 80 以上綠、60–79 橘、60 以下紅 |
 | V2 | `SCORING_ENGINE.DAHUA_V2`；`isV2Scored()` | 新版評分：0–100 分、一字一欄、聲調圖、沒有星星。中文練習現在交卷都是 V2 |
 | 型別簡稱 | QA＝Open-ended Questions、Follow Pattern＝Sentence Building／Response、MC＝Vocabulary Quiz／Comprehension Quiz | 程式裡的名字 |
@@ -162,9 +162,9 @@ Due Nov 25
 │      │ ───────────────────── │ ┌ SCORE ─────────────── ✎ Edit score ┐ │
 │      │ ┌ Class 7A ────── ⌃ ┐ │ │ 85 /100  [Adjusted]                 │ │ ← 分數卡
 │      │ │ Due Nov 20        │ │ └─────────────────────────────────────┘ │
-│      │ │ ┌ NOT SUBMITTED (2)  [✉ Send reminder] ┐ │ Score breakdown …      │
-│      │ │ │ [Mason Xu] [Noah Zhang]              │ │ Recordings …           │
-│      │ │ └───────────────────────────────────────┘ │ Teacher comment …      │
+│      │ │ ┌ NOT SUBMITTED (2)  [✉ Send reminder] ┐ │ Recordings …           │
+│      │ │ │ [Mason Xu] [Noah Zhang]              │ │ Teacher comment …      │
+│      │ │ └───────────────────────────────────────┘ │                        │
 │      │ │ SUBMITTED                                  │                        │
 │      │ │ (AH) Ava Huang   85                        │                        │
 │      │ │ (LW) Liam Wang   68  [Late 2d · ×80%]      │                        │
@@ -260,19 +260,21 @@ Due Nov 25
 - **現在**：`index.js` 的 `buildHistoryByUser` 只留 `isSubmitted` 的那筆；沒交的作答全部過濾掉，老師看不到學生交出去之前練了幾次、分數怎麼變。
 - **改成**：
   1. **名單**：分數是 Submission 的分數；學生交之前練過的，tag 欄多一個灰 tag `Attempt 1 · 72`（最後一次 Attempt 的編號和分數）。只寫數字，不寫差幾分。
-  2. **分數卡**：底下一條細線，一排按鈕，**每次作答一顆，直接排出來**（不收在下拉裡），照時間排，Submission 在最後：
+  2. **一列 tab**：放在右欄內容最上面（貼頂列底下、分數卡上面），切的是底下整份內容（分數卡、每句卡、評語）。**每次作答一個 tab，直接排出來**（不收在下拉裡），照時間排，Submission 在最後：
      ```
-     [Attempt 1  Nov 12  72]  [Submission  Nov 15  92]
+     Attempt 1  Nov 12  72  │  Submission  Nov 15  92
+     ──────────────────────────────────────────────── ← 整列底下一條細線
+                               ══════════════════════ ← 正在看的那個：綠色底線（#059669，2px）、字變深
      ```
-     每顆寫 Attempt 幾或 Submission、日期、那次的分數（三階色）。正在看的那顆綠框淡綠底。按鈕多了自動換行。
+     每個 tab 寫 Attempt 幾或 Submission、日期、那次的分數（三階色）。沒選的灰字、沒有框、沒有底色。只有交過一次的學生不出這列。
   3. 點 Attempt：
      - 大分數換成那次的分數，tag 換成灰色 `Attempt`。
      - 底下一行 *Practice attempt on Nov 12, not submitted. The submission (92) is the score on the list.*
      - **不能 Edit score**（按鈕不出現）。老師只能改 Submission 的分數、只能對 Submission 寫評語。
-     - 底下 Score breakdown、每句卡換成那一次的內容；沒有 Teacher comment。
+     - 每句卡換成那一次的內容；沒有 Teacher comment。
   4. 名單上的分數、成績報表都算 Submission。
   5. 換一個學生，回到看 Submission。
-- **改哪裡**：`index.js`（`buildHistoryByUser` 除了 Submission，也留同一學生沒交的作答、照時間排）、`left-panel.js`、分數卡。
+- **改哪裡**：`index.js`（`buildHistoryByUser` 除了 Submission，也留同一學生沒交的作答、照時間排）、`left-panel.js`、右欄最上面的 tab 列、分數卡。
 - **卡住的**：沒交的作答後端有沒有留分數、能不能跟 Submission 一起拿回來（最後一節第 2 題）。
 
 ## 15 · 遲交寫出幾天
@@ -313,8 +315,8 @@ Due Nov 25
 
 | 型別 | 段落，由上到下 |
 |---|---|
-| Content Mirroring | Score breakdown → **Sentences**（計數 = 句數）→ Teacher comment |
-| Vocabulary Mirroring | Score breakdown → **Recordings**（計數 = 卡數）→ Teacher comment |
+| Content Mirroring | **Sentences**（計數 = 句數）→ Teacher comment |
+| Vocabulary Mirroring | **Recordings**（計數 = 卡數）→ Teacher comment |
 | Vocabulary Quiz、Comprehension Quiz | **Questions**（右邊 `All · 8｜Wrong · 3` 切換）。沒有改分、沒有評語（跟現在一樣） |
 | Sentence Scramble、Sentence Cloze | **Sentences**（同上的 All／Wrong）。沒有改分、沒有評語 |
 | Sentence Building、Sentence Response | **Questions**（計數 `2 passed`）→ Teacher comment |
@@ -322,9 +324,9 @@ Due Nov 25
 
 ### Score breakdown
 
-- **現在**：三列「標籤｜6px 長條｜%」。
-- **改成**：**不用長條**。Fluency／Accuracy／Pronunciation 三格並排，每格：灰色大寫小標 ＋ 大數字 26/800 `85%`，格與格之間一條細直線。
-- 顏色門檻照現在 `sentence-panel.js`（85 以上綠、70 以上橘、其他紅），字用深一階：`#047857`／`#B45309`／`#B91C1C`。
+- **現在**：Mirroring 兩種型別的右欄有一段 Score breakdown（Fluency／Accuracy／Pronunciation 三列長條）。
+- **改成**：**整段拿掉**。右欄從每句卡那段開始。
+- **改哪裡**：`sentence-panel.js`（不再畫 caption、Divider、`RubricRow`）。
 
 ### Content Mirroring 的每句卡（V2）
 
@@ -368,10 +370,10 @@ Due Nov 25
 | 11 | 按 Send reminder | 確認框列出沒交的名字；送出後 3 秒內再按沒反應 |
 | 12 | 看名單 | 一列：頭像、名字、分數、tag；分數靠左對齊；80 綠、70 橘、50 紅 |
 | 13 | 點遲交的 Liam | 名單 `Late 2d · ×80%`；分數卡 `68 /100` ＋ `Late 2 days · ×80%` |
-| 14 | 點 Emma（交之前練過一次） | 名單 `Attempt 1 · 72`；分數卡 92 底下兩顆按鈕 `Attempt 1`、`Submission`，Submission 綠框 |
+| 14 | 點 Emma（交之前練過一次） | 名單 `Attempt 1 · 72`；右欄最上面一列 tab `Attempt 1`、`Submission`，Submission 綠色底線；分數卡 92 |
 | 15 | 按 Attempt 1 | 大分數 72、`Attempt`、一行說明；沒有 Edit score、沒有評語；底下換成那次的內容 |
 | 16 | 換一個學生再回 Emma | 回到看 Submission |
-| 17 | 看 Content Mirroring 的一份 | Score breakdown 三格數字、沒有長條；每句一字一欄 ＋ 聲調圖 ＋ `90/100`；整頁沒有星星 |
+| 17 | 看 Content Mirroring 的一份 | 沒有 Score breakdown；每句一字一欄 ＋ 聲調圖 ＋ `90/100`；整頁沒有星星 |
 | 18 | 切到 Comprehension Quiz | 同一條貼頂列和分數卡；沒有 Edit score；Questions ＋ All／Wrong；沒有分數環 |
 | 19 | 點一個沒交的學生 | 貼頂列寫 Not submitted；底下 *This student has not submitted yet* |
 | 20 | 按 Back | 回列表剛才那個分頁和檢視 |

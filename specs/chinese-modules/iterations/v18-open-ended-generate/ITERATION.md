@@ -27,11 +27,28 @@
 3. 已指派後回來改題的版本確認沒畫（v16 待定 4）；學生答題時建議答案怎麼進評分（v16 待定 2）。
 5. **沒有專案的練習，要問工程四條**（2026-11-13）：①練習要能自己存 targetLanguage（現在語音、拼音、評分語言全從第一題的 projectConfigSk 查專案；`assignments/content/index.js` 的 getTargetLanguageFromProjectConfig 沒 sk 就回 undefined）②評分那條沒課文能不能跑（現在送 projectConfigSk＋questionSk，建議答案後端從題庫查；Extension 題本來就不從課文找答案）③Answer conditions 的生成有沒有吃課文 ④音檔的 voice 是依 targetLanguage 選，練習帶語言之後 voice library 那條能不能照舊。⑥（2026-11-18）沒有專案時練習也要自己存 `levelType`、`level`（現在從專案的 levelType／level 拿；評分、AI 提示用得到嗎？）。⑤（2026-11-18）語言選 Each student’s setting 時：練習存什麼（一個 `student` 值？）、學生端怎麼拿到自己的 `targetLanguage`、老師寫的題目與建議答案誰轉簡繁（後端 OpenCC 或生成時兩份都存）、拼音與 Answer conditions 要不要兩份、評分照學生的版本。另外學生端 `qa/content-window.js` 沒有專案內容時會把題目文字當課文印在左欄，要改成不顯示左欄。產品已有沒專案的練習（ESL Mirroring、Reading Challenge），upsertPractice 的 projectConfigSk 本來就是選填，資料模型不擋。
 4. Answer conditions 現在存在題庫的題目上（`question.answerConditions`，`requiredConditions`／`notRequiredConditions` 兩個字串陣列），練習本身（`updatedArticleArray`）沒有這個欄位；題目改存在練習上之後，條件要跟著搬過去、改題後重產的時機也要定——v16 的 spec 已劃掉不再更新，這條待工程的問題記在這裡。重產要幾秒（產品手動加題時把表單鎖住就是在等它）——改完題目關掉鉛筆之後，條件要不要先顯示「更新中」，沒畫，等工程回時間再說。QA pipeline 那套拿條件去測 prompt 的工具 2026-10-26 已搬去 dahua-admin-dash，不在老師端。
+6. **預設題的題庫內容待定**（2026-11-18；原型只是前端 demo，照「中文口說題庫總覽」L1 入门基础 77 題原文搬，下面三條沒動）：①6 題題目帶「……」佔位，學生看不出要答哪個地方或東西：……在哪里？／……怎么走？／……离这里远吗？／请问，这附近有没有……？／我要买……／有没有……？——要拿掉還是補成具體地點、物品；②「你今年多大？／ 你几岁？」跟「你今年多大？」重複；③「问候与礼貌」6 題（你好！、谢谢！、再见！…）是打招呼，不是問答題，要不要留在預設題。另外題庫沒有拼音，demo 用 pinyin-pro 逐字產，輕聲偶爾標錯（名字 → míngzì），正式要題庫自帶或後端產。
 
 ## Change log
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-23 | 手寫題 Suggested answer 標題的「(optional)」改成「**(or let AI write it)**」 | 使用者要表達自己寫或 AI 寫都可以，選第 3 種寫法 |
+| 2026-11-23 | Save 只要按一次：AI 補完空格後卡片直接收起（收起的卡上看得到建議答案與 Answer conditions），要改再按鉛筆 | 使用者「現在要按 save 兩次？」。v17 同步 |
+| 2026-11-23 | 每張題卡打開編輯時都有 Save（在 Suggested answer 底下）：手寫題第一次按 Save 時 AI 補空格、產完留在打開狀態給老師看；之後（或 AI 題、常見題）按 Save＝存起來收起卡片。手寫題把答案或條件清空再存，AI 會再補一次 | 使用者「如果我要修改，修改後的 save 就不見了」 |
+| 2026-11-23 | 手寫題卡：Save 從卡片右下搬到 Suggested answer 底下（Answer conditions 在 Save 下面）；Suggested answer 標題加「(optional)」 | 使用者「save 放在 Suggested answer 下；Suggested answer 寫 optional」 |
+| 2026-11-23 | 手寫題卡改成一開始就列出 Question、Suggested answer、Answer conditions（都空的），Save 搬到卡片右下；按 Save 時 AI 只補老師留空的格子（三格都寫了就直接存、不產）；條件區底下照舊那句「Leave these empty and the AI writes them…」 | 使用者「如果也想要自己打呢」→ 選「一開始就列出來（空的）」 |
+| 2026-11-23 | 手寫題卡：拿掉標題列的「Your question — click to write it」；還沒存時只有 Question 輸入框＋Save（沒字時停用、Enter 也能存），按下後骨架等約 1 秒，AI 產出 Suggested answer＋Answer conditions 才出現，之後照舊可改；拿掉「Pinyin and audio are made from your question when you save」那句。mock：題目跟常見題一樣就用那題的答案與條件，不然給通用的一組 | 使用者「拿掉 Your question — click to write it；輸入 question 後會有 save 按鈕，按下後自動生成 Suggested answer 跟 Answer conditions」 |
+| 2026-11-23 | 警語改成「Answers don't have to come from the article. To check the article, use Comprehension Quiz.」——重點放在答案不一定跟課文有關，再指路 | 使用者「應該說答案不一定跟文章有關聯」 |
+| 2026-11-23 | 第二步題目順序改成跟第一步一樣：自己寫的 → AI 出的 → 常見題（原本常見題排最前、手寫排最後）；不加段頭；Generate more 加的題照舊接在最後面。demo `?step=2&proj=0&own=1&starter=2` | 使用者「第二步的問題順序改成跟題型順序一樣」 |
+| 2026-11-23 | 主題藥丸拿掉邊框：沒選＝灰底、有選題＝淡綠底深綠字、展開中＝綠底白字 | 使用者「拿掉邊框」 |
+| 2026-11-23 | Choose from common questions 整塊（藥丸、勾選框、選中的題目列、數字徽章）改吃原本的 design token（--primary／--primary-dark／--primary-lighter），不用 Extension 型別的青綠 | 使用者「吃原本的 design token 不用照練習題型主題色」 |
+| 2026-11-23 | Choose from common questions 的題數改成跟上面兩列一樣大的數字框（只顯示，不能加減；原本「N selected」小字拿掉）；主題藥丸前面多一個勾選框：點框＝整組全選／全部取消（選一部分顯示橫線），點字＝展開那組 | 使用者「題數放大跟其他兩個題型一樣」「膠囊前面多勾選框」 |
+| 2026-11-23 | 第一步三列名稱（Write your own questions／Let AI write questions from the article／Choose from common questions）字放大：13→15px、加粗、改深色，圖示 16→19px | 使用者「字體大一點」 |
+| 2026-11-23 | 展開主題的題目清單限高約三列半，超過就在清單裡捲動（露出下一列的上緣提示還有）；demo 用 `&topic=Daily routine`（8 題） | 使用者「demo 問題更多 需要有 scroll」 |
+| 2026-11-23 | **What to ask 卡重排**：左欄縮成約 1/3，上面插圖、下面警語當圖說（同一塊青綠底）；右欄由上而下 Write your own questions → Let AI write questions from the article → Choose from common questions，主題藥丸和展開的題目（兩欄）都在右欄裡；總題數照舊在卡片左上。Generate more 同一個版型，左欄只有插圖 | 使用者「插圖不用這麼寬，插圖跟 notice 融合在一塊」「兩種題型還是統一在右邊」→ 選 A（左圖上、警語下）、題目兩欄、總題數照舊 |
+| 2026-11-23 | **Design review（11/19）第一輪**：What to ask 卡右邊改成 **Write your own questions**（排第一）→ **Let AI write questions from the article**（有專案才有）；題庫題拿掉題數，搬到卡片底下改成 **Choose from common questions** ＋ 12 個主題藥丸，一進來就看得到、預設都不展開，點一個只展開那組勾選，藥丸上標勾了幾題、右邊「N selected」；卡片最上面加警語 *Not about the article? Use Free response. About the article? Use Comprehension Quiz.*；Generate more 面板同一套（已加過的題灰掉標 Added）。demo `&topic=Family` 先展開一個主題 | Design review：先選主題不先選數量、改兩層選單、You write 排第一、用語白話、加警語、標準題區塊不要折疊。使用者逐題定：B3 藥丸、順序 手寫→AI→題庫、三列一句話名稱（不加說明句）、預設不展開、警語放卡最上面用最短版、Generate more 一起改。題庫題目先不動，等 Caroline 刪完原文再換；「範例題保留一個」先不處理 |
+| 2026-11-18 | **預設題改吃口說題庫的入门基础**：Starter questions 換成「中文口說題庫總覽」artifact（6K4kVuWHH5FqF5BRMviXLh）L1 入门基础（HSK1–2）整組 12 組 77 題——Greetings／About me／Numbers & dates／Family／Country & language／Work & school／Daily routine／Hobbies／Directions／Weather／Shopping／Health；題目、參考答案、Answer conditions（必要／非必要）照原文（中文），拼音由 pinyin-pro 產（逐字分開）；原本 30 題草稿拿掉 | 使用者「free response 的基本題庫改成吃這份裡的內容」＋連結 #L1。原文 6 題有「……」佔位（……在哪里？／……怎么走？／……离这里远吗？／请问，这附近有没有……？／我要买……／有没有……？）、「你今年多大？」跟「你今年多大？／你几岁？」兩題重複，照搬沒動，待使用者定 |
 | 2026-11-18 | **Generate more 也能加預設題**：面板卡上多 Starter questions 一列（有專案、沒專案都有）；大於 0 時展開同一份分組清單，已在題目裡的預設題灰掉、標 Added、不能再勾；組名旁的數字只算還能加的；Add 後接在清單最後、掛 New。順手修掉面板下方外露的程式註解 | 使用者「Generate more 沒有帶出新的句子種類」＋截圖（露出 `/* 2026-11-13 A 路… */`） |
 | 2026-11-18 | 第二步只剩一題時，眉標右邊那句 *Last question — a … needs at least one, so it can’t be removed* 拿掉；那題的刪除鈕照樣停用 | 使用者「拿掉」。v17 同一句一起拿掉 |
 | 2026-11-18 | **有專案也能用預設題（方案 A）**：What to ask 卡右邊三列 AI writes｜Starter questions｜You write；Starter questions 大於 0 時卡片底下才展開分組勾選清單（同沒專案那一份）；總題數三列相加；第二步預設題排在課文題前面當暖身；只選預設題（AI writes 0）時主鈕是 Next | 使用者「有 project 的也想要用這些問題有什麼提案」→ A 卡上第三列／B 卡底下收合區／C 第二步 Generate more 再加 → 「A」。順序排前面是我的建議，沒另外問；簡繁照專案 |

@@ -34,6 +34,8 @@
         進勾選模式後細列留在原位、不收起（收起會讓清單往上跳，使用者：會閃），而且**變成操作列**：左邊 N selected of M、
         右邊 Cancel ＋ 紅色 Skip N assignments（不寫已選筆數）；底部浮動條併進來（使用者「下面浮動的 bar 就結合在那一欄上」），細列貼在頁首底下。
         右欄照同一套（使用者「Submissions 的也照這樣改」）：Skip review 從面板標題搬到清單上方細列；勾選時變 全選 · ⟲（30 天以上，只剩圖示）· Cancel · Skip review (N)。
+   ⑨（2026-11-19，使用者「按底下任一 skip 就會出現多選框、Skip several btn 移除」）：細列平常不出現；點任一列的 Skip ＝ 進勾選模式、
+        那一列先勾好，細列這時才出現（N selected · Cancel · Skip N）。單筆也走同一條（Skip 1 assignment → 確認框）。右欄 Skip review 不動。
    網址參數：基準那幾個 ＋ ?skipmany=1 左欄勾選模式 · ?skip=1 右欄勾選模式 · ?many=1 Overdue 灌到 30 幾筆（鷹架，看 71 筆那種壓迫感）
    =========================================================================== */
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -653,9 +655,8 @@ a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3
   };
   const pickState = (cands, set) => { const n = cands.filter((k) => set.has(k)).length; return !n ? '' : n === cands.length ? 'pk-all' : 'pk-some'; };
 
-  // 提案 ⑧：段頭底下的細列——平常是「Skip several」；勾選模式時變操作列（N selected of M · Cancel · Skip N），高度不變
+  // 提案 ⑧⑨：段頭底下的細列——只在勾選模式出現，是操作列（N selected of M · Cancel · Skip N），高度不變
   const pickEntryHtml = () => {
-    if (!saMode) return '<div class="pick-entry"><button class="hd-skip-entry" title="Select several overdue assignments to skip"><span class="mi">checklist</span>Skip several</button></div>';
     const n = skippable().filter((a) => saPicked.has(a.rowKey)).length;
     return `<div class="pick-entry active" role="region" aria-label="Selection"><span class="pe-n"></span>
       <span class="pe-acts"><button class="pe-cancel" data-bar="sa-cancel">Cancel</button><button class="pe-go" data-bar="sa-go" ${n ? '' : 'disabled'}><span class="mi">block</span>${n ? `Skip ${n} assignment${n > 1 ? 's' : ''}` : 'Skip assignments'}</button></span></div>`;
@@ -678,7 +679,7 @@ a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3
           <span class="col">Due</span><span class="col">Submitted</span>
           <div class="sec-tog"><span class="mi">expand_less</span></div>
         </div>
-        <div class="sec-body${collapsed.has(sec) ? ' collapsed' : ''}">${sec === 'overdue' && (saMode || skippable().length >= 2) ? pickEntryHtml() : ''}${(items.length > LIMIT && !expandedSecs.has(sec) && !(saMode && sec === 'overdue') ? items.slice(0, LIMIT) : items).map(rowHtml).join('')}${
+        <div class="sec-body${collapsed.has(sec) ? ' collapsed' : ''}">${sec === 'overdue' && saMode ? pickEntryHtml() : ''}${(items.length > LIMIT && !expandedSecs.has(sec) && !(saMode && sec === 'overdue') ? items.slice(0, LIMIT) : items).map(rowHtml).join('')}${
           items.length > LIMIT && !(saMode && sec === 'overdue') ? (expandedSecs.has(sec)
             ? `<button class="more-row" data-more="${sec}">Show less<span class="mi">expand_less</span></button>`
             : `<button class="more-row" data-more="${sec}">Show ${items.length - LIMIT} more<span class="mi">expand_more</span></button>`) : ''}</div>
@@ -689,7 +690,7 @@ a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3
   const findA = (key) => assignments.find((a) => a.rowKey === key);
 
   /* ---------- 提案 ⑦：左欄勾選模式 ＋ 底部浮動條 ---------- */
-  function enterSa(){ saMode = true; saPicked = new Set(); collapsed.delete('overdue'); renderAssignments(); }   // 進來時 Overdue 全展開（使用者定）
+  function enterSa(firstKey){ saMode = true; saPicked = new Set(firstKey ? [firstKey] : []); collapsed.delete('overdue'); renderAssignments(); }   // ⑨：從哪一列的 Skip 進來，那列先勾好   // 進來時 Overdue 全展開（使用者定）
   function exitSa(){ saMode = false; saPicked = new Set(); renderAssignments(); }
   const selbarHtml = (n, total, goLabel, kind) => `<div class="selbar" role="region" aria-label="Selection">
     <span class="n">${n} selected<i>of ${total}</i></span><span class="sp"></span>
@@ -719,7 +720,6 @@ a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3
 
   document.getElementById('assign').addEventListener('click', (e) => {
     if (e.target.closest('[data-stop]')) return;                 // View results：不要順便展開
-    if (e.target.closest('.hd-skip-entry')){ enterSa(); return; }
     const bar = e.target.closest('[data-bar]'); if (bar){ handleSaBar(bar); return; }   // 細列上的 Cancel／Skip N   // 提案 ⑧：段頭底下那條「Select several to skip」進勾選模式
     if (saMode){
       if (e.target.closest('[data-pkall]')){ const c = skippable().map((a) => a.rowKey), all = c.every((k) => saPicked.has(k)); c.forEach((k) => (all ? saPicked.delete(k) : saPicked.add(k))); renderAssignments(); return; }
@@ -733,11 +733,7 @@ a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3
     if (secHead){ const s = secHead.dataset.sec; collapsed.has(s) ? collapsed.delete(s) : collapsed.add(s); renderAssignments(); return; }
     const skip = e.target.closest('.skip-btn');
     if (skip){
-      const a = findA(skip.closest('.arow').dataset.key);
-      openConfirm({ title: 'Skip assignment', sub: `${a.practiceName} - ${a.className}`,
-        body: "This overdue assignment will be removed from Active Assignments — students won't be chased for it anymore. You can still see it in the class history.",
-        ok: 'Skip assignment',
-        onOk: () => { assignments = assignments.filter((x) => x.rowKey !== a.rowKey); renderAssignments(); toast(`Skipped "${a.practiceName}" for ${a.className}`); } });
+      enterSa(skip.closest('.arow').dataset.key);   // ⑨：點任一列的 Skip ＝ 進勾選模式，不直接跳確認框
       return;
     }
     const remind = e.target.closest('.remind');

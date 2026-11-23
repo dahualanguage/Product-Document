@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comprehension Quiz — v17 學生端基準（現行複刻）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="student-quiz.css">
+<script src="student-mock.js"></script>
+<script src="student-common.js"></script>
+<!-- ===========================================================================
+   基準檔 —— 現行學生端 Comprehension Quiz（/dashboard/assignments/content?type=MULTIPLE_CHOICE）
+   逐項照 mc/index.js 的 sx 複刻；出處見 student-quiz.css 檔頭（dahua-dash origin/develop @ 6e3134d1，2026-11-19）。
+   對照組：student-proposal.html 是提案。假資料共用 student-mock.js（現行只有 True/False、Multi-Choice，Open answer 題不列）。
+   現行行為：
+     · 選了就鎖、立刻顯示對錯（use-mc-practice.js handleSelect → showFeedback=true），Test Mode 開著也一樣
+     · Previous／Next 可以來回；最後一題 Finish（全部答完才能按）
+     · Test Mode（examMode）＝進度列右邊一顆整份倒數 chip（timeLimit 分鐘），剩 60 秒內轉紅、抖動；時間到 Time up! 自動交卷
+     · 沒有開始頁、沒有規則說明，進頁面就開始倒數
+     · 交卷後 CompletedScreen：分數圈、Correct／Wrong／Total、Submit to Teacher、Question Review
+   網址參數：?i=N 第幾題（1 起） · &sel=A 選了 A（顯示對錯） · &exam=1 Test Mode 倒數 · &urgent=1 剩 60 秒內 · &timeup=1 時間到 · ?screen=done 完成頁
+   =========================================================================== -->
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#" class="on"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <div class="mainwrap">
+    <div class="hdr"><div class="av">L</div></div>
+    <div class="area" id="area"></div>
+  </div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v17 · 學生端 · 現行 Comprehension Quiz · 對照組 <a href="student-proposal.html">學生端提案 ↗</a> · <a href="proposal.html">老師端提案 ↗</a></span><span id="devbar"></span></div>
+
+<script>
+const U = window.V17UI, M = U.M;
+const qs = new URLSearchParams(location.search);
+const QS = M.questions.filter(q => q.t !== 'oe');   // 現行只有 True/False、Multi-Choice
+const N = QS.length;
+const S = {
+  screen: qs.get('screen') || 'q',
+  i: Math.min(N, Math.max(1, +qs.get('i') || 1)) - 1,
+  answers: {},
+  exam: qs.get('exam') === '1',
+  urgent: qs.get('urgent') === '1',
+  timeup: qs.get('timeup') === '1',
+  py: false,
+};
+if (qs.get('sel')) S.answers[S.i] = qs.get('sel');
+if (S.screen === 'done') QS.forEach((q, k) => { S.answers[k] = k === 1 || k === 5 ? (q.ans === 'A' ? 'B' : 'A') : q.ans; });
+
+const render = () => {
+  const area = document.getElementById('area');
+  if (S.screen === 'done'){ area.innerHTML = U.completed({ qs: QS, answers: S.answers }); return; }
+  const q = QS[S.i], sel = S.answers[S.i], fb = !!sel;
+  const chip = !S.exam ? '' : S.timeup ? `<span class="tchip err"><span class="mi">timer</span>Time up!</span>`
+    : `<span class="tchip ${S.urgent ? 'err shake' : ''}"><span class="mi">timer</span>${U.mmss(S.urgent ? 48 : 192)}</span>`;
+  const opts = Object.entries(q.choice).map(([k, v]) => {
+    if (!fb) return U.optionRow(k, v, S.timeup ? 'dim' : '');
+    if (k === q.ans) return U.optionRow(k, v, 'ok', '<span class="mi">check_circle</span>');
+    if (k === sel) return U.optionRow(k, v, 'bad', '<span class="mi">cancel</span>');
+    return U.optionRow(k, v, 'dim');
+  }).join('');
+  const last = S.i === N - 1, all = Object.keys(S.answers).length === N;
+  area.innerHTML = `${U.progRow(S.i, N, chip)}
+    <div class="scroll"><div class="ct"><div class="grid">
+      ${U.articlePanel({ py: S.py })}
+      <div>
+        <div class="card"><div class="card-c">
+          ${U.chipsRow(q, U.sw('Translation', false))}
+          ${U.stem(q)}
+          <div class="opts">${opts}</div>
+        </div></div>
+        <div class="btns">
+          <button class="btn ol" data-act="prev" ${S.i === 0 ? 'disabled' : ''}><span class="mi">arrow_back</span>Previous</button>
+          ${last ? `<button class="btn ct-s" data-act="finish" ${all ? '' : 'disabled'}><span class="mi">check</span>Finish</button>`
+                 : `<button class="btn ct-p" data-act="next" ${sel ? '' : 'disabled'}>Next<span class="mi">arrow_forward</span></button>`}
+        </div>
+      </div>
+    </div></div></div>`;
+};
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
+  const a = t.dataset.act;
+  if (a === 'sel' && !S.answers[S.i] && !S.timeup) S.answers[S.i] = t.dataset.k;   // 選了就鎖
+  if (a === 'next') S.i = Math.min(N - 1, S.i + 1);
+  if (a === 'prev') S.i = Math.max(0, S.i - 1);
+  if (a === 'finish') S.screen = 'done';
+  if (a === 'py') S.py = !S.py;
+  render();
+});
+
+const links = [['?i=1', '第一題'], ['?i=4&sel=C', '答錯（立刻顯示對錯）'], ['?i=4&exam=1', 'Test Mode 倒數'], ['?i=4&exam=1&urgent=1', '剩 60 秒內'], ['?i=4&exam=1&timeup=1', '時間到'], ['?screen=done', '完成頁']];
+document.getElementById('devbar').innerHTML = links.map(([h, l]) => `<a href="${h}" class="${location.search === h ? 'cur' : ''}">${l}</a>`).join(' · ');
+render();
+</script>
+</body>
+</html>

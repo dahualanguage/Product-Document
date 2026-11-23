@@ -43,6 +43,13 @@
    結果（2026-11-16 改，使用者定）：一句一個分數，大分數＝各句平均（完成卡寫 Average）。
    整篇只能一起唸；結果頁分數低於 4 的句子旁邊有 Practice，點了只練那一句（聽 → 錄 → 送出 → 新分數），
    回到結果頁那句換成新分數、平均重算。&screen=drill&s=N 第 N 句（1 起算）、&d=ready|record|recorded|scoring|scored。
+
+   評分 V2（2026-11-19，使用者「帶入評分系統 v2 沒有星星」）：中文現在交卷都是 DAHUA_V2，照產品的 V2 畫法——
+   分數 0–100 整數（mock 的 /5 × 20）、沒有星星；每句分數 chip 三階色 80／60（utils/score.js，跟 v23 同一套）；
+   展開一句＝V2FeedbackPanel 的頭（Perfect!／Good job!／Try again! ＋ 圓點數字 words to correct／to review）＋
+   StudentPitchChart 的一字一欄（拼音／字／狀態圓點，綠 check、黃 priority_high、紅 close；標點不佔欄）；
+   平均卡＝AVERAGE 78 /100 ＋ 一句話；完成卡照 completion-card.js AverageStatsCard scale=100（不畫星、Average: 78 / 100）。
+   Practice 門檻 4 → 80。音高圖與「點字看聲調」沒畫（整篇六句各一張圖太長，待定）。
    =========================================================================== */
 *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
 :root{
@@ -184,7 +191,7 @@ button{ font-family:inherit; cursor:pointer; }
 .rlist{ gap:5px; }
 .rhead{ padding:7px 12px 7px 14px; }
 .rhead .line{ font-size:17px; }
-.rhead .schip{ height:26px; width:72px; flex:none; font-size:14px; }   /* 固定寬：單練過多一個箭頭也對齊 */
+.rhead .schip{ height:26px; width:84px; flex:none; font-size:14px; }   /* 固定寬：單練過多一個箭頭也對齊 */
 .rhead .drillbtn{ height:30px; }
 .pcard.result .passage{ padding:12px 32px 16px; }
 .pcard.result .meta{ padding-top:18px; }
@@ -201,6 +208,23 @@ button{ font-family:inherit; cursor:pointer; }
 .drillbtn{ height:32px; padding:0 12px; border-radius:999px; border:1.5px solid #22C55E; background:#fff; color:#16A34A; font-size:13px; font-weight:800; display:inline-flex; align-items:center; gap:4px; }
 .drillbtn .mi{ font-size:17px; } .drillbtn:hover{ background:#F0FDF4; }
 .fb .score .avglbl{ font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#94A3B8; }
+/* 2026-11-19 評分 V2：一字一欄（student-pitch-chart.js）＋ 結果一行（sentence-result-header.js） */
+.v2h{ display:flex; align-items:center; flex-wrap:wrap; gap:6px 16px; padding:10px 0 4px; }
+.v2h .res{ font-size:18px; font-weight:800; color:#212B36; }
+.v2h .res.perfect{ color:#22C55E; } .v2h .res.retry{ color:#EF4444; }
+.v2p{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#637381; }
+.v2p b{ font-size:15px; font-weight:800; }
+.v2dot{ width:14px; height:14px; border-radius:50%; flex:none; display:inline-flex; align-items:center; justify-content:center; color:#fff; }
+.v2dot .mi{ font-size:10px; }
+.v2-green{ background:#22C55E; } .v2-yellow{ background:#F59E0B; } .v2-red{ background:#EF4444; } .v2-grey{ background:#9CA3AF; }
+.vcols{ display:flex; flex-wrap:wrap; gap:6px 4px; padding:6px 0 2px; }
+.vc{ min-width:30px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.vc .py{ font-size:14px; color:#637381; line-height:1.2; white-space:nowrap; min-height:17px; }
+.vc .zh{ font-size:22px; font-weight:700; line-height:1.2; }
+.vc.c-green .zh{ color:#22C55E; } .vc.c-yellow .zh{ color:#F59E0B; } .vc.c-red .zh{ color:#EF4444; }
+.pcard.drill .vc{ min-width:40px; } .pcard.drill .vc .zh{ font-size:32px; } .pcard.drill .vc .py{ font-size:15px; }
+.pcard.drill .v2h{ justify-content:center; } .pcard.drill .vcols{ justify-content:center; }
+.fb .score .big b{ font-variant-numeric:tabular-nums; }
 /* 單練一句 */
 .dtop{ flex:none; padding:4px 24px 0; }
 .backlink{ border:0; background:none; display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:700; color:#637381; padding:4px 8px 4px 2px; border-radius:8px; }
@@ -268,8 +292,6 @@ button{ font-family:inherit; cursor:pointer; }
 .fb .score .big{ display:flex; align-items:baseline; gap:4px; }
 .fb .score .big b{ font-size:32px; font-weight:800; color:#22C55E; line-height:1; }
 .fb .score .big span{ font-size:17px; font-weight:700; color:#637381; }
-.stars{ display:flex; gap:2px; color:#FFC107; }
-.stars .mi{ font-size:18px; }
 .fb .score .verdict{ font-size:14px; font-weight:800; margin-top:4px; }
 .fb .detail{ flex:1; min-width:0; padding:16px 20px; display:flex; flex-direction:column; justify-content:center; gap:10px; }
 .legend{ display:flex; align-items:center; gap:14px; font-size:12px; color:#637381; flex-wrap:wrap; }
@@ -308,7 +330,6 @@ button{ font-family:inherit; cursor:pointer; }
 .done .pn{ font-size:24px; font-weight:700; color:#22C55E; margin-bottom:4px; }
 .done .h{ font-size:20px; font-weight:800; color:#1E293B; margin-bottom:20px; }
 .done .box{ width:100%; background:#FFFEFB; border:1px solid #FDE7B0; border-radius:24px; padding:20px 24px; display:flex; flex-direction:column; align-items:center; gap:10px; }
-.done .box .stars .mi{ font-size:34px; }
 .done .avg{ font-size:17px; font-weight:800; color:#1E293B; } .done .avg b{ color:#16A34A; }
 .done .enc{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; background:#DCFCE7; color:#15803D; font-size:14px; font-weight:700; }
 .done .enc .mi{ font-size:16px; }
@@ -406,13 +427,14 @@ const S = {
   // 播放／提詞機的位置
   si: 0, f: 0, ended: false, paused: false, t: 0,
   // 2026-11-16：每句分數（可被單練更新）、單練哪一句、單練的步驟
-  scores: M.SENTENCE_SCORES.slice(), redone: {}, open: (parseInt(qs.get('open') || '0', 10) || 0) - 1,   // &open=N 展開第 N 句 ds: Math.max(0, Math.min(N - 1, (parseInt(qs.get('s') || '4', 10) || 4) - 1)), d: qs.get('d') || 'ready', dPrev: null,
+  scores: M.SENTENCE_SCORES.map((v) => Math.round(v * 20)),   // 2026-11-19 V2：0–100
+  redone: {}, open: (parseInt(qs.get('open') || '0', 10) || 0) - 1,   // &open=N 展開第 N 句
+  ds: Math.max(0, Math.min(N - 1, (parseInt(qs.get('s') || '4', 10) || 4) - 1)), d: qs.get('d') || 'ready', dPrev: null,
 };
 // 深連結：&t=秒 → 停在那一刻（不自動播）
 const deepT = qs.has('t') ? Math.max(0, parseFloat(qs.get('t')) || 0) : null;
 
 /* ---------- 工具 ---------- */
-const starsHtml = (r) => { let h = '<span class="stars">'; for (let i = 1; i <= 5; i++) { const ic = r >= i ? 'star' : (r >= i - .5 ? 'star_half' : 'star_border'); h += `<span class="mi" style="${ic === 'star_border' ? 'color:#DFE3E8' : ''}">${ic}</span>`; } return h + '</span>'; };
 const barsHtml = (cls, hs) => `<span class="bars ${cls}">${hs.map((h, i) => `<i style="height:${h}px;animation-delay:${i * .08}s"></i>`).join('')}</span>`;
 const WL = [10, 16, 24, 18, 12], WR = [12, 18, 24, 16, 10];
 const speedFactor = () => 0.8 / SPEED_VAL[S.speed];                 // Normal=1、Slow 慢 1.33、Fast 快 0.8
@@ -457,17 +479,26 @@ const wordsHtml = (si, graded) => M.SENTENCES[si].words.map(([w, py], wi) => {
     return `<span class="w ${wc}" data-si="${si}" data-wi="${wi}"><span class="py">${S.py && !punct ? py : ''}</span><span class="zh">${esc(w)}</span>${dot}</span>`;
   }).join('');
 // 2026-11-16：結果頁一句＝詞 ＋ 右邊分數；低於 4 分有 Practice
-const WEAK = 4;
-const tier = (v) => (v >= 4 ? 'hi' : v >= 3 ? 'mid' : 'lo');
+const WEAK = 80;   // 2026-11-19 V2：原本 4/5
+const tier = (v) => (v >= 80 ? 'hi' : v >= 60 ? 'mid' : 'lo');   // utils/score.js 三階
+/* 2026-11-19 評分 V2：一字一欄、結果一行 */
+const V2C = { correct: 'green', warning: 'yellow', incorrect: 'red' };
+const V2ICON = { green: 'check', yellow: 'priority_high', red: 'close', grey: 'mic_off' };
+const v2Rows = (si) => M.SENTENCES[si].words.flatMap(([w, py], wi) => { if (M.isPunct(w)) return []; const sy = py.split(' '); const color = V2C[wordStatus(si, wi)]; return [...w].map((ch, k) => ({ ch, py: sy[k] || '', color })); });
+const v2Result = (si) => { const v = S.scores[si], rows = v2Rows(si); return v >= 90 && !rows.some((r) => r.color === 'red') ? 'perfect' : v < 70 ? 'retry' : 'ok'; };   // 產品由後端存 sentenceResult；假資料照分數推
+const v2Parts = (rows) => [['red', 'to correct'], ['yellow', 'to review'], ['grey', 'not detected']].map(([c, t]) => { const n = rows.filter((r) => r.color === c).length; return n ? `<span class="v2p"><span class="v2dot v2-${c}"><span class="mi">${V2ICON[c]}</span></span><span><b style="color:${{ red: '#EF4444', yellow: '#F59E0B', grey: '#9CA3AF' }[c]}">${n}</b> word${n > 1 ? 's' : ''} ${t}</span></span>` : ''; }).join('');
+const v2Html = (si) => { const rows = v2Rows(si), res = v2Result(si);
+  return `<div class="v2h"><span class="res ${res}">${{ perfect: 'Perfect!', ok: 'Good job!', retry: 'Try again!' }[res]}</span>${v2Parts(rows)}</div>
+    <div class="vcols">${rows.map((r) => `<span class="vc c-${r.color}"><span class="py">${S.py ? r.py : ''}</span><span class="zh">${esc(r.ch)}</span><span class="v2dot v2-${r.color}"><span class="mi">${V2ICON[r.color]}</span></span></span>`).join('')}</div>`; };
 const avgScore = () => S.scores.reduce((a, v) => a + v, 0) / N;
 const resultSen = (si, words) => {
   const v = S.scores[si], weak = v < WEAK, re = S.redone[si] !== undefined, open = S.open === si;
-  const chip = `<span class="schip ${tier(v)}" title="${re ? `Was ${S.redone[si].toFixed(1)}` : ''}">${re ? '<span class="mi">north</span>' : ''}${v.toFixed(1)}<small>/5</small></span>`;
+  const chip = `<span class="schip ${tier(v)}" title="${re ? `Was ${S.redone[si]}` : ''}">${re ? '<span class="mi">north</span>' : ''}${v}<small>/100</small></span>`;
   return `<div class="rrow ${weak ? 'weak' : ''} ${re ? 'redone' : ''} ${open ? 'open' : ''}" data-si="${si}">
-    <div class="rhead" data-act="rowtoggle" data-si="${si}" role="button" tabindex="0" aria-expanded="${open}" aria-label="Sentence ${si + 1}, score ${v.toFixed(1)}. ${open ? 'Hide' : 'Show'} each word">
+    <div class="rhead" data-act="rowtoggle" data-si="${si}" role="button" tabindex="0" aria-expanded="${open}" aria-label="Sentence ${si + 1}, score ${v} out of 100. ${open ? 'Hide' : 'Show'} each word">
       <span class="num">${si + 1}</span>${chip}<span class="line">${esc(M.SENTENCES[si].zh)}</span>
       ${weak ? `<button class="drillbtn" data-act="drill" data-si="${si}" aria-label="Practice sentence ${si + 1} on its own"><span class="mi">mic</span>Practice</button>` : ''}<span class="mi chev">expand_more</span></div>
-    ${open ? `<div class="rdetail"><span class="sen" data-si="${si}"><span class="ws">${words}</span>${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div>` : ''}
+    ${open ? `<div class="rdetail"><span class="sen" data-si="${si}">${v2Html(si)}${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div>` : ''}
   </div>`;
 };
 const englishHtml = () => M.SENTENCES.map((s, si) => `<span class="sen en ${si < S.si ? 'past' : si === S.si ? 'cur' : 'todo'}" data-si="${si}">${esc(s.tr)}</span>`).join('');
@@ -687,15 +718,15 @@ const screens = {
   result: () => {
     const r = avgScore();   // 2026-11-16：各句平均
     const weakN = S.scores.filter((v) => v < WEAK).length;
-    const verdict = r >= 4.5 ? ['Excellent!', '#059669'] : r >= 3.5 ? ['Great!', '#22C55E'] : r >= 2.5 ? ['Good effort!', '#F59E0B'] : ['Keep trying!', '#EF4444'];
-    let nw = 0, ni = 0; M.SENTENCES.forEach((s, si) => s.words.forEach((w, wi) => { if (M.isPunct(w[0])) return; const st = wordStatus(si, wi); if (st === 'warning') nw++; if (st === 'incorrect') ni++; }));
+    const verdict = r >= 90 ? ['Excellent!', '#059669'] : r >= 70 ? ['Great!', '#22C55E'] : r >= 50 ? ['Good effort!', '#F59E0B'] : ['Keep trying!', '#EF4444'];
+    const allRows = M.SENTENCES.flatMap((s, si) => v2Rows(si));
     return `<div class="card"><div class="right"><div class="rwrap">${titleRow('Your result')}
       <div class="msgs">
         <div class="pcard result">${metaHtml('chat', 'Your reading', 'Each sentence has its own score. Tap a sentence to see each word.', `${N} sentences`)}<div class="passage" id="passage"><div class="rlist">${passageHtml('result')}</div></div></div>
         <div class="fb compact">
-          <div class="score"><span class="avglbl">Average</span><div class="big"><b>${r.toFixed(1)}</b><span>/5</span></div>${starsHtml(r)}<div class="verdict" style="color:${verdict[1]}">${verdict[0]}</div></div>
-          <div class="detail"><div class="legend"><span><i class="bg-correct"></i>Good</span><span><i class="bg-warning"></i>Needs attention</span><span><i class="bg-incorrect"></i>Needs practice</span></div>
-          <div class="summ"><span><b style="color:#F59E0B">${nw}</b> words need attention</span><span><b style="color:#EF4444">${ni}</b> need practice</span>${weakN ? `<span><b style="color:#B91C1C">${weakN}</b> ${weakN === 1 ? 'sentence' : 'sentences'} below 4 — tap <b style="color:#16A34A">Practice</b> to redo just that one</span>` : '<span style="color:#15803D;font-weight:700">Every sentence is 4 or above</span>'}</div></div>
+          <div class="score"><span class="avglbl">Average</span><div class="big"><b>${Math.round(r)}</b><span>/100</span></div><div class="verdict" style="color:${verdict[1]}">${verdict[0]}</div></div>
+          <div class="detail"><div class="v2h" style="padding:0">${v2Parts(allRows) || '<span class="v2p" style="color:#15803D;font-weight:700">Every word is correct</span>'}</div>
+          <div class="summ">${weakN ? `<span><b style="color:#B91C1C">${weakN}</b> ${weakN === 1 ? 'sentence' : 'sentences'} below 80 — tap <b style="color:#16A34A">Practice</b> to redo just that one</span>` : '<span style="color:#15803D;font-weight:700">Every sentence is 80 or above</span>'}</div></div>
         </div>
       </div>
       <div class="actions"><button class="pill mine" data-act="playrec"><span class="mi">${recAudio ? 'stop' : 'play_arrow'}</span>My recording</button><button class="pill ghost" data-act="redo"><span class="mi">refresh</span>Redo</button><span class="pulse"><button class="pill go" data-act="end">End Practice</button></span></div>
@@ -706,12 +737,12 @@ const screens = {
 /* 2026-11-16：單練一句（結果頁 Practice 進來）——聽 → 錄 → 送出 → 新分數；整篇照樣只能一起唸 */
 const drillCard = (graded, lit) => {
   const si = S.ds, prev = S.d === 'scored' && S.redone[si] !== undefined ? S.redone[si] : null;
-  const right = S.d === 'scored' ? `<span class="was">${prev !== null ? `<span class="schip ${tier(prev)}">${prev.toFixed(1)}<small>/5</small></span><span class="mi arrow">arrow_forward</span>` : ''}<span class="schip ${tier(S.scores[si])}">${S.scores[si].toFixed(1)}<small>/5</small></span></span>`
-    : `<span class="was">Last score <span class="schip ${tier(S.scores[si])}">${S.scores[si].toFixed(1)}<small>/5</small></span></span>`;
+  const right = S.d === 'scored' ? `<span class="was">${prev !== null ? `<span class="schip ${tier(prev)}">${prev}<small>/100</small></span><span class="mi arrow">arrow_forward</span>` : ''}<span class="schip ${tier(S.scores[si])}">${S.scores[si]}<small>/100</small></span></span>`
+    : `<span class="was">Last score <span class="schip ${tier(S.scores[si])}">${S.scores[si]}<small>/100</small></span></span>`;
   const label = { ready: ['record_voice_over', 'Practice this sentence', 'The red and amber words need work. Listen, then read it once.'], record: ['record_voice_over', 'Read aloud', ''], recorded: ['record_voice_over', 'Your reading', 'Listen back, then submit.'], scoring: ['record_voice_over', 'Your reading', ''], scored: ['chat', 'New score', 'This sentence’s score on the result page is updated.'] }[S.d];
   return `<div class="msgs"><div class="pcard drill ${graded ? 'result' : S.d === 'record' ? 'repeat active' : 'practice'} ${S.d === 'scoring' ? 'dim' : ''}">
     ${metaHtml(label[0], label[1], label[2], right)}
-    <div class="passage"><span class="sen ${lit ? 'cur' : ''}" data-si="${si}"><span class="ws">${wordsHtml(si, graded)}</span>${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div></div></div>`;
+    <div class="passage"><span class="sen ${lit ? 'cur' : ''}" data-si="${si}">${graded ? v2Html(si) : `<span class="ws">${wordsHtml(si, false)}</span>`}${S.tr ? `<span class="tr">${esc(M.SENTENCES[si].tr)}</span>` : ''}</span></div></div></div>`;
 };
 screens.drill = () => {
   const head = `<div class="dtop"><button class="backlink" data-act="drillback"><span class="mi">arrow_back</span>Back to result</button></div>`;
@@ -730,7 +761,7 @@ screens.drill = () => {
   const actions = S.d === 'scored' ? `<div class="actions"><button class="pill ghost" data-act="dagain"><span class="mi">refresh</span>Try again</button><span class="pulse"><button class="pill go" data-act="drillback"><span class="mi">arrow_back</span>Back to result</button></span></div>` : '';
   return `<div class="card"><div class="right"><div class="rwrap">${ttl}${head}${drillCard(S.d === 'ready' || S.d === 'scored', S.d === 'record')}${area}${actions}</div></div></div>`;
 };
-const drillScore = () => { const si = S.ds; if (S.redone[si] === undefined) S.redone[si] = S.scores[si]; S.scores[si] = Math.min(5, S.scores[si] + 1); };   // 假評分：每次 +1，上限 5
+const drillScore = () => { const si = S.ds; if (S.redone[si] === undefined) S.redone[si] = S.scores[si]; S.scores[si] = Math.min(100, S.scores[si] + 20); };   // 假評分：每次 +20，上限 100
 const goDrill = (d) => { stopEngine(); if (recAudio) { recAudio.pause(); recAudio = null; } S.screen = 'drill'; S.d = d; S.dPlaying = false;
   if (d === 'record'){ render(); startRecording(); return; }
   if (d === 'scoring'){ render(); setTimeout(() => { if (S.screen === 'drill' && S.d === 'scoring'){ drillScore(); goDrill('scored'); } }, 2000); return; }
@@ -738,7 +769,7 @@ const goDrill = (d) => { stopEngine(); if (recAudio) { recAudio.pause(); recAudi
 
 const doneCard = () => `<div class="doneov"><div class="done">
   <div class="top"><div class="pn">${esc(M.PROJECT.name)}</div><div class="h">Practice Complete!</div>
-    <div class="box">${starsHtml(avgScore())}<div class="avg">Average: <b>${avgScore().toFixed(1)}</b> / 5</div><span class="enc"><span class="mi">trending_up</span>Great progress! Keep practicing!</span></div></div>
+    <div class="box"><div class="avg">Average: <b>${Math.round(avgScore())}</b> / 100</div><span class="enc"><span class="mi">trending_up</span>${avgScore() >= 90 ? 'Excellent work! Keep it up!' : avgScore() >= 60 ? 'Great progress! Keep practicing!' : 'Nice effort! One more round will help!'}</span></div></div>
   <div class="btns"><button class="submit" data-act="submitteacher"><span class="mi">send</span>Submit To Teacher</button><button class="again" data-act="again"><span class="mi">refresh</span>Practice Again</button><button class="back" data-act="again"><span class="mi">arrow_back</span>Back to Assignments</button></div>
 </div></div>`;
 

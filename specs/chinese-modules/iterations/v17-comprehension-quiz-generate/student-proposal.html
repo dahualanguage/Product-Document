@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comprehension Quiz — v17 學生端提案（Timer）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="student-quiz.css">
+<script src="student-mock.js"></script>
+<script src="student-common.js"></script>
+<!-- ===========================================================================
+   提案 —— 學生端 Comprehension Quiz 的 Timer（原 Test Mode；2026-11-23 依 11/19 Design review 改成考卷形式，跟老師端 proposal.html 第三步一致）
+   對照組：student-baseline.html（現行）。殼、題卡、選項、完成頁照基準：
+     ① 開始頁：TIMED 標＋規則（一個總時間、任意順序可改答案、沒有即時回饋、口說可重錄、課文開頭播一次／一直看得到、題目用唸的），按 Start
+     ② 課文只聽：Start 後自動播一次課文（算在老師設的次數內、不計時），播完進考卷、總倒數開始；之後還能照剩下次數自己播
+     ③ 考卷：所有題目一頁，左欄課文＋題號跳轉；選項隨時可改、不顯示對錯；口說可重錄、留最後一次；題目只聽時每題播放鈕＋剩幾次；底下 Submit
+     ④ 時間：一個總倒數（每題型秒數 × 題數加總）；剩 1 分內琥珀；時間到自動交卷、考卷鎖住（2026-11-23 改，原本只提醒可繼續）
+     ⑤ 交卷後才出成績：完成頁照現行，標題 Quiz Complete!
+   網址參數：?screen=intro|listen|paper|done · &art=listen 課文只聽 · &audio=1 題目只聽 · &ans=1 答了一部分 · &rec=N 第 N 題錄音中 · &tst=urgent|over
+   =========================================================================== -->
+<style>
+/* 提案新增 */
+.tpill{ height:24px; display:inline-flex; align-items:center; gap:4px; padding:0 10px 0 8px; border-radius:12px; background:var(--primary); color:#fff; font-size:12px; font-weight:800; letter-spacing:.6px; flex:none; } .tpill .mi{ font-size:15px; }
+.tchip.paused{ background:#F1F5F9; color:var(--muted); }
+.intro{ max-width:640px; margin:0 auto; padding:32px 24px 48px; }
+.intro .card{ border-radius:24px; overflow:hidden; }
+.intro-hd{ padding:28px 32px 24px; text-align:center; background:linear-gradient(135deg,#F8FAFC 0%,#EEF2F7 100%); border-bottom:1px solid var(--divider); }
+.intro-hd .ic{ width:64px; height:64px; border-radius:50%; background:var(--primary); color:#fff; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; } .intro-hd .ic .mi{ font-size:34px; }
+.intro-hd .tpill{ margin-bottom:10px; }
+.intro-hd h4{ font-size:24px; font-weight:800; color:#1E293B; }
+.intro-hd p{ font-size:15px; color:var(--text2); margin-top:4px; }
+.brk{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.brk span{ display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#fff; border:1px solid var(--divider); font-size:13px; font-weight:600; color:var(--text); }
+.brk span i{ width:8px; height:8px; border-radius:50%; }
+.rules{ padding:24px 32px 8px; }
+.rules h6{ font-size:13px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+.rules ul{ list-style:none; display:flex; flex-direction:column; gap:14px; }
+.rules li{ display:flex; gap:14px; align-items:center; font-size:15px; color:var(--text); line-height:1.45; }
+.rules li .mi{ width:36px; height:36px; border-radius:12px; background:rgba(0,203,97,.08); color:var(--primary-d); display:inline-flex; align-items:center; justify-content:center; font-size:20px; flex:none; }
+.rules li b{ display:block; font-weight:700; }
+.rules li small{ display:block; font-size:13px; color:var(--text2); margin-top:1px; }
+.need{ margin:20px 32px 0; padding:12px 16px; border-radius:12px; background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; font-size:14px; display:flex; gap:16px; flex-wrap:wrap; }
+.need span{ display:inline-flex; align-items:center; gap:6px; font-weight:600; } .need .mi{ font-size:18px; }
+.intro-ft{ padding:24px 32px 28px; display:flex; flex-direction:column; gap:12px; }
+.opt.pick{ border-color:var(--primary); background:rgba(0,203,97,.08); } .opt.pick .k{ background:var(--primary); color:#fff; }
+.astem{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.astem .pb{ width:64px; height:64px; border-radius:50%; background:var(--primary-l); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; } .astem .pb .mi{ font-size:40px; }
+.astem .pb.on{ background:#FFE9D5; color:var(--error); }
+.astem small{ font-size:12px; color:var(--text2); }
+.rec{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:8px 0 4px; }
+.rec .rb{ width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#49DE91,#00A749); color:#fff; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 8px 16px rgba(0,167,73,.3); cursor:pointer; } .rec .rb .mi{ font-size:30px; }
+.rec .rb.on{ background:#065E49; box-shadow:0 0 0 8px rgba(6,94,73,.15); }
+.rec .t{ font-size:14px; color:var(--text2); } .rec .t b{ color:#065E49; font-variant-numeric:tabular-nums; }
+.up{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:36px 0 28px; text-align:center; } .up .mi{ font-size:40px; color:var(--error); } .up b{ font-size:20px; color:#1E293B; } .up span{ font-size:14px; color:var(--text2); }
+.lock{ border:1px dashed #CBD5E1; border-radius:16px; padding:28px 16px; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text3); text-align:center; font-size:14px; } .lock .mi{ font-size:32px; }
+.lplay{ border:1px dashed #CBD5E1; border-radius:16px; padding:28px 16px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+.lplay .pb{ width:72px; height:72px; border-radius:50%; background:var(--primary); color:#fff; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,203,97,.3); cursor:pointer; } .lplay .pb .mi{ font-size:40px; }
+.lplay b{ font-size:15px; } .lplay small{ font-size:13px; color:var(--text2); }
+.lcard{ text-align:center; padding:40px 32px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.lcard .ic{ width:56px; height:56px; border-radius:50%; background:rgba(0,203,97,.08); color:var(--primary-d); display:inline-flex; align-items:center; justify-content:center; } .lcard .ic .mi{ font-size:30px; }
+.lcard h5{ font-size:20px; font-weight:800; color:#1E293B; } .lcard p{ font-size:14px; color:var(--text2); max-width:360px; }
+/* 2026-11-19 課文底色帶入老師端預覽的綠（proposal.html 第三步 .qa2-art：#F0FDF4 往下淡成白），只動課文框，基準檔不動 */
+.pcp-paper{ background:linear-gradient(180deg,#F0FDF4,#fff 70%); }
+/* 2026-11-19 練習畫面不用黑：TEST 標、開始頁大圖示、選中的選項（框、字母圈、圓點）、規則與聽課文的小圖示，原本 #1E293B／#334155 → 主綠 #00CB61（淡底 8%、圖示深綠 #00A749）；文字顏色不動 */
+/* 2026-11-19 晚 使用者「只要有秒數就好，學生跟老師的一起改」：Test Mode 題目頁拿掉進度條，只留 TEST 標、題號 N / M、倒數秒數 */
+.prog .bar{ display:none; } .prog .cnt{ margin-left:auto; }
+.pips{ display:inline-flex; gap:6px; } .pips i{ width:10px; height:10px; border-radius:50%; background:var(--primary); } .pips i.used{ background:#CBD5E1; }
+.astem .pb, .lplay .pb{ cursor:pointer; } .astem .pb.off, .lplay .pb.off{ background:#E2E8F0; color:#94A3B8; box-shadow:none; cursor:default; }
+/* 2026-11-23 Timer＝考卷：所有題目一頁、左欄課文＋題號跳轉黏住、題卡答完淡綠框、底下 Submit；時間到琥珀提醒但能繼續 */
+.prog .cnt b{ color:var(--primary); }
+.tchip.warn{ background:#FEF3C7; color:#92400E; } .tchip.warn .mi{ color:#B45309; }
+.sticky{ position:sticky; top:0; display:flex; flex-direction:column; gap:16px; } .sticky .pcp{ position:static; } .sticky .pcp .dvd{ display:none; } .sticky .pcp-paper{ max-height:calc(100vh - 230px); border:0; border-radius:0; padding:0 4px 0 0; background:none; }   /* 2026-11-23：只留一個容器（使用者「不要有兩個容器」）——課文直接放在卡片裡，淡綠底改到卡片 */
+.sticky .pcp > .card{ background:linear-gradient(180deg,#F0FDF4,#fff 60%); }   /* 2026-11-23：拿掉 Project Content、課文區撐高（使用者） */
+.paper{ display:flex; flex-direction:column; gap:16px; }
+.pq{ border:2px solid transparent; } .pq.ok{ border-color:rgba(0,203,97,.35); }
+.qn{ font-size:13px; font-weight:800; color:var(--text2); }
+.prog .cnt{ margin-left:16px; margin-right:auto; }
+.jmp{ display:flex; flex-wrap:wrap; gap:6px; }
+.jmp a{ width:32px; height:32px; border-radius:10px; border:1px solid var(--divider); display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:var(--text2); text-decoration:none; }
+.jmp a.ok{ background:rgba(0,203,97,.1); border-color:rgba(0,203,97,.35); color:var(--primary-d); }
+.recd{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:14px; background:rgba(0,203,97,.08); color:var(--primary-d); } .recd b{ color:var(--text); font-size:15px; } .recd .btn{ margin-left:8px; }
+.hand{ display:flex; align-items:center; justify-content:flex-end; gap:16px; padding:8px 0 24px; font-size:15px; color:var(--text2); }
+.over{ display:flex; gap:10px; align-items:center; padding:12px 16px; border-radius:14px; background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; font-size:15px; } .over .mi{ color:#B45309; }
+.lcard p{ margin-bottom:4px; }
+.tu-ov{ position:absolute; inset:0; z-index:20; background:rgba(15,23,42,.35); display:flex; align-items:center; justify-content:center; padding:24px; }
+.tu-card{ width:100%; max-width:420px; padding:32px 28px 28px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+.tu-card .ic{ width:60px; height:60px; border-radius:50%; background:#FEE2E2; color:var(--error); display:inline-flex; align-items:center; justify-content:center; } .tu-card .ic .mi{ font-size:32px; }
+.tu-card h5{ font-size:22px; font-weight:800; color:#1E293B; } .tu-card p{ font-size:15px; color:var(--text2); margin-bottom:8px; }
+.intro-hd .tlim{ display:inline-flex; align-items:center; gap:4px; font-weight:700; color:var(--text); } .intro-hd .tlim .mi{ font-size:18px; color:var(--primary-d); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="logo"><img src="../../assets/dh_single.png" alt="" onerror="this.style.display='none'"></span><b>DAHUA AI</b></div>
+    <nav class="nav">
+      <a href="#"><span class="ic"><span class="mi">home</span></span>Home</a>
+      <a href="#"><span class="ic"><span class="mi">emoji_events</span></span>Leaderboard</a>
+      <a href="#" class="on"><span class="ic"><span class="mi">edit_note</span></span>Assignment List</a>
+      <a href="#"><span class="ic"><span class="mi">history</span></span>History</a>
+      <a href="#"><span class="ic"><span class="mi">sports_esports</span></span>Word Game</a>
+    </nav>
+    <div class="grow"></div>
+    <div class="stats">
+      <div class="stat gold"><span class="mi">star</span><span class="col"><span class="k">Stars</span><span class="v">319</span></span></div>
+      <div class="stat coral"><span class="mi">favorite</span><span class="col"><span class="k">Hearts</span><span class="v">10</span></span></div>
+    </div>
+    <a class="report" href="#">Report Issue</a>
+  </aside>
+  <div class="mainwrap">
+    <div class="hdr"><div class="av">L</div></div>
+    <div class="area" id="area"></div>
+  </div>
+</div>
+<div class="baseline"><span><a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>提案</b>　v17 · 學生端 · Timer · 對照組 <a href="student-baseline.html">學生端基準 ↗</a> · <a href="proposal.html?step=3&amp;proj=0&amp;exam=1">老師端 Timer ↗</a></span><span id="devbar"></span></div>
+
+<script>
+const U = window.V17UI, M = U.M, esc = U.esc;
+const qs = new URLSearchParams(location.search);
+const QS = M.questions, N = QS.length;
+/* 老師端設定（mock）：每種題型每題秒數、播放次數——跟 proposal.html 第三步 Test Mode 卡的預設一樣 */
+const CFG = { secs:{ tf:30, mc:30, oe:30 }, plays:{ art:2, q:2 } };
+const S = {
+  screen: qs.get('screen') || 'intro',
+  tst: qs.get('tst') || '',   // ''｜urgent（剩 1 分內）｜over（時間到、還在作答）
+  artListen: qs.get('art') === 'listen',
+  audio: qs.get('audio') === '1',
+  answers: {}, recs: {}, recIdx: qs.has('rec') ? +qs.get('rec') - 1 : null, py: false,
+  playing: null,   // 'art'｜題號
+  artUsed: 0, qUsed: {},   // 播了幾次（課文、每一題）
+  auto: qs.get('screen') === 'listen',   // 開頭自動播課文那一次
+};
+/* demo：&ans=1 先答一部分 */
+if (qs.get('ans') === '1'){ S.answers = { 0:'B', 1:'A', 3:'B', 4:'C' }; S.recs = { 7:12 }; if (S.artListen) S.artUsed = 1; }
+if (S.tst === 'over' && S.recIdx != null){ S.recs[S.recIdx] = 12; S.recIdx = null; }   // 2026-11-23：時間到時正在錄＝錄到的送出
+if (S.screen === 'paper' && S.artListen && !S.artUsed) S.artUsed = 1;   // 進考卷前已自動播過一次
+if (S.screen === 'done') QS.forEach((q, k) => { if (q.t !== 'oe') S.answers[k] = k === 1 || k === 5 ? (q.ans === 'A' ? 'B' : 'A') : q.ans; });
+
+/* 2026-11-23 Design review：Test Mode 改名 Timer；整份像考卷（隨時跳、可改答案、口說可重錄）＋一個總時間（＝每題型秒數 × 題數加總）；時間到只提醒、可以繼續 */
+const total = QS.reduce((t, q) => t + CFG.secs[q.t], 0);
+const fmtMin = (s) => `${Math.max(1, Math.round(s / 60))} min`;
+const counts = ['tf', 'mc', 'oe'].map(t => [t, QS.filter(q => q.t === t).length]).filter(([, c]) => c);
+const hasOe = counts.some(([t]) => t === 'oe');
+const left = (max, used) => Math.max(0, max - used);
+const pips = (max, used) => `<span class="pips" aria-label="${left(max, used)} of ${max} plays left">${Array.from({ length: max }, (_, k) => `<i class="${k < used ? 'used' : ''}"></i>`).join('')}</span>`;
+const leftTxt = (max, used) => { const n = left(max, used); return n === 0 ? 'No plays left' : `${n} ${n === 1 ? 'play' : 'plays'} left`; };
+const done = (k) => QS[k].t === 'oe' ? S.recs[k] != null : !!S.answers[k];
+const nDone = () => QS.filter((_, k) => done(k)).length;
+const lead = '<span class="tpill"><span class="mi">timer</span>TIMED QUIZ</span>';
+
+/* ① 開始頁：規則（使用者選「更短，合併兩條」） */
+const introScreen = () => {
+  const rules = [   // 2026-11-23：使用者逐條看——拿掉時間、改答案、即時回饋三條，課文只留 Listen only 那句，題目講次數
+    ['send', 'Your answers go to your teacher when you submit'],   // 2026-11-23：使用者「新增：這份作業寫完會直接繳交」——一直顯示
+    S.artListen ? ['headphones', CFG.plays.art > 1 ? `The article plays once at the start. You can play it ${CFG.plays.art - 1} more ${CFG.plays.art - 1 === 1 ? 'time' : 'times'}` : 'The article plays once at the start'] : null,   // 2026-11-23：老師設的次數多於 1 時把剩下的次數寫進去（開頭那次算在內）
+    S.audio ? ['replay', `Each question can be played ${CFG.plays.q} ${CFG.plays.q === 1 ? 'time' : 'times'}`] : null,
+    hasOe ? ['mic', 'You can re-record spoken answers'] : null,
+  ].filter(Boolean);
+  const needs = [hasOe ? '<span><span class="mi">mic</span>Microphone</span>' : '', S.artListen || S.audio ? '<span><span class="mi">headphones</span>Headphones</span>' : ''].filter(Boolean);
+  return `<div class="scroll"><div class="intro"><div class="card">
+    <div class="intro-hd">
+      <span class="ic"><span class="mi">assignment_turned_in</span></span><br>
+      ${lead}
+      <h4>${esc(M.name)}</h4>
+      <p>${N} questions · <b class="tlim"><span class="mi">timer</span>Finish in ${fmtMin(total).replace(' min', ' minutes')}</b></p>   <!-- 2026-11-23：使用者「看得出來要在五分鐘內寫完」 -->
+    </div>
+    ${rules.length ? `<div class="rules"><h6>Before you start</h6><ul>
+      ${rules.map(([ic, b]) => `<li><span class="mi">${ic}</span><b>${b}</b></li>`).join('')}
+    </ul></div>` : ''}
+    ${needs.length ? `<div class="need">You’ll need: ${needs.join('')}</div>` : ''}
+    <div class="intro-ft">
+      <button class="btn ct-p lg full" data-act="start"><span class="mi">play_arrow</span>Start</button>
+      <button class="btn ol lg full"><span class="mi">arrow_back</span>Back to Practice List</button>
+    </div>
+  </div></div></div>`;
+};
+
+/* 總倒數：播完開頭那次課文才開始 */
+const timerChip = () => {
+  if (S.screen === 'listen') return `<span class="tchip paused"><span class="mi">timer</span>${U.mmss(total)}</span>`;
+  if (S.tst === 'over') return `<span class="tchip err"><span class="mi">hourglass_bottom</span>Time’s up</span>`;   // 2026-11-23：時間到就交卷、不能再寫（使用者；取代「提醒但可以繼續」）
+  if (S.tst === 'urgent') return `<span class="tchip warn"><span class="mi">timer</span>${U.mmss(48)}</span>`;
+  return `<span class="tchip"><span class="mi">timer</span>${U.mmss(Math.round(total * .7))}</span>`;
+};
+const jumps = () => S.screen === 'paper' ? `<nav class="jmp" aria-label="Questions">${QS.map((q, k) => `<a href="#q${k + 1}" class="${done(k) ? 'ok' : ''}" aria-label="Question ${k + 1}${done(k) ? ', answered' : ''}">${k + 1}</a>`).join('')}</nav>` : '';   // 2026-11-23：題號選單搬到上面 timer 旁（使用者）
+const progBar = () => `<div class="prog">${lead}<span class="cnt"><b>${nDone()}</b> / <em>${N}</em> answered</span>${jumps()}${timerChip()}</div>`;
+
+/* 左欄課文：Show＝整篇；Listen only＝播放鈕＋剩幾次（開頭自動播一次也算） */
+const leftPanel = () => {
+  if (!S.artListen) return U.articlePanel({ py: S.py, tools: U.sw('Pinyin', S.py, 'py') });
+  const on = S.playing === 'art', out = !on && !left(CFG.plays.art, S.artUsed);
+  const label = S.auto ? 'Playing the article…' : on ? 'Playing…' : 'Listen to the article';
+  return U.articlePanel({ tools: '', body: `<div class="lplay"><span class="pb ${out ? 'off' : ''}" ${S.auto ? '' : 'data-act="playart"'} role="button" aria-label="Play the article"><span class="mi">${on || S.auto ? 'graphic_eq' : 'play_arrow'}</span></span><b>${label}</b>${pips(CFG.plays.art, S.artUsed)}<small>${S.auto ? 'The timer starts when it ends' : leftTxt(CFG.plays.art, S.artUsed)}</small></div>` });
+};
+
+/* ② 開頭自動播課文（不計時）；播完自動進考卷 */
+const listenScreen = () => `${progBar()}
+  <div class="scroll"><div class="ct"><div class="grid">${leftPanel()}
+    <div class="card"><div class="lcard"><span class="ic"><span class="mi">headphones</span></span><h5>Listen to the article</h5>
+      <p>The questions appear when it ends.</p>
+      <button class="btn ol" data-act="autoend" style="margin-top:8px">demo：播完<span class="mi">skip_next</span></button></div></div>
+  </div></div></div>`;
+
+/* ③ 考卷：所有題目一頁、隨時可改 */
+const qCard = (q, k) => {
+  const used = S.qUsed[k] || 0, on = S.playing === k;
+  const stemInner = S.audio
+    ? `<div class="astem"><span class="pb ${on ? 'on' : !left(CFG.plays.q, used) ? 'off' : ''}" data-act="playq" data-k="${k}" role="button" aria-label="Play question ${k + 1}"><span class="mi">${on ? 'graphic_eq' : 'play_circle'}</span></span>${pips(CFG.plays.q, used)}<small>${on ? 'Playing…' : leftTxt(CFG.plays.q, used)}</small></div>`
+    : `<h5>${esc(q.q)}</h5>`;
+  let body;
+  if (q.t === 'oe'){
+    const rec = S.recIdx === k, has = S.recs[k] != null;
+    body = `${U.stem(q, stemInner)}<div class="rec">${rec
+      ? `<span class="rb on" data-act="stop" data-k="${k}"><span class="mi">stop</span></span><span class="t">Recording <b>${U.mmss(12)}</b></span><button class="btn ct-p" data-act="stop" data-k="${k}"><span class="mi">stop</span>Stop</button>`
+      : has ? `<div class="recd"><span class="mi">graphic_eq</span><b>Recorded · ${U.mmss(S.recs[k])}</b><button class="btn ol" data-act="rec" data-k="${k}"><span class="mi">replay</span>Re-record</button></div>`
+      : `<span class="rb" data-act="rec" data-k="${k}"><span class="mi">mic</span></span><span class="t">Tap to record</span>`}</div>`;
+  } else body = `${U.stem(q, stemInner)}<div class="opts">${Object.entries(q.choice).map(([c, v]) => U.optionRow(c, v, S.answers[k] === c ? 'pick' : '', S.answers[k] === c ? '<span class="mi" style="color:var(--primary)">radio_button_checked</span>' : '').replace('data-act="sel"', `data-act="sel" data-q="${k}"`)).join('')}</div>`;
+  return `<div class="card pq ${done(k) ? 'ok' : ''}" id="q${k + 1}"><div class="card-c">${U.chipsRow(q, `<span class="qn">Q${k + 1}</span>`)}${body}</div></div>`;
+};
+const paperScreen = () => `${progBar()}
+  <div class="scroll"><div class="ct"><div class="grid">
+    <div class="sticky">${leftPanel()}</div>
+    <div class="paper">
+      ${QS.map(qCard).join('')}
+      <div class="hand"><span>${nDone()} of ${N} answered</span><button class="btn ct-s lg" data-act="hand"><span class="mi">check</span>Submit</button></div>
+    </div>
+  </div></div></div>${S.tst === 'over' ? `<div class="tu-ov" role="alertdialog" aria-labelledby="tu-t"><div class="card tu-card">
+    <span class="ic"><span class="mi">hourglass_bottom</span></span><h5 id="tu-t">Time’s up</h5>
+    <p>Your answers have been submitted. ${nDone()} of ${N} answered.</p>
+    <button class="btn ct-p lg" data-act="hand">See results</button></div></div>` : ''}`;   /* 2026-11-23：時間到＝自動交卷，考卷蓋一層不能再點 */
+
+const render = () => {
+  const area = document.getElementById('area');
+  const y = area.querySelector('.scroll')?.scrollTop || 0;
+  area.innerHTML = S.screen === 'intro' ? introScreen()
+    : S.screen === 'listen' ? listenScreen()
+    : S.screen === 'done' ? U.completed({ qs: QS, answers: S.answers, title: 'Quiz Complete!', submit: false })
+    : paperScreen();
+  const sc = area.querySelector('.scroll'); if (sc && S.screen === 'paper') sc.scrollTop = y;
+};
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
+  const a = t.dataset.act, k = t.dataset.k !== undefined ? +t.dataset.k : null;
+  if (a === 'start') { if (S.artListen) { S.screen = 'listen'; S.auto = true; S.artUsed = 1; } else S.screen = 'paper'; }
+  if (a === 'autoend') { S.auto = false; S.screen = 'paper'; }
+  if (a === 'playart') { if (S.playing === 'art') S.playing = null; else if (left(CFG.plays.art, S.artUsed)) { S.playing = 'art'; S.artUsed++; } }
+  if (a === 'playq') { if (S.playing === k) S.playing = null; else if (left(CFG.plays.q, S.qUsed[k] || 0)) { S.playing = k; S.qUsed[k] = (S.qUsed[k] || 0) + 1; } }
+  if (S.tst === 'over' && a !== 'hand') { return; }   // 時間到：考卷鎖住；正在錄的口說題停下、錄到的照樣送出（使用者定）
+  if (a === 'sel') S.answers[+t.dataset.q] = t.dataset.k;   // 不顯示對錯、隨時可以改
+  if (a === 'rec') S.recIdx = k;
+  if (a === 'stop') { S.recs[k] = 12; S.recIdx = null; }
+  if (a === 'hand') S.screen = 'done';
+  if (a === 'py') S.py = !S.py;
+  render();
+});
+
+const links = [['?screen=intro', '開始頁'], ['?screen=intro&art=listen&audio=1', '開始頁（課文＋題目只聽）'], ['?screen=listen&art=listen', '開頭自動播課文'], ['?screen=paper', '考卷'], ['?screen=paper&ans=1', '答了一部分'], ['?screen=paper&art=listen&audio=1&ans=1', '考卷（課文＋題目只聽）'], ['?screen=paper&ans=1&rec=9', '錄音中'], ['?screen=paper&ans=1&tst=urgent', '剩 1 分內'], ['?screen=paper&ans=1&tst=over', '時間到（自動交卷）'], ['?screen=done', '交卷後成績']];
+document.getElementById('devbar').innerHTML = links.map(([h, l]) => `<a href="${h}" class="${location.search === h ? 'cur' : ''}">${l}</a>`).join(' · ');
+render();
+</script>
+</body>
+</html>

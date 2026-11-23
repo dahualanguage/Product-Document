@@ -582,12 +582,11 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
 /* 2026-11-18：重交的每一次交卷（直接排在分數卡上）＋ 舊那次的說明 */
 .sf-r{ display:inline-flex; align-items:center; gap:8px; }
 .sf-note{ margin-top:6px; font-size:12.5px; color:var(--text2); }
-.attlist{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid #eef2f7; }
-.attlist button{ display:inline-flex; align-items:center; gap:10px; height:40px; padding:0 14px; border:1.5px solid #e6ebf1; border-radius:10px; background:#fff; font-family:inherit; font-size:13px; color:var(--text); }
-.attlist button:hover{ border-color:#cbd5e1; }
-.attlist button.on{ background:var(--g-wash); border-color:var(--g-line); }
-.attlist b{ font-weight:700; } .attlist .d{ color:var(--text2); } .attlist .sc{ font-weight:800; font-size:15px; }
-.attlist i{ font-style:normal; font-size:10.5px; font-weight:800; padding:1px 6px; border-radius:5px; background:#D3FCD2; color:#118D57; }
+.attlist{ display:flex; gap:4px; margin:-8px 0 20px; border-bottom:1px solid var(--divider); }   /* 2026-11-19：Attempt／Submission 改成一列 tab（使用者「變成一個 tab」） */
+.attlist button{ display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 14px; margin-bottom:-1px; border:0; border-bottom:2px solid transparent; background:transparent; font-family:inherit; font-size:13px; color:var(--text2); cursor:pointer; }
+.attlist button:hover{ color:var(--text); }
+.attlist button.on{ color:var(--text); border-bottom-color:var(--primary); }
+.attlist b{ font-weight:700; } .attlist .d{ color:var(--text2); font-size:12px; } .attlist .sc{ font-weight:800; font-size:14px; }
 .sfield .stars{ margin-top:2px; }
 .sfield.big{ min-width:0; width:100%; border-radius:14px; border-color:var(--divider); padding:16px 20px 18px; gap:6px; margin-bottom:24px; }
 .sfield.big .sf-lbl{ font-size:11px; }
@@ -613,14 +612,6 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
 .sech .tog:hover{ background:#f5f8fb; } .sech .tog .mi{ font-size:18px; transition:transform .2s; } .sech.closed .tog .mi{ transform:rotate(180deg); }
 .sech.closed{ margin-bottom:0; }
 .secbox{ padding:16px 18px; }
-.rub{ display:flex; flex-direction:column; gap:10px; }
-/* 2026-11-18：Score breakdown 改成數字並排（使用者「這裡不用用 bar 來呈現」） */
-.rub:has(.rubstat){ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:0; }
-.rubstat{ display:flex; flex-direction:column; gap:4px; padding:2px 16px; }
-.rubstat + .rubstat{ border-left:1px solid #eef2f7; }
-.rubstat .l{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; }
-.rubstat .v{ font-size:26px; font-weight:800; line-height:1.1; letter-spacing:-.3px; }
-.rubstat .v small{ font-size:14px; font-weight:700; margin-left:1px; }
 .cards{ display:flex; flex-direction:column; gap:12px; }
 
 /* ---------- 句卡（Mirroring V1 ＋ Vocabulary V2 同一副骨架：題號膠囊 ＋ 標頭列 ＋ 內容） ---------- */
@@ -937,23 +928,29 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
     </aside>`;
 
   /* ---------- 右欄共用 ---------- */
+  const attInfo = () => {
+    const s0 = M.studentById(S.stu), subs = s0 && s0.prev && s0.prev.length ? [...s0.prev, { base: s0.base, on: s0.on }] : null;
+    const viewing = subs ? (S.att == null ? subs.length - 1 : S.att) : 0;
+    return { s0, subs, viewing, earlier: subs && viewing < subs.length - 1 };
+  };
+  // 2026-11-19：Attempt／Submission tab 搬出分數卡、放在右欄內容最上面，切的是底下整份 detail（使用者「跟下面的 detail 連貫」）
+  const attTabs = () => {
+    const { s0, subs, viewing } = attInfo(); if (!subs) return '';
+    return `<div class="attlist" role="tablist" aria-label="Submissions">${subs.map((x, k) => { const sc = k === subs.length - 1 ? M.scoreOf(s0) : x.base;
+      return `<button role="tab" aria-selected="${k === viewing}" class="${k === viewing ? 'on' : ''}" data-att="${k === subs.length - 1 ? -1 : k}"><b>${k === subs.length - 1 ? 'Submission' : `Attempt ${k + 1}`}</b><span class="d">${x.on}</span><span class="num sc" style="color:${tier(sc)}">${sc}</span></button>`; }).join('')}</div>`;
+  };
   const overrideCtl = (h) => {
     const canOverride = S.canEdit && !h.student.group.left && M.OVERRIDABLE.has(P.practiceType);
     // 2026-11-16 使用者「放在分數欄位、重新排版這些資訊」→ 白底分數欄：第 1 層 SCORE 小標＋文字鈕 Edit score；第 2 層 大分數；第 3 層 狀態 tag 貼在分數右邊；星（V1）在最下
     const tags = `${h.override != null && M.OVERRIDABLE.has(P.practiceType) ? '<span class="tag warn">Adjusted</span>' : ''}${h.old ? `<span class="tag off" title="This student answered an older version of the practice">v${h.old} · Old version</span>` : ''}${h.late != null ? `<span class="tag bad">${lateLabel(h.student.lateDays)} · ×${h.late}%</span>` : ''}`;
     // 2026-11-16 使用者「直接放在 Score breakdown 上面、變成一個大欄位」→ 從貼頂列移到右欄內容最上面，全寬大卡
     // 2026-11-18：交出去之前練過的學生——每次作答一顆：之前的叫 Attempt N、交出去的叫 Submission（使用者「第一次是 attempt，第二次才是 submission」）；看 Attempt 不能改分
-    const s0 = M.studentById(S.stu), subs = s0 && s0.prev && s0.prev.length ? [...s0.prev, { base: s0.base, on: s0.on }] : null;
-    const viewing = subs ? (S.att == null ? subs.length - 1 : S.att) : 0, earlier = subs && viewing < subs.length - 1;
-    // 2026-11-18：每一次交卷直接排在分數卡上（使用者「讓這些內容直接顯示在第一層」），不再收在下拉裡
-    const attList = subs ? `<div class="attlist" role="tablist" aria-label="Submissions">${subs.map((x, k) => { const sc = k === subs.length - 1 ? M.scoreOf(s0) : x.base;
-      return `<button role="tab" aria-selected="${k === viewing}" class="${k === viewing ? 'on' : ''}" data-att="${k === subs.length - 1 ? -1 : k}"><b>${k === subs.length - 1 ? 'Submission' : `Attempt ${k + 1}`}</b><span class="d">${x.on}</span><span class="num sc" style="color:${tier(sc)}">${sc}</span></button>`; }).join('')}</div>` : '';
+    const { s0, subs, viewing, earlier } = attInfo();
     const tagsShown = earlier ? '<span class="tag off">Attempt</span>' : tags;
     return `<div class="sfield big">
       <div class="sf-hd"><span class="sf-lbl">Score</span><span class="sf-r">${canOverride && !earlier ? '<button class="sf-edit" data-act="edit"><span class="mi">edit</span>Edit score</button>' : ''}</span></div>
       <div class="sf-main"><span class="sf-num num" style="color:${tier(h.score)}">${h.score}<small>/100</small></span>${tagsShown ? `<span class="sf-tags">${tagsShown}</span>` : ''}</div>
       ${earlier ? `<div class="sf-note">Practice attempt on ${subs[viewing].on}, not submitted. The submission (${M.scoreOf(s0)}) is the score on the list.</div>` : ''}
-      ${attList}
 </div>`;   // 2026-11-18：分數卡底下的星星拿掉（使用者）——只看 /100
   };
   // 右欄貼頂 bar（student-detail.js 的 sticky top bar）：頭像 ＋ 名字 ＋「班級 · 題數」＋ 分數 ＋ 帳號
@@ -984,9 +981,6 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
       <button class="wbtn" data-act="rt"><span class="mi">${open ? 'expand_less' : 'expand_more'}</span>${open ? 'Hide recordings' : `View all ${total} recording${total === 1 ? '' : 's'}`}</button>
       ${open ? `<div class="rows">${rows.join('')}</div>` : ''}</div>`;
   };
-  const rubricRows = (r) => [['Fluency', r.fluency], ['Accuracy', r.accuracy], ['Pronunciation', r.pronunciation], ['Vocabulary', r.vocabulary]]
-    .filter(([, v]) => v).map(([l, v]) => { const c = v >= 85 ? '#047857' : v >= 70 ? '#B45309' : '#B91C1C';   // 門檻照產品 85／70，字用深一階才讀得清楚
-      return `<div class="rubstat"><span class="l">${l}</span><span class="v num" style="color:${c}">${v}<small>%</small></span></div>`; }).join('');   // 2026-11-18：不用長條，只寫數字（使用者）
   // 2026-11-18：頁面上的星星全部拿掉（使用者「拿掉星星」），舊引擎的 0–5 星換成 /100（×20），跟分數卡同一套
   const starNum = (v) => `<span class="starnum num" style="color:${tier(Math.round(v * 20))}">${Math.round(v * 20)}<small>/100</small></span>`;
   const eyebrow = (label, right) => `<div class="eyebrow"><b>${label}</b><span class="rule"></span>${right || ''}</div>`;
@@ -1062,7 +1056,6 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
     </div>`;
   };
   const sentencePanel = (h) => `<div class="panel">
-    ${section('rubric', 'bar_chart', '#e0f2fe', '#0284c7', 'Score breakdown', '', `<div class="card secbox"><div class="rub">${rubricRows(h.rubric)}</div></div>`)}
     ${section('cards', P.tag.icon, P.tag.wash, P.tag.label, P.practiceType === 'MIRRORING' ? 'Sentences' : 'Recordings', `${h.cards.length}`, `<div class="cards">${h.cards.map((c, i) => (c.engine === 'V2' ? v2Card(c, i, h) : v1Card(c, i, h))).join('')}</div>`)}
     ${commentBox(h)}</div>`;
 
@@ -1147,9 +1140,8 @@ textarea.inp{ height:auto; min-height:112px; padding:10px 12px; resize:vertical;
     if (s.base == null) return `${topbar({ student: s }, 'Not submitted')}<div class="emptyst">This student has not submitted yet</div>`;
     const sv = s.prev && S.att != null && s.prev[S.att] ? { ...s, base: s.prev[S.att].base, override: undefined, late: undefined } : s;   // 2026-11-18：看舊的那次
     const h = M.historyFor(P, sv);
-    if (sv !== s && h.rubric) { const r = sv.base / s.base; ['fluency', 'accuracy', 'pronunciation'].forEach((k) => { h.rubric = { ...h.rubric, [k]: Math.max(0, Math.min(100, Math.round(h.rubric[k] * r))) }; }); }   // mock：舊那次的細項照分數比例縮放，看得出是另一次
     const body = P.panel === 'sentence' ? sentencePanel(h) : P.panel === 'mc' ? mcPanel(h) : P.panel === 'scramble' ? scramblePanel(h) : P.panel === 'fp' ? fpPanel(h) : qaPanel(h);
-    return `${topbar(h, metaOf(h))}<div class="rbody">${overrideCtl(h)}${body}</div>`;
+    return `${topbar(h, metaOf(h))}<div class="rbody">${attTabs()}${overrideCtl(h)}${body}</div>`;
   };
   // Send reminder 確認框（Dashboard 的 reminder-popup 同一段字，套這頁的 .dlg）
   const remindDialog = () => {
