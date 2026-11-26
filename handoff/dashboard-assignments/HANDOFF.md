@@ -6,6 +6,8 @@
 2. **右欄**：標題從 To Review 改成 **Submissions**；Skip review 不再開側邊抽屜，改成清單上直接勾。
 3. **批改抽屜**：View practice detail 搬到最上面；底下兩顆鈕改叫 Previous submission｜Next submission。
 
+完整規格（每節附原型預覽）：[v25 spec.html](https://project-logeg.vercel.app/specs/chinese-modules/iterations/v25-teacher-dashboard/spec.html)
+
 **只改前端。** 多筆 Skip 用現有的 mutation 一筆一筆送（最後一節有一題要問後端）。程式碼基準：`dahua-dash` `origin/develop` @ `696f4a42`（2026-11-13）。
 
 ---

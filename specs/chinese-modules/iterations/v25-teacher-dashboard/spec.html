@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v25 · Teacher Dashboard — Spec</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 14px; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 40px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    .topbar a { color: #64748b; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .topbar a:hover { color: #1e293b; }
+    .topbar .sep { color: #cbd5e1; }
+    .topbar .current { color: #059669; font-weight: 700; font-size: 13px; }
+    .topbar .num { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 7px; border-radius: 5px; }
+    .page-layout { display: flex; min-height: calc(100vh - 49px); }
+    .sidebar { width: 240px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: sticky; top: 49px; height: calc(100vh - 49px); overflow-y: auto; padding: 24px 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; padding: 0 20px; margin-bottom: 12px; }
+    .sidebar ol { list-style: none; }
+    .sidebar a { display: block; padding: 6px 20px; color: #64748b; text-decoration: none; font-size: 13px; font-weight: 500; border-left: 3px solid transparent; }
+    .sidebar a.sub { padding-left: 34px; font-size: 12px; }
+    .sidebar a:hover { color: #0f172a; background: #f8fafc; }
+    .main-content { flex: 1; min-width: 0; max-width: 1080px; padding: 40px 48px 80px; }
+    .doc-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+    .doc-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .doc-header .subtitle { color: #64748b; font-size: 14px; }
+    .doc-header .meta { margin-top: 12px; display: flex; gap: 10px; font-size: 12px; color: #94a3b8; flex-wrap: wrap; }
+    .doc-header .meta span { background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }
+    h2 { font-size: 18px; font-weight: 800; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; }
+    h2 .num { font-size: 11px; font-weight: 700; color: #fff; background: #00A749; padding: 2px 8px; border-radius: 4px; }
+    h3 { font-size: 15px; font-weight: 700; color: #334155; margin: 24px 0 10px; }
+    h4 { font-size: 13px; font-weight: 800; color: #0f172a; margin: 18px 0 6px; }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 0 0 12px 20px; }
+    li { margin-bottom: 4px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", "Fira Code", monospace; }
+    strong { color: #0f172a; }
+    a.inline { color: #00A749; font-weight: 600; text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+    th, td { padding: 9px 12px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f8fafc; font-weight: 700; color: #334155; font-size: 12px; }
+    td { color: #475569; background: #fff; }
+    .callout { border-radius: 8px; padding: 14px 18px; margin: 12px 0 16px; font-size: 13px; line-height: 1.6; }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-tip  { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+    .preview { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 14px 0 6px; background: #eef0f3; height: 560px; position: relative; }
+    .preview iframe { width: 1440px; height: 820px; border: 0; transform: scale(.685); transform-origin: 0 0; position: absolute; top: 0; left: 0; }
+    .preview-cap { font-size: 12px; color: #94a3b8; margin: 0 0 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .preview-cap a { color: #00A749; font-weight: 600; text-decoration: none; }
+    .now { color:#64748b; } .to { color:#0f172a; }
+    table.fix { table-layout: fixed; } table.fix code { word-break: break-all; }
+    .part { display:inline-block; font-size:11px; font-weight:800; padding:1px 8px; border-radius:6px; margin-right:6px; vertical-align:middle; }
+    .p24 { background:#dbeafe; color:#1e40af; } .p23 { background:#dcfce7; color:#166534; }
+    /* 分數顏色的色樣 */
+    .sw { display:inline-flex; align-items:center; gap:8px; font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; }
+    .sw i { width:14px; height:14px; border-radius:4px; display:inline-block; }
+    .good { color:#047857; } .fair { color:#d97706; } .poor { color:#e11d48; }
+    /* 為什麼：一步推一步 */
+    .why { counter-reset: w; margin: 0 0 16px; }
+    .why li { list-style:none; position:relative; padding:10px 14px 10px 44px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; }
+    .why li::before { counter-increment:w; content:counter(w); position:absolute; left:14px; top:11px; width:22px; height:22px; border-radius:6px; background:#dbeafe; color:#1e40af; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+    .why li b { color:#0f172a; display:block; margin-bottom:2px; }
+    footer { text-align: center; padding: 24px 0; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; margin-top: 40px; }
+    @media (max-width: 860px) { .page-layout { flex-direction: column; } .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; } .main-content { padding: 24px; } }
+    .part.pl { background:#fee2e2; color:#b91c1c; } .part.pr { background:#e0f2fe; color:#0369a1; } .part.pd { background:#f1f5f9; color:#475569; }
+    .preview.at iframe { height: 1900px; top: calc(var(--y) * -.685px); } .preview.at { height: calc(var(--h) * .685px); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="../../../../index.html">Home</a><span class="sep">/</span>
+    <a href="../index.html"><span class="num">2.4</span> Versions &amp; Iteration</a><span class="sep">/</span>
+    <span class="current">v25 · Teacher Dashboard</span>
+  </div>
+
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">目錄</div>
+      <ol>
+        <li><a href="#files">1 原型與檔案</a></li>
+        <li><a href="#scope">2 範圍</a></li>
+        <li><a class="sub" href="#why">2.1 為什麼要改</a></li>
+        <li><a class="sub" href="#inout">2.2 這一版做／不做</a></li>
+        <li><a href="#spec">3 設計規格</a></li>
+        <li><a class="sub" href="#rows">3.1 左欄：練習名、欄位對齊</a></li>
+        <li><a class="sub" href="#more">3.2 左欄：超過 6 列先收</a></li>
+        <li><a class="sub" href="#skip">3.3 左欄：一次 Skip 好幾筆</a></li>
+        <li><a class="sub" href="#right">3.4 右欄：Submissions、Skip review</a></li>
+        <li><a class="sub" href="#drawer">3.5 批改抽屜</a></li>
+        <li><a href="#changes">4 要改的地方</a></li>
+        <li><a href="#open">5 要問工程</a></li>
+        <li><a href="#accept">6 驗收</a></li>
+        <li><a href="#terms">7 名詞對照</a></li>
+      </ol>
+    </aside>
+
+    <main class="main-content">
+      <div class="doc-header">
+        <h1>Teacher Dashboard</h1>
+        <p class="subtitle">老師登入後的首頁。左欄 Active Assignments 看還在跑的指派、追沒交的人；右欄 Submissions 批改交卷。這一版讓長清單收得起來、過期的指派一次 Skip 好幾筆、練習名直接進成績頁。</p>
+        <div class="meta"><span>v25</span><span>2026-11-26</span><span>狀態：定案，已打包 handoff/dashboard-assignments</span><span>只改前端</span><span>程式碼基準：dahua-dash origin/develop @ 696f4a42</span></div>
+      </div>
+      <p>段落前面標 <span class="part pl">左欄</span> 的是 Active Assignments，<span class="part pr">右欄</span> 是 Submissions（原 To Review），<span class="part pd">抽屜</span> 是批改抽屜。</p>
+
+      <h2 id="files"><span class="num">1</span> 原型與檔案</h2>
+      <table>
+        <tr><th>檔案</th><th>是什麼</th><th>看什麼</th></tr>
+        <tr><td><a class="inline" href="proposal.html">proposal.html</a></td><td>Dashboard 提案</td><td><code>?many=1</code> Overdue 很多筆、<code>?skipmany=1</code> 左欄勾選模式、<code>?open=1</code> 展開第一列、<code>?remind=1</code> Send reminder 確認框、<code>?drawer=1</code> 批改抽屜、<code>?tab=reviewed</code> Reviewed 分頁、<code>?skip=1</code> 右欄勾選模式、<code>?empty=1</code> 兩欄都空</td></tr>
+        <tr><td><a class="inline" href="teacher-dashboard-baseline.html">teacher-dashboard-baseline.html</a></td><td>現行 Dashboard 的複刻（對照用）</td><td>參數同上（沒有 <code>many</code>、<code>skipmany</code>）；<code>?skip=1</code> 是現在的 Skip review 抽屜</td></tr>
+        <tr><td><a class="inline" href="../../../../handoff/dashboard-assignments/HANDOFF.md">handoff/dashboard-assignments/</a></td><td>交接包：HANDOFF.md ＋ 原型複本（假資料內嵌）</td><td>給工程</td></tr>
+        <tr><td><a class="inline" href="ITERATION.md">ITERATION.md</a></td><td>逐輪紀錄、現況查證、change log</td><td>要追來龍去脈時</td></tr>
+      </table>
+      <p>假資料的「今天」是 2026-11-20。側欄 Practice List 連去 v24 列表；練習名和 View results 連去 v23 Results 頁，Results 頁的 Back 回 Dashboard。</p>
+
+      <h2 id="scope"><span class="num">2</span> 範圍</h2>
+      <h3 id="why">2.1 為什麼要改</h3>
+      <p>一句話：<strong>Dashboard 是老師每天第一眼看的頁面，但過期的指派一多，它就變成一面清不掉的牆。</strong>一步一步：</p>
+      <ol class="why">
+        <li><b>Overdue 會越積越多。</b>左欄只收最近 6 個月的指派，但過了到期日、沒交齊的都留在 Overdue。實際看過一位老師 Overdue 有 71 筆，幾乎全是 <code>0 / 1</code>。Today、Tomorrow 被推到很下面，真正要處理的反而看不到。</li>
+        <li><b>清掉只能一筆一筆來。</b>每列一顆 Skip，按了跳確認框，再按一次確認。71 筆要點 142 下，老師乾脆不清。</li>
+        <li><b>所以要兩件事一起做：先收、再能一次清。</b>每段超過 6 列先只露 6 列，牆先變矮；再讓 Skip 可以一次勾好幾筆。入口就是每列本來就有的 Skip——按任一列的 Skip，前面就出現勾選框，不用再多學一顆按鈕。</li>
+        <li><b>右欄本來就有「一次 Skip 好幾筆」，但長得不一樣。</b>Skip review 是開一個側邊抽屜在裡面勾。左右兩欄做同一件事卻是兩套，所以右欄也改成在清單上直接勾，抽屜拿掉。</li>
+        <li><b>看成績的入口要更直接。</b>老師在左欄看到一份練習，最自然是點名字；現在名字不能點，要找 SUBMITTED 旁邊的小圖示。名字改成連結，跟小圖示去同一頁。</li>
+        <li><b>名字要說清楚自己是什麼。</b>右欄標題叫 To Review，跟底下第一個分頁同名，切到 Reviewed 時標題還寫 To Review。改叫 <strong>Submissions</strong>，跟左欄 Active Assignments 成對：一邊是指派、一邊是交卷。批改抽屜底下的 Next student 其實是走下一筆交卷（同一個學生可能有好幾筆），改叫 Next submission。</li>
+      </ol>
+
+      <h3 id="inout">2.2 這一版做／不做</h3>
+      <h4><span class="part pl">左欄</span>做</h4>
+      <ul>
+        <li>練習名改成連結（Word Game 除外）；段頭和每一列欄位對齊。</li>
+        <li>一段超過 6 列只露 6 列 ＋ Show N more。</li>
+        <li>按任一列的 Skip 進勾選模式，一次 Skip 好幾筆；確認框與 snackbar 改成可以是複數。</li>
+      </ul>
+      <h4><span class="part pr">右欄</span>做</h4>
+      <ul>
+        <li>標題 To Review → Submissions。</li>
+        <li>Skip review 拿掉抽屜，改成清單上直接勾。</li>
+      </ul>
+      <h4><span class="part pd">抽屜</span>做</h4>
+      <ul>
+        <li>View practice detail 搬到最上面；底下兩顆鈕改叫 Previous submission／Next submission。</li>
+      </ul>
+      <h4>不做</h4>
+      <ul>
+        <li>段的分法與顏色、排序、展開後的 NOT SUBMITTED 名單、Send reminder、空狀態：照產品。</li>
+        <li>右欄的分頁、型別下拉、每一筆的樣子、狀態規則；批改抽屜裡的題目卡、分數、Quick review：照產品。</li>
+        <li>Word Game 的列：照產品（不能 Skip、沒有 Results 頁）。</li>
+      </ul>
+
+      <h2 id="spec"><span class="num">3</span> 設計規格</h2>
+
+      <h3 id="rows"><span class="part pl">左欄</span>3.1 練習名、欄位對齊</h3>
+      <div class="preview" style="height:420px"><iframe src="proposal.html" title="預設：右欄標題 Submissions；左欄每列的欄位跟段頭欄名對齊" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>預設：左欄每列的 PRACTICE／CLASS／DUE／SUBMITTED 跟段頭欄名對齊；右欄標題 Submissions</span><a href="proposal.html" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:150px">東西</th><th>規則</th></tr>
+        <tr><td>練習名</td><td>連結，連去那份指派的 Results 頁，跟 SUBMITTED 旁的 <code>open_in_new</code> 小圖示<strong>同一條網址</strong>。滑過變主色 ＋ 底線。點名字不會順便展開那一列。小圖示照留</td></tr>
+        <tr><td>Word Game 列</td><td>沒有 Results 頁，名字維持純文字</td></tr>
+        <tr><td>欄位對齊</td><td>段頭的欄名和每一列用<strong>同一組欄寬</strong>，寫成 <code>minmax(0, …fr)</code>。很長的練習名在自己那一欄換行，不把別欄推開</td></tr>
+      </table>
+
+      <h3 id="more"><span class="part pl">左欄</span>3.2 一段超過 6 列先收</h3>
+      <div class="preview" style="height:560px"><iframe src="proposal.html?many=1" title="Overdue 很多筆：只露前 6 列，底下 Show N more" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>Overdue 很多筆：只露前 6 列，底下一條 Show N more</span><a href="proposal.html?many=1" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:150px">東西</th><th>規則</th></tr>
+        <tr><td>什麼時候收</td><td>一段<strong>超過 6 列</strong>才收；剛好 6 列全部露出來。四段都一樣</td></tr>
+        <tr><td>露哪 6 列</td><td>照現在的排序（沒交的人數多的在前）取前 6 列</td></tr>
+        <tr><td>Show N more</td><td>收起來時，最後一列底下一條全寬的 <code>Show N more ∨</code>（N＝藏起來的列數）；點了全部展開、變 <code>Show less ∧</code></td></tr>
+        <tr><td>記不記住</td><td>不記；重新整理回到收起來</td></tr>
+        <tr><td>跟段頭收合</td><td>段頭右邊的收合鈕照舊，管的是整段收起來；Show more 只管段內露幾列</td></tr>
+      </table>
+
+      <h3 id="skip"><span class="part pl">左欄</span>3.3 一次 Skip 好幾筆</h3>
+      <div class="preview" style="height:560px"><iframe src="proposal.html?skipmany=1" title="勾選模式：Overdue 全展開、每列前面勾選框、段頭底下 Cancel 與 Skip assignments" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>勾選模式：Overdue 全展開；段頭多全選框；段頭底下一條 Cancel ＋ 紅色 Skip；每列前面勾選框，Skip 鈕、箭頭、小圖示藏起來</span><a href="proposal.html?skipmany=1" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:150px">東西</th><th>規則</th></tr>
+        <tr><td>怎麼進去</td><td>按 Overdue <strong>任一列的 Skip</strong>。不直接跳確認框，Overdue 進勾選模式，<strong>按的那一列先勾好</strong>。只 Skip 一筆也走這條</td></tr>
+        <tr><td>段頭</td><td>Overdue 段頭最前面多一個全選框，三種狀態：全選、部分選（橫線）、沒選。勾選模式時點段頭不會收合</td></tr>
+        <tr><td>操作列</td><td>段頭底下、第一列上面一條淡紅底的列，右邊 <code>Cancel</code> ＋ 紅色 <code>Skip N assignment(s)</code>（1 筆用單數；0 筆寫 <code>Skip assignments</code> 並停用）。<strong>不寫已選幾筆</strong>，筆數只在紅鈕上。貼在頁首底下（sticky），捲到哪都看得到；平常這條不存在</td></tr>
+        <tr><td>每一列</td><td>最前面一個勾選框；<strong>點整列＝勾／取消</strong>；勾了的列淡紅底。練習名暫時不當連結；Skip 鈕、展開箭頭、View results 小圖示藏起來</td></tr>
+        <tr><td>Overdue 段</td><td>進勾選模式時<strong>全部展開</strong>：Show more 藏起來，所有過期列都列出來</td></tr>
+        <tr><td>Word Game 列</td><td>沒有勾選框、變淡、點不動</td></tr>
+        <tr><td>其他段</td><td>Today、Tomorrow、Later 不變</td></tr>
+        <tr><td>離開</td><td><code>Cancel</code> 或 Esc；確認框開著時 Esc 先關確認框</td></tr>
+        <tr><td>鍵盤</td><td>勾選框能用 Enter／空白鍵切換</td></tr>
+      </table>
+      <p>按紅鈕跳確認框（沿用現在單筆 Skip 的那個，字可以是複數）：</p>
+      <table>
+        <tr><th style="width:150px"></th><th>1 筆</th><th>3 筆</th></tr>
+        <tr><td>標題</td><td><code>Skip assignment</code></td><td><code>Skip 3 assignments</code></td></tr>
+        <tr><td>副標</td><td><code>我的学校 - Class 8A</code></td><td><code>我的学校 - Class 8A and 2 more</code></td></tr>
+        <tr><td>說明</td><td><i>This overdue assignment will be removed from Active Assignments — students won't be chased for it anymore. You can still see it in the class history.</i></td><td><i>These 3 overdue assignments will be removed from Active Assignments — students won't be chased for them anymore. You can still see them in the class history.</i></td></tr>
+        <tr><td>紅鈕</td><td><code>Skip assignment</code></td><td><code>Skip 3 assignments</code></td></tr>
+        <tr><td>成功後</td><td>那一列消失；snackbar <code>Skipped "我的学校" for Class 8A</code>（現在的句子）</td><td>三列消失；snackbar <code>Skipped 3 assignments</code></td></tr>
+      </table>
+      <div class="callout-info callout"><strong>確認後</strong>離開勾選模式，列回原樣。部分失敗時：成功的消失、失敗的留著並維持勾選，snackbar 寫 <code>Skipped a, failed b</code>（見第 5 節）。</div>
+
+      <h3 id="right"><span class="part pr">右欄</span>3.4 Submissions、Skip review</h3>
+      <div class="preview" style="height:560px"><iframe src="proposal.html?skip=1" title="右欄勾選模式：Select all、30 天快選、Cancel、Skip review；每列前面勾選框" loading="lazy"></iframe></div>
+      <p class="preview-cap"><span>右欄勾選模式：清單上方 Select all、時鐘圖示（Older than 30 days）、Cancel、紅色 Skip review；每列前面勾選框、箭頭拿掉</span><a href="proposal.html?skip=1" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:150px">東西</th><th>規則</th></tr>
+        <tr><td>標題</td><td><code>To Review</code> → <code>Submissions</code>。分頁 <code>To Review N</code>｜<code>Reviewed N</code>、型別下拉不變</td></tr>
+        <tr><td>Skip review 鈕</td><td>從標題右邊搬到型別下拉底下、清單上方的一條細列，靠右（白底紅框紅字、<code>block</code> 圖示）。<strong>只在 To Review 分頁</strong>出現</td></tr>
+        <tr><td>抽屜</td><td>拿掉。按 Skip review 不開抽屜，清單直接進勾選模式</td></tr>
+        <tr><td>勾選模式的細列</td><td>變成操作列（淡灰底）：左邊全選框 ＋ <code>Select all</code>；右邊時鐘圖示鈕（滑過出 <code>Older than 30 days</code>，按了只勾 30 天以上的，不篩掉別的）· <code>Cancel</code> · 紅色 <code>Skip review (N)</code>（0 筆寫 <code>Skip review</code> 並停用）。不寫已選筆數。貼在頁首底下；進出勾選模式細列高度不變，清單不跳</td></tr>
+        <tr><td>每一列</td><td>前面一個勾選框；右邊 <code>&gt;</code> 拿掉；點整列＝勾</td></tr>
+        <tr><td>候選</td><td>照型別下拉篩過的那些</td></tr>
+        <tr><td>離開</td><td><code>Cancel</code>、Esc，或切到 Reviewed 分頁</td></tr>
+        <tr><td>確認框</td><td>標題 <code>Skip review for 3 submissions</code>（1 筆單數）、副標 <code>Emma Chen · 全球暖化 and 2 more</code>、說明 <i>Skipped submissions move to the Reviewed tab, marked Skipped. Students keep their score — they just will not get a teacher comment for this one.</i>、紅鈕 <code>Skip review</code></td></tr>
+        <tr><td>成功後</td><td>那些交卷移到 Reviewed、標 Skipped；snackbar <code>Skipped 3 submissions — moved to Reviewed.</code></td></tr>
+      </table>
+      <div class="callout-info callout"><strong>為什麼時鐘只剩圖示：</strong>右欄 400px 寬，全選、30 天快選、Cancel、Skip review 四樣放不下。30 天快選是現在抽屜裡就有的，照留，只是縮成圖示鈕。</div>
+
+      <h3 id="drawer"><span class="part pd">抽屜</span>3.5 批改抽屜</h3>
+      <div class="preview" style="height:620px"><iframe src="proposal.html?drawer=1" title="批改抽屜：View practice detail 在標頭底下；底下 Previous submission／Next submission" loading="lazy" style="height:905px"></iframe></div>
+      <p class="preview-cap"><span>批改抽屜：View practice detail 在標頭底下、題目卡上面；底下 Previous submission｜Next submission</span><a href="proposal.html?drawer=1" target="_blank">開原型 ↗</a></p>
+      <table>
+        <tr><th style="width:150px">東西</th><th>規則</th></tr>
+        <tr><td>View practice detail</td><td>從題目卡底下搬到抽屜標頭（學生名、班 · 多久前）底下、題目卡上面，一整條寬。樣式不變</td></tr>
+        <tr><td>底下兩顆鈕</td><td><code>Previous</code>｜<code>Next student</code> → <code>Previous submission</code>｜<code>Next submission</code>。走的順序不變（整份清單、只吃型別篩選、不吃分頁）</td></tr>
+      </table>
+
+      <h2 id="changes"><span class="num">4</span> 要改的地方</h2>
+      <p>對的是 <code>696f4a42</code>（2026-11-13）的程式。檔案都在 <code>src/sections/teacher/</code> 底下。</p>
+      <table class="fix">
+        <tr><th style="width:38px">#</th><th style="width:150px">改什麼</th><th>現在</th><th>改成</th><th style="width:210px">改哪個檔</th></tr>
+        <tr><td>1</td><td><span class="part pl">左欄</span><strong>練習名可以點</strong></td><td class="now">純文字；要按 SUBMITTED 旁的小圖示</td><td class="to">名字是連結，跟小圖示同一條網址；Word Game 除外（3.1）</td><td><code>dashboard/active-assignments-panel.js</code></td></tr>
+        <tr><td>2</td><td><span class="part pl">左欄</span><strong>欄位對齊</strong></td><td class="now">每列自己的 grid，長名字把欄撐開，起點差 2–17px</td><td class="to">段頭和每列同一組欄寬 <code>minmax(0, …fr)</code>（3.1）</td><td><code>dashboard/active-assignments-panel.js</code></td></tr>
+        <tr><td>3</td><td><span class="part pl">左欄</span><strong>超過 6 列先收</strong></td><td class="now">一段有幾列就列幾列</td><td class="to">露 6 列 ＋ Show N more／Show less（3.2）</td><td><code>dashboard/active-assignments-panel.js</code></td></tr>
+        <tr><td>4</td><td><span class="part pl">左欄</span><strong>一次 Skip 好幾筆</strong></td><td class="now">每列 Skip 直接跳確認框，一次一筆</td><td class="to">按 Skip 進勾選模式；操作列、全選框；確認框與 snackbar 可以是複數（3.3）</td><td><code>dashboard/active-assignments-panel.js</code>、<code>shared/skip-popup.js</code></td></tr>
+        <tr><td>5</td><td><span class="part pr">右欄</span><strong>標題改 Submissions</strong></td><td class="now"><code>To Review</code></td><td class="to"><code>Submissions</code>（3.4）</td><td><code>dashboard/review-panel.js</code></td></tr>
+        <tr><td>6</td><td><span class="part pr">右欄</span><strong>Skip review 直接勾</strong></td><td class="now">標題右邊的鈕開側邊抽屜</td><td class="to">鈕搬到清單上方細列；按了清單進勾選模式；抽屜拿掉（3.4）</td><td><code>dashboard/review-panel.js</code>；<code>dashboard/skip-review-drawer.js</code> 不再用到</td></tr>
+        <tr><td>7</td><td><span class="part pd">抽屜</span><strong>View practice detail 上移</strong></td><td class="now">在題目卡底下</td><td class="to">標頭底下、題目卡上面（3.5）</td><td><code>dashboard/review-drawer.js</code></td></tr>
+        <tr><td>8</td><td><span class="part pd">抽屜</span><strong>兩顆鈕改名</strong></td><td class="now"><code>Previous</code>｜<code>Next student</code></td><td class="to"><code>Previous submission</code>｜<code>Next submission</code>（3.5）</td><td><code>dashboard/review-drawer.js</code></td></tr>
+      </table>
+
+      <h2 id="open"><span class="num">5</span> 要問工程</h2>
+      <table>
+        <tr><th>#</th><th>問誰</th><th>問題</th><th>影響</th></tr>
+        <tr><td>1</td><td>後端</td><td>一次 Skip 好幾筆，一筆一筆呼叫現有的 <code>upsertAssignment</code>（<code>skipped: true</code>）就好，還是要做一個一次收多筆的 mutation？過期很多的老師可能一次勾 30 幾筆</td><td>3.3。先照一筆一筆做（跟現在 Skip review 抽屜一樣），部分失敗照 3.3 的寫法</td></tr>
+      </table>
+
+      <h2 id="accept"><span class="num">6</span> 驗收</h2>
+      <p>照下面走一次，畫面都對就算過。</p>
+      <table>
+        <tr><th style="width:28px">#</th><th style="width:300px">老師做什麼</th><th>畫面應該怎樣</th></tr>
+        <tr><td>1</td><td>打開 Dashboard</td><td>右欄標題是 <code>Submissions</code>；左欄每段的欄位跟段頭欄名上下對齊，長練習名換行</td></tr>
+        <tr><td>2</td><td>點左欄任一列的練習名</td><td>進那份指派的 Results 頁（跟按小圖示同一頁）；那一列沒有被展開</td></tr>
+        <tr><td>3</td><td>點 Word Game 列的名字</td><td>沒反應（純文字）</td></tr>
+        <tr><td>4</td><td>有一段超過 6 列</td><td>只露 6 列，底下 <code>Show N more</code>；按了全開、變 <code>Show less</code>；剛好 6 列的段沒有這條</td></tr>
+        <tr><td>5</td><td>按 Overdue 某一列的 Skip</td><td>沒跳確認框；Overdue 全展開、每列前面出現勾選框、剛按的那列已勾；段頭底下出現 <code>Cancel</code>｜<code>Skip 1 assignment</code></td></tr>
+        <tr><td>6</td><td>再勾兩列、捲到底</td><td>操作列一直貼在頁首底下；紅鈕變 <code>Skip 3 assignments</code>；Word Game 列沒有框、點不動</td></tr>
+        <tr><td>7</td><td>按段頭的全選框兩次</td><td>第一次全勾；第二次全部取消，紅鈕停用並寫 <code>Skip assignments</code></td></tr>
+        <tr><td>8</td><td>勾三列按紅鈕 → 確認</td><td>確認框標題 <code>Skip 3 assignments</code>、副標「第一筆 - 班 and 2 more」；三列消失、snackbar <code>Skipped 3 assignments</code>、離開勾選模式</td></tr>
+        <tr><td>9</td><td>只勾一列按紅鈕 → 確認</td><td>確認框跟現在單筆 Skip 一樣；snackbar <code>Skipped "練習" for 班</code></td></tr>
+        <tr><td>10</td><td>勾選模式按 Esc</td><td>離開勾選模式；Skip 鈕、箭頭、小圖示回來</td></tr>
+        <tr><td>11</td><td>右欄按 <code>Skip review</code></td><td>沒有抽屜；清單上方細列變 <code>Select all</code>、時鐘圖示、<code>Cancel</code>、<code>Skip review</code>；每列前面有框、箭頭不見</td></tr>
+        <tr><td>12</td><td>按時鐘圖示</td><td>只勾 30 天以上的；滑過看得到 <code>Older than 30 days</code></td></tr>
+        <tr><td>13</td><td>勾兩筆按 <code>Skip review (2)</code> → 確認</td><td>兩筆移到 Reviewed、標 Skipped；snackbar <code>Skipped 2 submissions — moved to Reviewed.</code></td></tr>
+        <tr><td>14</td><td>勾選模式時切到 Reviewed</td><td>離開勾選模式；Reviewed 分頁沒有 <code>Skip review</code> 細列</td></tr>
+        <tr><td>15</td><td>點右欄一筆交卷</td><td>抽屜裡 <code>View practice detail</code> 在標頭底下、題目卡上面；底下 <code>Previous submission</code>｜<code>Next submission</code></td></tr>
+      </table>
+
+      <h2 id="terms"><span class="num">7</span> 名詞對照</h2>
+      <p>這份文件一律用左欄的詞。</p>
+      <table>
+        <tr><th style="width:130px">用詞</th><th style="width:330px">程式裡是什麼</th><th>意思</th></tr>
+        <tr><td><strong>Dashboard</strong></td><td><code>/school/teacher-dashboard</code>，<code>dashboard/index.js</code></td><td>老師首頁，左右兩欄</td></tr>
+        <tr><td><strong>左欄</strong></td><td><code>dashboard/active-assignments-panel.js</code></td><td>Active Assignments：還在跑的指派，一列＝一個練習 × 一個班</td></tr>
+        <tr><td><strong>段</strong></td><td><code>getDateSection</code>（<code>shared/date-utils.js</code>）</td><td>照到期日分的 Overdue、Today、Tomorrow、Later</td></tr>
+        <tr><td><strong>段頭</strong></td><td>每段最上面那條</td><td>段名 ＋ 數量 ＋ 欄名 ＋ 收合鈕</td></tr>
+        <tr><td><strong>右欄</strong></td><td><code>dashboard/review-panel.js</code></td><td>Submissions（原 To Review）：交卷收件匣，兩個分頁</td></tr>
+        <tr><td><strong>批改抽屜</strong></td><td><code>dashboard/review-drawer.js</code></td><td>點一筆交卷從右邊滑出來批改的那個</td></tr>
+        <tr><td><strong>Skip</strong></td><td><code>shared/skip-popup.js</code>；<code>upsertAssignment</code>（<code>skipped: true</code>）</td><td>把一筆過期指派從左欄拿掉、不再追</td></tr>
+        <tr><td><strong>Skip review</strong></td><td>現在是 <code>dashboard/skip-review-drawer.js</code></td><td>不批某筆交卷，它移到 Reviewed、標 Skipped</td></tr>
+        <tr><td><strong>勾選模式</strong></td><td>新做的</td><td>清單每列前面出現勾選框、可以一次選好幾筆</td></tr>
+        <tr><td><strong>操作列</strong></td><td>新做的</td><td>勾選模式時清單上方那條：Cancel ＋ 紅色 Skip 鈕</td></tr>
+        <tr><td><strong>Results 頁</strong></td><td><code>/dashboard/assignments/submissions?sk=&amp;name=&amp;type=</code></td><td>一份指派全班成績的頁（v23）</td></tr>
+      </table>
+
+      <footer>DAHUA AI · Product Spec · Chinese Modules · v25 · November 2026</footer>
+    </main>
+  </div>
+</body>
+</html>
