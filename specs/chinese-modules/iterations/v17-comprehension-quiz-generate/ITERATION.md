@@ -39,6 +39,9 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-26 | 選擇題 AI 鈕改名「Write the other options with AI」、手寫題錯誤選項的提示字改「Other option」（原「wrong answers／Wrong answer」會被看成「寫錯的答案」） | 使用者「wrong answers 會以為是錯誤的答案」 |
+| 2026-11-26 | 選擇題的 AI 鈕改回**要先有正解才能按**，改名「Write the wrong answers with AI」，只寫三個錯誤選項 | 使用者「改成要有正解才能按」 |
+| 2026-11-26 | **手寫題卡照 v18 一起調**：①一步一步出現——只有 Question → 打了題目出「✦ Write the … with AI」一行（Open answer＝Write the answer and conditions with AI；選擇題＝Write the answers with AI，正解有字就留著、只補空的；是非題沒有）＋答案欄 → 答案齊了才出 Save（選擇題四格都要有字；是非題選一個就算）；Open answer 的條件等 AI 寫或 Save 後才出。②來源 tag：Written by you／AI from article（原 Yours）。③問句自己一行。④間距 8 的倍數、tag／題號／條件色改 token（同 v18） | 使用者「Comprehension Quiz 自己寫的模組也一起調整」 |
 | 2026-11-23 | 時間到時正在錄音的 Open answer：錄音停下，錄到的那段照樣送出、算作答 | 使用者「送出」 |
 | 2026-11-23 | **時間到改成自動交卷、不能再寫**（取代早上定的「提醒但可以繼續」）：倒數變紅 *Time’s up*，考卷上蓋一層「Time’s up · Your answers have been submitted. N of M answered.」＋ See results，底下的題目點不動；沒答的算空白。學生端與老師預覽一致；demo `&tst=over` | 使用者「時間到之後學生不能繼續寫」。「老師端怎麼標超時」那條待定跟著消失；時間到那一刻正在錄音的口說題：**錄到的那段照樣送出**（2026-11-23 使用者定） |
 | 2026-11-23 | 學生端成績頁（Quiz Complete!）拿掉 **Submit to Teacher**，只留 Back to Practice List：Timer 模式按 Submit 就直接交給老師，不再有第二步 | 使用者選「拿掉」（另一案是換成 Sent to your teacher 狀態字）。**待問工程**：現行 Submit to Teacher 背後有沒有「寫完但還沒交」的狀態；Timer 改成 Submit 直接交，後端要不要跟著改。基準檔的完成頁照舊有這顆 |

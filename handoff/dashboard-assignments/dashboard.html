@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Dashboard — v25 提案（第四輪：Skip 改成勾選）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Material+Icons+Round&display=swap" rel="stylesheet">
+<script>
+/* ---- 假資料（一）：Practice 列表那份（handoff/practice-results 的 practice-list.html 同一批） ---- */
+/* ===========================================================================
+   v24 共用假資料 —— 基準檔（practice-list-baseline.html）與提案（proposal.html）共用。
+
+   練習列表拿得到的東西（view/index.js ＋ practice-card-config.js buildPracticeAssignmentMap）：
+     每個練習：名稱、型別／子型別、版本、專案名、建立時間
+     每個練習每個班：班名、Mandatory／Optional、到期日（同一班指派兩次取最新）、學生名單
+   拿不到的：交了幾個、平均分（v24 定案 ④ 要請工程一次給 submitted／total；這裡先假設有）
+
+   今天＝2026-11-20（schoolTimezone 以學校為準，這裡不算時區）——定在這一天是為了讓「全球暖化」7A（Nov 18）已結束、7B（Nov 25）還在跑，同一張卡兩種狀態都看得到。
+   「結束」照 v24 定案 ①（2026-11-18 改）：**每一班都**過了到期日才算；沒到期日的班永遠不結束。
+   所以 In progress（還有一班沒到期）跟 Ended 不再重疊：指派過的練習只會在其中一個。
+   =========================================================================== */
+window.V24 = (function () {
+  const TODAY = '2026-11-20';
+
+  // 型別外觀 = practice-card-config.js getPracticeTypeConfig（卡片的框、頭、icon）＋ practice-type-labels.js 的 tag（chip）
+  const TYPES = {
+    MIRRORING:        { label: 'Content Mirroring',    tag: { wash: '#DCFCE7', label: '#15803D', icon: 'mic' },         card: { border: '#BBF7D0', headerBg: '#F0FDF4', divider: '#DCFCE7', iconBg: '#DCFCE7', iconColor: '#16A34A', btn: '#00CB61', btnHover: '#00A749' } },
+    VOCAB_MIRRORING:  { label: 'Vocabulary Mirroring', tag: { wash: '#FEF3C7', label: '#D97706', icon: 'mic' },         card: { border: '#FDE68A', headerBg: '#FFFBEB', divider: '#FEF3C7', iconBg: '#FEF3C7', iconColor: '#D97706', btn: '#FFAB00', btnHover: '#B76E00' }, icon: 'bookmark' },
+    VOCAB_QUIZ:       { label: 'Vocabulary Quiz',      tag: { wash: '#FEF3C7', label: '#D97706', icon: 'bookmark' },    card: { border: '#FDE68A', headerBg: '#FFFBEB', divider: '#FEF3C7', iconBg: '#FEF3C7', iconColor: '#D97706', btn: '#FFAB00', btnHover: '#B76E00' }, icon: 'bookmark' },
+    SENTENCE_SCRAMBLE:{ label: 'Sentence Scramble',    tag: { wash: '#FCE7F3', label: '#EC4899', icon: 'view_column' }, card: { border: '#FBCFE8', headerBg: '#FDF2F8', divider: '#FCE7F3', iconBg: '#FCE7F3', iconColor: '#EC4899', btn: '#EC4899', btnHover: '#DB2777' } },
+    SENTENCE_CLOZE:   { label: 'Sentence Cloze',       tag: { wash: '#FCE7F3', label: '#EC4899', icon: 'edit_note' },   card: { border: '#FBCFE8', headerBg: '#FDF2F8', divider: '#FCE7F3', iconBg: '#FCE7F3', iconColor: '#EC4899', btn: '#EC4899', btnHover: '#DB2777' }, icon: 'view_column' },
+    SENTENCE_BUILDING:{ label: 'Sentence Building',    tag: { wash: '#CCFBF1', label: '#14B8A6', icon: 'route' },       card: { border: '#99F6E4', headerBg: '#F0FDFA', divider: '#CCFBF1', iconBg: '#CCFBF1', iconColor: '#14B8A6', btn: '#14B8A6', btnHover: '#0D9488' } },
+    SENTENCE_RESPONSE:{ label: 'Sentence Response',    tag: { wash: '#CCFBF1', label: '#14B8A6', icon: 'route' },       card: { border: '#99F6E4', headerBg: '#F0FDFA', divider: '#CCFBF1', iconBg: '#CCFBF1', iconColor: '#14B8A6', btn: '#14B8A6', btnHover: '#0D9488' } },
+    COMPREHENSION_QUIZ:{ label: 'Comprehension Quiz',  tag: { wash: '#EDE9FE', label: '#7C3AED', icon: 'quiz' },        card: { border: '#DDD6FE', headerBg: '#F5F3FF', divider: '#EDE9FE', iconBg: '#EDE9FE', iconColor: '#7C3AED', btn: '#7C3AED', btnHover: '#6D28D9' } },
+    OPEN_ENDED:       { label: 'Open-ended Questions', tag: { wash: '#DBEAFE', label: '#2563EB', icon: 'chat_bubble' }, card: { border: '#BFDBFE', headerBg: '#EFF6FF', divider: '#DBEAFE', iconBg: '#DBEAFE', iconColor: '#2563EB', btn: '#508AFC', btnHover: '#193592' } },
+  };
+  // 卡片 header 的 icon 照 getPracticeTypeConfig（Vocabulary 兩種都是 bookmark、Cloze 跟 Scramble 一樣 view_column）；tag.icon 是型別 chip／標題用的
+  const cardIcon = (t) => TYPES[t].icon || TYPES[t].tag.icon;
+
+  // classes: [班名, 到期日 (null＝沒設), optional, submitted, total]
+  const PRACTICES = [
+    { id: 'p1',  name: '全球暖化',     type: 'VOCAB_MIRRORING',   project: '全球暖化',   created: '2026-11-03', v: 2, classes: [['Class 7A', '2026-11-18', false, 8, 10], ['Class 7B', '2026-11-25', false, 3, 8]] },
+    { id: 'p2',  name: '环境保护',     type: 'COMPREHENSION_QUIZ', project: '环境保护',   created: '2026-11-02', v: 1, classes: [['Class 7A', '2026-11-20', false, 5, 10]] },
+    { id: 'p3',  name: '我的家人 (2)', type: 'SENTENCE_RESPONSE',  project: '我的家人',   created: '2026-11-01', v: 1, classes: [] },
+    { id: 'p4',  name: '我的一天',     type: 'MIRRORING',          project: '我的一天',   created: '2026-10-28', v: 3, classes: [['Class 8A', '2026-11-10', false, 12, 12], ['Class 8B', '2026-11-10', false, 9, 11]] },
+    { id: 'p5',  name: '环境保护',     type: 'OPEN_ENDED',         project: '环境保护',   created: '2026-10-27', v: 1, classes: [['Class 7B', null, true, 2, 8]] },
+    { id: 'p6',  name: '我的一天',     type: 'SENTENCE_BUILDING',  project: '我的一天',   created: '2026-10-25', v: 1, classes: [['Class 8B', '2026-11-28', false, 0, 11]] },
+    { id: 'p7',  name: '我的学校',     type: 'SENTENCE_CLOZE',     project: '我的学校',   created: '2026-10-22', v: 1, classes: [['Class 8A', '2026-11-15', false, 7, 12], ['Class 8B', '2026-12-01', true, 1, 11]] },
+    { id: 'p8',  name: '全球暖化',     type: 'VOCAB_QUIZ',         project: '全球暖化',   created: '2026-10-20', v: 1, classes: [['Class 7A', '2026-11-05', false, 10, 10]] },
+    { id: 'p9',  name: '我的一天',     type: 'SENTENCE_SCRAMBLE',  project: '我的一天',   created: '2026-10-15', v: 2, classes: [['Class 8A', '2026-10-30', true, 11, 12]] },
+    { id: 'p10', name: '天气',         type: 'OPEN_ENDED',         project: '天气',       created: '2026-10-12', v: 1, classes: [['Class 7B', '2026-11-01', false, 5, 8]] },
+    { id: 'p11', name: '春节',         type: 'VOCAB_MIRRORING',    project: '春节',       created: '2026-10-08', v: 1, classes: [] },
+    { id: 'p12', name: '春节',         type: 'MIRRORING',          project: '春节',       created: '2026-10-05', v: 1, classes: [['Class 7A', '2026-10-20', false, 6, 10]] },
+  ].map((p) => ({
+    ...p,
+    classes: p.classes.map(([name, due, optional, submitted, total]) => ({ name, due, optional, submitted, total, ended: !!due && due < TODAY })),
+  }));
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmtDay = (d) => { const [, m, dd] = d.split('-').map(Number); return `${MONTHS[m - 1]} ${dd}`; };
+  const daysUntil = (d) => Math.round((new Date(d) - new Date(TODAY)) / 86400000);
+
+  // v24 定案 ①②：Ended＝任一班過期；In progress＝任一班還沒過期或沒到期日；沒指派的只在 All
+  const isEnded = (p) => p.classes.length > 0 && p.classes.every((c) => c.ended);   // 2026-11-18 改：每一班都過了到期日才算 Ended（原本任一班）；沒到期日的班永遠不結束，所以這張也不會進 Ended
+  const inProgress = (p) => p.classes.some((c) => !c.ended);
+  const latestEnd = (p) => p.classes.filter((c) => c.ended).map((c) => c.due).sort().pop() || '';
+  const byCreated = (a, b) => b.created.localeCompare(a.created);
+  const byEnded = (a, b) => latestEnd(b).localeCompare(latestEnd(a)) || byCreated(a, b);   // 定案 ⑤
+  const listFor = (tab) => {
+    if (tab === 'ended') return PRACTICES.filter(isEnded).sort(byEnded);
+    if (tab === 'progress') return PRACTICES.filter(inProgress).sort(byCreated);
+    if (tab === 'unassigned') return PRACTICES.filter((p) => !p.classes.length).sort(byCreated);   // 2026-11-17：一個班都還沒指派
+    return [...PRACTICES].sort(byCreated);
+  };
+  const counts = () => ({ all: PRACTICES.length, unassigned: PRACTICES.filter((p) => !p.classes.length).length, progress: PRACTICES.filter(inProgress).length, ended: PRACTICES.filter(isEnded).length });
+
+  // 進 v23 Results 頁要帶的 type（v23 mock.js 的 PRACTICES key）
+  const V23_TYPE = { MIRRORING: 'mirroring', VOCAB_MIRRORING: 'vocab', VOCAB_QUIZ: 'vocabquiz', SENTENCE_SCRAMBLE: 'scramble', SENTENCE_CLOZE: 'scramble', SENTENCE_BUILDING: 'building', SENTENCE_RESPONSE: 'response', COMPREHENSION_QUIZ: 'quiz', OPEN_ENDED: 'openended' };
+  const resultHref = (p, file, extra = '') => {
+    const cls = p.classes.map((k) => `${k.name}|${k.due ? `Due ${fmtDay(k.due)}` : `From ${fmtDay(p.created)}`}`).join(';');
+    return `../practice-results/results.html?type=${V23_TYPE[p.type]}&name=${encodeURIComponent(p.name)}&cls=${encodeURIComponent(cls)}${extra}`;
+  };
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return { TODAY, TYPES, PRACTICES, cardIcon, fmtDay, daysUntil, isEnded, inProgress, latestEnd, listFor, counts, resultHref, esc };
+}());
+
+</script>
+<script>
+/* ---- 假資料（二）：Dashboard 自己的（吃上面那份） ---- */
+/* ===========================================================================
+   v25 共用假資料 —— 基準檔（teacher-dashboard-baseline.html）與提案（proposal.html）共用。
+
+   要先載 ../v24-practice-list-ended/mock.js（window.V24）：Active Assignments 的每一列就是 v24 列表上
+   「一個練習 × 一個班」的指派，名稱、型別、班名、到期日、交卷數都從那邊來，三頁（Dashboard → Practice List → Result）才對得起來。
+   今天跟 v24 一樣 ＝ 2026-11-20。
+
+   Dashboard 拿得到的東西（getTeacherAssignmentOverview）：
+     assignments：練習名、型別／子型別、班名、到期日、submittedCount／totalCount、沒交的學生名單（userId、名字）
+     submissions：每一次交卷（學生、班、練習、型別、交卷時間、reviewed／reviewSkipped）
+     timezone：學校時區（這裡不算時區）
+   Word Game 的列另外讀（word-game-rows.js），只有 Dashboard 有，v24 列表沒有。
+   =========================================================================== */
+window.V25 = (function () {
+  const M = window.V24;
+  const TODAY = M.TODAY;
+  const TOMORROW = '2026-11-21';
+
+  /* ---------- 型別 chip：practice-type-config.js getTypeConfig ----------
+     Dashboard 的 chip 吃 PRACTICE_TYPE_COLUMNS 那一欄的 wash／label（不是 v24 卡片上的 tag 色），字是 getTypeLabel 的全名 */
+  const COLUMN = {
+    CONTENT:       { wash: '#EFFBF4', label: '#00754A' },
+    VOCABULARY:    { wash: '#FFF8E7', label: '#8F6209' },
+    SENTENCE:      { wash: '#FEF2F8', label: '#BE185D' },
+    COMPREHENSION: { wash: '#F7F3FE', label: '#6D28D9' },
+  };
+  const COLUMN_OF = { MIRRORING: 'CONTENT', VOCAB_MIRRORING: 'VOCABULARY', VOCAB_QUIZ: 'VOCABULARY', SENTENCE_SCRAMBLE: 'SENTENCE', SENTENCE_CLOZE: 'SENTENCE', SENTENCE_BUILDING: 'SENTENCE', SENTENCE_RESPONSE: 'SENTENCE', COMPREHENSION_QUIZ: 'COMPREHENSION', OPEN_ENDED: 'COMPREHENSION' };
+  const WORD_GAME = { label: 'Word Game', color: '#0d9488', bg: '#ccfbf1' };
+  const typeConfig = (type) => {
+    if (type === 'WORD_GAME') return WORD_GAME;
+    const c = COLUMN[COLUMN_OF[type]];
+    return { label: M.TYPES[type].label, color: c.label, bg: c.wash };
+  };
+
+  /* ---------- 批改收件匣收哪些（NO_REVIEW_TYPES ＋ NO_REVIEW_IDS）----------
+     不收：Comprehension Quiz、Sentence Scramble、Sentence Cloze、Word Game、Vocabulary Quiz */
+  const REVIEWABLE = new Set(['MIRRORING', 'VOCAB_MIRRORING', 'SENTENCE_BUILDING', 'SENTENCE_RESPONSE', 'OPEN_ENDED']);
+  // 型別篩選（buildTypeFilterOptions）：All ＋ 收件匣會收的五種，icon／色照 practice-type-labels 的 tag
+  const TYPE_FILTER = [
+    { value: 'all', label: 'All practice types' },
+    ...['MIRRORING', 'VOCAB_MIRRORING', 'SENTENCE_BUILDING', 'SENTENCE_RESPONSE', 'OPEN_ENDED'].map((t) => ({ value: t, label: M.TYPES[t].label, icon: M.TYPES[t].tag.icon, color: M.TYPES[t].tag.label })),
+  ];
+
+  /* ---------- 名單：7A／7B 照 v23 mock（沒交的排最後，8/10、5/8 才對得上）；8A／8B 這裡捏 ---------- */
+  const ROSTER = {
+    'Class 7A': ['Emma Chen', 'Liam Wang', 'Olivia Liu', 'Ava Huang', 'Ethan Lin', 'Mia Wu', 'Lucas Yang', 'Sophia Zhao', 'Noah Zhang', 'Mason Xu'],
+    'Class 7B': ['Isabella Sun', 'Amelia Ma', 'Benjamin Hu', 'Charlotte Zhou', 'Henry Gao', 'James Guo', 'Harper Luo', 'Daniel Tang'],
+    'Class 8A': ['Aiden Li', 'Chloe Zheng', 'Dylan Wu', 'Grace Feng', 'Jayden Cao', 'Lily Shen', 'Nathan Qiu', 'Ruby Pan', 'Samuel Deng', 'Victoria Ye', 'William Kong', 'Zoe Tan'],
+    'Class 8B': ['Alex Jiang', 'Bella Song', 'Caleb Mo', 'Elena Xie', 'Felix Yuan', 'Hannah Lu', 'Ian Cheng', 'Julia Han', 'Kevin Bai', 'Maya Du', 'Oscar Ren'],
+  };
+  const idOf = (name) => name.toLowerCase().replace(/[^a-z]+/g, '-');
+
+  /* ---------- Active Assignments：v24 的練習 × 班 攤平 ----------
+     getDateSection：過期 overdue、今天 today、明天 tomorrow、其餘（含沒到期日）later */
+  const sectionOf = (due) => {
+    if (!due) return 'later';
+    if (due < TODAY) return 'overdue';
+    if (due === TODAY) return 'today';
+    if (due === TOMORROW) return 'tomorrow';
+    return 'later';
+  };
+  const ASSIGNMENTS = [];
+  M.PRACTICES.forEach((p) => p.classes.forEach((k) => {
+    const roster = ROSTER[k.name];
+    ASSIGNMENTS.push({
+      rowKey: `${p.id}-${k.name}`,
+      practiceId: p.id,
+      practiceName: p.name,
+      type: p.type,
+      className: k.name,
+      classId: k.name.replace('Class ', '').toLowerCase(),
+      due: k.due,
+      section: sectionOf(k.due),
+      submittedCount: k.submitted,
+      totalCount: k.total,
+      submittedStudents: roster.slice(0, k.submitted),
+      notSubmittedStudents: roster.slice(k.submitted).map((n) => ({ userId: idOf(n), studentName: n })),
+      practice: p,
+    });
+  }));
+  // Word Game 的目標（word-game-rows.js）：每週目標，沒有 assignment row，所以不能 Skip、沒有 View results
+  ASSIGNMENTS.push({
+    rowKey: 'wg-8a', practiceId: null, practiceName: 'Level 1 · 每天玩 15 分鐘', type: 'WORD_GAME', className: 'Class 8A', classId: '8a',
+    due: TOMORROW, section: sectionOf(TOMORROW), isWeekly: true, submittedCount: 9, totalCount: 12,
+    submittedStudents: ROSTER['Class 8A'].slice(0, 9),
+    notSubmittedStudents: ROSTER['Class 8A'].slice(9).map((n) => ({ userId: idOf(n), studentName: n })),
+    wordGame: true,
+  });
+
+  /* ---------- To Review：交了卷、型別會進收件匣的 ----------
+     ago ＝ 距今幾小時；reviewed／skipped 照 review-model：reviewed 蓋過 skipped、兩種都離開 To Review 進 Reviewed */
+  const HOURS = { h: 1, d: 24 };
+  const ago = (s) => Number(s.slice(0, -1)) * HOURS[s.slice(-1)];
+  // [practiceId, 班, 學生 index, 多久前, 狀態('' | 'reviewed' | 'skipped')]
+  const SUB_ROWS = [
+    ['p2', 'Class 7A', 0, '1h', ''],          // Comprehension Quiz：不進收件匣（NO_REVIEW），放著證明被濾掉
+    ['p1', 'Class 7A', 0, '2h', ''],
+    ['p1', 'Class 7A', 1, '5h', ''],
+    ['p1', 'Class 7B', 0, '7h', ''],
+    ['p10', 'Class 7B', 1, '1d', ''],
+    ['p4', 'Class 8A', 2, '1d', ''],
+    ['p4', 'Class 8A', 3, '2d', ''],
+    ['p4', 'Class 8B', 0, '2d', ''],
+    ['p1', 'Class 7A', 2, '3d', ''],
+    ['p10', 'Class 7B', 2, '4d', ''],
+    ['p12', 'Class 7A', 4, '9d', ''],
+    ['p5', 'Class 7B', 0, '12d', ''],
+    ['p12', 'Class 7A', 1, '31d', ''],
+    ['p12', 'Class 7A', 2, '33d', ''],
+    ['p1', 'Class 7A', 3, '1d', 'reviewed'],
+    ['p4', 'Class 8A', 0, '2d', 'reviewed'],
+    ['p4', 'Class 8A', 1, '2d', 'reviewed'],
+    ['p10', 'Class 7B', 0, '3d', 'reviewed'],
+    ['p4', 'Class 8B', 1, '4d', 'skipped'],
+    ['p12', 'Class 7A', 0, '20d', 'skipped'],
+    ['p1', 'Class 7A', 4, '5d', 'reviewed'],
+    ['p5', 'Class 7B', 1, '6d', 'reviewed'],
+  ];
+  const AI = [72, 80, 85, 88, 91, 64, 77, 95];
+  const SUBMISSIONS = SUB_ROWS.map(([pid, cls, si, when, st], i) => {
+    const p = M.PRACTICES.find((x) => x.id === pid);
+    const name = ROSTER[cls][si];
+    return {
+      id: `s${i}`, practiceId: pid, practiceName: p.name, type: p.type, className: cls, studentName: name, userId: idOf(name),
+      hoursAgo: ago(when), reviewed: st === 'reviewed', reviewSkipped: st === 'skipped', ai: AI[i % AI.length], practice: p,
+    };
+  });
+  const reviewable = (s) => REVIEWABLE.has(s.type);
+  const statusOf = (s) => (s.reviewed ? 'reviewed' : s.reviewSkipped ? 'skipped' : 'pending');
+  const isSettled = (s) => statusOf(s) !== 'pending';
+
+  // formatRelativeTime
+  const relTime = (hours) => {
+    if (hours < 1) return 'just now';
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    const d = Math.floor(hours / 24);
+    return `${d} day${d > 1 ? 's' : ''} ago`;
+  };
+
+  // 批改抽屜的題目（通用）
+  const QUESTIONS = [
+    { zh: '今天天氣很好。', py: 'jīntiān tiānqì hěn hǎo.', en: 'The weather is nice today.', score: 4 },
+    { zh: '我喜歡吃水餃。', py: 'wǒ xǐhuān chī shuǐjiǎo.', en: 'I like eating dumplings.', score: 5 },
+    { zh: '聖誕節快樂！', py: 'shèngdàn jié kuàilè!', en: 'Merry Christmas!', score: 3 },
+  ];
+  const QUICK = {
+    MIRRORING: ['Great mirroring — nailed it!', 'Practice your tones a bit more.', 'Clear pronunciation, keep it up!'],
+    VOCAB_MIRRORING: ['Good grasp of the vocabulary!', 'A little more work on pronunciation.', 'Well done — passed!'],
+    SENTENCE_BUILDING: ['Most answers correct — well done!', 'Review the ones you missed.', 'All correct — excellent!'],
+    SENTENCE_RESPONSE: ['Most answers correct — well done!', 'Review the ones you missed.', 'All correct — excellent!'],
+    OPEN_ENDED: ['Clear and complete answer — great!', 'Good pronunciation, keep it up!', 'Try adding a bit more detail.'],
+  };
+
+  /* ---------- 連去 v23 Result 頁：跟 v24 的 resultHref 同一條（型別、名稱、每班到期），多帶 back=dashboard ---------- */
+  const resultHref = (a, file, extra = '') => M.resultHref(a.practice, file, `&back=dashboard${extra}`);
+
+  return { TODAY, TOMORROW, typeConfig, TYPE_FILTER, ROSTER, ASSIGNMENTS, SUBMISSIONS, reviewable, statusOf, isSettled, relTime, QUESTIONS, QUICK, resultHref, esc: M.esc, fmtDay: M.fmtDay };
+}());
+
+</script>
+<script>const IS_PROPOSAL = true;</script>
+<style>
+/* ===========================================================================
+   提案 —— v25：Teacher Dashboard。對照組 teacher-dashboard-baseline.html；假資料共用 mock.js（吃 v24 的練習 × 班）。
+   第零輪（2026-11-13）：只把三頁接起來——側欄 Practice List → v24 proposal.html；Submitted 旁的 open_in_new → v23 proposal.html（back=dashboard）。
+   第一輪（2026-11-13，使用者四條、一題一題定）：
+     ① Skip 一次多筆：Overdue 段頭多一顆「Skip…」→ 抽屜（照產品 Skip review 抽屜同一個模式）：Select all、一列一勾、底下說明、Cancel｜Skip N assignments。
+        快選鈕不要（使用者定）。每列原本的 Skip 鈕照留。只有 Overdue；Word Game 的列沒有 assignment row，不進候選。
+     ② 一段超過 6 列就只露前 6 列，底下一顆「Show N more」，點了全展、再點「Show less」收回（使用者定：A 露 6 列、超過 6 才收）。
+     ③ 批改抽屜的 View practice detail 搬到標頭底下、題目卡上面（使用者定：整條，不縮成小鈕）。
+     ④ 抽屜底列 Previous｜Next student 改 **Previous submission｜Next submission**（走的是交卷清單不是學生；使用者定兩個都改）。
+     ⑥（同日第三輪）右欄標題 To Review → **Submissions**：跟左欄 Active Assignments 成對（指派 ↔ 交卷）、不再跟第一顆分頁同名；分頁 To Review｜Reviewed 不動。
+     ⑤（同日第二輪）每列的練習名改成連結，點了進該練習的 v23 Result 頁（跟 Submitted 旁的 open_in_new 同一條；滑過綠字底線）。Word Game 沒有 Result 頁，維持純文字。
+   第四輪（2026-11-17，使用者「Skip assignments 不要點了再出現側邊欄，改成點了前面出現勾選框」，一題一題定四條）：
+     ⑦ 段頭 Skip… → Overdue 進「勾選模式」：每列前面一個勾選框、段頭一個全選框；每列的 Skip 鈕、展開箭頭先藏；點整列＝勾；
+        Word Game 的列不能 Skip，沒有框。① 的抽屜拿掉。
+        定：按鈕放**底部浮動條**（N selected · Cancel · Skip N）｜進勾選模式時 **Overdue 自動全展開**（Show more 先藏）｜
+        按 Skip N **跳確認框**（沿用單筆 Skip 的那個，標題與說明改複數）｜右欄 **Skip review 一起改**成同一套（抽屜拿掉）。
+     右欄：Skip review → To Review 清單進勾選模式，清單上方一列 Select all ＋ Older than 30 days（產品抽屜本來有的快選），
+        底部浮動條、確認框；換分頁＝離開勾選模式。
+   ⑧（2026-11-17，使用者「這裡的 skip 有沒有推薦其他擺放位子」→ 四案選 C）：入口從段頭（夾在 OVERDUE 36 跟欄名中間）搬到
+        段頭底下、第一列上面的一條細列，裡面一顆按鈕「Skip several」靠右對齊每列的 Skip 鈕；能 Skip 的 ≥ 2 筆才出現；
+        進勾選模式後細列留在原位、不收起（收起會讓清單往上跳，使用者：會閃），而且**變成操作列**：左邊 N selected of M、
+        右邊 Cancel ＋ 紅色 Skip N assignments（不寫已選筆數）；底部浮動條併進來（使用者「下面浮動的 bar 就結合在那一欄上」），細列貼在頁首底下。
+        右欄照同一套（使用者「Submissions 的也照這樣改」）：Skip review 從面板標題搬到清單上方細列；勾選時變 全選 · ⟲（30 天以上，只剩圖示）· Cancel · Skip review (N)。
+   ⑨（2026-11-19，使用者「按底下任一 skip 就會出現多選框、Skip several btn 移除」）：細列平常不出現；點任一列的 Skip ＝ 進勾選模式、
+        那一列先勾好，細列這時才出現（N selected · Cancel · Skip N）。單筆也走同一條（Skip 1 assignment → 確認框）。右欄 Skip review 不動。
+   網址參數：基準那幾個 ＋ ?skipmany=1 左欄勾選模式 · ?skip=1 右欄勾選模式 · ?many=1 Overdue 灌到 30 幾筆（鷹架，看 71 筆那種壓迫感）
+   =========================================================================== */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root{
+  --primary:#00CB61; --primary-dark:#00A749; --primary-lighter:#BBF1D0;
+  --text:#212B36; --text2:#637381; --text3:#919EAB;
+  --divider:rgba(145,158,171,.2); --hover:rgba(145,158,171,.08);
+  --grey200:#F4F6F8;
+}
+body{
+  font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f7fb; color:#0f172a; line-height:1.5; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:44px;
+}
+.mi{ font-family:'Material Icons Round'; font-weight:normal; font-style:normal; line-height:1;
+     letter-spacing:normal; text-transform:none; white-space:nowrap; direction:ltr;
+     -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; user-select:none; }
+button{ font-family:inherit; cursor:pointer; }
+:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---------- 外殼（跟 v23／v24 同一套） ---------- */
+.side{ position:fixed; top:0; left:0; bottom:0; width:240px; background:#fff; border-right:1px dashed var(--divider); display:flex; flex-direction:column; z-index:50; }
+.side .logo{ display:flex; align-items:center; gap:8px; margin:24px 0 8px 32px; height:37px; }
+.side .logo img{ height:37px; width:auto; }
+.side .logo b{ font-size:19px; font-weight:800; letter-spacing:-.3px; color:var(--text); }
+.side .logo b i{ font-style:normal; color:var(--primary); }
+.nav{ flex:1; overflow-y:auto; scrollbar-width:none; } .nav::-webkit-scrollbar{ display:none; }   /* 2026-11-16：使用者「拿掉側邊欄選單的 scrolling」——不顯示捲軸，視窗太矮時仍可用滾輪 */
+.nav .grp{ padding:0 16px; margin-top:16px; }
+.nav .grp > .sh{ font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#454F5B; padding:16px 8px 8px 12px; margin-bottom:4px; line-height:1.5; }
+.nav .grp > .sh.blank{ color:transparent; }
+.nav a{ display:flex; align-items:center; min-height:44px; margin-bottom:4px; border-radius:8px; padding:4px 8px 4px 12px; color:var(--text2); text-decoration:none; font-size:14px; font-weight:500; }
+.nav a .mi{ font-size:24px; width:24px; height:24px; margin-right:16px; flex:none; }
+.nav a:hover{ background:var(--hover); }
+.nav a.on{ color:var(--primary); background:rgba(0,203,97,.08); font-weight:600; }
+.side .report{ padding:40px 16px; text-align:center; }
+.side .report a{ font-size:14px; font-weight:700; color:#7A0916; text-decoration:underline; }
+.mainwrap{ margin-left:240px; min-height:100vh; }
+.hdr{ position:fixed; top:0; left:240px; right:0; height:80px; z-index:40; background:rgba(244,247,251,.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:flex-end; padding:0 40px; }
+.hdr .acct{ width:40px; height:40px; border-radius:50%; margin-right:16px; background:var(--hover); display:flex; align-items:center; justify-content:center; }
+.hdr .acct .av{ width:36px; height:36px; border-radius:50%; background:var(--primary-lighter); color:var(--primary-dark); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; }
+/* index.js：px 30px、pt 16px（mt -96 ＋ pt 112）、pb 60px，背景 #f4f7fb 撐滿 */
+.main{ padding:80px 0 0; }
+.dash{ padding:16px 30px 60px; }
+
+/* ---------- layout ---------- */
+.grid{ display:grid; grid-template-columns:1fr 400px; gap:18px; align-items:start; }
+@media (max-width:1160px){ .grid{ grid-template-columns:1fr; } }
+
+.panel{ background:#fff; border:1px solid #e6ebf1; border-radius:16px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05); overflow:clip; }   /* 2026-11-17：hidden 會讓底部浮動條 sticky 失效，改 clip */
+.panel-head{ display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid #eef2f7; }
+.panel-head h2{ font-size:18px; font-weight:800; color:#0f172a; letter-spacing:-.2px; }
+.panel-head .info{ display:inline-flex; color:#94a3b8; cursor:pointer; position:relative; }
+.panel-head .info .mi{ font-size:22px; }
+.panel-head .info:hover{ color:#64748b; }
+/* MUI Tooltip arrow：#0f172a、13/600、10px 14px、r10、maxWidth 240 */
+.tip{ position:absolute; left:50%; top:calc(100% + 10px); transform:translateX(-50%); background:#0f172a; color:#fff; font-size:13px; font-weight:600; padding:10px 14px; border-radius:10px; max-width:240px; width:max-content; display:none; z-index:20; line-height:1.4; }
+.tip::before{ content:''; position:absolute; left:50%; top:-5px; width:10px; height:10px; background:#0f172a; transform:translateX(-50%) rotate(45deg); }
+.info:hover .tip{ display:block; }
+
+/* ---------- active assignments ---------- */
+.sec-head{ display:grid; grid-template-columns:minmax(0,1.8fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,.6fr) 100px;   /* 2026-11-18：minmax(0,…) 讓每列欄寬一樣，不被長練習名撐開（使用者「dashboard 對齊」）；型別欄加寬放得下 Open-ended Questions，班級欄收窄 */ align-items:center;
+  gap:12px; padding:13px 18px; cursor:pointer; }
+.sec-head:hover{ filter:brightness(.98); }
+.sec-head.overdue{ background:#fdeef0; box-shadow:inset 4px 0 0 #e11d48; }
+.sec-head.today{ background:#fdeef0; box-shadow:inset 4px 0 0 #e11d48; border-top:7px solid #f4f7fb; }
+.sec-head.tomorrow{ background:#fdf6ea; box-shadow:inset 4px 0 0 #d97706; border-top:7px solid #f4f7fb; }
+.sec-head.later{ background:#eef2f7; box-shadow:inset 4px 0 0 #475569; border-top:7px solid #f4f7fb; }
+.sec-head.first{ border-top:none; }
+.sec-l{ display:flex; align-items:center; gap:7px; }
+.sec-l b{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+.hd-skip{ margin-left:8px; display:inline-flex; align-items:center; gap:4px; border:1px solid #fbc4cb; background:#fff; color:#e11d48; border-radius:8px; padding:3px 10px; font-size:11px; font-weight:800; letter-spacing:.2px; text-transform:none; transition:.13s; }
+.hd-skip .mi{ font-size:14px; } .hd-skip:hover{ background:#fff1f2; border-color:#e11d48; }
+/* 提案 ⑧（2026-11-17）：多筆 Skip 的入口從段頭搬到段頭底下的一條細列（使用者選 C）——不再夾在欄名中間、不跟段頭收合搶點擊 */
+.pick-entry{ display:flex; align-items:center; justify-content:flex-end; padding:8px 42px 8px 18px; background:#fffafb; border-top:1px solid #f8dfe3; box-shadow:inset 4px 0 0 #fbc4cb; }
+/* 2026-11-17：改成按鈕、靠右對齊底下每列的 Skip 鈕（右邊留 24px＝展開箭頭＋間距，兩顆右緣對齊）；樣式跟 .skip-btn 同一套 */
+.pick-entry button{ display:inline-flex; align-items:center; gap:5px; border:1px solid #fbc4cb; background:#fff; color:#e11d48; border-radius:8px; padding:5px 12px 5px 9px; font-size:12px; font-weight:700; transition:.13s; }
+.pick-entry button .mi{ font-size:15px; } .pick-entry button:hover{ border-color:#e11d48; background:#fff1f2; }
+.pick-entry button[aria-pressed="true"]{ border-color:#e11d48; background:#ffe4e6; }
+/* 2026-11-17：勾選模式時，這條細列就是操作列（原本底部的浮動條併進來）：左邊筆數、右邊 Cancel ＋ Skip N；貼在頁首底下，捲到哪都看得到 */
+.pick-entry.active{ position:sticky; top:80px; z-index:12; justify-content:space-between; background:#fff1f2; box-shadow:inset 4px 0 0 #fbc4cb, 0 1px 0 #f8dfe3; }   /* 底線用陰影畫，不佔高度——進出勾選模式不位移 */
+.pick-entry.rv{ background:#f8fafc; box-shadow:none; border-top:1px solid #eef2f7; padding:8px 18px 8px 22px; }
+.pick-entry.rv.active{ position:sticky; top:80px; z-index:12; background:#f1f5f9; box-shadow:0 1px 0 #e6ebf1; }
+.pick-entry.rv .sk-all{ padding:4px 8px 4px 0; font-size:12.5px; }
+.pick-entry button{ height:28px; padding-top:0; padding-bottom:0; }   /* 細列裡的按鈕一律 28 高：進出勾選模式列高不變 */
+.pick-entry .pe-icon{ padding:0 7px; border-color:#e6ebf1; color:#64748b; position:relative; } .pick-entry .pe-icon:hover{ border-color:#6ee7b7; color:#047857; background:#ecfdf5; }
+.pick-entry .pe-icon .mi{ font-size:16px; }
+.pick-entry .pe-icon .tip{ font-size:12px; padding:6px 10px; border-radius:8px; white-space:nowrap; } .pick-entry .pe-icon:hover .tip{ display:block; }
+.pe-n{ font-size:12.5px; font-weight:800; color:#be123c; } .pe-n i{ font-style:normal; font-weight:600; color:#94a3b8; margin-left:4px; }
+.pe-acts{ display:flex; align-items:center; gap:8px; }
+.pick-entry .pe-cancel{ border-color:#e6ebf1; color:#475569; padding:5px 12px; } .pick-entry .pe-cancel:hover{ border-color:#94a3b8; background:#fff; }
+.pick-entry .pe-go{ border-color:#e11d48; background:#e11d48; color:#fff; } .pick-entry .pe-go:hover{ background:#be123c; border-color:#be123c; }
+.pick-entry .pe-go:disabled{ background:#fff; border-color:#fbc4cb; color:#f4a3b0; cursor:default; }   /* 2026-11-17：勾選模式中按鈕留在原位、改成按下的樣子（不再整條收起，避免清單往上跳） */
+.more-row{ width:100%; border:0; border-top:1px solid #eef2f7; background:#fbfcfe; color:#64748b; font-size:12.5px; font-weight:700; padding:11px 18px; display:flex; align-items:center; justify-content:center; gap:6px; transition:.13s; }
+.more-row:hover{ background:#f6f9fc; color:#334155; } .more-row .mi{ font-size:18px; }
+.sa-row .rmeta b{ font-weight:800; color:#64748b; } .sa-row .rmeta b.ok{ color:#047857; } .sa-row .rmeta b.zero{ color:#94a3b8; }
+.sec-n{ background:#fff; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:800;
+  box-shadow:0 0 0 1px #e6ebf1; }
+.overdue .sec-l, .overdue .sec-n, .today .sec-l, .today .sec-n{ color:#e11d48; }
+.tomorrow .sec-l, .tomorrow .sec-n{ color:#d97706; }
+.later .sec-l, .later .sec-n{ color:#475569; }
+.col{ font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#94a3b8; }
+.sec-tog{ display:flex; justify-content:flex-end; }
+.sec-tog span{ width:32px; height:32px; border-radius:9px; border:1px solid; background:#fff;
+  display:grid; place-items:center; font-size:18px; transition:transform .2s; }
+.overdue .sec-tog span, .today .sec-tog span{ border-color:#e11d48; color:#e11d48; }
+.tomorrow .sec-tog span{ border-color:#d97706; color:#d97706; }
+.later .sec-tog span{ border-color:#475569; color:#475569; }
+.sec-body.collapsed{ display:none; }
+.sec-head.collapsed .sec-tog span{ transform:rotate(180deg); }
+
+.arow{ background:#fff; border-top:1px solid #eef2f7; transition:.13s; }
+.arow:hover{ background:#ecfdf5; box-shadow:inset 4px 0 0 #6ee7b7 !important; }
+.arow.overdue, .arow.today{ box-shadow:inset 4px 0 0 #fbc4cb; }
+.arow.tomorrow{ box-shadow:inset 4px 0 0 #f8d69a; }
+.arow.later{ box-shadow:inset 4px 0 0 #dde5ee; }
+.arow-main{ display:grid; grid-template-columns:minmax(0,1.8fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,.6fr) 100px;   /* 2026-11-18：minmax(0,…) 讓每列欄寬一樣，不被長練習名撐開（使用者「dashboard 對齊」）；型別欄加寬放得下 Open-ended Questions，班級欄收窄 */
+  align-items:center; gap:12px; padding:17px 18px; cursor:default; }
+.arow.can .arow-main{ cursor:pointer; }
+.aname{ font-size:14px; font-weight:700; color:#0f172a; overflow-wrap:anywhere; }   /* 欄寬固定後，很長的練習名在欄內換行 */
+/* 提案 ⑤：練習名是連去 Result 頁的連結（Word Game 沒有 Result 頁，維持純文字） */
+a.aname{ text-decoration:none; display:inline-block; border-radius:4px; transition:.13s; }
+a.aname:hover{ color:#047857; text-decoration:underline; text-underline-offset:3px; }
+.ttag{ font-size:11px; font-weight:800; padding:2px 9px; border-radius:7px; white-space:nowrap; }
+.ctag{ font-size:11px; font-weight:700; padding:1px 8px; border-radius:6px; background:#eef2f7; color:#475569; }
+.due{ font-size:12.5px; font-weight:800; white-space:nowrap; }
+.arow.overdue .due, .arow.today .due{ color:#e11d48; }
+.arow.tomorrow .due{ color:#d97706; }
+.arow.later .due{ color:#64748b; }
+.week{ font-size:10px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; color:#94a3b8; }
+.subm{ display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.subm .n{ font-size:11.5px; font-weight:800; color:#047857; }
+.subm .n.zero{ color:#94a3b8; }
+.subm .sl{ font-size:10px; font-weight:700; color:#94a3b8; }
+.subm .t{ font-size:11.5px; font-weight:800; color:#64748b; }
+.subm .res{ display:inline-flex; color:#94a3b8; text-decoration:none; transition:.13s; margin-left:2px; position:relative; }
+.subm .res .mi{ font-size:14px; }
+.subm .res:hover{ color:#047857; }
+.subm .res .tip{ font-size:12px; padding:6px 10px; border-radius:8px; }
+.subm .res:hover .tip{ display:block; }
+.acts{ display:flex; align-items:center; justify-content:flex-end; gap:8px; min-width:94px; }
+.skip-btn{ border:1px solid #e6ebf1; background:#fff; color:#64748b; border-radius:8px;
+  padding:5px 13px; font-size:12px; font-weight:700; cursor:pointer; transition:.13s; }
+.skip-btn:hover{ border-color:#e11d48; color:#e11d48; }
+.chev{ color:#94a3b8; font-size:16px; transition:transform .2s; }
+.chev.ph{ width:16px; }
+.arow.open .chev{ transform:rotate(180deg); }
+.arow-sub{ display:none; padding-bottom:14px; }
+.arow.open .arow-sub{ display:block; }
+.notsub{ margin:0 18px; background:#fff; border:1px solid #e6ebf1; border-radius:12px; padding:12px 14px; }
+.notsub .lbl{ font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#94a3b8; margin-bottom:8px; }
+.notsub .inner{ display:flex; align-items:center; gap:12px; }
+.notsub .names{ flex:1; display:flex; flex-wrap:wrap; gap:6px; }
+.notsub .names a{ font-size:11.5px; font-weight:700; color:#334155; background:#fff;
+  border:1px solid #e6ebf1; border-radius:7px; padding:4px 9px; text-decoration:none; transition:.13s; }
+.notsub .names a:hover{ border-color:#6ee7b7; color:#047857; background:#ecfdf5; }
+.remind{ flex-shrink:0; background:linear-gradient(145deg,#10b981,#059669); color:#fff;
+  border:0; border-radius:9px; padding:9px 16px; font-size:12.5px; font-weight:800; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; }
+.remind:hover{ filter:brightness(.96); }
+.remind .mi{ font-size:15px; }
+.remind.cooling{ opacity:.6; pointer-events:none; }
+.empty{ text-align:center; padding:40px 20px; color:#64748b; }
+.empty .mi{ font-size:44px; color:#6ee7b7; margin-bottom:8px; }
+.empty b{ font-size:15px; font-weight:800; color:#334155; display:block; }
+.empty p{ font-size:13px; color:#64748b; }
+
+/* ---------- to review ---------- */
+.skiprev{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:1px solid #e6ebf1; background:#fff; color:#64748b;
+  border-radius:9px; padding:6px 12px; font-size:12.5px; font-weight:700; transition:.13s; }
+.skiprev .mi{ font-size:15px; }
+.skiprev:hover{ border-color:#e11d48; color:#e11d48; }
+.tabs{ display:flex; gap:6px; padding:12px 18px 4px; flex-wrap:wrap; }
+.tab{ border:1px solid #e6ebf1; background:#fff; border-radius:9px; padding:6px 12px; cursor:pointer;
+  font-size:12.5px; font-weight:700; color:#64748b; transition:.13s;
+  display:inline-flex; align-items:center; gap:6px; }
+.tab:hover{ border-color:#d0dae6; color:#334155; }
+.tab.on{ border:none; background:linear-gradient(145deg,#10b981,#059669); color:#fff; }
+.tab i{ font-size:11px; opacity:.8; font-style:normal; }
+/* MUI Select（size small、notched outline 拿掉、renderValue 帶 icon 方塊） */
+.filter{ padding:4px 18px 10px; position:relative; }
+.tf{ width:100%; border:1px solid #e6ebf1; border-radius:10px; font-size:13px; font-weight:700; color:#334155; background:#fff;
+  padding:9px 13px; display:flex; align-items:center; gap:8px; cursor:pointer; text-align:left; }
+.tf:hover{ border-color:#d0dae6; }
+.tf.open{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.tf .caret{ margin-left:auto; color:#637381; font-size:24px; }
+.tico{ width:24px; height:24px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.tico .mi{ font-size:14px; }
+.tmenu{ position:absolute; left:18px; right:18px; top:calc(100% - 4px); background:#fff; border-radius:10px; box-shadow:0 0 2px rgba(145,158,171,.24),-20px 20px 40px -4px rgba(145,158,171,.24); padding:4px 0; display:none; z-index:30; }
+.tmenu.open{ display:block; }
+.tmenu div{ display:flex; align-items:center; gap:8px; padding:6px 16px; min-height:36px; font-size:14px; font-weight:400; color:var(--text); cursor:pointer; }
+.tmenu div:hover{ background:var(--hover); }
+.tmenu div.on{ background:rgba(0,203,97,.08); }
+.tmenu .tico{ width:28px; height:28px; border-radius:8px; } .tmenu .tico .mi{ font-size:16px; }
+.rlist{ padding:8px 10px 12px; display:flex; flex-direction:column; }
+.rrow{ display:flex; align-items:center; gap:13px; padding:12px; border-radius:12px;
+  cursor:pointer; transition:.14s; position:relative; }
+.rrow:hover{ background:#f6f9fc; }
+.rrow:hover .rarrow{ color:#059669; transform:translateX(2px); }
+.rrow .body{ flex:1; min-width:0; }
+.rline{ display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap; }
+.rname{ font-size:14px; font-weight:700; color:#0f172a; }
+.rmeta{ font-size:12.5px; color:#64748b; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rmeta .dot{ color:#94a3b8; margin:0 5px; }
+.rdone{ display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; padding:1px 7px; border-radius:999px; border:1px solid; }
+.rdone.reviewed{ color:#047857; background:#ecfdf5; border-color:#6ee7b7; }
+.rdone.skipped{ color:#64748b; background:#f1f5f9; border-color:#dde5ee; }
+.rarrow{ flex-shrink:0; color:#94a3b8; font-size:18px; transition:.14s; }
+
+/* ---------- drawer（批改 ＋ Skip review 共用殼） ---------- */
+.scrim{ position:fixed; inset:0; background:rgba(15,23,42,.42); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity .22s; z-index:900; }
+.scrim.on{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100vh; width:440px; max-width:94vw;
+  background:#f4f7fb; display:flex; flex-direction:column; z-index:901;
+  transform:translateX(100%); transition:transform .24s cubic-bezier(.4,0,.2,1);
+  box-shadow:-16px 0 40px rgba(15,23,42,.12); }
+.drawer.on{ transform:none; }
+.d-head{ padding:18px 20px; background:#fff; border-bottom:1px solid #e6ebf1;
+  display:flex; align-items:center; gap:13px; flex-shrink:0; }
+.d-head .who{ flex:1; min-width:0; }
+.d-head .who b{ font-size:16px; font-weight:800; color:#0f172a; display:block; }
+.d-head .who span{ font-size:12.5px; color:#94a3b8; font-weight:600; }
+.d-x{ width:34px; height:34px; border-radius:10px; border:1px solid #e6ebf1; background:#fff;
+  color:#94a3b8; cursor:pointer; display:grid; place-items:center; }
+.d-x:hover{ background:#f5f8fb; color:#0f172a; }
+.d-body{ flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:16px; }
+.d-body > *{ flex-shrink:0; }
+.card{ background:#fff; border:1px solid #e6ebf1; border-radius:14px; padding:16px; }
+.card-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+  color:#94a3b8; display:flex; align-items:center; gap:8px; }
+.card-lbl .pname{ text-transform:none; letter-spacing:0; color:#94a3b8; font-weight:700; font-size:12px; }
+.qs{ display:flex; flex-direction:column; gap:8px; margin-top:13px; }
+.q{ border:1px solid #e6ebf1; border-radius:11px; background:#fbfcfe; overflow:hidden; }
+.q-t{ display:flex; align-items:center; gap:9px; padding:11px 12px; cursor:pointer; font-size:13px;
+  font-weight:600; color:#334155; }
+.q-t .txt{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.badge{ font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; }
+.b4{ background:#d1fae5; color:#047857; } .b3{ background:#fef3c7; color:#d97706; }
+.b2{ background:#ffe4e6; color:#e11d48; }
+.q-b{ display:none; padding:0 12px 12px; font-size:12.5px; color:#475569; }
+.q.open .q-b{ display:block; }
+.q .zh{ font-size:14px; font-weight:700; color:#0f172a; }
+.q .py{ font-size:12px; color:#94a3b8; font-weight:600; }
+.audio{ margin-top:8px; display:flex; align-items:center; gap:9px; background:#fff;
+  border:1px solid #e6ebf1; border-radius:9px; padding:8px 11px; }
+.audio .mi{ color:#059669; font-size:20px; }
+.wave{ flex:1; height:4px; border-radius:2px; background:linear-gradient(90deg,#6ee7b7 42%,#e6ebf1 42%); }
+.detail-btn{ width:100%; background:#fff; border:1px solid #e6ebf1; border-radius:12px; padding:12px;
+  display:flex; align-items:center; justify-content:center; gap:7px; font-size:13px; font-weight:700;
+  color:#475569; cursor:pointer; }
+.detail-btn:hover{ border-color:#d0dae6; }
+.detail-btn .mi{ font-size:15px; color:#94a3b8; }
+.scores{ display:grid; grid-template-columns:1fr 1fr; background:#fff; border:1px solid #e6ebf1;
+  border-radius:14px; overflow:hidden; }
+.scores > div{ padding:15px 16px; }
+.scores > div + div{ border-left:1px solid #eef2f7; }
+.s-lbl{ font-size:11px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#94a3b8; margin-bottom:6px; }
+.s-val{ font-size:26px; font-weight:800; color:#047857; letter-spacing:-.5px; }
+.s-of{ font-size:13px; color:#94a3b8; font-weight:600; margin-left:4px; }
+.s-in{ width:66px; font-size:26px; font-weight:800; color:#0f172a; border:1px solid #e6ebf1;
+  border-radius:9px; padding:2px 6px; font-family:inherit; text-align:center; letter-spacing:-.5px; outline:none; }
+.s-in:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.quick{ display:flex; flex-direction:column; gap:8px; }
+.quick button{ text-align:left; border:1px solid #e6ebf1; background:#fbfcfe; border-radius:11px;
+  padding:11px 13px; cursor:pointer; font-size:13.5px; font-weight:700; color:#475569; transition:.13s;
+  display:flex; align-items:center; gap:9px; }
+.quick button::before{ content:'\2713'; color:#059669; font-weight:900; }
+.quick button:hover, .quick button.on{ border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+.orline{ text-align:center; font-size:11px; font-weight:700; color:#94a3b8; margin:2px 0; }
+.note{ width:100%; border:1px solid #e6ebf1; border-radius:11px; padding:11px 13px;
+  font-family:inherit; font-size:13px; color:#0f172a; resize:vertical; min-height:74px; outline:none; }
+.note:focus{ border-color:#6ee7b7; box-shadow:0 0 0 3px #d1fae5; }
+.send{ width:100%; height:44px; margin-top:13px; border:0; border-radius:12px; font-weight:800;
+  font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+  background:linear-gradient(145deg,#10b981,#059669); color:#fff; box-shadow:0 8px 18px -8px rgba(5,150,105,.75); }
+.send:hover{ filter:brightness(1.05); }
+.send:disabled{ background:#eef2f7; color:#94a3b8; border:1px solid #e6ebf1; box-shadow:none; cursor:default; filter:none; }
+.seal{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:8px 0; }
+.seal b{ font-size:13.5px; font-weight:800; color:#047857; letter-spacing:.3px; }
+.d-foot{ padding:14px 20px; background:#fff; border-top:1px solid #e6ebf1; display:flex; gap:10px; flex-shrink:0; }
+.d-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px;
+  border:1px solid #e6ebf1; background:#fff; color:#475569; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:5px; }
+.d-foot button:disabled{ color:#94a3b8; cursor:default; }
+.d-foot .next{ background:#ecfdf5; color:#065f46; border-color:#6ee7b7; }
+.d-foot .next:disabled{ background:#fff; color:#94a3b8; border-color:#e6ebf1; }
+
+/* ---------- Skip review 抽屜：skip-review-drawer.js ---------- */
+.sk-tools{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 18px 4px; background:#fff; flex-shrink:0; }
+.sk-all{ display:inline-flex; align-items:center; gap:9px; font-size:12.5px; font-weight:700; color:#334155; cursor:pointer; user-select:none; padding:6px 8px 6px 4px; border-radius:9px; }
+.sk-all:hover{ background:#f6f9fc; }
+.sk-stale{ border:1px solid #e6ebf1; background:#fff; color:#64748b; border-radius:9px; padding:6px 12px; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; gap:6px; transition:.13s; }
+.sk-stale:hover{ border-color:#6ee7b7; color:#047857; background:#ecfdf5; }
+.sk-stale .mi{ font-size:15px; }
+.sk-filter{ padding:8px 18px 10px; background:#fff; position:relative; flex-shrink:0; }
+.sk-list{ flex:1; overflow-y:auto; padding:2px 10px 12px; background:#fff; }
+.sk-row{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; cursor:pointer; transition:.12s; }
+.sk-row:hover{ background:#f6f9fc; }
+.sk-row.on, .sk-row.on:hover{ background:#f1f5f9; }
+.cb{ width:18px; height:18px; border-radius:5px; border:2px solid #cbd5e1; background:#fff; display:inline-grid; place-items:center; flex:none; color:#fff; font-size:14px; }
+.cb.all{ background:#059669; border-color:#059669; }
+.cb.some{ background:#059669; border-color:#059669; }
+.cb.some::after{ content:''; width:10px; height:2px; background:#fff; border-radius:1px; }
+.sk-row .body{ flex:1; min-width:0; }
+.sk-row .stale{ font-weight:800; color:#059669; }
+.sk-row .when{ font-weight:800; }
+.sk-note{ padding:12px 20px; font-size:12.5px; color:#64748b; font-weight:500; line-height:1.6; background:#f8fafc; border-top:1px solid #eef2f7; flex-shrink:0; }
+.sk-note strong{ font-weight:800; }
+.sk-foot{ display:flex; gap:10px; padding:14px 20px; background:#fff; border-top:1px solid #e6ebf1; flex-shrink:0; }
+.sk-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.sk-cancel{ border:1px solid #e6ebf1; background:#fff; color:#475569; }
+.sk-ok{ border:0; background:#e11d48; color:#fff; }
+.sk-ok:hover{ background:#be123c; }
+.sk-ok:disabled{ background:#eef2f7; color:#94a3b8; border:1px solid #e6ebf1; cursor:default; }
+.sk-ok .mi{ font-size:16px; }
+.sk-empty{ text-align:center; padding:40px 20px; color:#64748b; font-size:13px; }
+
+/* ---------- 提案 ⑦（2026-11-17）：勾選模式 ＋ 底部浮動條（左右欄同一套） ---------- */
+.pick-cell{ display:flex; align-items:center; gap:12px; min-width:0; }
+.cb.ghost{ visibility:hidden; }
+.sec-l .cb{ cursor:pointer; }
+.arow.picking .arow-main{ cursor:pointer; }
+.arow.picking.on, .arow.picking.on:hover{ background:#fff1f2; }
+.arow.picking.off .arow-main{ cursor:default; opacity:.55; }
+.arow.picking.on .cb{ background:#e11d48; border-color:#e11d48; }
+.rrow.picking .cb{ flex:none; }
+.rrow .stale-t{ font-weight:800; color:#059669; }
+.rrow.picking.on, .rrow.picking.on:hover{ background:#fff1f2; }
+.rrow.picking.on .cb{ background:#e11d48; border-color:#e11d48; }
+.cb.pk-all, .cb.pk-some{ background:#e11d48; border-color:#e11d48; }
+.cb.pk-some::after{ content:''; width:10px; height:2px; background:#fff; border-radius:1px; }
+#saBar, #rvBar{ position:sticky; bottom:76px; z-index:15; }   /* 76＝原型底下說明條的高度；產品沒有那條，用 bottom:16px */   /* sticky 要放在 panel 的直接子層才黏得住 */
+.selbar{ margin:12px; display:flex; align-items:center; gap:10px; padding:9px 10px 9px 16px; background:#0f172a; color:#fff; border-radius:14px; box-shadow:0 14px 32px rgba(15,23,42,.28); }
+.selbar .n{ font-size:13.5px; font-weight:800; } .selbar .n i{ font-style:normal; color:#94a3b8; font-weight:600; margin-left:6px; font-size:12.5px; }
+.selbar .sp{ flex:1; }
+.selbar button{ height:36px; border-radius:10px; padding:0 14px; font-size:13px; font-weight:800; display:inline-flex; align-items:center; gap:6px; }
+.selbar .cancel{ border:1px solid rgba(255,255,255,.28); background:transparent; color:#fff; } .selbar .cancel:hover{ background:rgba(255,255,255,.08); }
+.selbar .go{ border:0; background:#e11d48; color:#fff; } .selbar .go:hover{ background:#be123c; } .selbar .go .mi{ font-size:16px; }
+.selbar .go:disabled{ background:rgba(255,255,255,.12); color:rgba(255,255,255,.45); cursor:default; }
+
+/* ---------- Skip assignment popup：shared/skip-popup.js ---------- */
+.modal{ position:fixed; inset:0; display:none; place-items:center; z-index:1000;
+  background:rgba(15,23,42,.42); backdrop-filter:blur(2px); }
+.modal.on{ display:grid; }
+.modal-box{ width:440px; max-width:92vw; background:#fff; border-radius:16px;
+  box-shadow:0 25px 50px -12px rgba(15,23,42,.25); }
+.modal-head{ display:flex; align-items:center; gap:14px; padding:18px 20px; border-bottom:1px solid #eef2f7; }
+.modal-ic{ width:40px; height:40px; border-radius:11px; background:#ffe4e6; display:grid;
+  place-items:center; flex-shrink:0; color:#e11d48; }
+.modal-ic .mi{ font-size:21px; }
+.modal-head b{ font-size:16px; font-weight:800; color:#0f172a; display:block; }
+.modal-head span{ font-size:12.5px; font-weight:600; color:#94a3b8; }
+.modal-body{ padding:18px 20px; font-size:13.5px; font-weight:500; color:#475569; line-height:1.65; }
+.modal-foot{ display:flex; gap:10px; padding:14px 20px; border-top:1px solid #eef2f7; }
+.modal-foot button{ flex:1; height:44px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; }
+.btn-cancel{ border:1px solid #e6ebf1; background:#fff; color:#475569; }
+.btn-danger{ border:0; background:#e11d48; color:#fff; display:flex; align-items:center;
+  justify-content:center; gap:6px; }
+.btn-danger:hover{ background:#be123c; }
+.btn-danger .mi{ font-size:16px; }
+
+/* ---------- Send reminder 確認框：shared/reminder-popup.js ---------- */
+.rm-scrim{ position:fixed; inset:0; background:rgba(15,23,42,.42); backdrop-filter:blur(2px); z-index:1300;
+  display:none; align-items:center; justify-content:center; }
+.rm-scrim.on{ display:flex; }
+.rm{ width:440px; max-width:92vw; background:#fff; border-radius:16px; box-shadow:0 25px 50px -12px rgba(15,23,42,.25); }
+.rm-h{ display:flex; align-items:center; gap:14px; padding:18px 20px; border-bottom:1px solid #eef2f7; }
+.rm-ic{ width:40px; height:40px; border-radius:11px; background:#ecfdf5; display:grid; place-items:center; flex-shrink:0; color:#047857; }
+.rm-ic .mi{ font-size:21px; }
+.rm-t{ font-size:16px; font-weight:800; color:#0f172a; }
+.rm-s{ font-size:12.5px; font-weight:600; color:#94a3b8; margin-top:2px; }
+.rm-f{ display:flex; gap:10px; padding:14px 20px; border-top:1px solid #eef2f7; }
+.rm-f button{ flex:1; height:44px; border-radius:12px; font-size:14px; font-weight:800; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.rm-cancel{ border:1px solid #e6ebf1; background:#fff; color:#475569; }
+.rm-cancel:hover{ box-shadow:0 1px 4px rgba(15,23,42,.08); }
+.rm-send{ border:0; background:linear-gradient(145deg,#10b981,#059669); color:#fff; box-shadow:0 8px 18px -8px rgba(5,150,105,.75); }
+.rm-send:hover{ filter:brightness(1.05); }
+.rm-send .mi{ font-size:16px; }
+
+/* ---------- toast（snackbar） ---------- */
+.toast{ position:fixed; left:50%; bottom:68px; transform:translate(-50%,20px); opacity:0;
+  background:#0f172a; color:#fff; font-size:13px; font-weight:700; padding:11px 18px;
+  border-radius:10px; z-index:1100; pointer-events:none; transition:.2s; }
+.toast.on{ opacity:1; transform:translate(-50%,0); }
+
+/* ---------- 底下的說明條（版本線之間的入口，不能拿掉） ---------- */
+.baseline{ position:fixed; left:0; right:0; bottom:0; background:#1B3A2A; color:#fff; font-size:12px; padding:8px 16px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:60; }
+.baseline b{ color:#BBF1D0; }
+.baseline a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.35); }
+.baseline .bl-home{ display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:1px 8px 1px 4px; margin-right:12px; font-weight:700; } .baseline .bl-home .mi{ font-size:14px; }
+.baseline a.cur{ color:#BBF1D0; border-bottom-color:#BBF1D0; font-weight:700; }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><img src="https://project-logeg.vercel.app/specs/chinese-modules/assets/dh_single.png" alt="Dahua.ai"><b>Dahua<i>.ai</i></b></div>
+  <nav class="nav">
+    <div class="grp"><div class="sh blank">&nbsp;</div>
+      <a href="#" class="on"><span class="mi">space_dashboard</span>Dashboard</a></div>
+    <div class="grp"><div class="sh">content</div>
+      <a href="#"><span class="mi">folder</span>Projects</a></div>
+    <div class="grp"><div class="sh">practice</div>
+      <a href="#" id="navPractice"><span class="mi">assignment</span>Practice List</a>
+      <a href="#"><span class="mi">sports_esports</span>Word Game</a></div>
+    <div class="grp"><div class="sh">overview</div>
+      <a href="#"><span class="mi">people</span>Students</a>
+      <a href="#"><span class="mi">school</span>Classes</a>
+      <a href="#"><span class="mi">emoji_events</span>Leaderboard</a>
+      <a href="#"><span class="mi">groups</span>Program</a></div>
+  </nav>
+  <div class="report"><a href="#">Report Issue</a></div>
+</aside>
+
+<div class="mainwrap">
+  <div class="hdr"><div class="acct"><div class="av">L</div></div></div>
+  <div class="main"><div class="dash">
+    <div class="grid">
+      <!-- ============ LEFT: Active Assignments ============ -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Active Assignments</h2>
+          <span class="info"><span class="mi">info</span><span class="tip">Only assignments from the last 6 months are shown.</span></span>
+        </div>
+        <div id="assign"></div>
+        <div id="saBar"></div>
+      </section>
+
+      <!-- ============ RIGHT: To Review ============ -->
+      <section class="panel">
+        <div class="panel-head"><h2>Submissions</h2></div>   <!-- 2026-11-17：Skip review 搬到清單上方的細列（#rvEntry），跟左欄 Skip several 同一套 -->
+        <div class="tabs">
+          <button class="tab on" data-tab="toreview">To Review <i id="c-toreview">0</i></button>
+          <button class="tab" data-tab="reviewed">Reviewed <i id="c-reviewed">0</i></button>
+        </div>
+        <div class="filter" id="filterWrap"></div>
+        <div id="rvEntry"></div>
+        <div class="rlist" id="rlist"></div>
+        <div id="rvBar"></div>
+      </section>
+    </div>
+  </div></div>
+</div>
+
+<!-- ============ Review drawer（review-drawer.js） ============ -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="d-head">
+    <div class="who"><b id="d-name"></b><span id="d-sub"></span></div>
+    <button class="d-x" id="d-close"><span class="mi">close</span></button>
+  </div>
+  <div class="d-body">
+    <button class="detail-btn"><span class="mi">description</span>View practice detail<span class="mi">chevron_right</span></button>
+    <div class="card">
+      <div class="card-lbl">
+        <span class="ttag" id="d-type"></span>
+        <span class="pname" id="d-practice"></span>
+        <span class="rdone reviewed" id="d-seal-tag" style="margin-left:auto; display:none;">Reviewed</span>
+        <span class="rdone skipped" id="d-skip-tag" style="margin-left:auto; display:none;">Skipped</span>
+      </div>
+      <div class="qs" id="d-qs"></div>
+    </div>
+
+    <div class="scores">
+      <div>
+        <div class="s-lbl">AI Score</div>
+        <div><span class="s-val" id="d-ai">—</span><span class="s-of">/ 100</span></div>
+      </div>
+      <div>
+        <div class="s-lbl">Teacher Score</div>
+        <div style="display:flex; align-items:baseline; gap:5px;">
+          <input class="s-in" id="d-teacher" type="number" min="0" max="100"><span class="s-of" style="margin:0">/ 100</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="s-lbl" style="margin-bottom:11px">Quick review</div>
+      <div class="quick" id="d-quick"></div>
+      <div class="orline">or leave a custom note</div>
+      <textarea class="note" id="d-note" placeholder="Write a note for the student..."></textarea>
+      <div class="seal" id="d-seal" style="display:none">
+        <svg width="56" height="56" viewBox="0 0 14 14" fill="none" style="filter:drop-shadow(0 5px 10px rgba(40,89,197,.22))">
+          <path fill="#8fbffa" d="M1.25 2.5A1.5 1.5 0 0 1 2.75 1h8.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1 -1.5 1.5h-8.5a1.5 1.5 0 0 1 -1.5 -1.5v-10Z"/>
+          <path fill="#2859c5" fill-rule="evenodd" d="M5.5 0a1 1 0 0 0 -1 1v0.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1 -1V1a1 1 0 0 0 -1 -1h-3Zm4.6 6.95a0.75 0.75 0 0 0 -1.2 -0.9L6.326 9.482l-0.91 -0.606a0.75 0.75 0 0 0 -0.832 1.248l1.5 1A0.75 0.75 0 0 0 7.1 10.95l3 -4Z" clip-rule="evenodd"/>
+        </svg>
+        <b>Reviewed</b>
+      </div>
+      <button class="send" id="d-send" disabled><span class="mi" style="font-size:17px">check</span><span id="d-send-l">Send review</span></button>
+    </div>
+  </div>
+  <div class="d-foot">
+    <button id="d-prev"><span class="mi" style="font-size:17px">chevron_left</span>Previous submission</button>
+    <button class="next" id="d-next">Next submission<span class="mi" style="font-size:17px">chevron_right</span></button>
+  </div>
+</aside>
+
+<!-- 2026-11-17：Skip review 抽屜、多筆 Skip 抽屜拿掉——改成清單上直接勾（提案 ⑦） -->
+<!-- ============ Skip assignment popup（shared/skip-popup.js） ============ -->
+<div class="modal" id="skipModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-ic"><span class="mi">block</span></div>
+      <div style="flex:1; min-width:0">
+        <b id="skipTitle">Skip assignment</b>
+        <span id="skipSub"></span>
+      </div>
+    </div>
+    <div class="modal-body" id="skipBody">
+      This overdue assignment will be removed from Active Assignments — students won't be
+      chased for it anymore. You can still see it in the class history.
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="skipCancel">Cancel</button>
+      <button class="btn-danger" id="skipOk"><span class="mi">block</span><span id="skipOkLbl">Skip assignment</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Send reminder 確認框（shared/reminder-popup.js：maxWidth false、Paper 440） -->
+<div class="rm-scrim" id="rmScrim">
+  <div class="rm" role="dialog" aria-modal="true" aria-labelledby="rmTitle">
+    <div class="rm-h">
+      <div class="rm-ic"><span class="mi">email</span></div>
+      <div style="flex:1;min-width:0">
+        <div class="rm-t" id="rmTitle">Send reminder</div>
+        <div class="rm-s" id="rmSub">0 students in this class who have not submitted</div>
+      </div>
+    </div>
+    <div class="rm-f">
+      <button class="rm-cancel" id="rmCancel">Cancel</button>
+      <button class="rm-send" id="rmSend"><span class="mi">email</span>Send reminder</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="baseline">
+  <span id="blmain"></span>
+  <span id="blinks"></span>
+</div>
+
+<script>
+(function(){
+  const D = window.V25; const esc = D.esc;
+  const Q = new URLSearchParams(location.search);
+  const EMPTY = Q.get('empty') === '1';
+
+  /* ---------- 這一頁連去哪（基準連基準、提案連提案） ---------- */
+  const V24_FILE = IS_PROPOSAL ? 'proposal.html' : 'practice-list-baseline.html';
+  const V23_FILE = IS_PROPOSAL ? 'proposal.html' : 'results-baseline.html';
+  document.getElementById('navPractice').href = '../practice-results/practice-list.html';   // 交接包：連去同層 practice-results 那包
+  const resultHref = (a) => D.resultHref(a, V23_FILE);
+
+  /* ===========================================================================
+     Active Assignments（active-assignments-panel.js）
+     =========================================================================== */
+  const SEC_LABEL = { overdue:'Overdue', today:'Today', tomorrow:'Tomorrow', later:'Later' };
+  const ORDER = ['overdue','today','tomorrow','later'];
+  let assignments = EMPTY ? [] : D.ASSIGNMENTS.slice();
+  // ?many=1（鷹架）：照使用者 11/13 截圖的樣子灌 Overdue——一堆 0 / 1 的測試指派，看 71 筆那種長度
+  if (Q.get('many') === '1'){
+    const NAMES = ['Fall 26 | W02 | Fri | Review 我的一天', 'Fall 26‘_Unit#5_盲人摸象（The Blind Men and an Elephant）_2026/10/19~2026/11/1', '活在当下 + 節日心意', '2026/10/29 下午3:18:09', '課文 A － 請客', '萬聖節NO QB', 'Novice High - 母亲节的由来', '聖誕節', '中秋節', '我的家人 (2)', '春节 Vocabulary', 'Unit 3 · 天气', '期中複習', '口說練習 10/08'];
+    const TYPES = ['VOCAB_MIRRORING', 'SENTENCE_SCRAMBLE', 'SENTENCE_CLOZE', 'COMPREHENSION_QUIZ', 'MIRRORING', 'MIRRORING', 'MIRRORING', 'SENTENCE_SCRAMBLE', 'OPEN_ENDED', 'SENTENCE_RESPONSE'];
+    const DUES = ['2026-10-26', '2026-10-20', '2026-11-11', '2026-11-11', '2026-08-18', '2026-08-07', '2026-08-14', '2026-08-15', '2026-09-02', '2026-09-30'];
+    for (let k = 0; k < 28; k++) assignments.push({ rowKey: `many-${k}`, practiceName: NAMES[k % NAMES.length], type: TYPES[k % TYPES.length], className: k % 3 ? 'Advance' : 'Novice', classId: 'x', due: DUES[k % DUES.length], section: 'overdue', submittedCount: 0, totalCount: 1, notSubmittedStudents: [{ userId: 'tester', studentName: 'Student1 Test' }], practice: D.ASSIGNMENTS[0].practice });
+  }
+  const collapsed = new Set();
+  const opened = new Set();
+  const LIMIT = 6;                      // 提案 ②：一段超過 6 列只露前 6 列
+  const expandedSecs = new Set();       // 按過 Show more 的段
+  let saMode = false, saPicked = new Set();   // 提案 ⑦：Overdue 勾選模式
+  const skippable = () => assignments.filter((a) => a.section === 'overdue' && !a.wordGame).sort((a, b) => (b.totalCount - b.submittedCount) - (a.totalCount - a.submittedCount));
+
+  const rowHtml = (a) => {
+    const t = D.typeConfig(a.type);
+    const can = a.submittedCount < a.totalCount;           // hasNotSubmitted：只有沒交齊的列能展開
+    const canSkip = a.section === 'overdue' && !a.wordGame; // Skip 只在 overdue，Word Game 沒有 assignment row
+    if (saMode && a.section === 'overdue') return pickRowHtml(a, canSkip);   // 提案 ⑦
+    return `<div class="arow ${a.section}${can ? ' can' : ''}${opened.has(a.rowKey) ? ' open' : ''}" data-key="${a.rowKey}">
+      <div class="arow-main">
+        <div>${a.wordGame ? `<span class="aname">${esc(a.practiceName)}</span>` : `<a class="aname" href="${resultHref(a)}" data-stop="1" title="View results">${esc(a.practiceName)}</a>`}</div>
+        <div><span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span></div>
+        <div><span class="ctag">${esc(a.className)}</span></div>
+        <div><div class="due">${a.due ? D.fmtDay(a.due) : '—'}</div>${a.isWeekly ? '<div class="week">This week</div>' : ''}</div>
+        <div class="subm"><span class="n${a.submittedCount ? '' : ' zero'}">${a.submittedCount}</span><span class="sl">/</span><span class="t">${a.totalCount}</span>${
+          a.wordGame ? '' : `<a class="res" href="${resultHref(a)}" data-stop="1"><span class="mi">open_in_new</span><span class="tip">View results</span></a>`}</div>
+        <div class="acts">
+          ${canSkip ? '<button class="skip-btn">Skip</button>' : ''}
+          ${can ? '<span class="mi chev">expand_more</span>' : '<span class="chev ph"></span>'}
+        </div>
+      </div>
+      ${can ? `<div class="arow-sub"><div class="notsub">
+          <div class="lbl">Not submitted (${a.notSubmittedStudents.length})</div>
+          <div class="inner"><div class="names">${a.notSubmittedStudents.map((s) => `<a href="#" title="/school/teacher-students?u=${s.userId}&amp;c=${a.classId}">${esc(s.studentName)}</a>`).join('')}</div>
+          <button class="remind"><span class="mi">email</span>Send reminder</button></div>
+        </div></div>` : ''}
+    </div>`;
+  };
+
+  // 提案 ⑦：勾選模式的一列——前面勾選框、練習名不當連結、不出 Skip 鈕與展開箭頭；Word Game 沒有框
+  const cbHtml = (on, extra = '') => `<span class="cb ${extra}${on ? ' all' : ''}">${on ? '<span class="mi">check</span>' : ''}</span>`;
+  const pickRowHtml = (a, canSkip) => {
+    const t = D.typeConfig(a.type), on = saPicked.has(a.rowKey);
+    return `<div class="arow overdue picking${canSkip ? (on ? ' on' : '') : ' off'}" data-key="${a.rowKey}" ${canSkip ? `data-pick="${a.rowKey}" role="checkbox" aria-checked="${on}" tabindex="0"` : 'title="Word Game goals cannot be skipped"'}>
+      <div class="arow-main">
+        <div class="pick-cell">${cbHtml(on, canSkip ? '' : 'ghost')}<span class="aname">${esc(a.practiceName)}</span></div>
+        <div><span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span></div>
+        <div><span class="ctag">${esc(a.className)}</span></div>
+        <div><div class="due">${a.due ? D.fmtDay(a.due) : '—'}</div>${a.isWeekly ? '<div class="week">This week</div>' : ''}</div>
+        <div class="subm"><span class="n${a.submittedCount ? '' : ' zero'}">${a.submittedCount}</span><span class="sl">/</span><span class="t">${a.totalCount}</span></div>
+        <div class="acts"><button class="skip-btn" style="visibility:hidden" tabindex="-1" aria-hidden="true">Skip</button><span class="chev ph"></span></div>
+      </div></div>`;   // 看不見的 Skip 鈕撐住列高：進出勾選模式時每列一樣高，不會往上跳
+  };
+  const pickState = (cands, set) => { const n = cands.filter((k) => set.has(k)).length; return !n ? '' : n === cands.length ? 'pk-all' : 'pk-some'; };
+
+  // 提案 ⑧⑨：段頭底下的細列——只在勾選模式出現，是操作列（N selected of M · Cancel · Skip N），高度不變
+  const pickEntryHtml = () => {
+    const n = skippable().filter((a) => saPicked.has(a.rowKey)).length;
+    return `<div class="pick-entry active" role="region" aria-label="Selection"><span class="pe-n"></span>
+      <span class="pe-acts"><button class="pe-cancel" data-bar="sa-cancel">Cancel</button><button class="pe-go" data-bar="sa-go" ${n ? '' : 'disabled'}><span class="mi">block</span>${n ? `Skip ${n} assignment${n > 1 ? 's' : ''}` : 'Skip assignments'}</button></span></div>`;
+  };
+
+  function renderAssignments(){
+    const wrap = document.getElementById('assign');
+    const secs = ORDER.filter((s) => assignments.some((a) => a.section === s));
+    if (!secs.length){
+      wrap.innerHTML = '<div class="empty"><span class="mi">check_box</span><b>All caught up!</b><p>No active assignments right now.</p></div>';
+      return;
+    }
+    wrap.innerHTML = secs.map((sec, i) => {
+      // 組內照「沒交的人數」多到少
+      const items = assignments.filter((a) => a.section === sec).sort((a, b) => (b.totalCount - b.submittedCount) - (a.totalCount - a.submittedCount));
+      return `<div>
+        <div class="sec-head ${sec}${i === 0 ? ' first' : ''}${collapsed.has(sec) ? ' collapsed' : ''}" data-sec="${sec}">
+          <div class="sec-l">${sec === 'overdue' && saMode ? (() => { const st = pickState(skippable().map((a) => a.rowKey), saPicked); return `<span class="cb ${st}" data-pkall="1" role="checkbox" aria-checked="${st === 'pk-all'}" aria-label="Select all overdue assignments" tabindex="0">${st === 'pk-all' ? '<span class="mi">check</span>' : ''}</span>`; })() : ''}<b>${SEC_LABEL[sec]}</b><span class="sec-n">${items.length}</span></div>
+          <span class="col">Practice</span><span class="col">Class</span>
+          <span class="col">Due</span><span class="col">Submitted</span>
+          <div class="sec-tog"><span class="mi">expand_less</span></div>
+        </div>
+        <div class="sec-body${collapsed.has(sec) ? ' collapsed' : ''}">${sec === 'overdue' && saMode ? pickEntryHtml() : ''}${(items.length > LIMIT && !expandedSecs.has(sec) && !(saMode && sec === 'overdue') ? items.slice(0, LIMIT) : items).map(rowHtml).join('')}${
+          items.length > LIMIT && !(saMode && sec === 'overdue') ? (expandedSecs.has(sec)
+            ? `<button class="more-row" data-more="${sec}">Show less<span class="mi">expand_less</span></button>`
+            : `<button class="more-row" data-more="${sec}">Show ${items.length - LIMIT} more<span class="mi">expand_more</span></button>`) : ''}</div>
+      </div>`;
+    }).join('');
+    renderSaBar();
+  }
+  const findA = (key) => assignments.find((a) => a.rowKey === key);
+
+  /* ---------- 提案 ⑦：左欄勾選模式 ＋ 底部浮動條 ---------- */
+  function enterSa(firstKey){ saMode = true; saPicked = new Set(firstKey ? [firstKey] : []); collapsed.delete('overdue'); renderAssignments(); }   // ⑨：從哪一列的 Skip 進來，那列先勾好   // 進來時 Overdue 全展開（使用者定）
+  function exitSa(){ saMode = false; saPicked = new Set(); renderAssignments(); }
+  const selbarHtml = (n, total, goLabel, kind) => `<div class="selbar" role="region" aria-label="Selection">
+    <span class="n">${n} selected<i>of ${total}</i></span><span class="sp"></span>
+    <button class="cancel" data-bar="${kind}-cancel">Cancel</button>
+    <button class="go" data-bar="${kind}-go" ${n ? '' : 'disabled'}><span class="mi">block</span>${goLabel}</button></div>`;
+  function renderSaBar(){
+    const box = document.getElementById('saBar');
+    box.innerHTML = ''; return;   // 2026-11-17：左欄的浮動條併進段頭底下的細列（pickEntryHtml），這裡不再畫
+    const n = skippable().filter((a) => saPicked.has(a.rowKey)).length;
+    box.innerHTML = selbarHtml(n, skippable().length, n ? `Skip ${n} assignment${n > 1 ? 's' : ''}` : 'Skip assignments', 'sa');
+  }
+  function handleSaBar(b){
+    if (b.dataset.bar === 'sa-cancel') { exitSa(); return; }
+    const sel = skippable().filter((a) => saPicked.has(a.rowKey)); if (!sel.length) return;
+    openConfirm({
+      title: sel.length === 1 ? 'Skip assignment' : `Skip ${sel.length} assignments`,
+      sub: sel.length === 1 ? `${sel[0].practiceName} - ${sel[0].className}` : `${sel[0].practiceName} - ${sel[0].className} and ${sel.length - 1} more`,
+      body: `${sel.length === 1 ? 'This overdue assignment' : `These ${sel.length} overdue assignments`} will be removed from Active Assignments — students won't be chased for ${sel.length === 1 ? 'it' : 'them'} anymore. You can still see ${sel.length === 1 ? 'it' : 'them'} in the class history.`,
+      ok: sel.length === 1 ? 'Skip assignment' : `Skip ${sel.length} assignments`,
+      onOk: () => {
+        assignments = assignments.filter((a) => !saPicked.has(a.rowKey));   // 一次一筆寫（upsertAssignment skipped:true）；這裡當作全成功
+        exitSa();
+        toast(sel.length === 1 ? `Skipped "${sel[0].practiceName}" for ${sel[0].className}` : `Skipped ${sel.length} assignments`);
+      },
+    });
+  }
+
+  document.getElementById('assign').addEventListener('click', (e) => {
+    if (e.target.closest('[data-stop]')) return;                 // View results：不要順便展開
+    const bar = e.target.closest('[data-bar]'); if (bar){ handleSaBar(bar); return; }   // 細列上的 Cancel／Skip N   // 提案 ⑧：段頭底下那條「Select several to skip」進勾選模式
+    if (saMode){
+      if (e.target.closest('[data-pkall]')){ const c = skippable().map((a) => a.rowKey), all = c.every((k) => saPicked.has(k)); c.forEach((k) => (all ? saPicked.delete(k) : saPicked.add(k))); renderAssignments(); return; }
+      const pr = e.target.closest('[data-pick]');
+      if (pr){ const k = pr.dataset.pick; saPicked.has(k) ? saPicked.delete(k) : saPicked.add(k); renderAssignments(); return; }
+      if (e.target.closest('.sec-head.overdue') || e.target.closest('.arow.picking')) return;   // 勾選模式下 Overdue 不收合、不展開
+    }
+    const more = e.target.closest('[data-more]');
+    if (more){ const sec = more.dataset.more; expandedSecs.has(sec) ? expandedSecs.delete(sec) : expandedSecs.add(sec); renderAssignments(); return; }
+    const secHead = e.target.closest('.sec-head');
+    if (secHead){ const s = secHead.dataset.sec; collapsed.has(s) ? collapsed.delete(s) : collapsed.add(s); renderAssignments(); return; }
+    const skip = e.target.closest('.skip-btn');
+    if (skip){
+      enterSa(skip.closest('.arow').dataset.key);   // ⑨：點任一列的 Skip ＝ 進勾選模式，不直接跳確認框
+      return;
+    }
+    const remind = e.target.closest('.remind');
+    if (remind){ openRemind(findA(remind.closest('.arow').dataset.key)); return; }
+    if (e.target.closest('.notsub')) return;
+    const row = e.target.closest('.arow.can');
+    if (row){ const k = row.dataset.key; opened.has(k) ? opened.delete(k) : opened.add(k); row.classList.toggle('open'); }
+  });
+
+  /* ---------- Send reminder：index.js handleRemind → ReminderPopup → handleRemindConfirm ---------- */
+  let remindTarget = null;
+  const cooling = new Set();   // remindCooldowns：同一列 3 秒內再按沒反應（純前端）
+  function openRemind(a){
+    if (!a) return;
+    const n = a.notSubmittedStudents.length;
+    if (n === 0){ toast('No students to remind'); return; }
+    remindTarget = a;
+    // Word Game 的 pendingLabel 不一樣
+    document.getElementById('rmSub').textContent = `${n} student${n === 1 ? '' : 's'} in ${a.className} ${a.wordGame ? 'who have not met this goal' : 'who have not submitted'}`;
+    document.getElementById('rmScrim').classList.add('on');
+  }
+  function closeRemind(){ document.getElementById('rmScrim').classList.remove('on'); remindTarget = null; }
+  document.getElementById('rmCancel').onclick = closeRemind;
+  document.getElementById('rmScrim').addEventListener('click', (e) => { if (e.target.id === 'rmScrim') closeRemind(); });
+  document.getElementById('rmSend').onclick = () => {
+    if (!remindTarget) return;
+    const a = remindTarget; closeRemind();
+    if (cooling.has(a.rowKey)) return;
+    cooling.add(a.rowKey);
+    const btn = document.querySelector(`.arow[data-key="${a.rowKey}"] .remind`);
+    if (btn) btn.classList.add('cooling');
+    setTimeout(() => { cooling.delete(a.rowKey); if (btn) btn.classList.remove('cooling'); }, 3000);
+    const n = a.notSubmittedStudents.length;   // 每個學生各寄一封（Promise.allSettled）；這裡當作全部成功
+    toast(`Reminder sent to ${n} student${n !== 1 ? 's' : ''} in ${a.className}`);
+  };
+
+  /* ---------- Skip 確認框（shared/skip-popup.js）——單筆、左欄多筆、右欄 Skip review 共用（提案 ⑦：標題與說明照筆數換） ---------- */
+  let confirmOk = null;
+  function openConfirm({ title, sub, body, ok, onOk }){
+    document.getElementById('skipTitle').textContent = title;
+    document.getElementById('skipSub').textContent = sub || '';
+    document.getElementById('skipBody').textContent = body;
+    document.getElementById('skipOkLbl').textContent = ok;
+    confirmOk = onOk; document.getElementById('skipModal').classList.add('on');
+  }
+  const closeConfirm = () => { document.getElementById('skipModal').classList.remove('on'); confirmOk = null; };
+  document.getElementById('skipCancel').onclick = closeConfirm;
+  document.getElementById('skipOk').onclick = () => { const f = confirmOk; closeConfirm(); if (f) f(); };
+
+  /* ===========================================================================
+     To Review（review-panel.js ＋ review-model.js）
+     =========================================================================== */
+  let subs = EMPTY ? [] : D.SUBMISSIONS.slice();
+  let tab = Q.get('tab') === 'reviewed' ? 'reviewed' : 'toreview';
+  let typeFilter = 'all';
+  const matchesType = (s, f) => f === 'all' || s.type === f;
+  const reviewable = () => subs.filter(D.reviewable);
+  const ttag = (type) => { const t = D.typeConfig(type); return `<span class="ttag" style="background:${t.bg};color:${t.color}">${t.label}</span>`; };
+
+  // 型別下拉（MUI Select：renderValue 帶 icon 方塊）
+  const tfOption = (o, big) => `${o.icon ? `<span class="tico" style="background:${o.color}18"><span class="mi" style="color:${o.color}">${o.icon}</span></span>` : ''}${o.label}`;
+  const renderFilter = (wrapId, value, onPick) => {
+    const wrap = document.getElementById(wrapId);
+    const cur = D.TYPE_FILTER.find((o) => o.value === value);
+    wrap.innerHTML = `<button class="tf" type="button">${tfOption(cur)}<span class="mi caret">arrow_drop_down</span></button>
+      <div class="tmenu">${D.TYPE_FILTER.map((o) => `<div class="${o.value === value ? 'on' : ''}" data-v="${o.value}">${tfOption(o, true)}</div>`).join('')}</div>`;
+    const btn = wrap.querySelector('.tf'), menu = wrap.querySelector('.tmenu');
+    btn.onclick = () => { btn.classList.toggle('open'); menu.classList.toggle('open'); };
+    menu.onclick = (e) => { const o = e.target.closest('[data-v]'); if (o) onPick(o.dataset.v); };
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) { btn.classList.remove('open'); menu.classList.remove('open'); } });
+  };
+
+  function renderReview(){
+    const list = reviewable().filter((s) => matchesType(s, typeFilter));
+    document.getElementById('c-toreview').textContent = list.filter((s) => !D.isSettled(s)).length;
+    document.getElementById('c-reviewed').textContent = list.filter(D.isSettled).length;
+    if (tab !== 'toreview') rvMode = false;
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+    renderFilter('filterWrap', typeFilter, (v) => { typeFilter = v; renderReview(); });
+
+    const shown = list.filter((s) => (tab === 'reviewed' ? D.isSettled(s) : !D.isSettled(s)))
+      .sort((a, b) => (a.reviewedAgo ?? a.hoursAgo) - (b.reviewedAgo ?? b.hoursAgo));
+    const box = document.getElementById('rlist');
+    renderRvBar(shown);
+    renderRvEntry(shown);
+    if (!shown.length){
+      box.innerHTML = `<div class="empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px">
+          <path d="M9 11l3 3L22 4" stroke-width="2.4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <b>${tab === 'reviewed' ? 'Nothing reviewed yet' : 'All caught up!'}</b>
+        <p>${tab === 'reviewed' ? 'Reviewed submissions show here.' : 'No submissions to review.'}</p>
+      </div>`;
+      return;
+    }
+    // 提案 ⑦：勾選模式——清單上方 Select all ＋ Older than 30 days，每列前面一個框、不出箭頭
+    box.innerHTML = shown.map((s) => {
+      const st = D.statusOf(s);
+      if (rvMode){ const on = rvPicked.has(s.id);
+        return `<div class="rrow picking${on ? ' on' : ''}" data-pick="${s.id}" role="checkbox" aria-checked="${on}" tabindex="0">${cbHtml(on)}
+        <div class="body"><div class="rline"><span class="rname">${esc(s.studentName)}</span><span class="ctag">${esc(s.className)}</span>${ttag(s.type)}</div>
+          <div class="rmeta">${esc(s.practiceName)}<span class="dot">·</span><span class="${s.hoursAgo >= STALE_H ? 'stale-t' : ''}">${D.relTime(s.hoursAgo)}</span></div></div></div>`; }
+      return `<div class="rrow" data-id="${s.id}">
+        <div class="body">
+          <div class="rline">
+            <span class="rname">${esc(s.studentName)}</span>
+            <span class="ctag">${esc(s.className)}</span>
+            ${ttag(s.type)}
+            ${st === 'reviewed' ? '<span class="rdone reviewed">Reviewed</span>' : st === 'skipped' ? '<span class="rdone skipped">Skipped</span>' : ''}
+          </div>
+          <div class="rmeta">${esc(s.practiceName)}<span class="dot">·</span>${D.relTime(s.reviewed && s.reviewedAgo != null ? s.reviewedAgo : s.hoursAgo)}</div>
+        </div>
+        <span class="mi rarrow">chevron_right</span>
+      </div>`;
+    }).join('');
+  }
+  document.querySelectorAll('.tab').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; if (tab !== 'toreview') { rvMode = false; rvPicked = new Set(); } renderReview(); }; });   // 換分頁＝離開勾選模式
+  const shownToReview = () => reviewable().filter((s) => matchesType(s, typeFilter) && !D.isSettled(s));
+  document.getElementById('rlist').addEventListener('click', (e) => {
+    if (rvMode){
+      const pr = e.target.closest('[data-pick]'); if (pr){ const k = pr.dataset.pick; rvPicked.has(k) ? rvPicked.delete(k) : rvPicked.add(k); renderReview(); }
+      return;
+    }
+    const row = e.target.closest('.rrow'); if (row) openDrawer(row.dataset.id);
+  });
+
+  /* ---------- 提案 ⑦：右欄 Skip review 勾選模式（取代 skip-review-drawer.js 的抽屜）——候選＝畫面上 To Review 的列（吃型別篩選） ---------- */
+  const STALE_H = 30 * 24;
+  let rvMode = false, rvPicked = new Set();
+  function enterRv(){ tab = 'toreview'; rvMode = true; rvPicked = new Set(); renderReview(); }
+  function exitRv(){ rvMode = false; rvPicked = new Set(); renderReview(); }
+  // 提案 ⑧ 的右欄版：清單上方一條細列——平常是 Skip review 鈕；勾選模式時變操作列（全選 · 30 天以上 · Cancel · Skip review (N)），高度不變、貼頁首
+  function renderRvEntry(shown){
+    const box = document.getElementById('rvEntry');
+    if (tab !== 'toreview' || !shown.length){ box.innerHTML = ''; return; }
+    if (!rvMode){ box.innerHTML = '<div class="pick-entry rv"><button class="hd-skip-entry" data-rventer="1" title="Select submissions you are not going to review"><span class="mi">block</span>Skip review</button></div>'; return; }
+    const st = pickState(shown.map((x) => x.id), rvPicked), n = shown.filter((x) => rvPicked.has(x.id)).length;
+    box.innerHTML = `<div class="pick-entry rv active" role="region" aria-label="Selection">
+      <span class="sk-all" data-rvall="1" role="checkbox" aria-checked="${st === 'pk-all'}" tabindex="0"><span class="cb ${st}">${st === 'pk-all' ? '<span class="mi">check</span>' : ''}</span>Select all</span>
+      <span class="pe-acts"><button class="pe-icon" data-rvstale="1" aria-label="Select the ones older than 30 days"><span class="mi">history</span><span class="tip">Older than 30 days</span></button>
+        <button class="pe-cancel" data-bar="rv-cancel">Cancel</button><button class="pe-go" data-bar="rv-go" ${n ? '' : 'disabled'}><span class="mi">block</span>Skip review${n ? ` (${n})` : ''}</button></span></div>`;
+  }
+  document.getElementById('rvEntry').addEventListener('click', (e) => {
+    if (e.target.closest('[data-rventer]')){ enterRv(); return; }
+    if (e.target.closest('[data-rvall]')){ const c = shownToReview().map((x) => x.id), all = c.every((k) => rvPicked.has(k)); c.forEach((k) => (all ? rvPicked.delete(k) : rvPicked.add(k))); renderReview(); return; }
+    if (e.target.closest('[data-rvstale]')){ shownToReview().filter((x) => x.hoursAgo >= STALE_H).forEach((x) => rvPicked.add(x.id)); renderReview(); return; }
+    const b = e.target.closest('[data-bar]'); if (b) handleRvBar(b);
+  });
+  function renderRvBar(shown){
+    const box = document.getElementById('rvBar');
+    box.innerHTML = ''; return;   // 2026-11-17：右欄的浮動條也併進清單上方的細列（renderRvEntry）
+    const n = shown.filter((x) => rvPicked.has(x.id)).length;
+    box.innerHTML = selbarHtml(n, shown.length, n ? `Skip review (${n})` : 'Skip review', 'rv');
+  }
+  function handleRvBar(b){
+    if (b.dataset.bar === 'rv-cancel') { exitRv(); return; }
+    const sel = shownToReview().filter((x) => rvPicked.has(x.id)); if (!sel.length) return;
+    openConfirm({
+      title: `Skip review for ${sel.length} submission${sel.length > 1 ? 's' : ''}`,
+      sub: sel.length === 1 ? `${sel[0].studentName} · ${sel[0].practiceName}` : `${sel[0].studentName} · ${sel[0].practiceName} and ${sel.length - 1} more`,
+      body: 'Skipped submissions move to the Reviewed tab, marked Skipped. Students keep their score — they just will not get a teacher comment for this one.',
+      ok: 'Skip review',
+      onOk: () => { sel.forEach((x) => { x.reviewSkipped = true; x.reviewedAgo = 0; }); exitRv(); toast(`Skipped ${sel.length} submission${sel.length > 1 ? 's' : ''} — moved to Reviewed.`); },
+    });
+  }
+
+  /* ===========================================================================
+     Review drawer（review-drawer.js）—— Next student 走整份清單（只吃 type filter，不吃分頁）
+     =========================================================================== */
+  let current = null;
+  const navList = () => reviewable().filter((s) => matchesType(s, typeFilter)).sort((a, b) => a.hoursAgo - b.hoursAgo);
+  function openDrawer(id){ current = subs.find((s) => s.id === id); paint(); document.getElementById('drawer').classList.add('on'); document.getElementById('scrim').classList.add('on'); }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('on'); document.getElementById('scrim').classList.remove('on'); }
+  document.getElementById('d-close').onclick = closeDrawer;
+  document.getElementById('scrim').onclick = closeDrawer;
+
+  function paint(){
+    const s = current; if (!s) return;
+    const t = D.typeConfig(s.type);
+    document.getElementById('d-name').textContent = s.studentName;
+    document.getElementById('d-sub').textContent = `${s.className} · ${D.relTime(s.hoursAgo)}`;
+    const tt = document.getElementById('d-type'); tt.textContent = t.label; tt.style.background = t.bg; tt.style.color = t.color;
+    document.getElementById('d-practice').textContent = `${s.practiceName} · ${D.QUESTIONS.length} questions`;
+    const st = D.statusOf(s);
+    document.getElementById('d-seal-tag').style.display = st === 'reviewed' ? 'inline-flex' : 'none';
+    document.getElementById('d-skip-tag').style.display = st === 'skipped' ? 'inline-flex' : 'none';
+    document.getElementById('d-ai').textContent = s.ai;
+    document.getElementById('d-teacher').value = s.teacherScore ?? s.ai;
+    document.getElementById('d-qs').innerHTML = D.QUESTIONS.map((q, i) => `
+      <div class="q${i === 0 ? ' open' : ''}">
+        <div class="q-t"><span class="txt">${i + 1}. ${q.zh}</span><span class="badge ${q.score >= 4 ? 'b4' : q.score === 3 ? 'b3' : 'b2'}">${q.score}</span><span class="mi" style="font-size:16px;color:#94a3b8">expand_more</span></div>
+        <div class="q-b"><div class="zh">${q.zh}</div><div class="py">${q.py}</div><div class="py" style="color:#64748b">${q.en}</div>
+          <div class="audio"><span class="mi">play_circle</span><div class="wave"></div><span style="font-size:11px;font-weight:700;color:#94a3b8">0:0${3 + i}</span></div></div>
+      </div>`).join('');
+    document.getElementById('d-quick').innerHTML = (D.QUICK[s.type] || D.QUICK.MIRRORING).map((x) => `<button>${x}</button>`).join('');
+    document.getElementById('d-note').value = s.comment || '';
+    document.getElementById('d-seal').style.display = s.reviewed ? 'flex' : 'none';
+    const l = navList(), i = l.findIndex((x) => x.id === s.id);
+    document.getElementById('d-prev').disabled = i <= 0;
+    document.getElementById('d-next').disabled = i < 0 || i >= l.length - 1;
+    syncSend();
+  }
+  document.getElementById('d-quick').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const on = b.classList.contains('on');
+    document.querySelectorAll('#d-quick button').forEach((x) => x.classList.remove('on'));
+    const note = document.getElementById('d-note');
+    if (on){ note.value = ''; } else { b.classList.add('on'); note.value = b.textContent; }
+    syncSend();
+  });
+  document.getElementById('d-note').oninput = syncSend;
+  document.getElementById('d-teacher').oninput = syncSend;
+  function syncSend(){
+    const s = current; if (!s) return;
+    const note = document.getElementById('d-note').value.trim();
+    const score = document.getElementById('d-teacher').value;
+    const dirty = s.reviewed && (note !== (s.comment || '') || String(score) !== String(s.teacherScore ?? s.ai));
+    document.getElementById('d-send').disabled = !note || (s.reviewed && !dirty);
+    document.getElementById('d-send-l').textContent = !s.reviewed ? 'Send review' : dirty ? 'Update review' : 'Reviewed';
+  }
+  document.getElementById('d-send').onclick = () => {
+    const s = current; if (!s) return;
+    s.reviewed = true; s.reviewedAgo = 0;
+    s.comment = document.getElementById('d-note').value.trim();
+    s.teacherScore = document.getElementById('d-teacher').value;
+    paint(); renderReview();
+    toast(`Review sent to ${s.studentName}`);
+  };
+  document.getElementById('d-prev').onclick = () => { const l = navList(), i = l.findIndex((x) => x.id === current.id); if (i > 0){ current = l[i - 1]; paint(); } };
+  document.getElementById('d-next').onclick = () => { const l = navList(), i = l.findIndex((x) => x.id === current.id); if (i >= 0 && i < l.length - 1){ current = l[i + 1]; paint(); } };
+  document.getElementById('d-qs').addEventListener('click', (e) => { const q = e.target.closest('.q'); if (q) q.classList.toggle('open'); });
+
+  /* 2026-11-17：Skip review 抽屜、多筆 Skip 抽屜的程式拿掉（提案 ⑦ 改成清單上直接勾，見上面） */
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape'){ if (document.getElementById('skipModal').classList.contains('on')) { closeConfirm(); return; } closeDrawer(); if (saMode) exitSa(); if (rvMode) exitRv(); }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-pick],[data-pkall],[data-rvall]')) { e.preventDefault(); e.target.click(); }   // 勾選框可用鍵盤
+  });
+
+  /* ---------- toast ---------- */
+  let toastTimer;
+  function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2400); }
+
+  renderAssignments();
+  renderReview();
+
+  /* ---------- 網址參數 ---------- */
+  if (Q.get('drawer') === '1'){ const first = navList().find((s) => !D.isSettled(s)); if (first) openDrawer(first.id); }
+  if (Q.get('skip') === '1') enterRv();
+  if (Q.get('skipmany') === '1') enterSa();
+  if (Q.get('open') === '1' || Q.get('remind') === '1'){
+    const first = assignments.filter((a) => a.submittedCount < a.totalCount).sort((a, b) => ORDER.indexOf(a.section) - ORDER.indexOf(b.section) || (b.totalCount - b.submittedCount) - (a.totalCount - a.submittedCount))[0];
+    if (first){ opened.add(first.rowKey); renderAssignments(); if (Q.get('remind') === '1') openRemind(first); }
+  }
+
+  /* ---------- 底下的說明條 ---------- */
+  document.getElementById('blmain').innerHTML = IS_PROPOSAL
+    ? `<a href="https://project-logeg.vercel.app/specs/chinese-modules/iterations/index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>交接包</b>　Teacher Dashboard · 說明在 HANDOFF.md · 連去 <a href="../practice-results/practice-list.html">Practice 列表 ↗</a> · <a href="../practice-results/results.html?type=vocab&back=dashboard">Results 頁 ↗</a>`
+    : `<a href="../index.html" class="bl-home" title="Versions &amp; Iteration index"><span class="mi">arrow_back</span>Index</a><b>基準</b>　v25 · 現行 Teacher Dashboard 複刻 · 提案 <a href="proposal.html${location.search}">proposal.html ↗</a> · 連去 <a href="../v24-practice-list-ended/practice-list-baseline.html">v24 列表基準 ↗</a> · <a href="../v23-practice-results/results-baseline.html?type=vocab&back=dashboard">v23 Results 基準 ↗</a>`;
+  const links = IS_PROPOSAL
+    ? [['', '預設'], ['?many=1', 'Overdue 很多筆'], ['?skipmany=1', '左欄勾選 Skip'], ['?many=1&skipmany=1', '左欄勾選 · 很多筆'], ['?open=1', '展開第一列'], ['?remind=1', '寄提醒確認框'], ['?drawer=1', '批改抽屜'], ['?tab=reviewed', 'Reviewed'], ['?skip=1', '右欄勾選 Skip review'], ['?empty=1', '空']]
+    : [['', '預設'], ['?open=1', '展開第一列'], ['?remind=1', '寄提醒確認框'], ['?drawer=1', '批改抽屜'], ['?tab=reviewed', 'Reviewed'], ['?skip=1', 'Skip review 抽屜'], ['?empty=1', '空']];
+  document.getElementById('blinks').innerHTML = links.map(([q, l]) => `<a href="${q || 'dashboard.html'}" class="${location.search === q ? 'cur' : ''}">${l}</a>`).join(' · ');
+}());
+</script>
+</body>
+</html>

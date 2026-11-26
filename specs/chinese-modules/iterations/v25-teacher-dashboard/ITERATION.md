@@ -100,6 +100,8 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-26 | **定稿、打包** handoff/dashboard-assignments（dashboard.html ＋ HANDOFF.md） | 使用者「改成已定稿」「好幫我包 v25」 |
+| 2026-11-19 | **按任一列的 Skip 就進勾選模式**：Overdue 段頭底下的 `Skip several` 鈕拿掉；細列平常不出現，點任一列的 Skip ＝ 進勾選模式、那一列先勾好，細列這時才出現（Cancel · Skip N assignments）。單筆也走同一條（Skip 1 assignment → 確認框）。右欄 Skip review 不動 | 使用者「按底下任一 skip 就會出現多選框、Skip several btn 移除」（11/26 補記，原本只寫在 proposal 檔頭） |
 | 2026-11-18 | Active Assignments **欄位對齊**：段頭與每一列的 Practice／Class／Due／Submitted 起點一致（原本每列差 2–17px）；很長的練習名在欄內換行 | 使用者「dashboard 對齊」。每一列是自己的 grid、欄寬 `fr` 會被長練習名撐開；改 `minmax(0,…fr)`。基準檔照產品，沒改（產品可能也歪，要請工程看） |
 | 2026-11-17 | 右欄 Submissions **照左欄同一套**：`Skip review` 從面板標題右邊搬到清單上方的細列（靠右）；勾選模式時細列變操作列——左邊全選框 ＋ `Select all`、右邊 `⟲`（Older than 30 days，只剩圖示，滑過有字）· `Cancel` · 紅色 `Skip review (N)`；底部浮動條拿掉；不寫已選筆數；細列貼頁首、進出不位移；只在 To Review 分頁 | 使用者「Submissions 的也照這樣改」。右欄 400px 寬，四樣放不下，30 天快選縮成圖示鈕 |
 | 2026-11-17 | 操作列左邊的筆數**拿掉**（0 筆、勾了都不寫）；筆數只在 `Skip N assignments` 鈕上 | 使用者先說「不用出現 0 selected of 36」，再說「勾了一筆後的我也不要」 |

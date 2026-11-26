@@ -33,6 +33,23 @@
 
 | 日期 | 改了什麼 | 說明 |
 |---|---|---|
+| 2026-11-26 | Write with AI 改成**緊貼 Question 框底下一行**「✦ Write the answer and conditions with AI」（寫明會寫哪些），再下面才是 Suggested answer；取代放在標題列右邊（A）；答案框提示字改回「What a good answer looks like」（AI 已經有自己那顆鈕） | 使用者改選 B |
+| 2026-11-26 | 手寫題的 **Save 等答案有了才出現**（自己打了答案，或 Write with AI 寫好答案＋條件後）；一開始只剩 Question，打了題目出 Suggested answer＋Write with AI。「答案留空直接 Save 由 AI 補」這條路跟著沒了 | 使用者「最後答案都出來之後再出現 save」 |
+| 2026-11-26 | **Write with AI** 從答案框裡移到「Suggested answer」標題列右邊（緊接在 Question 框底下），答案框變回一般輸入框 | 使用者「讓 Write with AI 離問題近一點」：三案（標題列右邊／Question 框底下一行／Question 框裡）選 A |
+| 2026-11-26 | 按 **Write with AI** 時 Answer conditions 也一起出現（AI 寫答案＋條件，兩塊都留在還沒存的題卡上可改）；之後按 Save 就不用再等 AI；Save 移到題卡最底下；還沒存、編輯中的手寫題標頭不再重複題目 | 使用者「按 Write with AI，Answer conditions 也會一起出現」 |
+| 2026-11-26 | 手寫題 Suggested answer 輸入框右邊多一顆 **✦ Write with AI**（圖示同第一步 Let AI 那列），按了 AI 只寫建議答案、填進框裡可改；標題拿掉「(or let AI write it)」，placeholder 改「Type it, or write it with AI」。留空直接 Save 照舊由 AI 補 | 使用者「讓 Suggested answer 可以是自己寫，或第一眼就看得出來可以用 AI 生成」 |
+| 2026-11-26 | 手寫題的來源 tag「Your own」改成「Written by you」 | 使用者從三個簡寫（Your own／Written by you／Self-written）選定 |
+| 2026-11-26 | 第二步題卡問句底下的拼音拿掉 | 使用者「在這個裡不需要拼音」 |
+| 2026-11-26 | 第二步題卡標頭拆兩行：第一行 Q 號＋來源 tag（＋New／Edited）、右邊編輯和刪除；問句（＋拼音）自己一行 | 使用者「讓問句單獨一行」 |
+| 2026-11-26 | **第二步題卡都掛來源 tag**，用第一步三列名稱的短版：手寫題「Your own」（原 Yours）、AI 出的「AI from article」、常見題「Common」；同一種灰色。「New」（Generate more 剛加的）和「Edited」照舊另外掛 | 使用者「把 your 改成跟上一步一樣的名稱」→「三種都改，但可以縮短一點」 |
+| 2026-11-26 | **手寫題卡改成一步一步出現**（取代 11/23「三欄一開始就列」）：一開始只有 Question＋Save；打了題目才出 Suggested answer (or let AI write it)；Answer conditions 存檔前不出現，按 Save 時灰色佔位、AI 寫好後在已存題卡裡看得到也能改；「Leave these empty…」說明句跟著不出現 | 使用者「這個元件一次出現太多空白」：三案（條件收成一行／一步一步出現／題目答案並排）選 B |
+| 2026-11-26 | 警語「Answers don't have to come from the article…」移出題型卡，放在「N questions」底下一行；左欄只剩插圖，上列變矮 | 使用者「移出這個容器」 |
+| 2026-11-26 | **Topic 下拉改成左邊小節直列**：Theme 下拉留著（半寬）；底下一個框分兩欄，左 240px 小節直列（中文＋英文小字，有勾的右邊綠色數字，選中白底＋左邊綠線），右邊題目清單兩欄；兩邊各自捲動、框高 360px。手機寬小節改成上面橫向捲動 | 使用者「第二個選單改成膠囊看看，或是有什麼方式不用一直反覆去挑選單」：三案（下拉＋小節膠囊／左邊小節直列／一路捲下去＋跳到）選 B |
+| 2026-11-25 | 題目有「／」的**改成拆開**，不刪：一個選項一題，參考答案、條件改成只對應那一句（例：你有几个哥哥／姐姐／弟弟／妹妹？→ 四題；你通常几点吃早餐/午餐/晚餐？→ 三題）。15 題拆成 35 題，「你今年多大？」跟「数字·年龄」那題重複略過；有「……」的照舊拿掉。總數 2105 → 2139 | 使用者「有「／」的改成分成兩句而不是刪掉」 |
+| 2026-11-25 | 預設打開第一個主題：Theme＝入门基础 Basics、Topic＝问候与礼貌 Greetings，題目清單一進來就在；換 Theme 帶那個主題的第一個小節 | 使用者「預設先開啟第一個主題」 |
+| 2026-11-25 | **Choose from common questions 搬出右欄、橫跨整張卡片**：卡片改 grid，上列左插圖＋右題數列，下列題庫題（兩個下拉各半寬、題目清單兩欄、限高拉到約 320px 再捲動）；手機寬一欄 | 使用者「可以不要浪費左邊的空白嗎」 |
+| 2026-11-25 | **兩層藥丸改成 Theme／Topic 兩個下拉＋題目清單**（B）：一開始兩個都空、Topic 停用、清單不出現；換 Theme 就清掉 Topic；下拉選項後面標這裡勾了幾題 `(2)`；拿掉整組全選；清單照舊只列題目。下拉用產品原本的 `.sel3` | 使用者「這個 UI 很難檢視」，四案（大對話框三欄／兩個下拉／側邊抽屜樹狀／搜尋為主）選 B，細節逐題定 |
+| 2026-11-25 | **Choose from common questions 改吃口說題庫全部 11 個主題**（入门基础、食衣住行育乐、IB 五個；2105 題）：兩層＝上排主題藥丸（選中墨色）→ 底下灰底區出該主題的小節藥丸（照舊有整組勾選框）→ 點小節展開勾選清單；不看級別、預設都不展開；主題與小節名稱中英並列，IB 主題前面掛小 IB 標。每題只帶題目、Suggested answer、Answer conditions（句型填空不帶）。資料抽到 `starter-bank.js`。demo：`&theme=T1`、`&topic=Drinks`（小節英文名／中文名／`T1.4`） | 使用者「free response 內建預設題目的題型完整參考這份文件，但拿掉句型填空」，逐題定：兩層、不看級別、中英並列、「食」兩個 1 題小節併進「饮食习惯」「做饭与烹饪」、題目有「……」整題拿掉（Caroline 的規則；有「／」的後來改成拆開，見上面）、重複題留一個、「其他」照叫 Other、空的非必要條件（86 題）補上 |
 | 2026-11-23 | 手寫題 Suggested answer 標題的「(optional)」改成「**(or let AI write it)**」 | 使用者要表達自己寫或 AI 寫都可以，選第 3 種寫法 |
 | 2026-11-23 | Save 只要按一次：AI 補完空格後卡片直接收起（收起的卡上看得到建議答案與 Answer conditions），要改再按鉛筆 | 使用者「現在要按 save 兩次？」。v17 同步 |
 | 2026-11-23 | 每張題卡打開編輯時都有 Save（在 Suggested answer 底下）：手寫題第一次按 Save 時 AI 補空格、產完留在打開狀態給老師看；之後（或 AI 題、常見題）按 Save＝存起來收起卡片。手寫題把答案或條件清空再存，AI 會再補一次 | 使用者「如果我要修改，修改後的 save 就不見了」 |
